@@ -187,6 +187,43 @@ async function signReceipt(env: Env, body: { shop: string; item: string; price: 
   return { ...body, sig_seller: btoa(String.fromCharCode(...new Uint8Array(sig))) };
 }
 
+// ---------------------------------------------------------------- ACP checkout (week 8)
+// Round 3 counts only settled deals. A buyer brings the receipt we signed over A2A, opens a checkout session here,
+// and gets a checkout_jwt signed with the same shop key; completing the session forwards its closed AP2 mandates
+// to the market's /api/settle, which moves the credits. The same protocol as AcpShop in kit v3, which serves it
+// for shops the kit runs; a Worker shop has to serve it itself (week-08 HW).
+
+const MARKET = "https://market.ourolabs.ai";
+const b64url = (b: Uint8Array) => btoa(String.fromCharCode(...b)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+
+/** kit v3's jwt_sign: EdDSA over "<b64url canon header>.<b64url canon payload>". */
+async function jwtSign(env: Env, payload: Record<string, unknown>): Promise<string> {
+  shopKey ??= loadKey(env.SHOP_KEY!);
+  const head = `${b64url(canon({ alg: "EdDSA", typ: "JWT" }))}.${b64url(canon(payload))}`;
+  const sig = await crypto.subtle.sign({ name: "Ed25519" }, await shopKey, new TextEncoder().encode(head));
+  return `${head}.${b64url(new Uint8Array(sig))}`;
+}
+
+/** True when the receipt carries our signature. Ed25519 is deterministic, so signing the same fields again must
+ *  give the same bytes: the Worker holds only the private key, no separate public key to verify with. */
+async function ourReceipt(env: Env, r: Record<string, unknown>): Promise<boolean> {
+  if (!env.SHOP_KEY || typeof r.sig_seller !== "string") return false;
+  const again = await signReceipt(env, { shop: r.shop as string, item: r.item as string, price: r.price as number, task: r.task as string });
+  return "sig_seller" in again && again.sig_seller === r.sig_seller;
+}
+
+type Session = {
+  id: string; status: "ready_for_payment" | "completed" | "canceled"; task: string;
+  line_items: { id: string; quantity: number }[]; totals: { type: string; amount: number }[];
+  capabilities: { payment_methods: string[] }; checkout_jwt: string; order?: Record<string, unknown>;
+};
+
+/** One session per receipt: the id comes from the task, so a second create for the same receipt finds the first. */
+async function sessionId(task: string): Promise<string> {
+  const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`acp:${task}`)));
+  return "cs_" + Array.from(h.slice(0, 8), (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 // ---------------------------------------------------------------- loyalty coupons (week 7)
 // Every deal hands out a one-time code, whatever the buyer's review says. The code carries a tier: an order
 // that brings a tier-n code gets LOYALTY[n] off the opening ask and the target (never below reserve + MARGIN)
@@ -471,6 +508,23 @@ export class TaskObject extends DurableObject<Env> {
         `Stamps: ${stampCard(nextStamps === 0 ? STAMP_EVERY : nextStamps)}${nextStamps === STAMP_EVERY - 1 ? " (your next order gets the stamp bonus)" : ""}.`.trim());
   }
 
+  /** An ACP checkout session lives in one more object of this class, named by its id. */
+  async acpGet(): Promise<Session | null> {
+    return (await this.ctx.storage.get<Session>("acp")) ?? null;
+  }
+
+  /** Stores the session unless one exists already; returns the stored one. */
+  async acpCreate(s: Session): Promise<{ created: boolean; session: Session }> {
+    const old = await this.ctx.storage.get<Session>("acp");
+    if (old) return { created: false, session: old };
+    await this.ctx.storage.put("acp", s);
+    return { created: true, session: s };
+  }
+
+  async acpPut(s: Session): Promise<void> {
+    await this.ctx.storage.put("acp", s);
+  }
+
   async get(): Promise<Outcome> {
     const task = await this.ctx.storage.get<Task>("task");
     return task ? { task } : { error: rpcError(-32001, "TASK_NOT_FOUND", "Task not found") };
@@ -626,6 +680,97 @@ app.put("/admin/strategy", async (c) => {
   }
   console.log(`STRATEGY: set v${s.version} open ${JSON.stringify(s.open)} target ${JSON.stringify(s.target)}`);
   return c.json(await strategyStub(c.env).setStrategy({ ...s, updated: new Date().toISOString() }));
+});
+
+// ---------------------------------------------------------------- ACP routes (week 8)
+
+app.get("/.well-known/acp.json", (c) => {
+  const origin = new URL(c.req.url).origin;
+  const tools: [string, string, string, Record<string, string>][] = [
+    ["create_checkout_session", "POST", "/checkout_sessions",
+      { line_items: "[{id: item, quantity: 1}]", receipt: "the receipt the shop signed over A2A" }],
+    ["get_checkout_session", "GET", "/checkout_sessions/{id}", {}],
+    ["complete_checkout_session", "POST", "/checkout_sessions/{id}/complete", { payment_data: "{order, checkout_mandate, payment_mandate}" }],
+    ["cancel_checkout_session", "POST", "/checkout_sessions/{id}/cancel", {}],
+  ];
+  return c.json({
+    protocol: "acp", version: "2026-04-17", endpoint: `${origin}/acp`,
+    capabilities: { services: ["checkout"], payment_methods: ["ap2-mandate"] },
+    tools: tools.map(([name, method, path, input]) => ({ name, method, path, input })),
+  });
+});
+
+const acpStub = (env: Env, sid: string) => env.TASKS.get(env.TASKS.idFromName(`acp:${sid}`));
+
+app.post("/acp/checkout_sessions", async (c) => {
+  let b: { line_items?: { id?: string }[]; receipt?: Record<string, unknown> };
+  try {
+    b = await c.req.json();
+  } catch {
+    return c.json({ error: "body is not JSON" }, 400);
+  }
+  const rec = b.receipt && typeof b.receipt === "object" ? b.receipt : {};
+  if (!(await ourReceipt(c.env, rec))) return c.json({ error: "the receipt is not signed by this shop" }, 400);
+  if ((b.line_items ?? [{}])[0]?.id !== rec.item || !Number.isInteger(rec.price)) {
+    return c.json({ error: "line_items do not match the receipt" }, 400);
+  }
+  const sid = await sessionId(String(rec.task));
+  const co = { id: sid, shop: rec.shop, shop_url: new URL(c.req.url).origin, item: rec.item, price: rec.price,
+    task: rec.task, currency: "credits", iat: Math.floor(Date.now() / 1000) };
+  const s: Session = {
+    id: sid, status: "ready_for_payment", task: String(rec.task),
+    line_items: [{ id: String(rec.item), quantity: 1 }], totals: [{ type: "total", amount: rec.price as number }],
+    capabilities: { payment_methods: ["ap2-mandate"] }, checkout_jwt: await jwtSign(c.env, co),
+  };
+  const { created } = await acpStub(c.env, sid).acpCreate(s);
+  if (!created) return c.json({ error: "this receipt already has a checkout session" }, 409);
+  console.log(`ACP: checkout ${sid} for ${rec.item} at ${rec.price} (task ${rec.task})`);
+  return c.json(s, 201);
+});
+
+app.get("/acp/checkout_sessions/:id", async (c) => {
+  const s = (await acpStub(c.env, c.req.param("id")).acpGet()) as Session | null;
+  return s ? c.json(s) : c.json({ error: "no such checkout session" }, 404);
+});
+
+app.post("/acp/checkout_sessions/:id/cancel", async (c) => {
+  const stub = acpStub(c.env, c.req.param("id"));
+  const s = (await stub.acpGet()) as Session | null;
+  if (!s) return c.json({ error: "no such checkout session" }, 404);
+  if (s.status === "completed") return c.json({ error: "session is completed" }, 409);
+  s.status = "canceled";
+  await stub.acpPut(s);
+  return c.json(s);
+});
+
+app.post("/acp/checkout_sessions/:id/complete", async (c) => {
+  const stub = acpStub(c.env, c.req.param("id"));
+  const s = (await stub.acpGet()) as Session | null;
+  if (!s) return c.json({ error: "no such checkout session" }, 404);
+  if (s.status !== "ready_for_payment") return c.json({ error: `session is ${s.status}` }, 409);
+  let b: { payment_data?: Record<string, unknown> };
+  try {
+    b = await c.req.json();
+  } catch {
+    return c.json({ error: "body is not JSON" }, 400);
+  }
+  const pay = b.payment_data ?? {};
+  // the market checks every signature and constraint; the shop only forwards (the market answers anyone, no token)
+  const r = await fetch(`${MARKET}/api/settle`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ order: pay.order, checkout_jwt: s.checkout_jwt, checkout_mandate: pay.checkout_mandate, payment_mandate: pay.payment_mandate }),
+  });
+  const res = (await r.json().catch(() => ({ error: `market answered ${r.status}` }))) as Record<string, any>;
+  if (r.status !== 200 || !res.settled) {
+    const failed = Object.entries(res.checks ?? {}).filter(([, v]) => !v).map(([k]) => k);
+    console.log(`ACP: settle refused for ${s.id}: ${failed.join(", ") || JSON.stringify(res).slice(0, 200)}`);
+    return c.json({ error: "payment refused by the market", market: res }, 402);
+  }
+  s.status = "completed";
+  s.order = { status: "confirmed", mandate_receipt: res.mandate_receipt };
+  await stub.acpPut(s);
+  console.log(`ACP: settled ${s.line_items[0].id} at ${s.totals[0].amount}, ledger #${res.ledger}`);
+  return c.json(s);
 });
 
 app.post("/", async (c) => {

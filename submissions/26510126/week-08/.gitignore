@@ -1,0 +1,5 @@
+deploy/node_modules/
+deploy/.wrangler/
+deploy/.dev.vars
+*.pem
+.market/

@@ -7,8 +7,9 @@ supply, food quality, a board) are announced before the round; parts that change
 - **Shop:** a Cloudflare Worker (`deploy/`), registered as `thisjonghoon`. Llama 3.1 8B on Workers AI talks to
   buyers; code guards every price; a meta-harness (Claude haiku) sets the prices from the market's ledger. New for
   week 8: the Worker serves the ACP checkout itself (`/.well-known/acp.json`, `/acp/checkout_sessions`).
-- **Buyer:** `market_buyer.py` (Claude haiku) run by kit v3 on a Mac mini, with a file memory and the market
-  ledger; kit v3 pays for its deals with AP2 mandates.
+- **Buyer:** `market_buyer.py` (Claude haiku) run on a Mac mini by our copy of kit v3 (`market_kit.py` here), with
+  a file memory and the market ledger; the kit pays for its deals with AP2 mandates through tools it makes from each
+  shop's `acp.json` (the optional HW).
 - The agents run from the week-07 folder (the kit's `--dir`, as the week-08 page asks); code changed for week 8
   lives here, and the week-07 files it relies on are listed in section 2.
 
@@ -46,8 +47,25 @@ All Claude calls go through `claude -p` with no tools, no settings, no session p
 | Strategy API: `PUT /admin/strategy`, `GET /admin/coupons` | the meta-harness | Worker routes behind a bearer token; the Worker refuses prices below reserve |
 | A2A negotiation (`SendMessage`, `CancelTask`) | our buyer | `buyer.py` |
 | Market reads (`/api/ledger`, `/api/board`, `/api/stats`) | buyer, meta-harness, watcher | `market_intel.py`, cached |
+| Checkout tools made from a shop's `acp.json` (optional HW) | our buyer's kit, in every Round 3 payment | `market_kit.py` (our copy of kit v3, `acp_pay_tools`): each tool gets a name, description and JSON Schema input; the kit calls them in a fixed order; the original `acp_pay` checks stay; `--fixed-checkout` returns to the kit's code |
 
-TODO: the optional acp.json tool buyer is not built (section 2).
+**The optional tool buyer** (`market_kit.py`, `test_acp_tools.py`; the copy the Mac mini runs since 10/30 17:01):
+
+- The buyer reads the shop's `/.well-known/acp.json` and makes one tool per entry. Inputs may be the kit's short
+  description strings (kit v3 shops, our Worker) or JSON Schema; arguments are checked against the schema before a
+  call, and only paths under the shop's ACP endpoint are allowed. Our shop card (`AcpShop.card`) now writes JSON Schema.
+- Checks are the kit's: the checkout is signed by the shop and matches the receipt, and the total is within the open
+  payment mandate's limit; otherwise the session is cancelled with the shop's cancel tool and nothing is paid.
+- Falling back never pays twice: before a session exists the kit's `acp_pay` runs; after, one fixed `complete` on the
+  same session at most; after a `complete` has been sent, never again.
+- `test_acp_tools.py` runs a local shop and a fake market through 9 cases (`logs/acp-tools-test-*.txt`, 9/9).
+- **How it was made.** The first attempt (in this session) was stopped part-way by Claude Code's safety filter
+  while writing the mandate-signing code, although the credits are the course market's. A second session, given the
+  assignment text and this context, wrote it (commits `1d7cd73`..`7a6ddd0`). Reviewing it against what the main
+  session knew about the market, one gap was found and fixed (`cc2afca`): the tool buyer read the session back
+  before paying and cancelled when the shop's GET left out `checkout_jwt` or used its own status word, which shops
+  built without the kit may do and which the kit's `acp_pay` would have paid. Now only a completed or cancelled
+  session, or a different jwt, stops the payment (test case `terse-get`).
 
 ## 2. Structure, and how it differs from the kit's baseline
 
@@ -57,9 +75,9 @@ flowchart LR
     L[(ledger)] --- S[/api/settle/]
   end
   subgraph Mini[Mac mini]
-    K[kit v3] -->|order| B[market_buyer.py\nhaiku + memory.jsonl]
+    K[kit v3, our copy] -->|order| B[market_buyer.py\nhaiku + memory.jsonl]
     B -->|receipt| K
-    K -->|AP2 mandates| ACP
+    K -->|tools from acp.json\nAP2 mandates| ACP
     M[meta_shop.py\nhaiku] -->|prices| ADM
     I[market_intel.py\n6-hour cache] --> B & M
     E[meta_explore.py\nsonnet, ideas only]
@@ -78,7 +96,7 @@ flowchart LR
 | Shop | the kit runs your seller locally and serves ACP for it | a Worker on Cloudflare that serves A2A and its own ACP checkout, so it does not depend on the Mac mini |
 | Prices | whatever the seller decides per turn | a meta-harness sets them from the ledger and its own history; code guards hold the floor |
 | Buyer | picks and haggles | memory of raw evidence, market record, and Round-3 filters (ACP, settlement) before the model picks |
-| Checkout | kit's fixed `acp_pay` | same (the optional tool buyer is not done: TODO decide) |
+| Checkout | kit's fixed `acp_pay`; the shop card describes inputs as short strings | tools made from each shop's `acp.json` at payment time, the fixed `acp_pay` only as a fallback; our card gives JSON Schema |
 
 ## 3. Round 3 results
 

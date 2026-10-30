@@ -693,10 +693,30 @@ app.get("/.well-known/acp.json", (c) => {
     ["complete_checkout_session", "POST", "/checkout_sessions/{id}/complete", { payment_data: "{order, checkout_mandate, payment_mandate}" }],
     ["cancel_checkout_session", "POST", "/checkout_sessions/{id}/cancel", {}],
   ];
+  // input stays as the kit's short strings for buyers that read it; description and input_schema (JSON Schema,
+  // the same as our kit copy's AcpShop.card) are added beside it for buyers that make tools from acp.json
+  const obj = (required: string[], properties: Record<string, unknown>, description?: string) =>
+    ({ type: "object", required, properties, ...(description ? { description } : {}) });
+  const sid = { type: "string", description: "checkout session id (path)" };
+  const signed = obj(["mandate", "sig"], { mandate: { type: "object" }, sig: { type: "string", description: "base64 Ed25519 by the buyer key" } });
+  const extra: Record<string, [string, unknown]> = {
+    create_checkout_session: ["Open a checkout for a receipt the shop signed over A2A.", obj(["line_items", "receipt"], {
+      line_items: { type: "array", minItems: 1, items: obj(["id", "quantity"], {
+        id: { type: "string", description: "the receipt's item" }, quantity: { type: "integer", minimum: 1 } }) },
+      receipt: obj(["shop", "item", "price", "task", "sig_seller"], {
+        shop: { type: "string" }, item: { type: "string" }, price: { type: "integer", minimum: 0 },
+        task: { type: "string" }, sig_seller: { type: "string" } }, "the receipt the shop signed over A2A") })],
+    get_checkout_session: ["Read a checkout session.", obj(["id"], { id: sid })],
+    complete_checkout_session: ["Pay with the buyer's closed AP2 mandates; the shop settles through the market.",
+      obj(["id", "payment_data"], { id: sid, payment_data: obj(["order", "checkout_mandate", "payment_mandate"], {
+        order: { type: ["string", "integer"] }, checkout_mandate: signed, payment_mandate: signed }) })],
+    cancel_checkout_session: ["Cancel a session not yet completed.", obj(["id"], { id: sid })],
+  };
   return c.json({
     protocol: "acp", version: "2026-04-17", endpoint: `${origin}/acp`,
     capabilities: { services: ["checkout"], payment_methods: ["ap2-mandate"] },
-    tools: tools.map(([name, method, path, input]) => ({ name, method, path, input })),
+    tools: tools.map(([name, method, path, input]) =>
+      ({ name, method, path, input, description: extra[name][0], input_schema: extra[name][1] })),
   });
 });
 

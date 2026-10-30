@@ -303,15 +303,33 @@ class AcpShop:
         self.sessions = collections.OrderedDict()
 
     def card(self, public):
-        tools = [("create_checkout_session", "POST", "/checkout_sessions",
-                  {"line_items": "[{id: item, quantity: 1}]", "receipt": "the receipt the shop signed over A2A"}),
-                 ("get_checkout_session", "GET", "/checkout_sessions/{id}", {}),
+        """acp.json. Each tool's input is a JSON Schema (week-08 optional HW; the kit wrote short descriptions)."""
+        obj = lambda req, props, desc=None: dict({"type": "object", "required": req, "properties": props},
+                                                 **({"description": desc} if desc else {}))
+        sid = {"type": "string", "description": "checkout session id (path)"}
+        signed = obj(["mandate", "sig"], {"mandate": {"type": "object"},
+                                          "sig": {"type": "string", "description": "base64 Ed25519 by the buyer key"}})
+        tools = [("create_checkout_session", "POST", "/checkout_sessions", "Open a checkout for a receipt the shop signed over A2A.",
+                  obj(["line_items", "receipt"], {
+                      "line_items": {"type": "array", "minItems": 1, "items": obj(["id", "quantity"], {
+                          "id": {"type": "string", "description": "the receipt's item"},
+                          "quantity": {"type": "integer", "minimum": 1}})},
+                      "receipt": obj(["shop", "item", "price", "task", "sig_seller"], {
+                          "shop": {"type": "string"}, "item": {"type": "string"},
+                          "price": {"type": "integer", "minimum": 0}, "task": {"type": "string"},
+                          "sig_seller": {"type": "string"}}, "the receipt the shop signed over A2A")})),
+                 ("get_checkout_session", "GET", "/checkout_sessions/{id}", "Read a checkout session.",
+                  obj(["id"], {"id": sid})),
                  ("complete_checkout_session", "POST", "/checkout_sessions/{id}/complete",
-                  {"payment_data": "{order, checkout_mandate, payment_mandate}"}),
-                 ("cancel_checkout_session", "POST", "/checkout_sessions/{id}/cancel", {})]
+                  "Pay with the buyer's closed AP2 mandates; the shop settles through the market.",
+                  obj(["id", "payment_data"], {"id": sid, "payment_data": obj(
+                      ["order", "checkout_mandate", "payment_mandate"],
+                      {"order": {"type": ["string", "integer"]}, "checkout_mandate": signed, "payment_mandate": signed})})),
+                 ("cancel_checkout_session", "POST", "/checkout_sessions/{id}/cancel", "Cancel a session not yet completed.",
+                  obj(["id"], {"id": sid}))]
         return {"protocol": "acp", "version": "2026-04-17", "endpoint": f"{public}/acp",
                 "capabilities": {"services": ["checkout"], "payment_methods": ["ap2-mandate"]},
-                "tools": [{"name": n, "method": m, "path": p, "input": i} for n, m, p, i in tools]}
+                "tools": [{"name": n, "method": m, "path": p, "description": d, "input": i} for n, m, p, d, i in tools]}
 
     async def handle(self, req, path, body, public):
         if path == ".well-known/acp.json":

@@ -73,6 +73,7 @@ RECEIPT_KEYS = ("shop", "item", "price", "task")
 LOG_FILE = None
 LOG_MAX = 20_000_000                                # bytes; then market-kit.log moves to market-kit.log.1
 LOG_LOCK = threading.Lock()
+CHECKOUT = None                                   # acp_pay_tools (default) or acp_pay (--fixed-checkout); set in main
 RETRY = (httpx.TransportError, ValueError)        # network trouble, or a body that is not JSON (e.g. a proxy's 502 page)
 
 
@@ -420,6 +421,232 @@ def acp_pay(o, shop_url, shop_pub, receipt, buyer_key):
         c.close()
 
 
+# --- acp.json tool buyer (week-08 optional HW): the buyer reads the shop's acp.json, makes tools, checks out with them
+
+PATH_PARAM = re.compile(r"\{([A-Za-z_][A-Za-z0-9_]*)\}")
+SAFE_SEGMENT = re.compile(r"^[A-Za-z0-9_.:~-]+$")
+JSON_TYPES = {"object": dict, "array": list, "string": str, "boolean": bool, "null": type(None)}
+
+
+def schema_errors(schema, value, at="$"):
+    """The subset of JSON Schema an acp.json needs: type, required, properties, additionalProperties, items, minItems,
+    enum, minimum. Returns a list of problems (empty: valid)."""
+    if not isinstance(schema, dict):
+        return []
+    errs = []
+    types = schema.get("type")
+    if types is not None:
+        types = types if isinstance(types, list) else [types]
+        def is_type(t):
+            if t == "integer":
+                return type(value) is int
+            if t == "number":
+                return type(value) in (int, float)
+            return t in JSON_TYPES and type(value) is JSON_TYPES[t]
+        if not any(is_type(t) for t in types):
+            return [f"{at} is {type(value).__name__}, not {'/'.join(types)}"]
+    if "enum" in schema and value not in schema["enum"]:
+        errs.append(f"{at} is not one of {schema['enum']}")
+    if "minimum" in schema and type(value) in (int, float) and value < schema["minimum"]:
+        errs.append(f"{at} is below {schema['minimum']}")
+    if isinstance(value, dict):
+        props = schema.get("properties") or {}
+        errs += [f"{at}.{k} is missing" for k in schema.get("required") or [] if k not in value]
+        for k, v in value.items():
+            if k in props:
+                errs += schema_errors(props[k], v, f"{at}.{k}")
+            elif schema.get("additionalProperties") is False:
+                errs.append(f"{at}.{k} is not allowed")
+    if isinstance(value, list):
+        if len(value) < schema.get("minItems", 0):
+            errs.append(f"{at} has fewer than {schema['minItems']} items")
+        for i, v in enumerate(value):
+            errs += schema_errors(schema.get("items"), v, f"{at}[{i}]")
+    return errs
+
+
+def input_schema(declared, path):
+    """A tool's input as JSON Schema. The kit's acp.json writes input as {name: "short description"}; a shop may
+    also give a JSON Schema ({"type": "object", ...}). Path parameters ({id}) become required string properties."""
+    if isinstance(declared, dict) and declared.get("type") == "object":
+        schema = json.loads(json.dumps(declared))
+    else:
+        declared = declared if isinstance(declared, dict) else {}
+        schema = {"type": "object", "required": list(declared),
+                  "properties": {k: {"description": str(v)} for k, v in declared.items()}}
+    schema.setdefault("properties", {})
+    schema.setdefault("required", [])
+    for p in PATH_PARAM.findall(path):
+        schema["properties"].setdefault(p, {"type": "string", "description": f"{p} in the path"})
+        if p not in schema["required"]:
+            schema["required"].append(p)
+    return schema
+
+
+class AcpTool:
+    """One tool made from an acp.json entry: a definition a model (or the kit) can read, and the HTTP call behind it."""
+
+    def __init__(self, base, entry):
+        self.name, self.method = str(entry["name"]), str(entry.get("method", "POST")).upper()
+        self.path = str(entry["path"])
+        if (self.method not in ("GET", "POST") or not self.path.startswith("/") or "//" in self.path
+                or ".." in self.path or "?" in self.path or "#" in self.path):
+            raise ValueError(f"tool {self.name}: {self.method} {self.path} is not a path under the ACP endpoint")
+        self.base = base
+        self.params = PATH_PARAM.findall(self.path)
+        self.schema = input_schema(entry.get("input_schema", entry.get("input")), self.path)
+        self.description = entry.get("description") or f"{self.method} {self.path} on the shop's ACP endpoint"
+
+    def spec(self):
+        """Tool definition in the shape the course's model APIs take (name, description, input_schema)."""
+        return {"name": self.name, "description": self.description, "input_schema": self.schema}
+
+    def __call__(self, client, **args):
+        errs = schema_errors(self.schema, args)
+        if errs:
+            raise ValueError(f"tool {self.name}: arguments do not fit its schema: {'; '.join(errs[:3])}")
+        path = self.path
+        for p in self.params:
+            v = str(args.pop(p))
+            if not SAFE_SEGMENT.match(v):
+                raise ValueError(f"tool {self.name}: {p}={v!r} is not a safe path segment")
+            path = path.replace("{" + p + "}", v)
+        if self.method == "GET":
+            return client.get(self.base + path)
+        return client.post(self.base + path, json=args)
+
+
+def acp_tools(card, shop_url):
+    """The tools in a shop's acp.json, by name. Raises ValueError when the card cannot give a checkout."""
+    base = str(card["endpoint"]).rstrip("/")
+    if urlparse(base).hostname != urlparse(shop_url).hostname:
+        raise ValueError(f"the ACP endpoint {base} is not on the shop's host")
+    tools = {}
+    for entry in card.get("tools") or []:
+        t = AcpTool(base, entry)
+        tools[t.name] = t
+    return base, tools
+
+
+def pick_tool(tools, name, method, tail):
+    """The tool by its ACP name, or else the one whose method and path say the same thing."""
+    if name in tools:
+        return tools[name]
+    return next((t for t in tools.values() if t.method == method and re.sub(PATH_PARAM, "{}", t.path).endswith(tail)), None)
+
+
+class BeforeSession(Exception):
+    """The tool checkout failed before a checkout session existed: the fixed acp_pay can still try."""
+
+
+def acp_pay_tools(o, shop_url, shop_pub, receipt, buyer_key):
+    """acp_pay done with tools made from the shop's acp.json. Same checks as acp_pay (signed checkout that matches the
+    receipt, total within the open payment mandate's limit). If it fails before a session exists, the fixed acp_pay
+    runs instead; if it fails after, it never pays twice: one fixed complete on the same session at most."""
+    try:
+        return _acp_pay_tools(o, shop_url, shop_pub, receipt, buyer_key)
+    except BeforeSession as e:
+        log(f"[acp-tools] {e}; falling back to the kit's fixed checkout")
+        return acp_pay(o, shop_url, shop_pub, receipt, buyer_key)
+
+
+def _acp_pay_tools(o, shop_url, shop_pub, receipt, buyer_key):
+    c = httpx.Client(timeout=60)
+    sid = cancel = None
+    try:
+        try:
+            r = c.get(f"{shop_url}/.well-known/acp.json")
+            if r.status_code != 200:
+                raise BeforeSession(f"{shop_url} serves no /.well-known/acp.json ({r.status_code})")
+            base, tools = acp_tools(r.json(), shop_url)
+        except (httpx.HTTPError, ValueError, KeyError, TypeError) as e:
+            raise BeforeSession(f"cannot make tools from {shop_url}'s acp.json: {type(e).__name__}: {e}")
+        create = pick_tool(tools, "create_checkout_session", "POST", "/checkout_sessions")
+        get = pick_tool(tools, "get_checkout_session", "GET", "/checkout_sessions/{}")
+        complete = pick_tool(tools, "complete_checkout_session", "POST", "/checkout_sessions/{}/complete")
+        cancel = pick_tool(tools, "cancel_checkout_session", "POST", "/checkout_sessions/{}/cancel")
+        if create is None:
+            raise BeforeSession(f"acp.json has no checkout-creating tool (tools: {sorted(tools)})")
+        log(f"[acp-tools] {len(tools)} tools from {base}/: {', '.join(sorted(tools))}")
+
+        try:
+            r = create(c, line_items=[{"id": receipt["item"], "quantity": 1}], receipt=receipt)
+        except (httpx.HTTPError, ValueError) as e:
+            raise BeforeSession(f"{create.name} failed: {type(e).__name__}: {e}")
+        if r.status_code not in (200, 201):
+            raise BeforeSession(f"{create.name} refused: {r.status_code} {r.text[:200]}")
+        s = r.json()
+        sid = s.get("id")
+
+        # from here a session exists on the shop: the fixed acp_pay would only get "already has a checkout session"
+        co = jwt_payload(s.get("checkout_jwt", ""), shop_pub)
+        budget = next(x["max"] for x in o["mandates"]["payment"]["mandate"]["constraints"] if x["type"] == "payment.amount_range")
+        if not co or (co.get("item"), co.get("price"), co.get("task")) != (receipt["item"], receipt["price"], receipt["task"]):
+            log("[acp-tools] the checkout does not match the agreed receipt (or is not signed by the shop); not paying")
+            return _cancel(c, cancel, sid)
+        if co["price"] > budget:
+            log(f"[acp-tools] checkout total {co['price']} is above the mandate's limit; not paying")
+            return _cancel(c, cancel, sid)
+        if get is not None and sid:                     # read the session back before paying (status, same checkout)
+            try:
+                g = get(c, id=sid)
+                if g.status_code == 200 and (g.json().get("status") != "ready_for_payment"
+                                             or g.json().get("checkout_jwt") != s["checkout_jwt"]):
+                    log(f"[acp-tools] {get.name} shows the session changed ({g.json().get('status')}); not paying")
+                    return _cancel(c, cancel, sid)
+            except (httpx.HTTPError, ValueError) as e:
+                log(f"[acp-tools] {get.name} failed ({type(e).__name__}: {e}); paying on the created session")
+
+        h = b64url(hashlib.sha256(s["checkout_jwt"].encode()).digest())
+        opens = {k: hashlib.sha256(canon(v["mandate"])).hexdigest() for k, v in o["mandates"].items()}
+        cm = {"vct": "mandate.checkout.1", "order": o["order"], "open_mandate": opens["checkout"],
+              "checkout_jwt": s["checkout_jwt"], "checkout_hash": h}
+        pm = {"vct": "mandate.payment.1", "order": o["order"], "open_mandate": opens["payment"], "payee": shop_url,
+              "amount": co["price"], "currency": "credits", "checkout_hash": h}
+        sign = lambda m: {"mandate": m, "sig": base64.b64encode(buyer_key.sign(canon(m))).decode()}
+        payment_data = {"order": o["order"], "checkout_mandate": sign(cm), "payment_mandate": sign(pm)}
+        try:
+            if complete is None:
+                raise ValueError("acp.json has no completing tool")
+            r = complete(c, id=sid, payment_data=payment_data)
+            how = complete.name
+        except ValueError as e:                         # the tool refused our arguments: nothing was sent yet
+            log(f"[acp-tools] {e}; completing with the kit's fixed request on the same session")
+            r = c.post(f"{base}/checkout_sessions/{sid}/complete", json={"payment_data": payment_data})
+            how = "fixed complete"
+        if r.status_code != 200:
+            log(f"[acp-tools] payment not completed ({how}): {r.status_code} {r.text[:300]}")
+            return None
+        mr = r.json()["order"]["mandate_receipt"]
+        log(f"[acp-tools] paid {co['price']} with {create.name} -> {how}, settled at ledger #{mr['ledger']}")
+        return mr
+    except BeforeSession:
+        raise
+    except (httpx.HTTPError, ValueError, KeyError, TypeError, StopIteration) as e:
+        log(f"[acp-tools] payment failed{f' on session {sid}' if sid else ''}: {type(e).__name__}: {e}")
+        return None
+    finally:
+        c.close()
+
+
+def _cancel(c, cancel, sid):
+    if cancel is not None and sid:
+        try:
+            r = cancel(c, id=sid)
+            log(f"[acp-tools] {cancel.name} {sid}: {r.status_code}")
+        except (httpx.HTTPError, ValueError) as e:
+            log(f"[acp-tools] {cancel.name} failed: {type(e).__name__}: {e}")
+    return None
+
+
+def cmd_acp_tools(a):
+    """Prints the tools the buyer makes from a shop's acp.json (no checkout)."""
+    shop = a.shop.rstrip("/")
+    card = httpx.get(f"{shop}/.well-known/acp.json", timeout=30).json()
+    base, tools = acp_tools(card, shop)
+    print(json.dumps({"endpoint": base, "tools": [t.spec() for t in tools.values()]}, ensure_ascii=False, indent=1))
+
+
 def receipt_from_task(task):
     """The receipt the shop put in the task's artifact, in the market's field names."""
     for art in task.get("artifacts") or []:
@@ -602,7 +829,7 @@ def handle_order(o, agent, d, market, proxy, own_shop, keys):
             body["sig_buyer"] = base64.b64encode(keys["buyer"].sign(canon(dict(signed, order=o["order"])))).decode()
             log("[sign] sig_seller ok, sig_buyer added")
             if rnd >= 3 and o.get("mandates"):
-                body["mandate_receipt"] = acp_pay(o, shop_url, pubkeys[shop_url], receipt, keys["buyer"])
+                body["mandate_receipt"] = CHECKOUT(o, shop_url, pubkeys[shop_url], receipt, keys["buyer"])
     r = post_result(market, body)
     if r.status_code != 200:
         log(f"[market] result refused: {r.status_code} {r.text}")
@@ -624,7 +851,7 @@ def cmd_join(a):
     agent = json.loads((d / "agent.json").read_text(encoding="utf-8"))
     (d / "logs").mkdir(exist_ok=True)
     LOG_FILE = d / "logs" / "market-kit.log"
-    log(f"[kit] market_kit {KIT_VERSION}, {d}")
+    log(f"[kit] market_kit {KIT_VERSION} (week-08 acp.json tool buyer, checkout: {CHECKOUT.__name__}), {d}")
     ignore_pem(d)
     keys = {"shop": load_key(d / "shop_key.pem"), "buyer": load_key(d / "buyer_key.pem")}
     market = Market(a.market, a.owner)
@@ -792,11 +1019,19 @@ def main():
     j.add_argument("--orders", type=int, default=0, help="stop after this many orders (0: keep going)")
     j.add_argument("--owner", default=os.environ.get("MARKET_OWNER"),
                    help="claim code from the market's join page; links your agents to your GitHub account")
+    j.add_argument("--fixed-checkout", action="store_true",
+                   help="pay with the kit's fixed ACP checkout instead of tools made from the shop's acp.json")
     st = sub.add_parser("starter", help="write an unsigned week-06 shop and buyer into --dir")
     st.add_argument("--dir", default=".")
+    t = sub.add_parser("acp-tools", help="print the tools the buyer makes from a shop's acp.json")
+    t.add_argument("--shop", required=True, help="the shop's card URL")
     a = ap.parse_args()
     if a.cmd == "starter":
         return cmd_starter(a)
+    if a.cmd == "acp-tools":
+        return cmd_acp_tools(a)
+    global CHECKOUT
+    CHECKOUT = acp_pay if a.fixed_checkout else acp_pay_tools
     signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))     # stop the seller and the tunnel on kill as well
     cmd_join(a)
 

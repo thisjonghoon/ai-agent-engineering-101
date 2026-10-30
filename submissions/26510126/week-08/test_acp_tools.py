@@ -8,6 +8,7 @@ payment mandate's limit, then runs acp_pay_tools against it in each case below. 
 must not pay (or must not pay twice) shows it.
 """
 import base64
+import json
 import socket
 import sys
 import threading
@@ -16,6 +17,7 @@ import time
 import httpx
 import uvicorn
 from starlette.applications import Starlette
+from starlette.responses import JSONResponse
 from starlette.routing import Route
 
 import market_kit as mk
@@ -77,6 +79,17 @@ class OddComplete(mk.AcpShop):
             if t["name"] == "complete_checkout_session":
                 t["input"]["required"].append("loyalty_code")
         return c
+
+
+class TerseGet(mk.AcpShop):
+    """A shop built without the kit: its GET gives its own status word and no checkout_jwt. The fixed acp_pay never
+    reads GET and would pay it, so the tool buyer must not refuse it either."""
+
+    async def handle(self, req, path, body, public):
+        r = await super().handle(req, path, body, public)
+        if req.method == "GET" and "/checkout_sessions/" in path:
+            return JSONResponse({"id": json.loads(r.body)["id"], "status": "open"})
+        return r
 
 
 class OtherHost(mk.AcpShop):
@@ -145,6 +158,7 @@ def main():
          expect_in_log=["payment not completed"])
     case("tampered-receipt", mk.AcpShop, tamper=True, expect_paid=False, expect_settles=0,
          expect_in_log=["falling back", "[acp] checkout refused"])
+    case("terse-get", TerseGet, expect_in_log=["[acp-tools] paid 120"])
     case("endpoint-other-host", OtherHost, expect_paid=False, expect_settles=0,
          expect_in_log=["not on the shop's host"])
     print(f"\n{sum(results)}/{len(results)} passed")

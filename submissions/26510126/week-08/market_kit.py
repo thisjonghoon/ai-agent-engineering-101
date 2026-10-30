@@ -608,9 +608,11 @@ def _acp_pay_tools(o, shop_url, shop_pub, receipt, buyer_key):
         if get is not None and sid:                     # read the session back before paying (status, same checkout)
             try:
                 g = get(c, id=sid)
-                if g.status_code == 200 and (g.json().get("status") != "ready_for_payment"
-                                             or g.json().get("checkout_jwt") != s["checkout_jwt"]):
-                    log(f"[acp-tools] {get.name} shows the session changed ({g.json().get('status')}); not paying")
+                # only a clear sign stops the payment: shops built without the kit name their statuses their own way
+                # or leave the jwt out of GET, and the fixed acp_pay would have paid them
+                gs = g.json() if g.status_code == 200 else {}
+                if gs.get("status") in ("completed", "canceled") or gs.get("checkout_jwt") not in (None, s["checkout_jwt"]):
+                    log(f"[acp-tools] {get.name} shows the session changed ({gs.get('status')}); not paying")
                     return _cancel(c, cancel, sid)
             except (httpx.HTTPError, ValueError) as e:
                 log(f"[acp-tools] {get.name} failed ({type(e).__name__}: {e}); paying on the created session")

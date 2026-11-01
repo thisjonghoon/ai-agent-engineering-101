@@ -1,0 +1,212 @@
+"""Offline test of the Round 3 buyer: fake kit files, fake A2A shops, a scripted harness, no market.
+
+    python test_buyer_r3.py        # prints PASS/FAIL per case; runs in a temporary copy of this folder
+
+Cases: picks the SKU with the best expected surplus and haggles under 0.9 x list price; leaves out a shop our
+memory caught claiming false grades; prints an empty result when no shop stocks the order; the review hook rates
+a false claim one star and records the settled facts; payment refusals and broken goods become memory lines;
+the forum helper queues one factual note with ledger refs and waits 5 minutes before the next.
+"""
+import asyncio
+import contextlib
+import io
+import json
+import os
+import re
+import shutil
+import socket
+import sys
+import tempfile
+import threading
+import time
+import uuid
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+TMP = Path(tempfile.mkdtemp(prefix="buyer-r3-"))
+for f in ("buyer.py", "buyer_r3.py", "forum_r3.py", "review_r3.py", "market_buyer.py", "harness.py", "market_intel.py"):
+    shutil.copy(HERE / f, TMP / f)
+MD = TMP / ".market"
+MD.mkdir()
+os.environ["MARKET_DIR"] = str(MD)
+sys.path.insert(0, str(TMP))
+os.chdir(TMP)
+
+import uvicorn                                  # noqa: E402
+from starlette.applications import Starlette     # noqa: E402
+from starlette.responses import JSONResponse     # noqa: E402
+from starlette.routing import Route              # noqa: E402
+
+import buyer_r3                                  # noqa: E402
+import forum_r3                                  # noqa: E402
+import harness                                   # noqa: E402
+import market_buyer                              # noqa: E402
+import market_intel                              # noqa: E402
+import review_r3                                 # noqa: E402
+
+market_intel.load_recent = lambda **kw: []       # no ledger: the test must not touch the market
+
+
+async def scripted(prompt, **kw):
+    """The harness: offers 50% of the ask, then 10 points more each round."""
+    ask = int(re.search(r"The shop now asks (\d+)", prompt).group(1))
+    n = int(re.search(r"offer number (\d+)", prompt).group(1))
+    return {"action": "offer", "price": int(ask * (0.4 + 0.1 * n))}
+harness.ask = scripted
+
+CATALOG = {
+    "F1": {"sku": "F1", "name": "포기김치 5kg", "category": "식품>김치", "list_price": 30000, "kind": "food", "shelf_hours": 168},
+    "F2": {"sku": "F2", "name": "열무김치 1kg", "category": "식품>김치", "list_price": 12000, "kind": "food", "shelf_hours": 168},
+    "F3": {"sku": "F3", "name": "겉절이 2kg", "category": "식품>김치", "list_price": 40000, "kind": "food", "shelf_hours": 20},
+}
+(MD / "catalog.json").write_text(json.dumps(CATALOG, ensure_ascii=False))
+
+
+def free_port():
+    s = socket.socket(); s.bind(("127.0.0.1", 0)); p = s.getsockname()[1]; s.close(); return p
+
+
+def fake_shop(name, floor_share):
+    """An A2A v1.0 shop that opens at list price, comes down 5% a round and sells at floor_share x list or more."""
+    port = free_port()
+    base = f"http://127.0.0.1:{port}"
+    tasks = {}
+
+    async def card(req):
+        return JSONResponse({"name": name, "supportedInterfaces": [{"protocolBinding": "JSONRPC", "url": base + "/", "protocolVersion": "1.0"}]})
+
+    def reply(t, state, text, artifact=None):
+        task = {"id": t["id"], "status": {"state": state, "message": {"parts": [{"text": text}]}}}
+        if artifact:
+            task["artifacts"] = [{"parts": [{"data": artifact}]}]
+        return JSONResponse({"jsonrpc": "2.0", "id": "1", "result": {"task": task}})
+
+    async def rpc(req):
+        b = await req.json()
+        if b["method"] == "CancelTask":
+            return JSONResponse({"jsonrpc": "2.0", "id": "1", "result": {"task": {"id": b["params"]["id"], "status": {"state": "TASK_STATE_CANCELED"}}}})
+        msg = b["params"]["message"]
+        text = msg["parts"][0]["text"]
+        if not msg.get("taskId"):
+            sku = re.search(r"\((\w+)\)", text).group(1)
+            t = tasks[str(uuid.uuid4())] = {"sku": sku, "ask": CATALOG[sku]["list_price"], "opening": text}
+            t["id"] = next(k for k, v in tasks.items() if v is t)
+            return reply(t, "TASK_STATE_INPUT_REQUIRED", f"{CATALOG[sku]['name']}: asking {t['ask']}.")
+        t = tasks[msg["taskId"]]
+        offer = int(text)
+        lp = CATALOG[t["sku"]]["list_price"]
+        if offer >= max(int(lp * floor_share), int(t["ask"] * 0.97)):
+            return reply(t, "TASK_STATE_COMPLETED", f"Deal at {offer}.",
+                         {"shop": name, "item": t["sku"], "price": offer, "task": t["id"], "sig_seller": "x"})
+        t["ask"] = max(int(lp * floor_share), int(t["ask"] * 0.95))
+        return reply(t, "TASK_STATE_INPUT_REQUIRED", f"Counteroffer: {t['ask']}.")
+
+    app = Starlette(routes=[Route("/.well-known/agent-card.json", card), Route("/", rpc, methods=["POST"])])
+    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="error"))
+    threading.Thread(target=server.run, daemon=True).start()
+    while not server.started:
+        time.sleep(0.05)
+    return base, tasks
+
+
+RESULTS = []
+
+
+def case(name, ok, detail=""):
+    RESULTS.append(ok)
+    print(f"{'PASS' if ok else 'FAIL'}  {name}{': ' + detail if detail else ''}", flush=True)
+
+
+def run_buyer(shops, order):
+    (MD / "shops.json").write_text(json.dumps(shops, ensure_ascii=False))
+    (MD / "order.json").write_text(json.dumps(order, ensure_ascii=False))
+    out, err = io.StringIO(), io.StringIO()
+    args = type("A", (), {"shops": str(MD / "shops.json"), "item": order["item"], "budget": order["budget"],
+                          "order": str(MD / "order.json")})()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        asyncio.run(market_buyer.main(args))
+    lines = [l for l in out.getvalue().splitlines() if l.strip()]
+    return json.loads(lines[-1]), err.getvalue()
+
+
+def main():
+    good, good_tasks = fake_shop("good-shop", 0.6)
+    liar, _ = fake_shop("liar-shop", 0.5)
+    order = {"order": "o-1", "item": "김치", "category": "식품>김치", "budget": 35000, "kind": "food",
+             "use_within_hours": 24, "acceptable": ["F1", "F2", "F3"], "expires": time.time() + 600}
+    shops = [{"name": "good-shop", "url": good, "reviews": [], "offers": [{"sku": "F1", "name": "포기김치 5kg", "qty": 2},
+                                                                        {"sku": "F2", "name": "열무김치 1kg", "qty": 1},
+                                                                        {"sku": "F3", "name": "겉절이 2kg", "qty": 1}]},
+             {"name": "empty-shop", "url": "http://127.0.0.1:9", "reviews": [], "offers": []}]
+
+    # 1. pick by expected surplus, haggle under the cap, accept policy for food
+    res, log1 = run_buyer(shops, order)
+    r = res.get("receipt") or {}
+    case("food: picks F1 (biggest surplus with enough shelf life), not F3 (20 h shelf life < 24 h needed)",
+         r.get("item") == "F1", f"receipt {r}")
+    case("price under 0.9 x list and within budget", isinstance(r.get("price"), int) and r["price"] <= 27000, f"paid {r.get('price')}")
+    case("accept: certificate and 24 x 1.1 h of shelf life", res.get("accept") == {"cert": True, "min_hours_left": 26.4}, str(res.get("accept")))
+    opening = next(iter(good_tasks.values()))["opening"]
+    case("opens with the product name and SKU, asks for shelf life", opening.startswith("I want to buy 포기김치 5kg (F1)") and "26.4 hours" in opening, opening)
+
+    # 2. a shop caught claiming false grades twice is left out even with the cheaper floor
+    for i in (1, 2):
+        market_buyer.remember({"time": time.strftime("%Y-%m-%d %H:%M:%S"), "kind": "settled", "round": 3, "shop": "liar-shop",
+                               "order": f"o-l{i}", "sku": "F1", "name": "포기김치 5kg", "price": 15000, "list_price": 30000,
+                               "grade": "C", "claim": "A", "claim_honest": False, "ledger": 100 + i, "settled_at": time.time()})
+    shops2 = [{"name": "liar-shop", "url": liar, "reviews": [], "offers": [{"sku": "F1", "name": "포기김치 5kg", "qty": 5}]},
+              shops[0]]
+    res, log2 = run_buyer(shops2, dict(order, order="o-2"))
+    case("leaves out the shop that claimed false grades", res.get("shop") == good and "liar-shop" in log2, res.get("shop"))
+
+    # 3. nobody stocks the order
+    res, _ = run_buyer([shops[1]], dict(order, order="o-3"))
+    case("no stock anywhere: empty result line", res == {"shop": "", "receipt": None, "stars": None, "review": None}, str(res))
+
+    # 4. review hook: a false claim is one star, settled facts go to memory
+    deal = {"order": dict(order, order="o-1"), "receipt": {"shop": "good-shop", "item": "F1", "price": 21000, "task": "t"},
+            "settled": {"shop": good, "unit": "u1", "sku": "F1", "name": "포기김치 5kg", "grade": "B", "claim": "A",
+                        "claim_honest": False, "expires_at": time.time() + 60 * 3600, "value": 30000, "ledger": 777}}
+    (MD / "deal.json").write_text(json.dumps(deal, ensure_ascii=False))
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        review_r3.main(str(MD / "deal.json"))
+    rv = json.loads(out.getvalue().splitlines()[-1])
+    mem = market_buyer.load_memory()
+    settled = [m for m in mem if m.get("kind") == "settled" and m.get("order") == "o-1"]
+    case("review: false grade claim is 1 star with the ledger ref", rv["stars"] == 1 and "#777" in rv["review"], rv["review"])
+    case("review: settled facts recorded for the shop", bool(settled) and settled[-1]["shop"] == "good-shop" and settled[-1]["list_price"] == 30000)
+
+    # 5. payment refusals and broken goods become memory evidence
+    with open(MD / "payments.jsonl", "a") as f:
+        f.write(json.dumps({"order": "o-2", "shop": good, "item": "F1", "price": 20000, "paid": False,
+                            "reason": "no certificate, and the policy asks for one"}) + "\n")
+    with open(MD / "broken.jsonl", "a") as f:
+        f.write(json.dumps({"name": "포기김치 5kg", "broke_at": time.time() + 5}) + "\n")
+    mem = market_buyer.load_memory()
+    buyer_r3.sync_kit_files(mem, market_buyer.remember)
+    mem = market_buyer.load_memory()
+    pay = [m for m in mem if m.get("kind") == "payment"]
+    broke = [m for m in mem if m.get("kind") == "broken"]
+    case("payments.jsonl refusal recorded once", len(pay) == 1 and pay[0]["shop"] == "good-shop" and not pay[0]["paid"], str(pay))
+    case("broken.jsonl matched to our purchase and shop", len(broke) == 1 and broke[0]["shop"] == "good-shop" and broke[0]["covered"] is False, str(broke))
+    buyer_r3.sync_kit_files(mem, market_buyer.remember)
+    case("sync is idempotent", len([m for m in market_buyer.load_memory() if m.get("kind") in ("payment", "broken")]) == 2)
+
+    # 6. forum: the buyer run in case 2 already posted the liar-shop facts; within 5 minutes nothing more is sent,
+    # and once 5 minutes have passed the next note covers only what is new (the o-1 deal, ledger #777)
+    first = [json.loads(l) for l in open(MD / "outbox.jsonl")]
+    case("forum: case 2's run queued one note with that shop's false claims", len(first) == 1 and "liar-shop" in first[0]["post"]
+         and first[0]["refs"] == [101, 102], first[0]["post"][:160])
+    case("forum: no second post within 5 minutes", forum_r3.maybe_post(market_buyer.load_memory()) is None)
+    forum_r3.EVERY = 0                                  # as if 5 minutes had passed
+    p = forum_r3.maybe_post(market_buyer.load_memory()) or {}
+    case("forum note: only new facts, with ledger refs", p.get("refs") == [777] and "claimed A shipped B (#777)" in p.get("post", "")
+         and "liar-shop" not in p.get("post", ""), p.get("post", "")[:200])
+
+    print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
+    shutil.rmtree(TMP, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    main()

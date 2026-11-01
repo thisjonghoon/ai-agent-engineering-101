@@ -19,10 +19,11 @@ EVERY = 300          # seconds between posts (the market allows one per 5 minute
 MAX_REFS = 10
 
 
-def note(memory, since):
-    """(text, refs) about the settled deals and breakages recorded after `since`, or (None, [])."""
-    new = [m for m in memory if m.get("round") == 3 and m.get("kind") in ("settled", "broken")
-           and m.get("time", "") > since]
+def note(memory):
+    """(text, refs) about the settled deals and breakages recorded after our last post (memory is append-only,
+    so "after" is the line order, not a clock), or (None, [])."""
+    last = max((i for i, m in enumerate(memory) if m.get("kind") == "forum"), default=-1)
+    new = [m for m in memory[last + 1:] if m.get("round") == 3 and m.get("kind") in ("settled", "broken")]
     settled = [m for m in new if m["kind"] == "settled"]
     if not settled and not any(m["kind"] == "broken" for m in new):
         return None, []
@@ -57,7 +58,7 @@ def maybe_post(memory):
     posts = [m for m in memory if m.get("kind") == "forum"]
     if posts and time.time() - posts[-1].get("t", 0) < EVERY:
         return None
-    text, refs = note(memory, posts[-1]["time"] if posts else "")
+    text, refs = note(memory)
     if not text:
         return None
     MD.mkdir(exist_ok=True)

@@ -1,0 +1,78 @@
+% One-page architecture of our Round 3 shop and buyer (week 08 midterm). Build: tectonic architecture.tex
+\documentclass[11pt]{article}
+\usepackage[a4paper,landscape,margin=12mm]{geometry}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc}
+\pagestyle{empty}
+\begin{document}
+\centering
+{\Large\bfseries Round 3 agents of \texttt{thisjonghoon}: models, context and tools}\\[2mm]
+{\small Blue: a model decides. Grey: code decides. Green: context we keep. Orange: tools. Dashed boxes are what kit v4 does for everyone.}\\[4mm]
+\begin{tikzpicture}[
+  font=\small, node distance=6mm and 8mm, >={Stealth[length=2.2mm]},
+  model/.style={draw=blue!60!black, fill=blue!8, rounded corners, align=center, minimum height=10mm, text width=34mm},
+  code/.style={draw=black!60, fill=black!5, rounded corners, align=center, minimum height=10mm, text width=34mm},
+  ctx/.style={draw=green!45!black, fill=green!8, align=center, minimum height=9mm, text width=34mm},
+  tool/.style={draw=orange!80!black, fill=orange!10, rounded corners, align=center, minimum height=9mm, text width=34mm},
+  kit/.style={draw=black!50, dashed, rounded corners, inner sep=3mm},
+  lab/.style={font=\scriptsize, align=center, fill=white, inner sep=1pt}]
+
+% --- market (top centre)
+\node[code, text width=70mm, fill=yellow!10] (market) {\textbf{market.ourolabs.ai}\\ orders with open AP2 mandates, \texttt{/api/supply}, \texttt{/api/settle}, hash-chained ledger, forum};
+
+% --- shop column (left)
+\node[ctx, below left=14mm and 36mm of market] (inv) {\texttt{inventory.json}\\ units, cost, grade, shelf life};
+\node[model, below=of inv] (meta) {\textbf{meta\_r3.py} (haiku, 15 min)\\ prices and stock policy from past versions};
+\node[ctx, below=of meta] (hist) {\texttt{strategies\_r3.jsonl}\\ every version and how it did};
+\node[ctx, right=10mm of meta, text width=28mm] (strat) {\texttt{strategy\_r3.json}};
+\node[code, below=of strat, text width=28mm] (restock) {\textbf{restock\_r3.py}\\ breadth, then depth where settles show};
+\node[code, above=of strat, text width=28mm] (seller) {\textbf{seller\_r3.py}\\ ask, floor, concession; honest claim, warranty};
+\node[tool, above=of seller, text width=28mm] (shopacp) {A2A card + ACP checkout (kit proxy)};
+
+% --- buyer column (right)
+\node[ctx, below right=14mm and 36mm of market] (mem) {\texttt{memory.jsonl}\\ raw evidence: deals, lies, breaks, refusals};
+\node[model, below=of mem] (buyer) {\textbf{buyer\_r3.py} (haiku per offer)\\ pick shop and SKU by expected surplus, haggle};
+\node[code, below=of buyer] (guards) {code guards: cap = min(budget, 0.9 list), bans, accept policy};
+\node[ctx, left=10mm of buyer, text width=28mm] (intel) {ledger settles\\ (claim honesty per shop)};
+\node[tool, below=of intel, text width=28mm] (tools) {\textbf{checkout tools from each shop's acp.json} (JSON Schema)};
+\node[code, right=10mm of buyer, text width=30mm] (review) {\textbf{review\_r3.py}\\ \textbf{forum\_r3.py}\\ stars and facts from settled deals};
+
+% --- kit boxes
+\begin{scope}[on background layer]
+\node[kit, fit=(inv)(shopacp), label={[font=\scriptsize]above:kit v4: stock files, restock runs, checkout, settle}] {};
+\node[kit, fit=(tools)(mem)(review), label={[font=\scriptsize]above:kit v4 (our copy): orders, AP2 closed mandates, payments.jsonl}] {};
+\end{scope}
+
+% --- arrows
+\draw[->] (market.west) -| node[lab, pos=0.7]{stock, sales} (inv.north);
+\draw[->] (inv) -- (meta);
+\draw[->] (hist) -- (meta);
+\draw[->] (meta) -- (strat);
+\draw[->] (meta.south west) to[bend right=20] node[lab]{log} (hist.north west);
+\draw[->] (strat) -- (seller);
+\draw[->] (strat) -- (restock);
+\draw[->] (restock.south) |- node[lab, pos=0.75]{buy lines} ($(hist.south)+(0,-6mm)$) -| ([xshift=-12mm]inv.west) |- (inv.west);
+\draw[->] (seller) -- (shopacp);
+\draw[->] (shopacp.east) -| node[lab, pos=0.7]{settle} ([xshift=-22mm]market.south);
+
+\draw[->] (market) -| node[lab, pos=0.75]{order, open mandates} (mem);
+\draw[->] (mem) -- (buyer);
+\draw[->] (intel) -- (buyer);
+\draw[->] (buyer) -- (guards);
+\draw[->] (guards) -- (tools);
+\draw[->] (tools.north west) to[bend left=25] node[lab]{closed mandates} (shopacp.south east);
+\draw[<->, dashed] (buyer.north west) to[bend right=12] node[lab, pos=0.55]{A2A haggle (other shops)} (seller.east);
+\draw[->] (review.north) |- node[lab, pos=0.3]{reviews, posts} ([yshift=3mm]market.east);
+\draw[->] (review) |- (mem.east);
+\end{tikzpicture}
+
+\vspace{4mm}
+\begin{minipage}{0.95\linewidth}\small
+\textbf{Different from the kit's baseline.} The starter seller asks a model at every turn and never offers a warranty; ours
+prices by code from a strategy the meta-harness rewrites, claims grades honestly (one grade lower near a line), shows the
+market's certificate, warrants goods and clears food before it spoils. The starter has no restock and no buyer memory;
+ours buys breadth first and depth where the ledger shows settled deals, and the buyer keeps raw evidence (grade lies,
+breakages, refusals) and derives each shop's record when it reads it. The kit pays with fixed code; our copy makes the
+checkout tools from each shop's \texttt{acp.json} and falls back to the fixed code only before a session exists.
+\end{minipage}
+\end{document}

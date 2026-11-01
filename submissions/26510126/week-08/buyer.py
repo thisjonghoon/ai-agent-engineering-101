@@ -124,14 +124,15 @@ def as_int(value):
         return None
 
 
-async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFFERS):
+async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFFERS, opening=None):
     """Negotiate one item. `memory` is what market_buyer.py remembers about this shop (empty in week 6).
-    `max_raise` (market_buyer.py only): raise at most this share of the gap between our last offer and the ask."""
+    `max_raise` (market_buyer.py only): raise at most this share of the gap between our last offer and the ask.
+    `opening` (Round 3): the first message, e.g. "I want to buy <name> (<sku>)"; default "I want to buy a <item>"."""
     async with httpx.AsyncClient(timeout=200) as client:
         seller = Shop(client, base)
         card = await seller.read_card()
         result = {"shop_name": card.get("name"), "state": None, "receipt": None, "asks": [], "offers": []}
-        task = await seller.send(f"I want to buy a {item}")
+        task = await seller.send(opening or f"I want to buy a {item}")
         if task is None:
             return result
         task_id, history, last_offer = task["id"], [], None

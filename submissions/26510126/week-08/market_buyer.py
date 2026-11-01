@@ -51,6 +51,7 @@ from urllib.parse import urlparse
 import httpx
 
 import buyer
+import buyer_r3
 import harness
 import market_intel
 from harness import log
@@ -382,6 +383,10 @@ async def main(args):
     with open(args.shops) as f:
         shops = json.load(f)
     memory = load_memory()
+    if args.order:  # kit v4 passes the order file: Round 3 products, stock and surplus (buyer_r3.py)
+        order = buyer_r3.load(args.order, {})
+        if order.get("acceptable"):
+            return await buyer_r3.main(args, shops, memory, remember)
     g, going, records, recent, rnd = market_view(args.item)
     chosen, reason, known = await pick(shops, memory, args.item, args.budget, going, records, recent, rnd)
     log("CHOOSE", f"{chosen['name']} {chosen['url']}: {reason}")
@@ -441,5 +446,6 @@ if __name__ == "__main__":
     ap.add_argument("--shops", required=True)
     ap.add_argument("--item", required=True)
     ap.add_argument("--budget", type=int, required=True)
+    ap.add_argument("--order", help="kit v4: the order.json path; with acceptable SKUs the Round 3 path runs")
     asyncio.run(main(ap.parse_args()))
     sys.exit(0)

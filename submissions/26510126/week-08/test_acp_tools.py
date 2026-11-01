@@ -34,6 +34,8 @@ class FakeMarket:
         self.buyer_pub, self.budget, self.refuse, self.settles = buyer_pub, budget, refuse, 0
 
     def call(self, method, path, role="buyer", **kw):
+        if (method, path) == ("GET", "/api/inventory"):    # kit v4 picks a unit; before Round 3 there is no stock
+            return httpx.Response(200, json={"round": 2, "units": []})
         assert (method, path, role) == ("POST", "/api/settle", "shop")
         self.settles += 1
         b = kw["json"]

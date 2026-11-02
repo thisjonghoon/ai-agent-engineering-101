@@ -5,8 +5,10 @@
 
 Each cycle:
   1. Measure the version that just ran, from files the kit and the seller already write: .market/inventory.json
-     (balance, profit, stock at cost, units by kind and age) and the seller's OPEN/DEAL/WALK lines in
-     logs/market-kit.log (visits, deals, walk-aways, price as a share of list, margin over cost).
+     (balance, profit, stock at cost, units by kind and age), the seller's OPEN/DEAL/WALK lines and the kit's
+     "[acp] settled" lines in logs/market-kit.log (visits, receipts, settled sales and revenue, refused checkouts,
+     walk-aways, price as a share of list, margin over cost), and the market's last settled deals (price as a
+     share of list across all shops). A receipt that never settles earns nothing, so settled is what counts.
   2. Ask the harness for the next strategy_r3.json, showing it the bounds, the current numbers and the last 30
      versions with their outcomes (logs/strategies_r3.jsonl, nothing re-measured).
   3. Code guards the answer: every number is clamped to its bounds and to a step from the current value, the floor
@@ -36,6 +38,8 @@ BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min
           "max_list": (30_000, 400_000, 50_000), "min_shelf_hours": (24, 720, 48), "depth": (1, 6, 1),
           "endgame_hours": (12, 48, 12), "endgame_frac": (0.8, 1.2, 0.1), "final_hours": (2, 12, 2),
           "final_frac": (0.3, 1.0, 0.1)}
+SETTLED = re.compile(r"\[acp\] settled .* at (\d+), ledger")         # our shop's sale the market settled
+SETTLE_REFUSED = re.compile(r"\[acp\] (settle refused|checkout refused: (?:no |unit ))")  # shop side only
 SELLER_LINE = re.compile(r"(OPEN|DEAL|WALK) \S+ (\S+)(?: at (\d+) \(cost (\d+), list (\d+))?")
 
 PROMPT = """You set the strategy of an online shop in a market of AI buyers. Profit is the shop's balance minus its
@@ -52,7 +56,8 @@ round the floor drops to cost x endgame_frac, in the last final_hours to cost x 
 Restock keeps at most stock_value of stock at cost and never spends below reserve_cash; it skips goods listed above
 max_list and food that keeps less than min_shelf_hours, and holds up to `depth` units where things sell.
 
-Now: {now}
+Now ("deals" are signed receipts; only "settled" sales earn money, a receipt the buyer's kit refuses to pay earns
+nothing; market_price_list_* is where all shops' settled prices sit as a share of list price): {now}
 
 Last versions, oldest first (each with how it did while it ran):
 {history}
@@ -76,19 +81,28 @@ def current():
 
 def seller_lines(since):
     """OPEN/DEAL/WALK counts and deal prices from the kit log since `since` (the log's own HH:MM:SS stamps)."""
-    out = {"opens": 0, "deals": 0, "walks": 0, "price_list": [], "margin": []}
+    out = {"opens": 0, "deals": 0, "walks": 0, "settled": 0, "revenue": 0, "settle_refused": 0,
+           "price_list": [], "margin": []}
     try:
         lines = KIT_LOG.read_text(encoding="utf-8", errors="replace").splitlines()[-20000:]
     except OSError:
         lines = []
     day = time.strftime("%Y-%m-%d")
     for line in lines:
-        m = SELLER_LINE.search(line)
         t = re.match(r"(\d\d:\d\d:\d\d)", line)
-        if not m or not t:
+        if not t:
             continue
         ts = time.mktime(time.strptime(f"{day} {t.group(1)}", "%Y-%m-%d %H:%M:%S"))
         if ts < since or ts > time.time() + 60:
+            continue
+        s = SETTLED.search(line)
+        if s:
+            out["settled"] += 1
+            out["revenue"] += int(s.group(1))
+        if SETTLE_REFUSED.search(line):
+            out["settle_refused"] += 1
+        m = SELLER_LINE.search(line)
+        if not m:
             continue
         kind = m.group(1)
         out[{"OPEN": "opens", "DEAL": "deals", "WALK": "walks"}[kind]] += 1
@@ -100,6 +114,24 @@ def seller_lines(since):
         v = out[k]
         out[k] = round(sum(v) / len(v), 3) if v else None
     return out
+
+
+def market_prices():
+    """The market's last settled deals: price as a share of list (median, quartiles) and how many, so the
+    harness can see where other shops sell. One ledger page, no cache."""
+    try:
+        import httpx
+        cat = read_json(MD / "catalog.json", {})
+        page = httpx.get("https://market.ourolabs.ai/api/ledger", params={"after": -500}, timeout=8).json()
+        r = sorted(e["data"]["amount"] / cat[e["data"]["item"]]["list_price"] for e in page
+                   if e.get("kind") == "settle" and e["data"].get("item") in cat and e["data"].get("amount"))
+    except Exception:
+        return {}
+    if not r:
+        return {"market_settles": 0}
+    q = lambda f: round(r[min(len(r) - 1, int(f * len(r)))], 3)
+    return {"market_settles": len(r), "market_price_list_p25": q(0.25), "market_price_list_median": q(0.5),
+            "market_price_list_p75": q(0.75)}
 
 
 def snapshot(since):
@@ -114,6 +146,7 @@ def snapshot(since):
             "expired": sum(u["grade"] == "expired" for u in units),
             "minutes": round((now - since) / 60)}
     snap.update(seller_lines(since))
+    snap.update(market_prices())
     return snap
 
 

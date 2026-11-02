@@ -25,12 +25,14 @@ NOW = time.time()
 UNITS = [
     {"unit": "u-goods", "sku": "G1", "name": "Test Lamp", "category": "가구/침구>조명>스탠드", "list_price": 100000,
      "kind": "goods", "cost": 60000, "grade": "A", "supplied_at": NOW - 100, "expires_at": None, "cert": {}},
+    {"unit": "u-goods2", "sku": "G2", "name": "Test Chair", "category": "가구/침구>가구>의자", "list_price": 100000,
+     "kind": "goods", "cost": 60000, "grade": "B", "supplied_at": NOW - 50, "expires_at": None, "cert": {}},
     {"unit": "u-food", "sku": "F1", "name": "Test Kimchi", "category": "식품>김치/반찬/즉석요리>김치", "list_price": 30000,
      "kind": "food", "cost": 18000, "grade": "A", "supplied_at": NOW - 3600, "expires_at": NOW + 150 * 3600, "cert": {}},
     {"unit": "u-old", "sku": "F2", "name": "Old Kimchi", "category": "식품>김치/반찬/즉석요리>김치", "list_price": 30000,
      "kind": "food", "cost": 18000, "grade": "C", "supplied_at": NOW - 160 * 3600, "expires_at": NOW + 3 * 3600, "cert": {}},
 ]
-CATALOG = {"G1": {"shelf_hours": None}, "F1": {"shelf_hours": 168}, "F2": {"shelf_hours": 168}}
+CATALOG = {"G1": {"shelf_hours": None}, "G2": {"shelf_hours": None}, "F1": {"shelf_hours": 168}, "F2": {"shelf_hours": 168}}
 
 
 def free_port():
@@ -93,6 +95,9 @@ async def main():
         t = await haggle(base, "Old Kimchi (F2)", [9000, 11000, 11000])
         r = receipt(t)
         check("near-date food cleared under cost", r and 10800 <= r["price"] < 18000, r)
+        t = await haggle(base, "Test Chair (G2)", ["For G2 I offer 79,000", "OK, 79,000 for G2 then"])
+        r = receipt(t)
+        check("offer read past the SKU's digits", r and r["price"] == 79000, r)
         t = await haggle(base, "Test Lamp (G1)", [100000])
         check("a sold unit is not offered again within 60 s", receipt(t) is None, (t or {}).get("status", {}).get("state"))
     finally:

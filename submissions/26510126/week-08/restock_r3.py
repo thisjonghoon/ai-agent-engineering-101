@@ -26,7 +26,7 @@ import httpx
 HERE = Path(__file__).resolve().parent
 MARKET = "https://market.ourolabs.ai"
 DEFAULTS = {"reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 150_000, "min_shelf_hours": 96,
-            "depth": 3, "half_life_hours": 12, "stop_hours": 24, "round_end": 0}
+            "depth": 3, "half_life_hours": 12, "stop_hours": 36, "round_end": 1794927540}    # 2026-11-17 23:59 KST
 EST_COST = 0.6          # expected cost as a share of list price before the grade is drawn (A 55-75, B 40-60, C 25-45)
 
 

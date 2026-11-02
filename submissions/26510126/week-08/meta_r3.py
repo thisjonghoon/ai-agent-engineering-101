@@ -33,7 +33,9 @@ BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min
           "step": (0.2, 0.7, 0.1), "clear_hours": (2, 24, 4), "clear_frac": (0.3, 1.0, 0.1),
           "warranty_hours": (0, 6, 6), "max_turns": (3, 8, 1),
           "reserve_cash": (1_000_000, 3_000_000, 250_000), "stock_value": (500_000, 3_500_000, 500_000),
-          "max_list": (30_000, 400_000, 50_000), "min_shelf_hours": (24, 720, 48), "depth": (1, 6, 1)}
+          "max_list": (30_000, 400_000, 50_000), "min_shelf_hours": (24, 720, 48), "depth": (1, 6, 1),
+          "endgame_hours": (12, 48, 12), "endgame_frac": (0.8, 1.2, 0.1), "final_hours": (2, 12, 2),
+          "final_frac": (0.3, 1.0, 0.1)}
 SELLER_LINE = re.compile(r"(OPEN|DEAL|WALK) \S+ (\S+)(?: at (\d+) \(cost (\d+), list (\d+))?")
 
 PROMPT = """You set the strategy of an online shop in a market of AI buyers. Profit is the shop's balance minus its
@@ -45,7 +47,8 @@ after the sale (a warranty refunds the whole price from the shop). Buyers gain w
 The strategy (numbers only; bounds are [low, high], max change per cycle in parentheses):
 {bounds}
 ask = list x ask_frac. floor = max(cost x (1 + min_margin), list x floor_frac). Each counter moves `step` of the way
-to the buyer's offer. Food with under clear_hours left (or grade C) may go down to cost x clear_frac.
+to the buyer's offer. Food with under clear_hours left (or grade C) may go down to cost x clear_frac. In the last endgame_hours of the
+round the floor drops to cost x endgame_frac, in the last final_hours to cost x final_frac (stock left at the end is lost).
 Restock keeps at most stock_value of stock at cost and never spends below reserve_cash; it skips goods listed above
 max_list and food that keeps less than min_shelf_hours, and holds up to `depth` units where things sell.
 

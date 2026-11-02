@@ -113,8 +113,10 @@ def asking_price(task):
     """The seller's ask: the last number in its reply, as the trade test reads it."""
     if OPTS.data_part and data_ask(task) is not None:
         return data_ask(task)
-    nums = re.findall(r"\d+(?:\.\d+)?", reply_text(task))
-    return math.ceil(float(nums[-1])) if nums else None
+    # numbers on their own only (not a SKU's digits), with thousands commas: "52,000원" is 52000, not 000
+    nums = re.findall(r"(?<![A-Za-z0-9.,])\d{1,3}(?:,\d{3})+(?:\.\d+)?(?![\d])|(?<![A-Za-z0-9.,])\d+(?:\.\d+)?(?![A-Za-z0-9])",
+                      reply_text(task))
+    return math.ceil(float(nums[-1].replace(",", ""))) if nums else None
 
 
 def as_int(value):

@@ -17,6 +17,8 @@ Started from the course's starter_round3/seller.py (A2A side, unit lookup, recei
     is not published; the meta-harness may raise it if buyers refuse checkouts for want of one).
   - Units promised in an open negotiation or sold in the last 60 s are not offered again (inventory.json can be
     10 s old, and the kit refuses a checkout for a unit already gone).
+In the last `endgame_hours` of the round the floor drops to cost (endgame_frac), and in the last `final_hours`
+under it (final_frac): stock left at the end has cost money and earns nothing.
 Rounds 0-2 have no stock: the week-07 items are sold at the old reserves so the shop keeps working before Round 3.
 """
 import argparse
@@ -44,7 +46,10 @@ RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", HERE / ".market"))
 STRATEGY = HERE / "strategy_r3.json"
 DEFAULTS = {"ask_frac": 0.95, "floor_frac": 0.78, "min_margin": 0.10, "step": 0.4,
-            "clear_hours": 6, "clear_frac": 0.6, "warranty_hours": 0, "max_turns": 6}
+            "clear_hours": 6, "clear_frac": 0.6, "warranty_hours": 0, "max_turns": 6,
+            "endgame_hours": 24, "endgame_frac": 1.0, "final_hours": 6, "final_frac": 0.6}
+ROUND_END = 1794927540                                       # 2026-11-17 23:59 KST: stock left then is a loss
+OFFER = re.compile(r"(?<![A-Za-z0-9])\d[\d,]*(?![A-Za-z0-9])")   # a number on its own, not the digits of a SKU
 FOOD_CUTS = (0.80, 0.45)                                     # shelf life left: A at or above 80%, B at or above 45%
 RECENT_SOLD = 60
 
@@ -126,6 +131,11 @@ def prices(u, s):
     floor = max(cost * (1 + s["min_margin"]), lp * s["floor_frac"])
     if u.get("kind") == "food" and (grade == "C" or (hours is not None and hours < s["clear_hours"])):
         floor = cost * s["clear_frac"]
+    left = (ROUND_END - time.time()) / 3600                  # the end of the round: unsold stock earns nothing
+    if left < s["final_hours"]:
+        floor = min(floor, cost * s["final_frac"])
+    elif left < s["endgame_hours"]:
+        floor = min(floor, cost * s["endgame_frac"])
     ask = max(lp * s["ask_frac"], floor)
     return int(round(ask)), int(round(min(floor, ask)))
 
@@ -180,8 +190,8 @@ class Seller(AgentExecutor):
             return
 
         deal["turns"] += 1
-        m = re.search(r"\d[\d,]*", text)
-        offer = int(m.group().replace(",", "")) if m else None
+        nums = OFFER.findall(text)
+        offer = int(nums[-1].replace(",", "")) if nums else None     # the last number on its own is the offer
         if offer is not None:
             deal["offers"].append(offer)
         ask, floor, u = deal["ask"], deal["floor"], deal["unit"]

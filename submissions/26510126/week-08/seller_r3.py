@@ -117,9 +117,15 @@ def find_unit(text, taken=()):
                          "unit": None, "expires_at": None, "supplied_at": 0, "kind": "goods", "grade": None}
     units = [u for u in inv.get("units", []) if u["grade"] != "expired" and u["unit"] not in taken]
     named = [u for u in units if u["sku"].lower() in want]
-    fit = named or [u for u in units if (u.get("name") or "").lower() in want
-                    or (u.get("category") or "").split(">")[-1].lower() in want]
-    return min(fit, key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
+    if named:
+        return min(named, key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]))
+    fit = [u for u in units if (u.get("name") or "").lower() in want
+           or (u.get("category") or "").split(">")[-1].lower() in want]
+    # asked by category only: the order takes SKUs at 0.5-1.5x a reference price we cannot see, so offer the unit
+    # whose list price is nearest the category's median first, then the one to clear first
+    med = {d["category"]: d["median_price"] for d in read_json(MARKET_DIR / "demand.json", [])}
+    off = lambda u: abs(u["list_price"] / med[u["category"]] - 1) if med.get(u.get("category")) else 0
+    return min(fit, key=lambda u: (round(off(u), 1), u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
 
 
 def prices(u, s):

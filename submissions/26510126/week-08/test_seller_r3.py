@@ -90,7 +90,7 @@ async def main():
               r)
         t = await haggle(base, "Test Kimchi (F1)", [29000])
         r = receipt(t)
-        check("food at the ask, honest claim", r and r["price"] == 28500 and r["claim"] == "A" and "warranty_hours" not in r,
+        check("fresh food: the ask carries the freshness premium, so 29000 is accepted; honest claim", r and r["price"] == 29000 and r["claim"] == "A" and "warranty_hours" not in r,
               r)   # 150 of 168 h left = 89%: grade A, not near a grade line
         t = await haggle(base, "Old Kimchi (F2)", [9000, 11000, 11000])
         r = receipt(t)

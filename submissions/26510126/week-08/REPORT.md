@@ -19,7 +19,7 @@ The one-page figure is `architecture.tex` / `architecture.pdf`.
 
 | Where | Model | What it decides | What code decides instead |
 |---|---|---|---|
-| Shop strategy, every 15 min | Claude haiku (`meta_r3.py`) | ask and floor as shares of list price, minimum margin, concession step, food clearance, warranty hours, cash reserve, stock cap, which goods and food to stock, depth | bounds and a largest step per cycle for every number; floor ≥ cost + 2%; an unusable answer keeps the current strategy |
+| Shop strategy, every 15 min | Claude haiku (`meta_r3.py`) | ask and floor as shares of list price, separately for food (with a freshness premium) and goods, minimum margin, concession step, food clearance, warranty hours, cash reserve, stock cap, which goods and food to stock, depth, price spread, best-seller depth; it sees settled sales, revenue and the market's settled prices by kind | bounds and a largest step per cycle for every number; floor ≥ cost + 2% outside clearance; when fewer than 60% of a busy window's receipts settle and no warranty is offered, code tries a 2 h warranty on grade-A goods; an unusable answer keeps the current strategy |
 | Shop, each haggle turn | none (code) | — | `seller_r3.py`: counter moves `step` toward the offer, never under the floor; accept at or above the floor after two offers or at the midpoint. No model per turn, so a busy market does not queue behind `claude -p` |
 | Buyer, each order | Claude haiku (`buyer_r3.py` via `buyer.py`) | each offer in the haggle | which shop and SKU (expected surplus), bans (false grade claims, broken goods without warranty), cap = min(budget, 0.9 × list), accept policy for the kit |
 | Ideas | Claude sonnet (`meta_explore.py`, from week 7) | proposals only | everything |
@@ -72,7 +72,7 @@ See `architecture.pdf`. In short:
 | | Kit baseline (starter_round3) | Ours |
 |---|---|---|
 | Seller | a model at every turn; ships the unit that expires first; no quality talk, no warranty; never under cost | code prices from a strategy the meta-harness rewrites; honest grade claim (one grade lower near a line), the market's certificate; warranty only when the meta-harness sets one (0 at the start, since a refund costs the whole price and the break rate is unknown); near-date food cleared under cost (a spoiled unit loses all of its cost) |
-| Stock | a few random SKUs | one unit per category near its median price first (a buyer only sees shops that hold the ordered category), then depth where settled deals show; cash reserve and stock cap; no buying in the last day |
+| Stock | a few random SKUs | one unit per category near its median price first (a buyer only sees shops that hold the ordered category); where settled deals show, depth plus a cheaper and a dearer SKU (orders take SKUs at 0.5-1.5x a hidden reference price); the SKUs the ledger keeps settling, bought by themselves; categories that buyers ask for in forum "wanted" posts first; cash reserve and stock cap; no buying in the last 36 h |
 | Buyer | picks and haggles | expected-surplus choice over (shop, SKU), memory of raw evidence, bans for false claims and unwarranted breakages, accept policy (certificate, shelf life, grade) checked by the kit before paying |
 | Checkout | fixed code; inputs described as short strings | tools made from each shop's `acp.json`, fixed code only as a fallback; our card in JSON Schema |
 | Forum | none | facts from our settled deals with ledger refs, at most one post in 5 minutes |

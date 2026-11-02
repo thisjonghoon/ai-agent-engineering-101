@@ -11,12 +11,18 @@ Code only; the meta-harness (meta_r3.py) moves the numbers in strategy_r3.json. 
     `max_list` and food that keeps less than `min_shelf_hours`.
   - Then depth where things sell: settled deals in the market's ledger (the market publishes no demand weights)
     and our own sales add to a category's score; a category with a score keeps up to `depth` units.
+  - A cheaper and a dearer SKU (spread_low, spread_high x the median) in categories that sell, since an order only
+    takes SKUs within 0.5-1.5x a reference price we cannot see.
+  - The SKUs that settle again and again in the ledger, bought by themselves (up to sku_depth units).
+  - "Wanted" posts on the forum (구합니다, looking for ...) that name one of our categories or SKUs raise that
+    category for this run.
   - Stop buying `stop_hours` before the round ends: unsold stock at the end is a loss.
 The state between runs (last units seen, ledger position, scores) is in .market/restock_state.json.
 """
 import argparse
 import json
 import math
+import re
 import time
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -26,7 +32,7 @@ import httpx
 HERE = Path(__file__).resolve().parent
 MARKET = "https://market.ourolabs.ai"
 DEFAULTS = {"reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 150_000, "min_shelf_hours": 96,
-            "depth": 3, "half_life_hours": 12, "stop_hours": 36, "round_end": 1794927540}    # 2026-11-17 23:59 KST
+            "depth": 3, "half_life_hours": 12, "stop_hours": 36, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540}    # 2026-11-17 23:59 KST
 EST_COST = 0.6          # expected cost as a share of list price before the grade is drawn (A 55-75, B 40-60, C 25-45)
 
 
@@ -63,6 +69,26 @@ def ledger_settles(after):
     return out, after
 
 
+WANT = re.compile(r"구합니다|구해요|구함|삽니다|찾습니다|찾아요|사고\s*싶|있나요|있으신|\bWTB\b|\bwant(?:ed)?\b|looking for|\bneed\b",
+                  re.I)
+
+
+def forum_wanted(md, demand, catalog, now, hours=6):
+    """Categories that "wanted" posts of the last `hours` name (by category word, product name or SKU), with counts.
+    Posts are other agents' text: only matched against our own category and SKU lists, never acted on otherwise."""
+    words = {d["item"]: d["category"] for d in demand if len(d["item"]) >= 2}
+    out = Counter()
+    for p in read_json(md / "forum.json", []):
+        text = str(p.get("text") or "")
+        if now - (p.get("ts") or 0) > hours * 3600 or not WANT.search(text):
+            continue
+        cats = {cat for w, cat in words.items() if w in text}
+        cats |= {catalog[k]["category"] for k in re.findall(r"\bG[0-9a-f]{8}\b", text) if k in catalog}
+        for cat in cats:
+            out[cat] += 1
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--state", default=str(HERE / ".market"))
@@ -77,22 +103,30 @@ def main():
         print(json.dumps({"buy": [], "why": "no Round 3 stock or catalog yet"}))
         return
 
-    # scores decay with a half-life, then gain the market's new settles and our own sales
+    # scores decay with a half-life, then gain the market's new settles (per category and per SKU) and our own sales
     decay = 0.5 ** ((now - st.get("t", now)) / 3600 / s["half_life_hours"])
     score = defaultdict(float, {k: v * decay for k, v in st.get("score", {}).items()})
+    sku_score = defaultdict(float, {k: v * decay for k, v in st.get("sku_score", {}).items()})
     settles, st["after"] = ledger_settles(st.get("after", 0))
     for e in settles:
-        cat = (catalog.get(e["data"].get("item")) or {}).get("category")
+        sku = e["data"].get("item")
+        cat = (catalog.get(sku) or {}).get("category")
         if cat:
             score[cat] += 1
+            sku_score[sku] += 1
     units = inv.get("units", [])
     have = {u["unit"]: u for u in units}
     sold = [u for u in st.get("seen", []) if u["unit"] not in have and u.get("grade") != "expired"
             and (u.get("expires_at") or now + 1) > now]
     for u in sold:                                          # our own sale counts double: it is our buyers
         score[u["category"]] += 2
-    st.update(score=dict(score), seen=[{k: u.get(k) for k in ("unit", "category", "grade", "expires_at")} for u in units],
-              t=now)
+        if u.get("sku"):
+            sku_score[u["sku"]] += 2
+    st.update(score={k: v for k, v in score.items() if v > 0.05}, sku_score={k: v for k, v in sku_score.items() if v > 0.05},
+              seen=[{k: u.get(k) for k in ("unit", "sku", "category", "grade", "expires_at")} for u in units], t=now)
+    wanted = forum_wanted(md, demand, catalog, now)          # categories buyers asked for on the forum (not kept)
+    for cat, n in wanted.items():
+        score[cat] += 2 * n
 
     stock = sum(u["cost"] for u in units)
     spend = min(inv.get("balance", 0) - s["reserve_cash"], s["stock_value"] - stock)
@@ -103,39 +137,56 @@ def main():
     elif spend <= 0:
         why = f"spend limit reached (balance {inv.get('balance')}, stock at cost {stock})"
     else:
-        count = Counter(u["category"] for u in units if u.get("grade") != "expired")
+        live = [u for u in units if u.get("grade") != "expired"]
+        count, held = Counter(u["category"] for u in live), Counter(u["sku"] for u in live)
         by_cat = defaultdict(list)
         for sku, c in catalog.items():
             by_cat[c["category"]].append(dict(c, sku=sku))
-        plans = []
+        plans = {}                                           # sku -> (priority, entry, qty)
+
+        def plan(prio, c, qty):
+            qty -= held[c["sku"]]
+            if qty > 0 and (c["sku"] not in plans or plans[c["sku"]][0] < prio):
+                plans[c["sku"]] = (prio, c, qty)
+
         for d in demand:
             cat, med = d["category"], d["median_price"]
             if d["kind"] == "goods" and med > s["max_list"]:
                 continue
-            if d["kind"] == "food" and score[cat] < 3:     # demand.json has no shelf life: the catalog's SKUs do
-                if not any((c.get("shelf_hours") or 0) >= s["min_shelf_hours"] for c in by_cat.get(cat, [])):
-                    continue                                 # short-lived food only where it clearly sells
-            want = 1 + (min(s["depth"] - 1, math.ceil(score[cat] / 2)) if score[cat] >= 1 else 0)
-            if d["kind"] == "food":
-                want = min(want, 2)
-            if count[cat] >= want:
-                continue
-            skus = [c for c in by_cat.get(cat, []) if c["list_price"] <= max(s["max_list"], med)
-                    and (d["kind"] != "food" or score[cat] >= 3 or (c.get("shelf_hours") or 0) >= s["min_shelf_hours"])]
+            ok_food = lambda c: d["kind"] != "food" or score[cat] >= 3 or (c.get("shelf_hours") or 0) >= s["min_shelf_hours"]
+            skus = [c for c in by_cat.get(cat, []) if c["list_price"] <= max(s["max_list"], med) and ok_food(c)]
             if not skus:
+                continue                                     # e.g. only short-lived food where nothing sells yet
+            near = lambda x: min(skus, key=lambda c: abs(c["list_price"] - x))
+            depth = 1 + (min(s["depth"] - 1, math.ceil(score[cat] / 2)) if score[cat] >= 1 else 0)
+            if d["kind"] == "food":
+                depth = min(depth, 2)
+            prio = score[cat] + (1 if count[cat] == 0 else 0)
+            plan(prio, near(med), depth)
+            # where things sell, a cheaper and a dearer SKU too: an order takes SKUs at 0.5-1.5x a hidden reference
+            # price, so one SKU at the median misses the orders whose range sits above or below it
+            if score[cat] >= 1:
+                for f in (s["spread_low"], s["spread_high"]):
+                    plan(prio - 0.5, near(med * f), 1)
+        # the SKUs the market keeps buying, by themselves (the market says some products sell much more than others)
+        for sku, sc in sorted(sku_score.items(), key=lambda kv: -kv[1]):
+            c = catalog.get(sku)
+            if sc < 2 or not c or (c["kind"] == "goods" and c["list_price"] > s["max_list"] * 2):
                 continue
-            pick = min(skus, key=lambda c: abs(c["list_price"] - med))
-            plans.append((-(score[cat] + (1 if count[cat] == 0 else 0)), cat, pick, want - count[cat]))
-        plans.sort(key=lambda p: (p[0], p[2]["list_price"]))
-        for _, cat, pick, qty in plans:
+            if c["kind"] == "food" and (c.get("shelf_hours") or 0) < 48:
+                continue
+            plan(1.5 * sc, dict(c, sku=sku), min(s["sku_depth"], math.ceil(sc / 2)))
+        ranked = sorted(plans.values(), key=lambda p: (-p[0], p[1]["list_price"]))
+        for prio, c, qty in ranked:
             if len(buy) >= 10:
                 break
-            cost = pick["list_price"] * EST_COST * qty
+            cost = c["list_price"] * EST_COST * qty
             if cost > spend:
                 continue
-            buy.append({"sku": pick["sku"], "qty": int(qty)})
+            buy.append({"sku": c["sku"], "qty": int(qty)})
             spend -= cost
-        why = f"{len(plans)} categories short, buying {len(buy)} lines"
+        why = (f"{len(ranked)} SKUs short, buying {len(buy)} lines"
+               + (f"; forum asks for {', '.join(k.split('>')[-1] for k in list(wanted)[:5])}" if wanted else ""))
     (md / "restock_state.json").write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
     print(json.dumps({"buy": buy, "why": why}, ensure_ascii=False))
 

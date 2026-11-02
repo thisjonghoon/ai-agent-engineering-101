@@ -5,8 +5,8 @@
 Started from the course's starter_round3/seller.py (A2A side, unit lookup, receipt signing). What is ours:
   - Prices are set by code from strategy_r3.json, which the meta-harness (meta_r3.py, Claude haiku) rewrites; no
     model call per turn, so a busy market does not queue behind `claude -p`.
-      ask   = list price x ask_frac
-      floor = max(cost x (1 + min_margin), list price x floor_frac), never above the ask
+      ask   = list price x ask_frac (food: ask_frac_food, up to fresh_premium more for a full shelf life)
+      floor = max(cost x (1 + min_margin), list price x floor_frac (food: floor_frac_food)), never above the ask
     Food close to its date (less than clear_hours left, or grade C) is cleared down to cost x clear_frac: a unit
     thrown away loses its whole cost, a cheap sale loses less.
   - Concession: the counter moves `step` of the way from the last ask to the buyer's offer, never below the floor; an
@@ -47,7 +47,8 @@ MARKET_DIR = Path(os.environ.get("MARKET_DIR", HERE / ".market"))
 STRATEGY = HERE / "strategy_r3.json"
 DEFAULTS = {"ask_frac": 0.95, "floor_frac": 0.78, "min_margin": 0.10, "step": 0.4,
             "clear_hours": 6, "clear_frac": 0.6, "warranty_hours": 0, "max_turns": 6,
-            "endgame_hours": 24, "endgame_frac": 1.0, "final_hours": 6, "final_frac": 0.6}
+            "endgame_hours": 24, "endgame_frac": 1.0, "final_hours": 6, "final_frac": 0.6,
+            "ask_frac_food": 0.95, "floor_frac_food": 0.78, "fresh_premium": 0.10}
 ROUND_END = 1794927540                                       # 2026-11-17 23:59 KST: stock left then is a loss
 OFFER = re.compile(r"(?<![A-Za-z0-9])\d[\d,]*(?![A-Za-z0-9])")   # a number on its own, not the digits of a SKU
 FOOD_CUTS = (0.80, 0.45)                                     # shelf life left: A at or above 80%, B at or above 45%
@@ -137,7 +138,15 @@ def prices(u, s):
     if u.get("unit") is None:                                  # before Round 3: the old reserve, ask a little above
         return int(lp), int(cost)
     grade, hours, _ = grade_now(u)
-    floor = max(cost * (1 + s["min_margin"]), lp * s["floor_frac"])
+    food = u.get("kind") == "food"
+    ask_frac = s["ask_frac_food"] if food else s["ask_frac"]
+    floor_frac = s["floor_frac_food"] if food else s["floor_frac"]
+    if food and hours is not None and shelf_hours(u["sku"]):
+        # fresher food is worth more to a buyer who must eat it within some hours: up to fresh_premium more for a
+        # full shelf life, as much less near the date (before the clearance rule below takes over)
+        left = min(1.0, hours / shelf_hours(u["sku"]))
+        ask_frac *= 1 + s["fresh_premium"] * (2 * left - 1)
+    floor = max(cost * (1 + s["min_margin"]), lp * min(floor_frac, ask_frac))
     # clear food by the hours it has left, not by grade: a grade-C unit can still have days (review, 11/2)
     if u.get("kind") == "food" and hours is not None and (hours < s["clear_hours"] or (grade == "C" and hours < 24)):
         floor = cost * s["clear_frac"]
@@ -146,7 +155,7 @@ def prices(u, s):
         floor = min(floor, cost * s["final_frac"])
     elif left < s["endgame_hours"]:
         floor = min(floor, cost * s["endgame_frac"])
-    ask = max(lp * s["ask_frac"], floor)
+    ask = max(lp * min(ask_frac, 1.0), floor)
     return int(round(ask)), int(round(min(floor, ask)))
 
 

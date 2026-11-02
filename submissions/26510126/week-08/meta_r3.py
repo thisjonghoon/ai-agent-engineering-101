@@ -38,7 +38,9 @@ BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min
           "reserve_cash": (1_000_000, 3_000_000, 250_000), "stock_value": (500_000, 3_500_000, 500_000),
           "max_list": (30_000, 400_000, 50_000), "min_shelf_hours": (24, 720, 48), "depth": (1, 6, 1),
           "endgame_hours": (12, 24, 6), "endgame_frac": (1.0, 1.2, 0.1), "final_hours": (2, 12, 2),
-          "final_frac": (0.3, 1.0, 0.1)}
+          "final_frac": (0.3, 1.0, 0.1), "ask_frac_food": (0.70, 1.00, 0.05), "floor_frac_food": (0.45, 0.95, 0.05),
+          "fresh_premium": (0.0, 0.2, 0.05), "spread_low": (0.5, 0.9, 0.1), "spread_high": (1.1, 1.5, 0.1),
+          "sku_depth": (1, 6, 1)}
 SETTLED = re.compile(r"\[acp\] settled .* at (\d+), ledger")         # our shop's sale the market settled
 SETTLE_REFUSED = re.compile(r"\[acp\] (settle refused|checkout refused: (?:no |unit ))")  # shop side only
 SELLER_LINE = re.compile(r"(OPEN|DEAL|WALK) \S+ (\S+)(?: at (\d+) \(cost (\d+), list (\d+))?")
@@ -51,11 +53,14 @@ after the sale (a warranty refunds the whole price from the shop). Buyers gain w
 
 The strategy (numbers only; bounds are [low, high], max change per cycle in parentheses):
 {bounds}
-ask = list x ask_frac. floor = max(cost x (1 + min_margin), list x floor_frac). Each counter moves `step` of the way
+ask = list x ask_frac (food: ask_frac_food, scaled up to +/- fresh_premium by shelf life left).
+floor = max(cost x (1 + min_margin), list x floor_frac (food: floor_frac_food)). Each counter moves `step` of the way
 to the buyer's offer. Food with under clear_hours left (or grade C) may go down to cost x clear_frac. In the last endgame_hours of the
 round the floor drops to cost x endgame_frac, in the last final_hours to cost x final_frac (stock left at the end is lost).
 Restock keeps at most stock_value of stock at cost and never spends below reserve_cash; it skips goods listed above
-max_list and food that keeps less than min_shelf_hours, and holds up to `depth` units where things sell.
+max_list and food that keeps less than min_shelf_hours, and holds up to `depth` units where things sell, plus a
+cheaper and a dearer SKU (spread_low/spread_high x the category median) there, and up to sku_depth units of SKUs the
+market keeps settling. Categories that buyers ask for on the forum come first.
 
 Now ("deals" are signed receipts; only "settled" sales earn money, a receipt the buyer's kit refuses to pay earns
 nothing; market_price_list_* is where all shops' settled prices sit as a share of list price): {now}
@@ -135,15 +140,17 @@ def market_prices():
         import httpx
         cat = read_json(MD / "catalog.json", {})
         page = httpx.get("https://market.ourolabs.ai/api/ledger", params={"after": -500}, timeout=8).json()
-        r = sorted(e["data"]["amount"] / cat[e["data"]["item"]]["list_price"] for e in page
-                   if e.get("kind") == "settle" and e["data"].get("item") in cat and e["data"].get("amount"))
+        rows = [(cat[e["data"]["item"]]["kind"], e["data"]["amount"] / cat[e["data"]["item"]]["list_price"]) for e in page
+                if e.get("kind") == "settle" and e["data"].get("item") in cat and e["data"].get("amount")]
     except Exception:
         return {}
-    if not r:
-        return {"market_settles": 0}
-    q = lambda f: round(r[min(len(r) - 1, int(f * len(r)))], 3)
-    return {"market_settles": len(r), "market_price_list_p25": q(0.25), "market_price_list_median": q(0.5),
-            "market_price_list_p75": q(0.75)}
+    out = {"market_settles": len(rows)}
+    for kind in ("food", "goods"):                       # food and goods sell at different shares of list price
+        r = sorted(x for k, x in rows if k == kind)
+        if r:
+            q = lambda f: round(r[min(len(r) - 1, int(f * len(r)))], 3)
+            out[f"market_{kind}_price_list"] = {"n": len(r), "p25": q(0.25), "median": q(0.5), "p75": q(0.75)}
+    return out
 
 
 def snapshot(since):
@@ -192,12 +199,18 @@ async def cycle():
     ans = await harness.ask(PROMPT.format(bounds=bounds, now=json.dumps(now, ensure_ascii=False), history=shown or "(none)"))
     new = (ans or {}).get("strategy") if isinstance((ans or {}).get("strategy"), dict) else None
     s = guard(new or {}, cur)
+    # receipts that never settle: the buyer's kit refused to pay (its accept policy: certificate, shelf life, grade,
+    # warranty). We cannot see why from the shop, so when most of a busy window does not settle and we offer no
+    # warranty, code tries a short one on grade-A goods; the harness sees the result next cycle and may undo it
+    probe = None
+    if (now.get("deals") or 0) >= 5 and (now.get("settled") or 0) < 0.6 * now["deals"] and s["warranty_hours"] == 0:
+        s["warranty_hours"], probe = 2, f"{now['settled']} of {now['deals']} receipts settled: trying a 2 h warranty"
     changed = {k: (cur[k], s[k]) for k in s if s[k] != cur[k]}
     STRATEGY.write_text(json.dumps(s, indent=1), encoding="utf-8")
     HISTORY.parent.mkdir(exist_ok=True)
     with HISTORY.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"time": time.time(), "strategy": s, "before": now, "reason": (ans or {}).get("reason"),
-                            "harness_ok": new is not None}, ensure_ascii=False) + "\n")
+                            "harness_ok": new is not None, "probe": probe}, ensure_ascii=False) + "\n")
     harness.log("META", f"{'kept' if not changed else 'changed ' + json.dumps(changed)}: {(ans or {}).get('reason')}")
 
 

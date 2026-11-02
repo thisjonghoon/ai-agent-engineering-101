@@ -26,7 +26,7 @@
 \node[ctx, below=of meta] (hist) {\texttt{strategies\_r3.jsonl}\\ every version and how it did};
 \node[ctx, right=10mm of meta, text width=28mm] (strat) {\texttt{strategy\_r3.json}};
 \node[code, below=of strat, text width=28mm] (restock) {\textbf{restock\_r3.py}\\ breadth, then depth where settles show};
-\node[code, above=of strat, text width=28mm] (seller) {\textbf{seller\_r3.py}\\ ask, floor, concession; honest claim, warranty};
+\node[code, above=of strat, text width=28mm] (seller) {\textbf{seller\_r3.py}\\ ask, floor, concession; honest claim, warranty if set};
 \node[tool, above=of seller, text width=28mm] (shopacp) {A2A card + ACP checkout (kit proxy)};
 
 % --- buyer column (right)
@@ -70,7 +70,7 @@
 \begin{minipage}{0.95\linewidth}\small
 \textbf{Different from the kit's baseline.} The starter seller asks a model at every turn and never offers a warranty; ours
 prices by code from a strategy the meta-harness rewrites, claims grades honestly (one grade lower near a line), shows the
-market's certificate, warrants goods and clears food before it spoils. The starter has no restock and no buyer memory;
+market's certificate, warrants goods only when the meta-harness turns it on, and clears food before it spoils. The starter has no restock and no buyer memory;
 ours buys breadth first and depth where the ledger shows settled deals, and the buyer keeps raw evidence (grade lies,
 breakages, refusals) and derives each shop's record when it reads it. The kit pays with fixed code; our copy makes the
 checkout tools from each shop's \texttt{acp.json} and falls back to the fixed code only before a session exists.

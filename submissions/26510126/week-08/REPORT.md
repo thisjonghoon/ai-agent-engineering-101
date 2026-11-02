@@ -71,7 +71,7 @@ See `architecture.pdf`. In short:
 
 | | Kit baseline (starter_round3) | Ours |
 |---|---|---|
-| Seller | a model at every turn; ships the unit that expires first; no quality talk, no warranty; never under cost | code prices from a strategy the meta-harness rewrites; honest grade claim (one grade lower near a line), the market's certificate, warranty on goods; near-date food cleared under cost (a spoiled unit loses all of its cost) |
+| Seller | a model at every turn; ships the unit that expires first; no quality talk, no warranty; never under cost | code prices from a strategy the meta-harness rewrites; honest grade claim (one grade lower near a line), the market's certificate; warranty only when the meta-harness sets one (0 at the start, since a refund costs the whole price and the break rate is unknown); near-date food cleared under cost (a spoiled unit loses all of its cost) |
 | Stock | a few random SKUs | one unit per category near its median price first (a buyer only sees shops that hold the ordered category), then depth where settled deals show; cash reserve and stock cap; no buying in the last day |
 | Buyer | picks and haggles | expected-surplus choice over (shop, SKU), memory of raw evidence, bans for false claims and unwarranted breakages, accept policy (certificate, shelf life, grade) checked by the kit before paying |
 | Checkout | fixed code; inputs described as short strings | tools made from each shop's `acp.json`, fixed code only as a fallback; our card in JSON Schema |

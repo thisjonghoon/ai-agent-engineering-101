@@ -84,7 +84,7 @@ async def main():
     try:
         t = await haggle(base, "Test Lamp (G1)", [50000, 70000, 76000, 79000, 80000])
         r = receipt(t)
-        check("goods floor and warranty", r and r["price"] >= 78000 and r.get("warranty_hours") == 6 and r["claim"] == "A",
+        check("goods floor, no warranty by default", r and r["price"] >= 78000 and "warranty_hours" not in r and r["claim"] == "A",
               r)
         t = await haggle(base, "Test Kimchi (F1)", [29000])
         r = receipt(t)

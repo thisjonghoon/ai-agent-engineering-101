@@ -13,7 +13,8 @@ Started from the course's starter_round3/seller.py (A2A side, unit lookup, recei
     offer at or above the floor is accepted once the buyer has made two offers or meets the midpoint.
   - Honest terms in the receipt: the grade claim is the unit's grade now, one grade lower when food is within 3% of a
     grade line (a claim is judged at checkout or at settle); the market's certificate is always shown; goods carry
-    warranty_hours from the strategy.
+    warranty_hours from the strategy (0 at the start: a refund costs the whole price and the break rate
+    is not published; the meta-harness may raise it if buyers refuse checkouts for want of one).
   - Units promised in an open negotiation or sold in the last 60 s are not offered again (inventory.json can be
     10 s old, and the kit refuses a checkout for a unit already gone).
 Rounds 0-2 have no stock: the week-07 items are sold at the old reserves so the shop keeps working before Round 3.
@@ -43,7 +44,7 @@ RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", HERE / ".market"))
 STRATEGY = HERE / "strategy_r3.json"
 DEFAULTS = {"ask_frac": 0.95, "floor_frac": 0.78, "min_margin": 0.10, "step": 0.4,
-            "clear_hours": 6, "clear_frac": 0.6, "warranty_hours": 6, "max_turns": 6}
+            "clear_hours": 6, "clear_frac": 0.6, "warranty_hours": 0, "max_turns": 6}
 FOOD_CUTS = (0.80, 0.45)                                     # shelf life left: A at or above 80%, B at or above 45%
 RECENT_SOLD = 60
 

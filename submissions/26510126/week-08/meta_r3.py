@@ -11,8 +11,9 @@ Each cycle:
      share of list across all shops). A receipt that never settles earns nothing, so settled is what counts.
   2. Ask the harness for the next strategy_r3.json, showing it the bounds, the current numbers and the last 30
      versions with their outcomes (logs/strategies_r3.jsonl, nothing re-measured).
-  3. Code guards the answer: every number is clamped to its bounds and to a step from the current value, the floor
-     stays at or above cost plus 2%, and an unusable answer keeps the current strategy.
+  3. Code guards the answer: every number is clamped to its bounds and to a step from the current value (so
+     min_margin keeps the floor at cost plus 2% or more, except food near its date and the round's last hours, where
+     the seller's clearance rules apply), and an unusable answer keeps the current strategy.
 seller_r3.py and restock_r3.py read strategy_r3.json on every request and run, so a change applies at once.
 """
 import argparse
@@ -33,10 +34,10 @@ EVERY = 15 * 60
 # key: (low, high, largest change per cycle)
 BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min_margin": (0.02, 0.40, 0.04),
           "step": (0.2, 0.7, 0.1), "clear_hours": (2, 24, 4), "clear_frac": (0.3, 1.0, 0.1),
-          "warranty_hours": (0, 6, 6), "max_turns": (3, 8, 1),
+          "warranty_hours": (0, 6, 2), "max_turns": (3, 8, 1),
           "reserve_cash": (1_000_000, 3_000_000, 250_000), "stock_value": (500_000, 3_500_000, 500_000),
           "max_list": (30_000, 400_000, 50_000), "min_shelf_hours": (24, 720, 48), "depth": (1, 6, 1),
-          "endgame_hours": (12, 48, 12), "endgame_frac": (0.8, 1.2, 0.1), "final_hours": (2, 12, 2),
+          "endgame_hours": (12, 24, 6), "endgame_frac": (1.0, 1.2, 0.1), "final_hours": (2, 12, 2),
           "final_frac": (0.3, 1.0, 0.1)}
 SETTLED = re.compile(r"\[acp\] settled .* at (\d+), ledger")         # our shop's sale the market settled
 SETTLE_REFUSED = re.compile(r"\[acp\] (settle refused|checkout refused: (?:no |unit ))")  # shop side only
@@ -87,13 +88,24 @@ def seller_lines(since):
         lines = KIT_LOG.read_text(encoding="utf-8", errors="replace").splitlines()[-20000:]
     except OSError:
         lines = []
-    day = time.strftime("%Y-%m-%d")
-    for line in lines:
+    # HH:MM:SS has no date: read backwards from now and step back a day each time the clock jumps forward
+    # (passing midnight), so yesterday's lines at the same clock time are not counted as today's (review, 11/2)
+    day0, back, prev, keep = time.time(), 0, None, []
+    for line in reversed(lines):
         t = re.match(r"(\d\d:\d\d:\d\d)", line)
         if not t:
             continue
-        ts = time.mktime(time.strptime(f"{day} {t.group(1)}", "%Y-%m-%d %H:%M:%S"))
-        if ts < since or ts > time.time() + 60:
+        hms = t.group(1)
+        if prev is not None and hms > prev and hms[:2] > "12" >= prev[:2]:
+            back += 1
+        prev = hms
+        ts = time.mktime(time.strptime(time.strftime("%Y-%m-%d", time.localtime(day0 - back * 86400)) + " " + hms,
+                                       "%Y-%m-%d %H:%M:%S"))
+        if ts < since:
+            break
+        keep.append((ts, line))
+    for ts, line in reversed(keep):
+        if ts > time.time() + 60:
             continue
         s = SETTLED.search(line)
         if s:

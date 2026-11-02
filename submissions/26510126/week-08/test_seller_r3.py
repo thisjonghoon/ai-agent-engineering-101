@@ -100,6 +100,16 @@ async def main():
         check("offer read past the SKU's digits", r and r["price"] == 79000, r)
         t = await haggle(base, "Test Lamp (G1)", [100000])
         check("a sold unit is not offered again within 60 s", receipt(t) is None, (t or {}).get("status", {}).get("state"))
+        import seller_r3                                # in-process: a buyer that left without cancelling
+        sel = seller_r3.Seller()
+        sel.open["gone"] = {"unit": {"unit": "u-x"}, "t": time.time() - seller_r3.OPEN_HOLD - 1}
+        sel.open["live"] = {"unit": {"unit": "u-y"}, "t": time.time()}
+        held = sel.taken()
+        check("an abandoned negotiation frees its unit", "u-x" not in held and "u-y" in held, sorted(held))
+        os.environ["MARKET_DIR"] = str(md)
+        seller_r3.MARKET_DIR = md
+        near = dict(UNITS[2], expires_at=time.time() + (0.80 * 168 + 0.5) * 3600)   # half an hour above the A line
+        check("no grade claim within an hour of a line", seller_r3.grade_now(near)[2] is None, seller_r3.grade_now(near))
     finally:
         p.terminate()
     print(f"\n{sum(ok)}/{len(ok)} passed")

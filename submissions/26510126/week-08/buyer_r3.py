@@ -39,6 +39,8 @@ FOOD_MARGIN = 1.1    # food must have use_within_hours x this left at checkout (
 GOOD_GRADES = ["A", "B"]  # C is refurbished: the most likely to break after the sale
 B_SHARE = 0.45       # grade B food has at least 45% of its shelf life left (agent.md)
 MAX_OFFERS = 8
+MAX_TRIES = 3        # shops tried per order when a negotiation ends without a deal
+RETRY_UNTIL = 150    # seconds into the order after which no new shop is tried (the kit stops the buyer at 300 s)
 
 
 def load(path, default):
@@ -87,11 +89,15 @@ def sync_kit_files(memory, remember):
         bought = [m for m in memory if m.get("kind") == "settled" and m.get("name") == b.get("name")
                   and (m.get("settled_at") or 0) <= (b.get("broke_at") or 0)]
         src = bought[-1] if bought else {}
+        # the same name bought from two shops within the 6 h goods can break in: we cannot tell which one broke
+        recent = {m.get("shop") for m in bought if (b.get("broke_at") or 0) - (m.get("settled_at") or 0) <= 6 * 3600}
+        ambiguous = len(recent) > 1
         hours = ((b.get("broke_at") or 0) - (src.get("settled_at") or 0)) / 3600 if src else None
         entry = {"time": time.strftime("%Y-%m-%d %H:%M:%S"), "kind": "broken", "round": 3, "name": b.get("name"),
                  "broke_at": b.get("broke_at"), "shop": src.get("shop"), "order": src.get("order"),
                  "price": src.get("price"), "warranty_hours": src.get("warranty_hours"),
-                 "covered": bool(src.get("warranty_hours")) and hours is not None and hours <= src["warranty_hours"]}
+                 "covered": bool(src.get("warranty_hours")) and hours is not None and hours <= src["warranty_hours"],
+                 "ambiguous": ambiguous}
         remember(entry)
         memory.append(entry)
 
@@ -161,14 +167,16 @@ def candidates(order, shops, cat, memory, claims):
             if banned:
                 skipped.append(s["name"])
                 continue
-            expect = min(order["budget"], lp * (share or PRICE_GUESS))
-            surplus = lp - expect
+            # what we expect to pay there, and whether our limit reaches it: an expensive SKU whose shop floor sits
+            # above our limit only looks like a big surplus (review, 11/2), so the chance of a deal weighs it
+            expect = lp * (share or PRICE_GUESS)
+            limit = min(order["budget"], int(lp * CAP))
+            p_deal = 1.0 if limit >= expect else (limit / expect) ** 4
+            surplus = (lp - min(expect, limit)) * p_deal
             short = order.get("kind") == "food" and need and info.get("shelf_hours") and \
                 info["shelf_hours"] * B_SHARE < need * FOOD_MARGIN
             if short:
                 surplus *= 0.3                          # even a grade-B unit may not last: a last resort
-            if min(order["budget"], int(lp * CAP)) < expect:
-                surplus *= 0.5                          # our cap sits below what we expect to pay
             out.append((surplus, s, off, lp, note + ("; short shelf life for this order" if short else "")))
     if skipped:
         log("GUARD", f"not offering shops our memory or the ledger caught lying about grades or selling goods that broke: {sorted(set(skipped))}")
@@ -188,7 +196,7 @@ def check_receipt(receipt, order, agreed, task_id):
     price = buyer.as_int(receipt.get("price"))
     if receipt.get("item") not in set(order.get("acceptable") or []) | {order.get("item")}:
         return f"receipt names {receipt.get('item')!r}, not a SKU of this order"
-    if price is None or price != agreed:
+    if price is None or (agreed is not None and price > agreed):   # a lower price than our offer is fine
         return f"agreed {agreed}, receipt says {receipt.get('price')}"
     if price > order["budget"]:
         return f"receipt price {price} above budget {order['budget']}"
@@ -223,7 +231,21 @@ async def main(args, shops, memory, remember):
         return
     for c in cands[:5]:
         log("CAND", f"{c[1]['name']} {c[2]['sku']} {c[2].get('name', '')[:30]} list {c[3]} surplus~{c[0]:.0f}: {c[4]}")
-    surplus, s, off, lp, note = cands[0]
+    # try the best candidate, then up to two more at other shops while the kit's 300 s per order allows
+    started, tried, out = time.time(), set(), None
+    for surplus, s, off, lp, note in cands:
+        if s["name"] in tried or len(tried) >= MAX_TRIES or (tried and time.time() - started > RETRY_UNTIL):
+            continue
+        tried.add(s["name"])
+        out = await attempt(order, cat, s, off, lp, note, remember)
+        if out["receipt"]:
+            break
+    forum_r3.maybe_post(memory)
+    print(json.dumps(out, ensure_ascii=False), flush=True)
+
+
+async def attempt(order, cat, s, off, lp, note, remember):
+    """One negotiation with one shop over one SKU; returns the result line for the kit."""
     name, sku = off.get("name") or (cat.get(off["sku"]) or {}).get("name", off["sku"]), off["sku"]
     limit = min(order["budget"], int(lp * CAP))
     log("CHOOSE", f"{s['name']} {s['url']}: {name} ({sku}), list {lp}, paying at most {limit}")
@@ -255,6 +277,5 @@ async def main(args, shops, memory, remember):
               "outcome": "bad_receipt" if problem else "deal" if deal else "no_deal", "end": result.get("state"),
               "price": agreed, "asks": result.get("asks", []), "offers": result.get("offers", []),
               "receipt": receipt, "problem": problem, "stars": stars})
-    forum_r3.maybe_post(memory)
-    print(json.dumps({"shop": s["url"], "receipt": receipt if deal and not problem else None, "stars": stars,
-                      "review": text, "accept": accept_policy(order)}, ensure_ascii=False), flush=True)
+    return {"shop": s["url"], "receipt": receipt if deal and not problem else None, "stars": stars,
+            "review": text, "accept": accept_policy(order)}

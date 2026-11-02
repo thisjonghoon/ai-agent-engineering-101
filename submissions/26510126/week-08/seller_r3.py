@@ -52,6 +52,7 @@ ROUND_END = 1794927540                                       # 2026-11-17 23:59 
 OFFER = re.compile(r"(?<![A-Za-z0-9])\d[\d,]*(?![A-Za-z0-9])")   # a number on its own, not the digits of a SKU
 FOOD_CUTS = (0.80, 0.45)                                     # shelf life left: A at or above 80%, B at or above 45%
 RECENT_SOLD = 60
+OPEN_HOLD = 120     # seconds a negotiation keeps its unit before another buyer may be offered it
 
 
 def log(msg):
@@ -101,9 +102,11 @@ def grade_now(u):
         return u.get("grade"), hours, u.get("grade")
     left = hours / shelf
     grade = "A" if left >= FOOD_CUTS[0] else "B" if left >= FOOD_CUTS[1] else "C"
-    near = any(0 <= left - c < 0.03 for c in FOOD_CUTS)      # about to cross a line: claim the grade below
-    claim = {"A": "B", "B": "C"}.get(grade, grade) if near else grade
-    return grade, hours, claim
+    # a claim is true if it matches the grade at checkout or at settle, seconds apart; within an hour of a line
+    # the grade might change in between, so say nothing and let the market's certificate speak (review, 11/2:
+    # claiming the grade below would be false while the unit is still above the line)
+    near = any(0 <= (left - c) * shelf < 1 for c in FOOD_CUTS)
+    return grade, hours, None if near else grade
 
 
 def find_unit(text, taken=()):
@@ -135,7 +138,8 @@ def prices(u, s):
         return int(lp), int(cost)
     grade, hours, _ = grade_now(u)
     floor = max(cost * (1 + s["min_margin"]), lp * s["floor_frac"])
-    if u.get("kind") == "food" and (grade == "C" or (hours is not None and hours < s["clear_hours"])):
+    # clear food by the hours it has left, not by grade: a grade-C unit can still have days (review, 11/2)
+    if u.get("kind") == "food" and hours is not None and (hours < s["clear_hours"] or (grade == "C" and hours < 24)):
         floor = cost * s["clear_frac"]
     left = (ROUND_END - time.time()) / 3600                  # the end of the round: unsold stock earns nothing
     if left < s["final_hours"]:
@@ -151,11 +155,13 @@ def terms(u, s):
     if u.get("unit") is None:
         return {}, ""
     grade, hours, claim = grade_now(u)
-    t = {"unit": u["unit"], "claim": claim}
-    words = [f"grade {claim}", "market certificate attached"]
+    t = {"unit": u["unit"]}
+    if claim:
+        t["claim"] = claim
+    words = ([f"grade {claim}"] if claim else []) + ["market certificate attached"]
     if u.get("kind") == "food" and hours is not None:
         words.append(f"{hours:.0f} h of shelf life left")
-    if u.get("kind") == "goods" and s["warranty_hours"] > 0:
+    if u.get("kind") == "goods" and s["warranty_hours"] > 0 and grade == "A":   # B and C break more, we guess
         t["warranty_hours"] = int(s["warranty_hours"])
         words.append(f"{int(s['warranty_hours'])} h warranty")
     return t, ", ".join(words)
@@ -169,6 +175,9 @@ class Seller(AgentExecutor):
     def taken(self):
         now = time.time()
         self.sold = {k: t for k, t in self.sold.items() if now - t < RECENT_SOLD}
+        # a buyer that leaves without cancelling must not hold the unit forever (review, 11/2)
+        for k in [k for k, d in self.open.items() if now - d.get("t", now) > OPEN_HOLD]:
+            self.open.pop(k, None)
         return {d["unit"]["unit"] for d in self.open.values() if d["unit"].get("unit")} | set(self.sold)
 
     async def execute(self, context, event_queue):
@@ -188,7 +197,8 @@ class Seller(AgentExecutor):
                 await up.reject(say("Sorry, we have none of that in stock."))
                 return
             ask, floor = prices(u, s)
-            deal = self.open[task.id] = {"unit": u, "ask": ask, "floor": floor, "offers": [], "turns": 0}
+            deal = self.open[task.id] = {"unit": u, "ask": ask, "floor": floor, "offers": [], "turns": 0,
+                                         "t": time.time()}
             t, words = terms(u, s)
             log(f"OPEN {task.id[:8]} {u['sku']} {u['name'][:30]} list {u['list_price']} cost {u['cost']} ask {ask} floor {floor}")
             await up.requires_input(say(f"{u['name']} ({u['sku']}){': ' + words if words else ''}. "
@@ -196,6 +206,7 @@ class Seller(AgentExecutor):
             return
 
         deal["turns"] += 1
+        deal["t"] = time.time()                           # still talking: keep the unit
         nums = OFFER.findall(text)
         offer = int(nums[-1].replace(",", "")) if nums else None     # the last number on its own is the offer
         if offer is not None:

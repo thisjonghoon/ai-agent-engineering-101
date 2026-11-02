@@ -116,7 +116,23 @@ def asking_price(task):
     # numbers on their own only (not a SKU's digits), with thousands commas: "52,000원" is 52000, not 000
     nums = re.findall(r"(?<![A-Za-z0-9.,])\d{1,3}(?:,\d{3})+(?:\.\d+)?(?![\d])|(?<![A-Za-z0-9.,])\d+(?:\.\d+)?(?![A-Za-z0-9])",
                       reply_text(task))
-    return math.ceil(float(nums[-1].replace(",", ""))) if nums else None
+    if not nums:
+        return None
+    # a number right after "ask/price/counter/offer/for" is the price even when the reply ends with other numbers
+    # ("asking 52000, 72 h of shelf life left"); otherwise the last number
+    num = r"\D{0,12}?((?<![A-Za-z0-9.,])\d{1,3}(?:,\d{3})+|(?<![A-Za-z0-9.,])\d+)(?![A-Za-z0-9])"
+    text = reply_text(task)
+    m = None                                       # "asking/counter" beats "price" ("List price 30000, asking 28500")
+    for words in (r"(?<!list )(?:ask(?:ing)?|counter(?:offer)?)", r"(?<!list )(?:price|offer|for|at)"):
+        found = list(re.finditer(words + num, text, re.I))
+        if found:
+            m = found[-1]
+            break
+    pick = m.group(1) if m and not re.search(r"^\s*(h\b|hours?|%)", text[m.end():m.end() + 8]) else None
+    if pick is None:
+        cands = [n for n in nums if not re.search(re.escape(n) + r"\s*(h\b|hours?|%)", reply_text(task))]
+        pick = (cands or nums)[-1]
+    return math.ceil(float(pick.replace(",", "")))
 
 
 def as_int(value):

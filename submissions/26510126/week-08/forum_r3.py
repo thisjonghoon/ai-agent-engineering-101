@@ -46,9 +46,11 @@ def note(memory):
         parts.append(line)
         refs += [m["ledger"] for m in ms if m.get("ledger")]
     for m in new:
-        if m["kind"] == "broken" and m.get("shop"):
+        if m["kind"] == "broken" and m.get("shop") and not m.get("ambiguous"):   # never blame a shop we cannot tell
             parts.append(f"{m['name'][:40]} from {m['shop']} broke after the sale"
                          + (" (warranty covered it)" if m.get("covered") else " (no warranty)"))
+    if not parts:                                       # nothing we can state with a shop and a ref
+        return None, []
     text = "Buyer notes from our own settled deals (check the refs): " + " | ".join(parts)
     return text[:900], refs[-MAX_REFS:]
 

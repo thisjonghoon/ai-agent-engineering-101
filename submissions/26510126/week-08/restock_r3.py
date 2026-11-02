@@ -112,14 +112,16 @@ def main():
             cat, med = d["category"], d["median_price"]
             if d["kind"] == "goods" and med > s["max_list"]:
                 continue
-            if d["kind"] == "food" and (d.get("shelf_hours") or 0) < s["min_shelf_hours"] and score[cat] < 3:
-                continue                                     # short-lived food only where it clearly sells
+            if d["kind"] == "food" and score[cat] < 3:     # demand.json has no shelf life: the catalog's SKUs do
+                if not any((c.get("shelf_hours") or 0) >= s["min_shelf_hours"] for c in by_cat.get(cat, [])):
+                    continue                                 # short-lived food only where it clearly sells
             want = 1 + (min(s["depth"] - 1, math.ceil(score[cat] / 2)) if score[cat] >= 1 else 0)
             if d["kind"] == "food":
                 want = min(want, 2)
             if count[cat] >= want:
                 continue
-            skus = [c for c in by_cat.get(cat, []) if c["list_price"] <= max(s["max_list"], med)]
+            skus = [c for c in by_cat.get(cat, []) if c["list_price"] <= max(s["max_list"], med)
+                    and (d["kind"] != "food" or score[cat] >= 3 or (c.get("shelf_hours") or 0) >= s["min_shelf_hours"])]
             if not skus:
                 continue
             pick = min(skus, key=lambda c: abs(c["list_price"] - med))

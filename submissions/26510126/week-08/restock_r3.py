@@ -20,6 +20,10 @@ Code only; the meta-harness (meta_r3.py) moves the numbers in strategy_r3.json. 
     they wait and may break, food costs nothing to hold until its date; so goods at cost stay under `goods_frac` of
     `stock_value`, goods above `max_list` are skipped, and food plans rank `food_first` higher. The meta-harness
     can move all three once goods are seen to sell.
+  - Supply windows (agent.md, 11/3 20:23): supply opens once every 20 minutes for 3 minutes, and inventory.json
+    carries `restock` (open, opens_at, closes_at). Outside a window we print no lines (the kit would wait up to 90 s
+    per line and stall), and inside one the depth is `window_depth` times larger, since what is bought must last
+    until the next window. Lines that sell (depth, best sellers) rank before breadth.
   - Stop buying `stop_hours` before the round ends: unsold stock at the end is a loss.
 The state between runs (last units seen, ledger position, scores) is in .market/restock_state.json.
 """
@@ -37,7 +41,8 @@ HERE = Path(__file__).resolve().parent
 MARKET = "https://market.ourolabs.ai"
 DEFAULTS = {"reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
             "goods_frac": 0.35, "food_first": 0.5,
-            "depth": 3, "half_life_hours": 12, "stop_hours": 36, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540}    # 2026-11-17 23:59 KST
+            "depth": 3, "half_life_hours": 12, "stop_hours": 36, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540,
+            "window_depth": 2.0}    # 2026-11-17 23:59 KST
 BANKRUPT_LINE = 500_000  # below this a shop may file, and the 5,000,000 it gets comes off profit
 CASH_FLOOR = 700_000     # code's own floor under any reserve_cash the meta-harness sets: the line plus a cushion
 CUSHION = CASH_FLOOR - BANKRUPT_LINE   # kept above inventory.json's bankrupt_line, which the market may change
@@ -127,6 +132,9 @@ def main():
     gap = max(0.0, now - st.get("t", now))
     scale = min(4.0, max(1.0, gap / BASE_GAP / 2)) if st.get("seen") is not None and gap > 2 * BASE_GAP else 1.0
     line = inv.get("bankrupt_line") if isinstance(inv.get("bankrupt_line"), (int, float)) else BANKRUPT_LINE
+    window = inv.get("restock") if isinstance(inv.get("restock"), dict) else None
+    if window:
+        scale = max(scale, s["window_depth"])
     if inv.get("round", 0) < 3 or not catalog or not demand:
         print(json.dumps({"buy": [], "why": "no Round 3 stock or catalog yet"}))
         return
@@ -162,7 +170,9 @@ def main():
     spend = min(inv.get("balance", 0) - floor, s["stock_value"] - stock)
     stopping = s["round_end"] and now > s["round_end"] - s["stop_hours"] * 3600
     buy, why = [], ""
-    if stopping:
+    if window and window.get("open") is False:
+        why = f"supply closed until {time.strftime('%H:%M:%S', time.localtime(window.get('opens_at') or now))}"
+    elif stopping:
         why = "round ends soon: no new stock"
     elif spend <= 0:
         why = f"spend limit reached (balance {inv.get('balance')}, cash floor {floor}, stock at cost {stock})"

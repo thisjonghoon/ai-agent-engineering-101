@@ -45,7 +45,7 @@ BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min
           "final_frac": (0.3, 1.0, 0.1), "ask_frac_food": (0.70, 1.00, 0.05), "floor_frac_food": (0.45, 0.95, 0.05),
           "fresh_premium": (0.0, 0.2, 0.05), "spread_low": (0.5, 0.9, 0.1), "spread_high": (1.1, 1.5, 0.1),
           "sku_depth": (1, 6, 1), "goods_frac": (0.1, 0.8, 0.1), "food_first": (0.0, 1.0, 0.25),
-          "goods_age_days": (2, 10, 1), "aged_margin": (0.0, 0.2, 0.03)}
+          "goods_age_days": (2, 10, 1), "aged_margin": (0.0, 0.2, 0.03), "window_depth": (1.0, 4.0, 0.5)}
 SETTLED = re.compile(r"\[acp\] settled .* at (\d+), ledger")         # our shop's sale the market settled
 SETTLE_REFUSED = re.compile(r"\[acp\] (settle refused|checkout refused: (?:no |unit ))")  # shop side only
 SELLER_LINE = re.compile(r"(OPEN|DEAL|WALK) \S+ (\S+)(?: at (\d+) \(cost (\d+), list (\d+))?")
@@ -79,7 +79,10 @@ of `param` (arms), whatever the strategy says, and mean_reward is margin over li
 one). Code ends it and keeps the better value; until then a change to that number does not reach those negotiations.
 
 The market's rules can change while the round runs; `rules` holds the values the market's files state now (the
-bankruptcy line, storage per day), and restock scales its depth up when its runs come less often.
+bankruptcy line, storage per day, the supply window), and restock scales its depth up when its runs come less often.
+Supply opens once every 20 minutes for 3 minutes: inside a window restock buys window_depth times its usual depth,
+since stock has to last until the next window (more depth: fewer sales lost to an empty shelf, more food that may
+expire and goods that pay storage).
 
 The shop's rank (the midterm's score) is 0.5 x profit percentile + 0.3 x revenue percentile + 0.2 x stars percentile,
 each among all shops on the board; `standing` shows ours. Percentiles reward being above the others, not the size of
@@ -213,7 +216,7 @@ def snapshot(since):
             "older_than_24h": sum(now - u["supplied_at"] > 86400 for u in units),
             "expired": sum(u["grade"] == "expired" for u in units),
             # the market's rules as its own files state them now (the instructor changes them while the round runs)
-            "rules": {k: inv.get(k) for k in ("bankrupt_line", "storage_per_day", "bankruptcies_left")},
+            "rules": {k: inv.get(k) for k in ("bankrupt_line", "storage_per_day", "bankruptcies_left", "restock")},
             "minutes": round((now - since) / 60)}
     snap.update(seller_lines(since))
     snap.update(market_prices())

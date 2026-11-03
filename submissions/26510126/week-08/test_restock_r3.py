@@ -113,4 +113,23 @@ restock_r3.strategy = real
 res = json.loads(out.getvalue().splitlines()[-1])
 case("a raised bankruptcy line (900,000) raises the cash floor to 1,100,000: nothing bought at 1,000,000",
      res["buy"] == [] and "cash floor 1100000" in res["why"], res["why"])
+
+# supply windows (agent.md 11/3 20:23): closed -> no lines (the kit would wait 90 s per line); open -> deeper
+fresh_state = json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {"F>1": 8.0}, "sku_score": {}})
+for is_open in (False, True):
+    (md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 4_000_000, "units": [],
+        "restock": {"open": is_open, "opens_at": time.time() + 600, "closes_at": time.time() + 780}}), encoding="utf-8")
+    (md / "restock_state.json").write_text(fresh_state, encoding="utf-8")
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        restock_r3.main()
+    res = json.loads(out.getvalue().splitlines()[-1])
+    if is_open:
+        q = {b["sku"]: b["qty"] for b in res["buy"]}
+        case("window open: depth x2 for a selling food category (4 units), lines bought", q.get("SF1") == 4 and len(res["buy"]) == 10,
+             {"SF1": q.get("SF1"), "lines": len(res["buy"]), "why": res["why"]})
+    else:
+        st_after = json.loads((md / "restock_state.json").read_text())
+        case("window closed: no lines, and the scores still update", res["buy"] == [] and "supply closed until" in res["why"]
+             and st_after["t"] > time.time() - 5, res["why"])
 print(f"\n{sum(ok)}/{len(ok)} passed")

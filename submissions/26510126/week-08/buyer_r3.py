@@ -28,6 +28,7 @@ import time
 from pathlib import Path
 
 import buyer
+import demand_r3
 import forum_r3
 import market_intel
 import harness
@@ -231,6 +232,7 @@ def review(result, name, lp, problem):
 async def main(args, shops, memory, remember):
     order = load(args.order, {})
     cat = catalog()
+    demand_r3.record_order(order, cat, shops)            # a sample of the hidden demand (demand_r3.py)
     sync_kit_files(memory, remember)
     cands = candidates(order, shops, cat, memory, ledger_claims(cat))
     if not cands:

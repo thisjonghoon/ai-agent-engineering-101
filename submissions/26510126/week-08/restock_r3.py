@@ -37,12 +37,14 @@ from pathlib import Path
 
 import httpx
 
+import demand_r3
+
 HERE = Path(__file__).resolve().parent
 MARKET = "https://market.ourolabs.ai"
 DEFAULTS = {"reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
             "goods_frac": 0.35, "food_first": 0.5,
             "depth": 3, "half_life_hours": 12, "stop_hours": 36, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540,
-            "window_depth": 2.0}    # 2026-11-17 23:59 KST
+            "window_depth": 2.0, "order_weight": 1.0}    # 2026-11-17 23:59 KST
 BANKRUPT_LINE = 500_000  # below this a shop may file, and the 5,000,000 it gets comes off profit
 CASH_FLOOR = 700_000     # code's own floor under any reserve_cash the meta-harness sets: the line plus a cushion
 CUSHION = CASH_FLOOR - BANKRUPT_LINE   # kept above inventory.json's bankrupt_line, which the market may change
@@ -160,6 +162,13 @@ def main():
             sku_score[u["sku"]] += 2
     st.update(score={k: v for k, v in score.items() if v > 0.05}, sku_score={k: v for k, v in sku_score.items() if v > 0.05},
               seen=[{k: u.get(k) for k in ("unit", "sku", "category", "grade", "expires_at")} for u in units], t=now)
+    # the hidden demand as it reaches us (demand_r3.py): orders our buyer got and requests to our shop, decayed over
+    # two days; added for this run only (the log keeps them), so they do not compound with the settle scores
+    order_w, ask_w, ref = demand_r3.signals(now)
+    for cat, w in order_w.items():
+        score[cat] += s["order_weight"] * w
+    for sku, w in ask_w.items():
+        sku_score[sku] += s["order_weight"] * w
     wanted = forum_wanted(md, demand, catalog, now)          # categories buyers asked for on the forum (not kept)
     for cat, n in wanted.items():
         score[cat] += 2 * n
@@ -190,7 +199,8 @@ def main():
                 plans[c["sku"]] = (prio, c, qty)
 
         for d in demand:
-            cat, med = d["category"], d["median_price"]
+            # the SKU to stock first: nearest the reference price our orders point to, else the category's median
+            cat, med = d["category"], ref.get(d["category"]) or d["median_price"]
             if d["kind"] == "goods" and med > s["max_list"]:
                 continue
             ok_food = lambda c: d["kind"] != "food" or score[cat] >= 3 or (c.get("shelf_hours") or 0) >= s["min_shelf_hours"]

@@ -24,7 +24,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 TMP = Path(tempfile.mkdtemp(prefix="buyer-r3-"))
-for f in ("buyer.py", "buyer_r3.py", "forum_r3.py", "review_r3.py", "market_buyer.py", "harness.py", "market_intel.py"):
+for f in ("buyer.py", "buyer_r3.py", "forum_r3.py", "review_r3.py", "market_buyer.py", "harness.py", "market_intel.py", "demand_r3.py"):
     shutil.copy(HERE / f, TMP / f)
 MD = TMP / ".market"
 MD.mkdir()
@@ -266,6 +266,11 @@ def main():
     case("harness: a prompt over the cap is not sent", big is None)
     c = harness.clip("a\x00b\x1b[31m  c\n" * 1000, 300)
     case("clip: no control characters, collapsed, 300 characters", len(c) <= 300 and "\x00" not in c and "\x1b" not in c and "  " not in c, repr(c[:40]))
+
+    dem = [json.loads(l) for l in (TMP / "logs" / "demand_r3.jsonl").read_text().splitlines()]
+    o1 = next((e for e in dem if e.get("order") == "o-1"), {})
+    case("hidden demand: each order is logged with its category, reference price and nearest SKU",
+         o1.get("category") == "식품>김치" and o1.get("ref") and o1.get("near") in ("F1", "F2", "F3"), str(o1))
 
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)

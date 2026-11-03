@@ -44,6 +44,7 @@ from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 import ab_r3
+import demand_r3
 
 HERE = Path(__file__).resolve().parent
 NAME = "thisjonghoon"
@@ -99,6 +100,14 @@ def strategy():
 
 
 SHELF = {}
+CATALOG = {}
+
+
+def catalog():
+    if not CATALOG:
+        cat = read_json(MARKET_DIR / "catalog.json", {})
+        CATALOG.update(cat if isinstance(cat, dict) else {})
+    return CATALOG
 
 
 def shelf_hours(sku):
@@ -229,6 +238,8 @@ class Seller(AgentExecutor):
 
         if deal is None:
             u = find_unit(text, self.taken())
+            if u is None or u.get("unit"):
+                demand_r3.record_ask(text, catalog(), have=u is not None)   # what buyers came for (demand_r3.py)
             if u is None:
                 await up.reject(say("Sorry, we have none of that in stock."))
                 return

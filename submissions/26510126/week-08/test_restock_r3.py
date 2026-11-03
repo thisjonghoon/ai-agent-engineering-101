@@ -132,4 +132,34 @@ for is_open in (False, True):
         st_after = json.loads((md / "restock_state.json").read_text())
         case("window closed: no lines, and the scores still update", res["buy"] == [] and "supply closed until" in res["why"]
              and st_after["t"] > time.time() - 5, res["why"])
+
+# hidden demand (demand_r3.py): orders our buyer saw point at a reference price; restock stocks the SKU nearest it
+# and gives the category depth, even with no settle anywhere
+import demand_r3
+demand_r3.LOG = md / "demand_r3.jsonl"
+cat3 = dict(catalog, **{f"SH{i}": {"category": "F>hot", "kind": "food", "list_price": p, "shelf_hours": 200, "name": f"h{i}"}
+                        for i, p in enumerate((5000, 10000, 20000))})
+(md / "catalog.json").write_text(json.dumps(cat3), encoding="utf-8")
+(md / "demand.json").write_text(json.dumps(demand + [{"item": "hot", "category": "F>hot", "kind": "food", "median_price": 10000}]),
+                                encoding="utf-8")
+for i in range(6):                                       # bands around 20,000: acceptable 10,000 and 20,000 (ref 15,000)
+    demand_r3.record_order({"order": f"o{i}", "category": "F>hot", "kind": "food", "acceptable": ["SH1", "SH2"]}, cat3,
+                           [{"offers": [{"sku": "SH1", "qty": 1}]}])
+demand_r3.record_ask("I want to buy h2 (G0000beef)", cat3, have=False)   # not in the catalog: no SKU, still logged
+cw, sw, ref = demand_r3.signals()
+case("orders become category weight, a nearest-reference SKU and a reference price",
+     round(cw["F>hot"]) == 6 and sw["SH1"] + sw["SH2"] >= 5.9 and round(ref["F>hot"]) == 15000, (dict(cw), dict(sw), ref))
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 4_000_000, "units": []}), encoding="utf-8")
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {}}),
+                                       encoding="utf-8")
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+res = json.loads(out.getvalue().splitlines()[-1])
+q = {b["sku"]: b["qty"] for b in res["buy"]}
+st3 = json.loads((md / "restock_state.json").read_text())
+case("restock buys the ordered category first, at the reference price (not the 10,000 median alone), with depth",
+     res["buy"][0]["sku"] in ("SH1", "SH2") and sum(q.get(k, 0) for k in ("SH1", "SH2")) >= 3,
+     {"first": res["buy"][0], "hot": {k: q.get(k) for k in ("SH0", "SH1", "SH2")}})
+case("order weights are not written into the decaying scores (no compounding)", "F>hot" not in st3.get("score", {}), st3.get("score"))
 print(f"\n{sum(ok)}/{len(ok)} passed")

@@ -72,7 +72,7 @@ async def main():
     (md / "catalog.json").write_text(json.dumps(CATALOG), encoding="utf-8")
     port = free_port()
     p = subprocess.Popen([sys.executable, str(HERE / "seller_r3.py"), "--port", str(port)], cwd=HERE,
-                         env=dict(os.environ, MARKET_DIR=str(md), AB_DIR=str(md)))
+                         env=dict(os.environ, MARKET_DIR=str(md), AB_DIR=str(md), DEMAND_LOG=str(md / "demand_r3.jsonl")))
     base = f"http://127.0.0.1:{port}"
     for _ in range(100):
         try:
@@ -119,6 +119,10 @@ async def main():
         s0 = seller_r3.strategy()
         check("goods past goods_age_days may go down to cost + 3%", seller_r3.prices(aged, s0)[1] == 61800
               and seller_r3.prices(fresh, s0)[1] == 78000, (seller_r3.prices(aged, s0), seller_r3.prices(fresh, s0)))
+
+        asks = [json.loads(l) for l in (md / "demand_r3.jsonl").read_text().splitlines()]
+        check("hidden demand: requests to our shop are logged, misses marked", any(a["have"] for a in asks)
+              and any(not a["have"] for a in asks), [(a.get("sku"), a["have"]) for a in asks][:8])
 
         import ab_r3                                     # A/B: same folder as the seller subprocess
         ab_r3.EXPERIMENT, ab_r3.LOG = md / "experiment_r3.json", md / "logs" / "ab_r3.jsonl"

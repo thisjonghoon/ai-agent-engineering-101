@@ -50,10 +50,11 @@ SETTLED = re.compile(r"\[acp\] settled .* at (\d+), ledger")         # our shop'
 SETTLE_REFUSED = re.compile(r"\[acp\] (settle refused|checkout refused: (?:no |unit ))")  # shop side only
 SELLER_LINE = re.compile(r"(OPEN|DEAL|WALK) \S+ (\S+)(?: at (\d+) \(cost (\d+), list (\d+))?")
 
-PROMPT = """GOAL: the highest Players rank we can reach (shop ALL + buyer ALL), and above the instructor's own agent q00,
-while staying honest: true grade claims, the market's certificate shown, no votes against others, no selling below
-cost except to clear stock that would otherwise be lost. `players` in the numbers below shows our rank, q00's, and the
-part with the most to gain; push the shop's part of that.
+PROMPT = """GOAL: first place on the board's Players table (our shop ALL + our buyer ALL); the midterm grades our
+percentile there when the round ends. The instructor's own agent q00 is only a floor to stay above, not the target.
+Stay honest: true grade claims, the market's certificate shown, no votes against others, no selling below cost except
+to clear stock that would otherwise be lost. `players` in the numbers below shows our rank and percentile, the
+leader and the gap, q00's rank, and the part with the most to gain; push the shop's part of that.
 
 You set the strategy of an online shop in a market of AI buyers. Profit is the shop's balance minus its
 starting capital at the end of the round, so stock that never sells is a loss; the shop is also ranked by revenue
@@ -89,12 +90,12 @@ Supply opens once every 20 minutes for 3 minutes: inside a window restock buys w
 since stock has to last until the next window (more depth: fewer sales lost to an empty shelf, more food that may
 expire and goods that pay storage).
 
-The shop's rank (the midterm's score) is 0.5 x profit percentile + 0.3 x revenue percentile + 0.2 x stars percentile,
+The shop's ALL (half of our Players total) is 0.5 x profit percentile + 0.3 x revenue percentile + 0.2 x stars percentile,
 each among all shops on the board; `standing` shows ours. Percentiles reward being above the others, not the size of
 the lead: once profit sits high, a little margin given up for more sales or better stars can raise the score more,
 and a loss of profit percentile costs the most.
 
-Last versions, oldest first (each with how it did while it ran):
+Last versions, oldest first (each with how it did while it ran; older ones show only what changed and the key results):
 {history}
 
 Answer with JSON only: {{"strategy": {{...every key...}}, "reason": "<one sentence>"}}"""
@@ -250,6 +251,32 @@ def guard(new, cur):
     return out
 
 
+KEY = ("minutes", "settled", "revenue", "deals", "opens", "walks", "settle_refused", "price_list", "margin", "profit",
+       "balance", "stock_at_cost", "units", "expired")
+FULL = 6              # the latest versions are shown whole
+
+
+def history_lines(hist, after, last=30):
+    """The last `last` versions as one JSON line each (LongMemEval-V2: raw evidence stays in strategies_r3.jsonl, the
+    prompt gets what this decision needs). The newest FULL show the whole strategy and outcome; older ones only the
+    keys that changed from the version before and the outcome numbers that measure it (KEY), plus our standing."""
+    pairs = list(zip(hist, after))
+    out = []
+    for i, (h, a) in enumerate(pairs[-last:], start=max(0, len(pairs) - last)):
+        if i >= len(pairs) - FULL:
+            out.append(json.dumps({"strategy": h["strategy"], "after": a}, ensure_ascii=False))
+            continue
+        prev = pairs[i - 1][0]["strategy"] if i else {}
+        diff = {k: v for k, v in h["strategy"].items() if prev.get(k) != v}
+        res = {k: a.get(k) for k in KEY if a.get(k) is not None}
+        if isinstance(a.get("standing"), dict):
+            res["score"] = a["standing"].get("score")
+        if isinstance(a.get("players"), dict):
+            res["players"] = [a["players"].get("our_rank"), a["players"].get("players")]
+        out.append(json.dumps({"changed": diff, "after": res}, ensure_ascii=False))
+    return out
+
+
 async def cycle():
     cur = current()
     hist = [json.loads(l) for l in HISTORY.read_text(encoding="utf-8").splitlines() if l.strip()] if HISTORY.exists() else []
@@ -264,11 +291,10 @@ async def cycle():
     bounds = "\n".join(f"  {k}: [{lo}, {hi}] ({st}), now {cur[k]}" for k, (lo, hi, st) in BOUNDS.items())
     # a version's outcome is the "before" stored with the decision after it (the last one's is `now`)
     after = [h["before"] for h in hist[1:]] + [now]
-    shown = "\n".join(json.dumps({"strategy": h["strategy"], "after": a}, ensure_ascii=False)
-                      for h, a in list(zip(hist, after))[-30:])
-    # our own measurements only (no other agent's text), 30 versions can pass the default cap: allow more
+    shown = "\n".join(history_lines(hist, after))
+    # our own measurements only (no other agent's text); history_lines keeps it near 30,000 characters
     ans = await harness.ask(PROMPT.format(bounds=bounds, now=json.dumps(now, ensure_ascii=False), history=shown or "(none)"),
-                            max_chars=200_000)
+                            max_chars=60_000)
     new = (ans or {}).get("strategy") if isinstance((ans or {}).get("strategy"), dict) else None
     s = guard(new or {}, cur)
     # receipts that never settle: the buyer's kit refused to pay (its accept policy: certificate, shelf life, grade,

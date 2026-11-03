@@ -42,8 +42,8 @@ Decide:
 - "walk": stop negotiating, when the shop clearly will not come down to your budget.
 Pay as little as you can, but a deal within your budget is better than no deal.
 {patience}
-Answer with one JSON object and nothing else:
-{{"action": "offer" | "walk", "price": <integer>}}"""
+Answer with one JSON object and nothing else ("why": your reason in at most twelve words):
+{{"why": "<reason>", "action": "offer" | "walk", "price": <integer>}}"""
 
 PATIENCE = """Shops have a lowest price they will accept and may end the talk after a few low offers in a row,
 so raise your offers steadily instead of repeating low ones.
@@ -175,6 +175,7 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
                     quote=f'The shop\'s latest message, verbatim: "{harness.clip(reply_text(task), 300)}"\n' if OPTS.quote_shop else ""),
                     max_chars=8000) or {}
                 action, offer = answer.get("action"), as_int(answer.get("price"))
+                log("THINK", f"{harness.clip(str(answer.get('why') or ''), 120)} -> {action} {offer}")   # the ReAct trace
                 if action == "walk":
                     log("OUT", f"harness walks away at ask {ask}")
                     await seller.cancel(task_id)

@@ -1,15 +1,14 @@
-"""Where we stand on the midterm's rank (week 9 FIG. 07, agent.md 11/3 20:29), and against the instructor's agents.
+"""Where we stand on the midterm's rank (week-08 rubric part 3), with the instructor's q00 as a floor.
 
-    python rank_r3.py        # our shop ALL, buyer ALL, Players rank, and the gap to q00 (the instructor's shop+buyer)
+    python rank_r3.py        # our Players rank and percentile, the leader's gap, q00's rank, and the part to push
 
-The goal set on 11/3: a high Players rank, above the instructor's own agent (q00), while staying honest (no false
-grade claims, no hidden certificates, no votes against others, no self-dealing). The meta-harness and the watchers
-read this, so every decision sees the same target.
+Rubric part 3 (30%): our percentile on the board's Players table (our shop ALL + our buyer ALL) at the time Round 3
+ends. That table is the truth, so this reads it whenever the board fills it. Until then it recomputes the same
+numbers from the board's shop and buyer tables (agent.md 11/3 20:29), only to name which part to push:
   shop ALL  = 0.5 profit + 0.3 revenue + 0.2 stars             (percentiles among shops with a deal or a purchase)
   buyer ALL = 0.5 surplus + 0.3 votes + 0.1 deals + 0.1 posts  (percentiles among buyers with a deal)
-  Players   = shop ALL + buyer ALL per GitHub owner
-The board's own Players table, when it has one, is the truth; this recomputes it from the shop and buyer tables so
-it also works before the market fills that table, and names which part to push.
+The target (the user, 11/3) is first place. Staying above q00 is the floor, not the goal. Both are reached honestly:
+true grade claims, the certificate shown, no votes against others, no self-dealing, no deliberate bankruptcy.
 """
 import json
 
@@ -48,6 +47,24 @@ def owner(r):
     return ((r.get("owner") or {}).get("login") or r.get("name") or "").lower()
 
 
+def board_players(board):
+    """The board's own Players table, as [(owner, total)] best first, or None while it is empty. Field names are not
+    documented yet, so a total is the first number found under the usual names, and the board's order is kept."""
+    rows = board.get("players") or []
+    if not rows:
+        return None
+    out = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        who = ((r.get("owner") or {}).get("login") if isinstance(r.get("owner"), dict) else None) or r.get("login") or r.get("name") or ""
+        total = next((r[k] for k in ("all", "ALL", "total", "score", "players") if isinstance(r.get(k), (int, float))), None)
+        out.append((who.lower(), total))
+    if all(t is not None for _, t in out):
+        out.sort(key=lambda x: -x[1])
+    return out
+
+
 def standing(board):
     shops = table_all(board.get("shops") or [], SHOP_W, lambda r: (r.get("deals") or 0) > 0 or (r.get("purchases") or 0) > 0)
     buyers = table_all(board.get("buyers") or [], BUYER_W, lambda r: (r.get("deals") or 0) > 0)
@@ -70,8 +87,22 @@ def standing(board):
                 gain = w[k] * (1 - p)             # what moving this part to the top would add
                 if weakest is None or gain > weakest[2]:
                     weakest = (kind, k, round(gain, 3))
-    return {"players": len(players), "our_rank": rank.get(US), "teacher_rank": rank.get(TEACHER),
-            "our_all": round(us.get("shop", 0) + us.get("buyer", 0), 3),
+    our_all = round(us.get("shop", 0) + us.get("buyer", 0), 3)
+    top_all = round(ranked[0][1]["shop"] + ranked[0][1]["buyer"], 3) if ranked else None
+    source, n = "recomputed", len(players)
+    official = board_players(board)
+    if official:                                         # the board's table decides the grade
+        source, n = "board", len(official)
+        order = [o for o, _ in official]
+        rank = {o: i + 1 for i, o in enumerate(order)}
+        tot = dict(official)
+        our_all = tot.get(US, our_all)
+        top_all = official[0][1]
+        ranked = [(o, None) for o in order]
+    r = rank.get(US)
+    return {"source": source, "players": n, "our_rank": r, "leader": ranked[0][0] if ranked else None,
+            "our_pct": round((n - r) / (n - 1), 3) if r and n > 1 else None,
+            "teacher_rank": rank.get(TEACHER), "our_all": our_all, "leader_all": top_all,
             "teacher_all": round(teacher.get("shop", 0) + teacher.get("buyer", 0), 3),
             "our_shop": {k: round(v, 3) for k, v in ((shops.get(US) or (0, {}))[1]).items() if v is not None},
             "our_buyer": {k: round(v, 3) for k, v in ((buyers.get(US) or (0, {}))[1]).items() if v is not None},
@@ -81,9 +112,15 @@ def standing(board):
 def line(s):
     if not s:
         return "rank unavailable"
-    ahead = s["our_all"] - s["teacher_all"]
-    return (f"Players #{s['our_rank']}/{s['players']} (ALL {s['our_all']}), q00 #{s['teacher_rank']} ({s['teacher_all']}): "
-            f"{'ahead' if ahead >= 0 else 'behind'} by {abs(ahead):.3f}; most to gain: {s['biggest_gain']}")
+    if s["our_rank"] == 1:
+        lead = "we lead"
+    elif isinstance(s.get("leader_all"), (int, float)) and isinstance(s.get("our_all"), (int, float)):
+        lead = f"{s['leader']} leads by {s['leader_all'] - s['our_all']:.3f}"
+    else:
+        lead = f"{s['leader']} leads"
+    floor = "above" if (s["teacher_rank"] or 10**6) > (s["our_rank"] or 10**6) else "BELOW"
+    return (f"Players #{s['our_rank']}/{s['players']} pct {s['our_pct']} ({s['source']}), {lead}; "
+            f"q00 #{s['teacher_rank']} (floor: we are {floor}); most to gain: {s['biggest_gain']}")
 
 
 def fetch():

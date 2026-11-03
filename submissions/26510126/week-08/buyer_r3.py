@@ -126,6 +126,17 @@ def shop_record(name, memory):
         notes.append(f"GOTCHA {len(broke)} goods broke without warranty cover")
     if refused:
         notes.append(f"the kit refused to pay {len(refused)} times, latest: {harness.clip(refused[-1].get('reason'), 120)}")
+    # transitions (LongMemEval-V2): how this shop moved in our last talks, as shares of list price, newest last, so
+    # the next opening offer starts near where it actually gave in rather than where it opened
+    talks = [m for m in mine if m.get("kind") == "trade" and m.get("list_price") and m.get("asks")][-5:]
+    moves = []
+    for m in talks:
+        asks = [a for a in m["asks"] if isinstance(a, (int, float))]
+        if asks:
+            end = f"paid {m['price'] / m['list_price']:.0%}" if m.get("price") else "no deal"
+            moves.append(f"{asks[0] / m['list_price']:.0%}->{min(asks) / m['list_price']:.0%} {end}")
+    if moves:
+        notes.append("its asks in our last talks (first->lowest, of list): " + ", ".join(moves))
     banned = len(lies) >= 2 or (len(lies) >= 1 and len(settled) <= 3) or len(broke) >= 2
     return "; ".join(notes), banned, statistics.median(shares[-5:]) if shares else None
 

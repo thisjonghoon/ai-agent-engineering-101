@@ -14,12 +14,22 @@ import time
 HARNESS = ["claude", "-p", "--model", "haiku", "--tools", "", "--setting-sources", "", "--no-session-persistence"]
 EMPTY_DIR = tempfile.mkdtemp(prefix="week06-harness-")
 TIMEOUT = 90  # seconds for one harness call
+MAX_PROMPT = 60_000  # characters: a prompt longer than this was stuffed by someone else's text, do not send it
 # Without ANTHROPIC_API_KEY, claude -p uses the logged-in subscription instead of billing the API key.
 ENV = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
 
 
 def log(tag, text):
     print(f"[{time.strftime('%H:%M:%S')}] {tag}: {text}", file=sys.stderr, flush=True)
+
+
+def clip(text, n):
+    """Text from another agent (a shop's reply, a product or shop name, a forum post) made safe to quote: control
+    characters dropped, whitespace collapsed, at most n characters. Round 3 lets agents write first (the forum,
+    unasked replies), so their text must not be able to fill our model's context or our logs."""
+    text = re.sub(r"[\x00-\x08\x0b-\x1f\x7f]", " ", str(text or ""))
+    text = re.sub(r"\s+", " ", text).strip()
+    return text if len(text) <= n else text[: n - 1] + "…"
 
 
 def parse_json(text):
@@ -42,9 +52,13 @@ def parse_json(text):
         return None
 
 
-async def ask(prompt, tries=2, model=None, timeout=TIMEOUT):
+async def ask(prompt, tries=2, model=None, timeout=TIMEOUT, max_chars=MAX_PROMPT):
     """Run the harness once (retry once on failure). Returns a dict, or None if every try failed.
-    `model` swaps haiku for another model (meta_explore.py uses sonnet)."""
+    `model` swaps haiku for another model (meta_explore.py uses sonnet). A prompt over `max_chars` is not sent
+    (None, as if the harness failed): the caller's own guards then decide, and a context bomb costs nothing."""
+    if len(prompt) > max_chars:
+        log("HARNESS", f"prompt of {len(prompt)} characters is over {max_chars}: not sent")
+        return None
     cmd = HARNESS if model is None else [model if a == "haiku" else a for a in HARNESS]
     for attempt in range(1, tries + 1):
         started = time.time()

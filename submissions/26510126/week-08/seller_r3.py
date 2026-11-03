@@ -209,7 +209,7 @@ class Seller(AgentExecutor):
             await event_queue.enqueue_event(task)
         up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
         say = lambda text: up.new_agent_message(parts=[new_text_part(text)])
-        text = get_message_text(context.message) or ""
+        text = (get_message_text(context.message) or "")[:2000]   # a buyer's text is matched, never quoted; cap the work
         deal = self.open.get(task.id)
         s = deal["s"] if deal and deal.get("s") else strategy()      # an A/B arm keeps its value to the end
 

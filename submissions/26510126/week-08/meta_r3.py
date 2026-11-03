@@ -207,7 +207,9 @@ async def cycle():
     after = [h["before"] for h in hist[1:]] + [now]
     shown = "\n".join(json.dumps({"strategy": h["strategy"], "after": a}, ensure_ascii=False)
                       for h, a in list(zip(hist, after))[-30:])
-    ans = await harness.ask(PROMPT.format(bounds=bounds, now=json.dumps(now, ensure_ascii=False), history=shown or "(none)"))
+    # our own measurements only (no other agent's text), 30 versions can pass the default cap: allow more
+    ans = await harness.ask(PROMPT.format(bounds=bounds, now=json.dumps(now, ensure_ascii=False), history=shown or "(none)"),
+                            max_chars=200_000)
     new = (ans or {}).get("strategy") if isinstance((ans or {}).get("strategy"), dict) else None
     s = guard(new or {}, cur)
     # receipts that never settle: the buyer's kit refused to pay (its accept policy: certificate, shelf life, grade,

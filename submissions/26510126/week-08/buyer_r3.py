@@ -30,6 +30,7 @@ from pathlib import Path
 import buyer
 import forum_r3
 import market_intel
+import harness
 from harness import log
 
 HERE = Path(__file__).resolve().parent
@@ -123,7 +124,7 @@ def shop_record(name, memory):
     if broke:
         notes.append(f"GOTCHA {len(broke)} goods broke without warranty cover")
     if refused:
-        notes.append(f"the kit refused to pay {len(refused)} times, latest: {refused[-1].get('reason')}")
+        notes.append(f"the kit refused to pay {len(refused)} times, latest: {harness.clip(refused[-1].get('reason'), 120)}")
     banned = len(lies) >= 2 or (len(lies) >= 1 and len(settled) <= 3) or len(broke) >= 2
     return "; ".join(notes), banned, statistics.median(shares[-5:]) if shares else None
 
@@ -253,7 +254,8 @@ async def main(args, shops, memory, remember):
 
 async def attempt(order, cat, s, off, lp, note, remember):
     """One negotiation with one shop over one SKU; returns the result line for the kit."""
-    name, sku = off.get("name") or (cat.get(off["sku"]) or {}).get("name", off["sku"]), off["sku"]
+    # the catalog's name first: the name in a shop's offer is the shop's own text and goes into our prompt
+    name, sku = harness.clip((cat.get(off["sku"]) or {}).get("name") or off.get("name") or off["sku"], 80), off["sku"]
     limit = min(order["budget"], int(lp * CAP))
     log("CHOOSE", f"{s['name']} {s['url']}: {name} ({sku}), list {lp}, paying at most {limit}")
     opening = f"I want to buy {name} ({sku})"

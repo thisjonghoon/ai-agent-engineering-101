@@ -162,7 +162,7 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
             ask = asking_price(task)
             result["asks"].append(ask)
             log("ASK", f"{ask} ({'data' if OPTS.data_part and data_ask(task) is not None else 'text'})")
-            history.append(f"The shop asked {ask}." if ask is not None else f"The shop said: {reply_text(task)}")
+            history.append(f"The shop asked {ask}." if ask is not None else f"The shop said: \"{harness.clip(reply_text(task), 300)}\"")
 
             if ask is not None and last_offer is not None and ask <= last_offer:
                 log("GUARD", f"ask {ask} is at or below our last offer {last_offer}, offering it")
@@ -172,7 +172,8 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
                     item=item, budget=budget, memory=memory, history="\n".join(history[:-1]) or "(nothing yet)",
                     ask=ask if ask is not None else "an unknown price", n=n,
                     patience="" if OPTS.no_patience else PATIENCE,
-                    quote=f'The shop\'s latest message, verbatim: "{reply_text(task)}"\n' if OPTS.quote_shop else "")) or {}
+                    quote=f'The shop\'s latest message, verbatim: "{harness.clip(reply_text(task), 300)}"\n' if OPTS.quote_shop else ""),
+                    max_chars=8000) or {}
                 action, offer = answer.get("action"), as_int(answer.get("price"))
                 if action == "walk":
                     log("OUT", f"harness walks away at ask {ask}")

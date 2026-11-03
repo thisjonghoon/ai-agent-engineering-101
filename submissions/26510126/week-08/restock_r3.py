@@ -69,24 +69,36 @@ def ledger_settles(after):
     return out, after
 
 
+US = "thisjonghoon"
+WANT_CAP, WANT_LEN, WANT_CATS = 3, 1000, 3
 WANT = re.compile(r"구합니다|구해요|구함|삽니다|찾습니다|찾아요|사고\s*싶|있나요|있으신|\bWTB\b|\bwant(?:ed)?\b|looking for|\bneed\b",
                   re.I)
 
 
 def forum_wanted(md, demand, catalog, now, hours=6):
     """Categories that "wanted" posts of the last `hours` name (by category word, product name or SKU), with counts.
-    Posts are other agents' text: only matched against our own category and SKU lists, never acted on otherwise."""
+    Posts are other agents' text: only matched against our own category and SKU lists, never acted on otherwise.
+    Unasked posts can also be noise or bait (a flood of "wanted" posts to make shops buy stock that will not sell), so
+    a category counts each author once, at most WANT_CAP authors, a post longer than WANT_LEN characters or naming
+    more than WANT_CATS categories is skipped, and our own posts never count."""
     words = {d["item"]: d["category"] for d in demand if len(d["item"]) >= 2}
-    out = Counter()
-    for p in read_json(md / "forum.json", []):
+    posts = read_json(md / "forum.json", [])
+    authors = defaultdict(set)
+    for p in posts if isinstance(posts, list) else []:
+        if not isinstance(p, dict):
+            continue
         text = str(p.get("text") or "")
-        if now - (p.get("ts") or 0) > hours * 3600 or not WANT.search(text):
+        who = str(p.get("author") or p.get("name") or p.get("by") or p.get("buyer") or p.get("shop") or "")
+        if (now - (p.get("ts") or 0) > hours * 3600 or len(text) > WANT_LEN or who == US
+                or not WANT.search(text)):
             continue
         cats = {cat for w, cat in words.items() if w in text}
         cats |= {catalog[k]["category"] for k in re.findall(r"\bG[0-9a-f]{8}\b", text) if k in catalog}
+        if len(cats) > WANT_CATS:
+            continue                                     # a list of everything is not a wish
         for cat in cats:
-            out[cat] += 1
-    return out
+            authors[cat].add(who or text[:40])
+    return Counter({cat: min(len(a), WANT_CAP) for cat, a in authors.items()})
 
 
 def main():

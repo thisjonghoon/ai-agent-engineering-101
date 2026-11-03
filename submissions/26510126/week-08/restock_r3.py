@@ -40,6 +40,8 @@ DEFAULTS = {"reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_
             "depth": 3, "half_life_hours": 12, "stop_hours": 36, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540}    # 2026-11-17 23:59 KST
 BANKRUPT_LINE = 500_000  # below this a shop may file, and the 5,000,000 it gets comes off profit
 CASH_FLOOR = 700_000     # code's own floor under any reserve_cash the meta-harness sets: the line plus a cushion
+CUSHION = CASH_FLOOR - BANKRUPT_LINE   # kept above inventory.json's bankrupt_line, which the market may change
+BASE_GAP = 60            # seconds between restock runs the depths are tuned for (agent.md, 11/3: every 60 s)
 WARRANTY_CUSHION = 300_000  # more while goods are sold with a warranty: a break refunds the whole price
 EST_COST = 0.6          # expected cost as a share of list price before the grade is drawn (A 55-75, B 40-60, C 25-45)
 
@@ -119,6 +121,12 @@ def main():
     demand = read_json(md / "demand.json", [])
     st = read_json(md / "restock_state.json", {"after": 0, "score": {}, "seen": [], "t": time.time()})
     now = time.time()
+    # the instructor changes the rules while the round runs (11/3: "the stock condition becomes 20 minutes"), so the
+    # numbers we can read come from the market's own files, not constants: the bankruptcy line from inventory.json,
+    # and the time since our last run (if runs come less often, each run buys for longer: depth scales up, to 4x)
+    gap = max(0.0, now - st.get("t", now))
+    scale = min(4.0, max(1.0, gap / BASE_GAP / 2)) if st.get("seen") is not None and gap > 2 * BASE_GAP else 1.0
+    line = inv.get("bankrupt_line") if isinstance(inv.get("bankrupt_line"), (int, float)) else BANKRUPT_LINE
     if inv.get("round", 0) < 3 or not catalog or not demand:
         print(json.dumps({"buy": [], "why": "no Round 3 stock or catalog yet"}))
         return
@@ -150,7 +158,7 @@ def main():
 
     stock = sum(u["cost"] for u in units)
     warranty = (read_json(HERE / "strategy_r3.json", {}).get("warranty_hours") or 0) > 0
-    floor = max(s["reserve_cash"], CASH_FLOOR + (WARRANTY_CUSHION if warranty else 0))
+    floor = max(s["reserve_cash"], line + CUSHION + (WARRANTY_CUSHION if warranty else 0))
     spend = min(inv.get("balance", 0) - floor, s["stock_value"] - stock)
     stopping = s["round_end"] and now > s["round_end"] - s["stop_hours"] * 3600
     buy, why = [], ""
@@ -180,9 +188,9 @@ def main():
             if not skus:
                 continue                                     # e.g. only short-lived food where nothing sells yet
             near = lambda x: min(skus, key=lambda c: abs(c["list_price"] - x))
-            depth = 1 + (min(s["depth"] - 1, math.ceil(score[cat] / 2)) if score[cat] >= 1 else 0)
+            depth = 1 + (min(round(s["depth"] * scale) - 1, math.ceil(score[cat] * scale / 2)) if score[cat] >= 1 else 0)
             if d["kind"] == "food":
-                depth = min(depth, 2)
+                depth = min(depth, round(2 * min(scale, 2.0)))
             prio = score[cat] + (1 if count[cat] == 0 else 0) + (s["food_first"] if d["kind"] == "food" else 0)
             plan(prio, near(med), depth)
             # where things sell, a cheaper and a dearer SKU too: an order takes SKUs at 0.5-1.5x a hidden reference
@@ -197,7 +205,7 @@ def main():
                 continue
             if c["kind"] == "food" and (c.get("shelf_hours") or 0) < 48:
                 continue
-            plan(1.5 * sc, dict(c, sku=sku), min(s["sku_depth"], math.ceil(sc / 2)))
+            plan(1.5 * sc, dict(c, sku=sku), min(20, round(s["sku_depth"] * scale), math.ceil(sc * scale / 2)))
         ranked = sorted(plans.values(), key=lambda p: (-p[0], p[1]["list_price"]))
         goods_room = s["goods_frac"] * s["stock_value"] - sum(u["cost"] for u in live if u.get("kind") == "goods")
         for prio, c, qty in ranked:
@@ -210,7 +218,7 @@ def main():
                 goods_room -= cost
             buy.append({"sku": c["sku"], "qty": int(qty)})
             spend -= cost
-        why = (f"{len(ranked)} SKUs short, buying {len(buy)} lines"
+        why = (f"{len(ranked)} SKUs short, buying {len(buy)} lines" + (f" (runs {gap:.0f} s apart: depth x{scale:.1f})" if scale > 1 else "")
                + (f"; forum asks for {', '.join(k.split('>')[-1] for k in list(wanted)[:5])}" if wanted else ""))
     (md / "restock_state.json").write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
     print(json.dumps({"buy": buy, "why": why}, ensure_ascii=False))

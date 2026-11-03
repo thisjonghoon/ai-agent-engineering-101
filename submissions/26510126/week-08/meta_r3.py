@@ -78,6 +78,9 @@ ab, when present, is an A/B test running inside the shop: each new negotiation o
 of `param` (arms), whatever the strategy says, and mean_reward is margin over list price per negotiation (0 for a lost
 one). Code ends it and keeps the better value; until then a change to that number does not reach those negotiations.
 
+The market's rules can change while the round runs; `rules` holds the values the market's files state now (the
+bankruptcy line, storage per day), and restock scales its depth up when its runs come less often.
+
 The shop's rank (the midterm's score) is 0.5 x profit percentile + 0.3 x revenue percentile + 0.2 x stars percentile,
 each among all shops on the board; `standing` shows ours. Percentiles reward being above the others, not the size of
 the lead: once profit sits high, a little margin given up for more sales or better stars can raise the score more,
@@ -209,6 +212,8 @@ def snapshot(since):
             "food_units": sum(u["kind"] == "food" for u in units),
             "older_than_24h": sum(now - u["supplied_at"] > 86400 for u in units),
             "expired": sum(u["grade"] == "expired" for u in units),
+            # the market's rules as its own files state them now (the instructor changes them while the round runs)
+            "rules": {k: inv.get(k) for k in ("bankrupt_line", "storage_per_day", "bankruptcies_left")},
             "minutes": round((now - since) / 60)}
     snap.update(seller_lines(since))
     snap.update(market_prices())

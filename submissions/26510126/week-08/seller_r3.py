@@ -147,6 +147,12 @@ def find_unit(text, taken=()):
     return min(fit, key=lambda u: (round(off(u), 1), u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
 
 
+def storage_rate():
+    """Storage as a share of cost per day, from inventory.json (the market may change it; 1% at the start)."""
+    r = read_json(MARKET_DIR / "inventory.json", {}).get("storage_per_day")
+    return r if isinstance(r, (int, float)) and 0 < r < 1 else 0.01
+
+
 def prices(u, s):
     """(ask, floor) for a unit under strategy s."""
     lp, cost = u["list_price"], u["cost"]
@@ -167,7 +173,9 @@ def prices(u, s):
         floor = cost * s["clear_frac"]
     # goods pay 1% of cost a day while they wait: past goods_age_days the floor drops to cost plus aged_margin, so a
     # slow unit goes before it eats its margin in storage
-    if u.get("kind") != "food" and u.get("supplied_at") and (time.time() - u["supplied_at"]) / 86400 > s["goods_age_days"]:
+    # (goods_age_days is set for 1% a day; at another storage rate the same storage paid comes sooner or later)
+    if u.get("kind") != "food" and u.get("supplied_at") and \
+            (time.time() - u["supplied_at"]) / 86400 > s["goods_age_days"] * 0.01 / storage_rate():
         floor = min(floor, cost * (1 + s["aged_margin"]))
     left = (ROUND_END - time.time()) / 3600                  # the end of the round: unsold stock earns nothing
     if left < s["final_hours"]:

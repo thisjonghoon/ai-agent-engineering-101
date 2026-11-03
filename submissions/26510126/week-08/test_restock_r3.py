@@ -89,4 +89,28 @@ with contextlib.redirect_stdout(out):
 res = json.loads(out.getvalue().splitlines()[-1])
 case("under the cash floor nothing is bought", res["buy"] == [] and "cash floor 700000" in res["why"], res["why"])
 restock_r3.strategy = real
+
+# runs 20 minutes apart (the rule may change): depth scales up to 4x where things sell, and the market's own
+# bankruptcy line from inventory.json sets the cash floor
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 4_000_000, "units": [], "bankrupt_line": 900_000}),
+                                   encoding="utf-8")
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 1200,
+                                                   "score": {"F>1": 8.0}, "sku_score": {}}), encoding="utf-8")
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+res = json.loads(out.getvalue().splitlines()[-1])
+q = {b["sku"]: b["qty"] for b in res["buy"]}
+case("runs 20 min apart: depth x4 for a selling food category (4 units, not 2)", q.get("SF1") == 4 and "x4.0" in res["why"],
+     {"SF1": q.get("SF1"), "why": res["why"]})
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 1_000_000, "units": [], "bankrupt_line": 900_000}),
+                                   encoding="utf-8")
+restock_r3.strategy = lambda: dict(real(), reserve_cash=0)        # the default 1,500,000 reserve would hide the line
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+restock_r3.strategy = real
+res = json.loads(out.getvalue().splitlines()[-1])
+case("a raised bankruptcy line (900,000) raises the cash floor to 1,100,000: nothing bought at 1,000,000",
+     res["buy"] == [] and "cash floor 1100000" in res["why"], res["why"])
 print(f"\n{sum(ok)}/{len(ok)} passed")

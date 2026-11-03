@@ -277,14 +277,18 @@ async def main(args, shops, memory, remember):
     for c in cands[:5]:
         log("CAND", f"{c[1]['name']} {c[2]['sku']} {c[2].get('name', '')[:30]} list {c[3]} surplus~{c[0]:.0f}: {c[4]}")
     # try the best candidate, then up to two more at other shops while the kit's 300 s per order allows
-    started, tried, out = time.time(), set(), None
+    # a shop that answers "none in stock" or a broken reply at once costs no time and does not use up a try
+    # (11/3 21:06-21:33: 30 of 69 talks ended that way, while three tries ended many orders)
+    started, tried, talks, out = time.time(), set(), 0, None
     for surplus, s, off, lp, note in cands:
-        if s["name"] in tried or len(tried) >= MAX_TRIES or (tried and time.time() - started > RETRY_UNTIL):
+        if s["name"] in tried or talks >= MAX_TRIES or (tried and time.time() - started > RETRY_UNTIL):
             continue
         tried.add(s["name"])
         out = await attempt(order, cat, s, off, lp, note, remember)
+        quick = out.pop("_quick", False)
         if out["receipt"]:
             break
+        talks += not quick
     forum_r3.maybe_post(memory)
     print(json.dumps(out, ensure_ascii=False), flush=True)
 
@@ -301,8 +305,9 @@ async def attempt(order, cat, s, off, lp, note, remember):
                     f"{accept_policy(order)['min_hours_left']} hours of shelf life left, with the market's certificate.")
     else:
         opening += ". Please ship a grade A or B unit with the market's certificate; a warranty is welcome."
-    hint = (f"The list price is {lp}. Shops buy stock at 25-75% of list price, so start well below list "
-            f"(around half) and raise slowly. Our record with this shop: {note}.\n"
+    hint = (f"The list price is {lp}. Shops buy stock at 25-75% of list price. Open below what the market paid lately "
+            f"(its lower quartile, below, is a fair opening; far under it, shops walk away) and raise slowly. "
+            f"Our record with this shop: {note}.\n"
             f"What the market paid lately (public ledger): "
             f"{prices_r3.line(MD, sku, (cat.get(sku) or {}).get('category'))}.\n")
     try:
@@ -326,4 +331,5 @@ async def attempt(order, cat, s, off, lp, note, remember):
               "price": agreed, "asks": result.get("asks", []), "offers": result.get("offers", []),
               "receipt": receipt, "problem": problem, "stars": stars, "screened": result.get("screened")})
     return {"shop": s["url"], "receipt": receipt if deal and not problem else None, "stars": stars,
-            "review": text, "accept": accept_policy(order)}
+            "review": text, "accept": accept_policy(order),
+            "_quick": not result.get("asks") and result.get("state") in ("TASK_STATE_REJECTED", "error")}

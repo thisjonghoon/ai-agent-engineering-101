@@ -285,6 +285,14 @@ def main():
     case("hidden demand: each order is logged with its category, reference price and nearest SKU",
          o1.get("category") == "식품>김치" and o1.get("ref") and o1.get("near") in ("F1", "F2", "F3"), str(o1))
 
+    # 10. screen (11/3): leave before a deal the kit would not pay for, from the shop's own words
+    f = buyer_r3.screen_for({"kind": "food", "use_within_hours": 540})
+    g = buyer_r3.screen_for({"kind": "goods"})
+    case("a shop's stated shelf life or grade under our payment policy ends the talk before a deal",
+         "286 h" in (f("들기름, grade C, 286 h shelf life left, certificate included. Asking 18900.") or "")
+         and f("grade A, 683 h of shelf life left") is None and "grade C" in (g("매트리스: grade C, certificate attached") or "")
+         and g("Counteroffer: 21736.") is None, f("grade C, 286 h shelf life left"))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 

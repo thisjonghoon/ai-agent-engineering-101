@@ -23,6 +23,7 @@ did not last `use_within_hours` or the goods broke), forum votes on our posts, a
 """
 import json
 import os
+import re
 import statistics
 import time
 from pathlib import Path
@@ -211,6 +212,28 @@ def accept_policy(order):
     return {"cert": True, "grades": GOOD_GRADES}
 
 
+GRADE_SAID = re.compile(r"\bgrade\s*:?\s*([ABC])\b|등급\s*:?\s*([ABC])\b", re.I)
+HOURS_SAID = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h|hours?|시간)\s*(?:of\s+)?(?:shelf[ -]life|left|남)", re.I)
+
+
+def screen_for(order):
+    """A check of the shop's own words against our payment policy (accept_policy): a grade or shelf life the shop
+    states that the kit would refuse to pay for ends the talk before a deal. On 11/3 six receipts went unpaid this way
+    (shelf life 138-338 h against 198-594 h asked, one grade C against A/B), each a result with no settle."""
+    pol = accept_policy(order)
+
+    def screen(text):
+        g = GRADE_SAID.search(text or "")
+        grade = (g.group(1) or g.group(2)).upper() if g else None
+        if grade and pol.get("grades") and grade not in pol["grades"]:
+            return f"the shop says grade {grade}, we pay only for {'/'.join(pol['grades'])}"
+        h = HOURS_SAID.search(text or "")
+        if h and pol.get("min_hours_left") and float(h.group(1)) < pol["min_hours_left"]:
+            return f"the shop says {float(h.group(1)):.0f} h of shelf life left, we need {pol['min_hours_left']:.0f}"
+        return None
+    return screen
+
+
 def check_receipt(receipt, order, agreed, task_id):
     if not isinstance(receipt, dict):
         return "no receipt"
@@ -284,7 +307,7 @@ async def attempt(order, cat, s, off, lp, note, remember):
             f"{prices_r3.line(MD, sku, (cat.get(sku) or {}).get('category'))}.\n")
     try:
         result = await buyer.shop(s["url"], name, limit, memory=hint, max_raise=0.4, max_offers=MAX_OFFERS,
-                                  opening=opening)
+                                  opening=opening, screen=screen_for(order))
     except Exception as e:
         log("ERROR", f"trade with {s['name']} failed: {e!r}")
         result = {"state": "error", "asks": [], "offers": [], "error": type(e).__name__}
@@ -301,6 +324,6 @@ async def attempt(order, cat, s, off, lp, note, remember):
               "list_price": lp, "budget": order.get("budget"), "food_hours": order.get("use_within_hours"),
               "outcome": "bad_receipt" if problem else "deal" if deal else "no_deal", "end": result.get("state"),
               "price": agreed, "asks": result.get("asks", []), "offers": result.get("offers", []),
-              "receipt": receipt, "problem": problem, "stars": stars})
+              "receipt": receipt, "problem": problem, "stars": stars, "screened": result.get("screened")})
     return {"shop": s["url"], "receipt": receipt if deal and not problem else None, "stars": stars,
             "review": text, "accept": accept_policy(order)}

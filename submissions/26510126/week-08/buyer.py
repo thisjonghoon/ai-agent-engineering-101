@@ -142,10 +142,12 @@ def as_int(value):
         return None
 
 
-async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFFERS, opening=None):
+async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFFERS, opening=None, screen=None):
     """Negotiate one item. `memory` is what market_buyer.py remembers about this shop (empty in week 6).
     `max_raise` (market_buyer.py only): raise at most this share of the gap between our last offer and the ask.
-    `opening` (Round 3): the first message, e.g. "I want to buy <name> (<sku>)"; default "I want to buy a <item>"."""
+    `opening` (Round 3): the first message, e.g. "I want to buy <name> (<sku>)"; default "I want to buy a <item>".
+    `screen` (Round 3): a function of the shop's reply text that returns a reason to leave (the unit it names will not
+    pass our kit's payment check) or None; checked before every offer, so we never agree to what we would not pay."""
     async with httpx.AsyncClient(timeout=200) as client:
         seller = Shop(client, base)
         card = await seller.read_card()
@@ -159,6 +161,11 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
         for n in range(1, max_offers + 1):
             if state(task) != "TASK_STATE_INPUT_REQUIRED":
                 break
+            why = screen(reply_text(task)) if screen else None
+            if why:
+                log("OUT", f"leaving before any deal: {why}")
+                await seller.cancel(task_id)
+                return {**result, "state": "walked", "screened": why}
             ask = asking_price(task)
             result["asks"].append(ask)
             log("ASK", f"{ask} ({'data' if OPTS.data_part and data_ask(task) is not None else 'text'})")

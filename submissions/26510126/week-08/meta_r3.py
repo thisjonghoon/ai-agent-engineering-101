@@ -73,6 +73,11 @@ ab, when present, is an A/B test running inside the shop: each new negotiation o
 of `param` (arms), whatever the strategy says, and mean_reward is margin over list price per negotiation (0 for a lost
 one). Code ends it and keeps the better value; until then a change to that number does not reach those negotiations.
 
+The shop's rank (the midterm's score) is 0.5 x profit percentile + 0.3 x revenue percentile + 0.2 x stars percentile,
+each among all shops on the board; `standing` shows ours. Percentiles reward being above the others, not the size of
+the lead: once profit sits high, a little margin given up for more sales or better stars can raise the score more,
+and a loss of profit percentile costs the most.
+
 Last versions, oldest first (each with how it did while it ran):
 {history}
 
@@ -161,6 +166,34 @@ def market_prices():
     return out
 
 
+def percentile(x, xs):
+    """Share of the values in xs at or below x (the board ranks each part as a percentile among all shops)."""
+    xs = [v for v in xs if isinstance(v, (int, float))]
+    return round(sum(v <= x for v in xs) / len(xs), 3) if xs and isinstance(x, (int, float)) else None
+
+
+def standing():
+    """Our shop's percentile on each ranked part (profit, revenue, stars) among all shops on the board, the weighted
+    score the midterm uses (0.5 / 0.3 / 0.2), and where the other shops' stars sit, so the harness can trade a little
+    margin for stars or revenue when that moves the score more."""
+    try:
+        import httpx
+        rows = httpx.get("https://market.ourolabs.ai/api/board", timeout=8).json().get("shops") or []
+    except Exception:
+        return {}
+    ours = next((r for r in rows if r.get("name") == "thisjonghoon"), None)
+    if not ours or len(rows) < 2:
+        return {}
+    pct = {k: percentile(ours.get(k), [r.get(k) for r in rows]) for k in ("profit", "revenue", "stars")}
+    if None in pct.values():
+        return {"standing_parts": pct}
+    stars = sorted(r["stars"] for r in rows if isinstance(r.get("stars"), (int, float)) and r.get("reviews"))
+    q = lambda f: stars[min(len(stars) - 1, int(f * len(stars)))] if stars else None
+    return {"standing": {"shops": len(rows), "profit_pct": pct["profit"], "revenue_pct": pct["revenue"],
+                         "stars_pct": pct["stars"], "score": round(0.5 * pct["profit"] + 0.3 * pct["revenue"] + 0.2 * pct["stars"], 3),
+                         "our_stars": ours.get("stars"), "market_stars_p25_median_p75": [q(0.25), q(0.5), q(0.75)]}}
+
+
 def snapshot(since):
     inv = read_json(MD / "inventory.json", {})
     units = inv.get("units", [])
@@ -174,6 +207,7 @@ def snapshot(since):
             "minutes": round((now - since) / 60)}
     snap.update(seller_lines(since))
     snap.update(market_prices())
+    snap.update(standing())
     return snap
 
 

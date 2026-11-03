@@ -2,13 +2,14 @@
 \documentclass[11pt]{article}
 \usepackage[a4paper,landscape,margin=12mm]{geometry}
 \usepackage{tikz}
+\usepackage{graphicx}
 \usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc}
 \pagestyle{empty}
 \begin{document}
 \centering
 {\Large\bfseries Round 3 agents of \texttt{thisjonghoon}: models, context and tools}\\[2mm]
 {\small Blue: a model decides. Grey: code decides. Green: context we keep. Orange: tools. Dashed boxes are what kit v4 does for everyone.}\\[4mm]
-\begin{tikzpicture}[
+\resizebox{\linewidth}{!}{\begin{tikzpicture}[
   font=\small, node distance=6mm and 8mm, >={Stealth[length=2.2mm]},
   model/.style={draw=blue!60!black, fill=blue!8, rounded corners, align=center, minimum height=10mm, text width=34mm},
   code/.style={draw=black!60, fill=black!5, rounded corners, align=center, minimum height=10mm, text width=34mm},
@@ -28,7 +29,10 @@
 \node[code, below=of strat, text width=28mm] (restock) {\textbf{restock\_r3.py}\\ breadth, then depth where settles show};
 \node[code, above=of strat, text width=28mm] (seller) {\textbf{seller\_r3.py}\\ ask, floor, concession; honest claim, warranty if set};
 \node[tool, above=of seller, text width=28mm] (shopacp) {A2A card + ACP checkout (kit proxy)};
+\node[code, left=8mm of meta, text width=27mm, font=\scriptsize] (sim) {\textbf{simulate\_r3 + playbooks\_r3}\\ our talks (\texttt{talks\_r3.jsonl}) replayed under Costco, Walmart EDLP, markdown, premium, two-tier};
+\node[ctx, below=3mm of sim, text width=27mm, font=\scriptsize] (rank) {\textbf{rank\_r3}: board Players table\\ goal first place, q00 a floor};
 \node[code, right=6mm of restock, text width=22mm, font=\scriptsize] (ab) {\textbf{ab\_r3.py}\\ A/B: two values drawn per negotiation, winner by code};
+\node[ctx, below=5mm of ab, text width=24mm, font=\scriptsize] (demand) {\textbf{demand\_r3}: hidden demand from our buyer's orders and asks to our shop};
 
 % --- buyer column (right)
 \node[ctx, below right=14mm and 36mm of market] (mem) {\texttt{memory.jsonl}\\ raw evidence: deals, lies, breaks, refusals};
@@ -47,12 +51,15 @@
 % --- arrows
 \draw[->] (market.west) -| node[lab, pos=0.7]{stock, sales} (inv.north);
 \draw[->] (inv) -- (meta);
+\draw[->] (sim) -- node[lab]{what-if} (meta);
+\draw[->] (rank.east) -- node[lab, pos=0.45]{goal} (meta.south west);
+\draw[->] (demand.west) -| ([xshift=4mm]restock.south);
 \draw[->] (hist) -- (meta);
 \draw[->] (meta) -- (strat);
 \draw[->] (meta.south west) to[bend right=20] node[lab]{log} (hist.north west);
 \draw[->] (strat) -- (seller);
 \draw[->] (strat) -- (restock);
-\draw[->] (restock.south) |- node[lab, pos=0.75]{buy lines} ($(hist.south)+(0,-6mm)$) -| ([xshift=-12mm]inv.west) |- (inv.west);
+\draw[->] (restock.south) |- node[lab, pos=0.75]{buy lines} ($(hist.south)+(0,-6mm)$) -| ([xshift=-4mm]inv.west) |- (inv.west);
 \draw[->] (seller) -- (shopacp);
 \draw[<->] (ab.north) |- node[lab, pos=0.3]{arm, outcome} (seller.east);
 \draw[->] (ab) -- node[lab]{winner} (strat);
@@ -67,7 +74,7 @@
 \draw[<->, dashed] (buyer.north west) to[bend right=12] node[lab, pos=0.55]{A2A haggle (other shops)} (seller.east);
 \draw[->] (review.north) |- node[lab, pos=0.3]{reviews, posts} ([yshift=3mm]market.east);
 \draw[->] (review) |- (mem.east);
-\end{tikzpicture}
+\end{tikzpicture}}
 
 \vspace{4mm}
 \begin{minipage}{0.95\linewidth}\small
@@ -78,6 +85,6 @@ ours buys breadth first and depth where the ledger shows settled deals, and the 
 breakages, refusals) and derives each shop's record when it reads it. The kit pays with fixed code; our copy makes the
 checkout tools from each shop's \texttt{acp.json} and falls back to the fixed code only before a session exists.
 Prices also learn inside the shop: an A/B test draws one of two values per negotiation at the same hour, so the
-market's traffic swings do not decide which value wins.
+market's traffic swings do not decide which value wins. The meta-harness does not only search near its last strategy: it sees our own negotiations replayed, by code, under real retailers' playbooks (Costco's capped markup, Walmart's everyday low price, fresh-food markdowns, premium goods with a warranty, a two-tier cheap and premium shelf), and may propose the number worth an A/B test. Its goal comes from the board's own Players table (first place; the instructor's agent is a floor), and the restock follows a hidden-demand estimate built from the orders our buyer receives and the requests our shop gets.
 \end{minipage}
 \end{document}

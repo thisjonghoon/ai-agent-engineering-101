@@ -15,13 +15,28 @@ The one-page figure is `architecture.tex` / `architecture.pdf`.
 
 ## 1. Components
 
+Three loops, each built the same way: a model proposes, code checks and acts, and the outcome is written down as
+raw evidence that the next decision reads.
+
+- **The buyer's haggle is a ReAct loop** (week 2): observe the shop's ask, think and act (the model returns a
+  one-line `why` with its offer, logged as `THINK`), observe the reply. Code bounds every action (budget, no lower
+  offer, raise cap) and ends the loop (walk, max offers).
+- **The meta-harness is the same loop, slowed down** to 15 minutes. It observes what the last version did, decides
+  the next strategy, and code clamps it. Its outcome is read on the next cycle.
+- **Memory follows LongMemEval-V2:**
+  - raw evidence only, appended and never summarised on write; summaries are derived on read;
+  - static facts and dynamic ones, with the newest evidence winning;
+  - transitions (how a shop moved its asks in our last talks);
+  - gotchas (false grade claims, broken goods);
+  - and saying "no history" instead of guessing.
+
 ### 1.1 Models
 
 | Where | Model | What it decides | What code decides instead |
 |---|---|---|---|
-| Shop strategy, every 15 min | Claude haiku (`meta_r3.py`) | ask and floor as shares of list price, separately for food (with a freshness premium) and goods, minimum margin, concession step, food clearance, warranty hours, cash reserve, stock cap, which goods and food to stock, depth, price spread, best-seller depth; it sees settled sales, revenue and the market's settled prices by kind | bounds and a largest step per cycle for every number; floor ≥ cost + 2% outside clearance; when fewer than 60% of a busy window's receipts settle and no warranty is offered, code tries a 2 h warranty on grade-A goods; an A/B test's winner is applied by code, not chosen by the model; an unusable answer keeps the current strategy |
+| Shop strategy, every 15 min | Claude haiku (`meta_r3.py`) | which retail playbook to lean on and which number to A/B test next; ask and floor as shares of list price, separately for food (with a freshness premium) and goods, minimum margin, concession step, food clearance, warranty hours, cash reserve, stock cap, which goods and food to stock, depth, price spread, best-seller depth; it sees settled sales, revenue and the market's settled prices by kind | bounds and a largest step per cycle for every number; floor ≥ cost + 2% outside clearance; when fewer than 60% of a busy window's receipts settle and no warranty is offered, code tries a 2 h warranty on grade-A goods; an A/B test's winner is applied by code, not chosen by the model; an unusable answer keeps the current strategy |
 | Shop, each haggle turn | none (code) | — | `seller_r3.py`: counter moves `step` toward the offer, never under the floor; accept at or above the floor after two offers or at the midpoint; while an A/B test runs, each negotiation draws one arm and keeps it. No model per turn, so a busy market does not queue behind `claude -p` |
-| Buyer, each order | Claude haiku (`buyer_r3.py` via `buyer.py`) | each offer in the haggle | which shop and SKU (expected surplus), bans (false grade claims, broken goods without warranty), cap = min(budget, 0.9 × list), accept policy for the kit |
+| Buyer, each order | Claude haiku (`buyer_r3.py` via `buyer.py`) | each offer in the haggle, with a one-line reason (the ReAct trace) | which shop and SKU (expected surplus), bans (false grade claims, broken goods without warranty), cap = min(budget, 0.9 × list), accept policy for the kit |
 | Ideas | Claude sonnet (`meta_explore.py`, from week 7) | proposals only | everything |
 
 All Claude calls go through `claude -p` with no tools, no settings, no session persistence, on the subscription.
@@ -59,7 +74,31 @@ All Claude calls go through `claude -p` with no tools, no settings, no session p
   check them.
 - **Meta-harness history** (`logs/strategies_r3.jsonl`): every strategy version with what happened while it ran
   (deals, walk-aways, price as a share of list, margin over cost, profit, stock at cost, ageing stock). The harness
-  sees the last 30; a version's outcome is the measurement stored at the next decision, so nothing is re-measured.
+  sees the last 30, which are kept short:
+  - the newest 6 whole;
+  - older ones only as what changed and the key results (about a third of the size).
+
+  A version's outcome is the measurement stored at the next decision, so nothing is re-measured.
+- **Hidden demand** (`demand_r3.py`, `logs/demand_r3.jsonl`). Round 3 orders on the ledger hide their item and
+  budget. Two signals reach only our agents:
+  - every order our buyer receives: its category, and the middle of its acceptable price band as the hidden
+    reference price;
+  - every request to our shop, a miss counting double.
+
+  Both decay over 48 hours and steer the restock's categories, SKUs and price points.
+- **The goal itself is context** (`rank_r3.py`). The rubric grades our percentile on the board's Players table
+  (shop ALL + buyer ALL) when the round ends. The meta-harness reads that table each cycle: our rank, the leader's
+  gap, the instructor's agent as a floor, and which part has the most to gain. Until the board fills the table, the
+  same numbers are recomputed from its shop and buyer tables.
+- **Defence against context bombs.** Since Round 3, agents post without being asked, and other agents' text reaches
+  our prompts. That text is clipped before it does:
+  - control characters stripped (`harness.clip`);
+  - a shop's reply cut to 300 characters;
+  - a buyer's message to 2,000, and never quoted;
+  - any prompt over the cap refused rather than sent.
+
+  Forum "wanted" posts count once per author, at most 3, and not when they name many categories
+  (`test_restock_r3.py`).
 - **Kit files as the shop's eyes:** `inventory.json` (balance, units with cost, grade and dates), `catalog.json`,
   `demand.json` (categories only; the market publishes no demand weights).
 
@@ -99,7 +138,9 @@ See `architecture.pdf`. In short:
 | Buyer | picks and haggles | expected-surplus choice over (shop, SKU), memory of raw evidence, bans for false claims and unwarranted breakages, accept policy (certificate, shelf life, grade) checked by the kit before paying |
 | Checkout | fixed code; inputs described as short strings | tools made from each shop's `acp.json`, fixed code only as a fallback; our card in JSON Schema |
 | Forum | none | facts from our settled deals with ledger refs, at most one post in 5 minutes |
-| Learning | none | the meta-harness over strategy versions, plus an A/B test inside the shop that holds the hour fixed |
+| Learning | none | the meta-harness over strategy versions; an A/B test inside the shop that holds the hour fixed; replays of our own negotiations under real retailers' playbooks to choose what to test |
+| Demand | `demand.json` categories only | hidden demand estimated from the orders our buyer receives and the requests our shop gets |
+| Goal | none | the board's Players table read every cycle: first place, the instructor's agent as a floor |
 
 **What moves without an order.** Week 9 places the rounds on the weak notion of agency (Wooldridge and Jennings,
 1995): autonomy, reactivity, social ability and pro-activeness, the last absent until Round 3. Ours acts first in

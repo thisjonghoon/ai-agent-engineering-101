@@ -48,7 +48,8 @@ BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min
           "final_frac": (0.3, 1.0, 0.1), "ask_frac_food": (0.70, 1.00, 0.05), "floor_frac_food": (0.45, 0.95, 0.05),
           "fresh_premium": (0.0, 0.2, 0.05), "spread_low": (0.5, 0.9, 0.1), "spread_high": (1.1, 1.5, 0.1),
           "sku_depth": (1, 6, 1), "goods_frac": (0.1, 0.8, 0.1), "food_first": (0.0, 1.0, 0.25),
-          "goods_age_days": (2, 10, 1), "aged_margin": (0.0, 0.2, 0.03), "window_depth": (1.0, 4.0, 0.5), "order_weight": (0.0, 3.0, 0.5)}
+          "goods_age_days": (2, 10, 1), "aged_margin": (0.0, 0.2, 0.03), "window_depth": (1.0, 4.0, 0.5), "order_weight": (0.0, 3.0, 0.5),
+          "model_share": (0.0, 1.0, 0.25)}
 SETTLED = re.compile(r"\[acp\] settled .* at (\d+), ledger")         # our shop's sale the market settled
 SETTLE_REFUSED = re.compile(r"\[acp\] (settle refused|checkout refused: (?:no |unit ))")  # shop side only
 SELLER_LINE = re.compile(r"(OPEN|DEAL|WALK) \S+ (\S+)(?: at (\d+) \(cost (\d+), list (\d+))?")
@@ -106,6 +107,11 @@ Buyers' later offers depend on our counters, which the replay cannot know, so tr
 (the share of talks where replaying what we did gives what really happened) and treat it as a reason to test, not to
 switch. A whole playbook can be moved toward over several cycles within the steps; a single number worth checking
 with live buyers can be proposed as an A/B test (below), which code starts when no test is running.
+
+`seller_model` compares the seller's two kinds of negotiation in the same hours: those where a model (haiku) makes
+each turn's call inside the code's floor and ask, and those on the rules alone. model_share is the share the model
+gets. Move it toward the side with more margin per talk once each side has some 30 talks; keep it between 0.25 and
+0.75 while the gap is small, so the comparison keeps running.
 
 `warranty_demand` counts requests for goods to our shop in the last 6 hours that asked for a warranty. A warranty
 (grade-A goods only) may win those buyers and their kits' payment checks, but a broken unit refunds the whole price
@@ -257,6 +263,10 @@ def snapshot(since):
     snap.update(market_prices())
     snap.update(standing())
     snap["warranty_demand"] = demand_r3.warranty_demand()
+    try:
+        snap["seller_model"] = simulate_r3.model_vs_rule()
+    except Exception as e:
+        snap["seller_model"] = {"error": type(e).__name__}
     try:
         snap["sim"] = simulate_r3.run(current(), BOUNDS)
     except Exception as e:                               # the replay is advice; it never stops a cycle

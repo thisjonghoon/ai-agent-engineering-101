@@ -3,8 +3,15 @@
     python seller_r3.py --port 9301
 
 Started from the course's starter_round3/seller.py (A2A side, unit lookup, receipt signing). What is ours:
-  - Prices are set by code from strategy_r3.json, which the meta-harness (meta_r3.py, Claude haiku) rewrites; no
-    model call per turn, so a busy market does not queue behind `claude -p`.
+  - Prices are set by code from strategy_r3.json, which the meta-harness (meta_r3.py, Claude haiku) rewrites.
+  - Haggling: in a share of negotiations (model_share, drawn once per negotiation) Claude haiku makes each turn's
+    call, ReAct style: it reads the unit (grade, shelf life left, list and cost), our ask and floor, every offer so
+    far, the turns left, our stock of that SKU and how often buyers ask for it, and answers with a one-line reason
+    and accept or a counter. Code keeps it honest and safe: it accepts only at or above the floor, counters only
+    between the buyer's offer and our last ask (never raising it), and when the model is busy (MODEL_SLOTS calls at
+    once), slow (MODEL_TIMEOUT s) or answers nonsense, the rules below decide that turn, so a busy market never
+    queues behind `claude -p`. The other negotiations run on the rules alone; logs/talks_r3.jsonl marks which was
+    which, and the meta-harness compares the two and moves model_share (a controlled comparison, same hours).
       ask   = list price x ask_frac (food: ask_frac_food, up to fresh_premium more for a full shelf life)
       floor = max(cost x (1 + min_margin), list price x floor_frac (food: floor_frac_food)), never above the ask
     Food close to its date (less than clear_hours left, or grade C) is cleared down to cost x clear_frac: a unit
@@ -25,9 +32,11 @@ under it (final_frac): stock left at the end has cost money and earns nothing.
 Rounds 0-2 have no stock: the week-07 items are sold at the old reserves so the shop keeps working before Round 3.
 """
 import argparse
+import asyncio
 import base64
 import json
 import os
+import random
 import re
 import time
 from pathlib import Path
@@ -45,6 +54,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
 import ab_r3
 import demand_r3
+import harness
 
 HERE = Path(__file__).resolve().parent
 NAME = "thisjonghoon"
@@ -55,12 +65,37 @@ DEFAULTS = {"ask_frac": 0.95, "floor_frac": 0.78, "min_margin": 0.10, "step": 0.
             "clear_hours": 6, "clear_frac": 0.6, "warranty_hours": 0, "max_turns": 6,
             "endgame_hours": 24, "endgame_frac": 1.0, "final_hours": 6, "final_frac": 0.6,
             "ask_frac_food": 0.95, "floor_frac_food": 0.78, "fresh_premium": 0.10,
-            "goods_age_days": 5, "aged_margin": 0.03}
+            "goods_age_days": 5, "aged_margin": 0.03, "model_share": 0.5}
 ROUND_END = 1794927540                                       # 2026-11-17 23:59 KST: stock left then is a loss
 OFFER = re.compile(r"(?<![A-Za-z0-9])\d[\d,]*(?![A-Za-z0-9])")   # a number on its own, not the digits of a SKU
 FOOD_CUTS = (0.80, 0.45)                                     # shelf life left: A at or above 80%, B at or above 45%
 RECENT_SOLD = 60
 OPEN_HOLD = 120     # seconds a negotiation keeps its unit before another buyer may be offered it
+MODEL_SLOTS = asyncio.Semaphore(3)    # model calls at once; a turn that finds them all busy is decided by the rules
+MODEL_TIMEOUT = 8                     # seconds (haiku answered in 3.7 s at the median, 5.3 s at p90, over 160k calls)
+SELL_PROMPT = """You haggle for an online shop in a market of AI buyers. The goal is the most profit over the round
+(price minus cost) without losing sales a fair price would win: goods that wait pay storage, food is thrown away at its
+date, and a buyer who walks away buys elsewhere.
+Unit: {name} ({kind}), grade {grade}, {life}. List price {lp}, our cost {cost}.
+Our floor is {floor} (never below it); our last ask was {ask}. The buyer's offers so far, oldest first: {offers}.
+Turns left before we must walk away: {left}. Our stock of this SKU: {stock}. Demand for it lately: {demand}.
+Either accept the last offer ({offer}) or counter with a whole number from {lo} to {hi}. A counter far above the offer
+may lose the buyer; accepting too early leaves money on the table.
+Answer with JSON only: {{"why": "<at most twelve words>", "action": "accept" or "counter", "price": <your counter>}}"""
+DEMAND = {"t": 0, "sku": {}}
+
+
+def demand_of(sku):
+    """How often buyers asked for or were sent for this SKU lately, relative to the average SKU (cached 5 min)."""
+    if time.time() - DEMAND["t"] > 300:
+        try:
+            _, w, _ = demand_r3.signals()
+            mean = sum(w.values()) / len(w) if w else 0
+            DEMAND.update(t=time.time(), sku={k: v / mean for k, v in w.items()} if mean else {})
+        except Exception:                             # demand is a hint for the model; never stop a sale for it
+            DEMAND.update(t=time.time(), sku={})
+    v = DEMAND["sku"].get(sku)
+    return "none seen" if v is None else f"{v:.1f}x the average SKU"
 
 
 def log(msg):
@@ -84,7 +119,8 @@ def ab_end(task_id, deal, event, reward=0.0, price=None):
                                     "list_price": u["list_price"], "cost": u["cost"], "ask0": deal.get("ask0"),
                                     "floor": deal["floor"], "clear": deal.get("clear"), "offers": deal["offers"],
                                     "turns": deal["turns"], "event": event, "price": price,
-                                    "warranty_ask": deal.get("warranty_ask"), "ab": deal.get("ab")}) + "\n")
+                                    "warranty_ask": deal.get("warranty_ask"), "model_on": deal.get("model_on", False),
+                                    "model_calls": deal.get("model_calls", 0), "ab": deal.get("ab")}) + "\n")
         except (OSError, KeyError, TypeError):
             pass
     if deal and deal.get("ab"):
@@ -114,6 +150,8 @@ def read_json(path, default):
 def strategy():
     s = dict(DEFAULTS)
     s.update({k: v for k, v in read_json(STRATEGY, {}).items() if k in DEFAULTS and isinstance(v, (int, float))})
+    if os.environ.get("SELLER_MODEL_SHARE"):         # tests run the rules alone (0) or the model on every talk (1)
+        s["model_share"] = float(os.environ["SELLER_MODEL_SHARE"])
     return s
 
 
@@ -276,7 +314,9 @@ class Seller(AgentExecutor):
             deal = self.open[task.id] = {"unit": u, "ask": ask, "floor": floor, "offers": [], "turns": 0,
                                          "t": time.time(), "s": s if ab else None, "ab": ab, "ask0": ask,
                                          "clear": floor < 0.99 * normal,     # clearance, aged or endgame floor
-                                         "warranty_ask": bool(WARRANTY_WORDS.search(text))}
+                                         "warranty_ask": bool(WARRANTY_WORDS.search(text)),
+                                         "model_on": bool(u.get("unit")) and random.random() < s["model_share"],
+                                         "model_calls": 0}
             if ab:
                 try:
                     ab_r3.record(id=ab[0], arm=ab[1], task=task.id, event="open", sku=u["sku"], kind=u.get("kind"),
@@ -285,7 +325,7 @@ class Seller(AgentExecutor):
                     pass
             t, words = terms(u, s)
             log(f"OPEN {task.id[:8]} {u['sku']} {u['name'][:30]} list {u['list_price']} cost {u['cost']} ask {ask} floor {floor}"
-                + (f" ab {ab[0]}:{ab[1]}" if ab else ""))
+                + (f" ab {ab[0]}:{ab[1]}" if ab else "") + (" model" if deal["model_on"] else ""))
             await up.requires_input(say(f"{u['name']} ({u['sku']}){': ' + words if words else ''}. "
                                         f"List price {u['list_price']}, asking {ask}. Send your offer as a number."))
             return
@@ -298,7 +338,13 @@ class Seller(AgentExecutor):
             deal["offers"].append(offer)
         ask, floor, u = deal["ask"], deal["floor"], deal["unit"]
         mid = (ask + floor) / 2
-        if offer is not None and offer >= floor and (offer >= ask or len(deal["offers"]) >= 2 or offer >= mid):
+        accept = offer is not None and offer >= floor and (offer >= ask or len(deal["offers"]) >= 2 or offer >= mid)
+        think = None
+        if deal.get("model_on") and offer is not None and offer < ask and deal["turns"] < s["max_turns"]:
+            think = await self.think(task.id, deal, offer, s)
+            if think:
+                accept = think["action"] == "accept"
+        if accept:
             price = min(offer, ask)
             t, words = terms(u, s)
             receipt = sign(dict({"shop": NAME, "item": u["sku"], "price": price, "task": task.id}, **t))
@@ -316,10 +362,49 @@ class Seller(AgentExecutor):
             log(f"WALK {task.id[:8]} {u['sku']} offers {deal['offers']} floor {floor}")
             del self.open[task.id]
             return
-        if offer is not None and offer < ask:
+        if think:
+            ask = think["price"]
+        elif offer is not None and offer < ask:
             ask = max(floor, int(round(ask - s["step"] * (ask - offer))))
         deal["ask"] = ask
         await up.requires_input(say(f"Counteroffer: {ask}."))
+
+    async def think(self, task_id, deal, offer, s):
+        """The model's call on this turn: {"action": "accept"|"counter", "price", "why"} inside the code's limits, or
+        None when every slot is busy, it is slow, or the answer does not parse (the rules then decide)."""
+        lo, hi = max(deal["floor"], offer + 1), deal["ask"]      # a counter sits above the offer, never above our ask
+        if MODEL_SLOTS.locked():
+            log(f"THINK {task_id[:8]} model busy: rules decide")
+            return None
+        u = deal["unit"]
+        grade, hours, _ = grade_now(u)
+        life = f"{hours:.0f} h of shelf life left" if u.get("kind") == "food" and hours is not None else \
+            f"in stock {(time.time() - (u.get('supplied_at') or time.time())) / 3600:.0f} h"
+        stock = sum(x.get("sku") == u["sku"] for x in read_json(MARKET_DIR / "inventory.json", {}).get("units", []))
+        prompt = SELL_PROMPT.format(
+            name=harness.clip(u.get("name"), 60), kind=u.get("kind"), grade=grade, life=life, lp=u["list_price"],
+            cost=u["cost"], floor=deal["floor"], ask=hi, offers=deal["offers"][-6:], offer=offer,
+            left=s["max_turns"] - deal["turns"], stock=stock, demand=demand_of(u["sku"]), lo=lo, hi=max(lo, hi))
+        deal["model_calls"] += 1
+        async with MODEL_SLOTS:
+            ans = await harness.ask(prompt, tries=1, timeout=MODEL_TIMEOUT, max_chars=4000)
+        if not isinstance(ans, dict) or ans.get("action") not in ("accept", "counter"):
+            log(f"THINK {task_id[:8]} no usable answer: rules decide")
+            return None
+        why = harness.clip(str(ans.get("why") or ""), 120)
+        if ans["action"] == "accept":
+            if offer < deal["floor"]:
+                log(f"THINK {task_id[:8]} {why} -> accept {offer} under the floor {deal['floor']}: rules decide")
+                return None
+            log(f"THINK {task_id[:8]} {why} -> accept {offer}")
+            return {"action": "accept", "price": offer, "why": why}
+        p = ans.get("price")
+        if lo > hi or not isinstance(p, (int, float)) or isinstance(p, bool):
+            log(f"THINK {task_id[:8]} {why} -> counter {p!r} not usable: rules decide")
+            return None
+        price = int(min(max(round(p), lo), hi))
+        log(f"THINK {task_id[:8]} {why} -> counter {price}" + (f" (asked {p})" if price != p else ""))
+        return {"action": "counter", "price": price, "why": why}
 
     async def cancel(self, context, event_queue):
         task = context.current_task

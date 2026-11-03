@@ -14,7 +14,10 @@ What it cannot know, so read it as a first guess for the A/B test, not a verdict
     pessimistic about holding firm), and a buyer that would have paid more for a firmer shop is never seen;
   - warranties (the break rate is hidden) and freshness pricing are left out; clearance floors are kept as logged.
 `fidelity` is the share of talks where replaying what we actually did gives the outcome that really happened: the
-lower it is, the less the other rows mean.
+lower it is, the less the other rows mean. Talks where the seller's model made the calls (model_on) cannot be
+replayed as what we did, so fidelity leaves them out; their offers still count for the other strategies.
+`model_vs_rule` compares the two halves of the seller's own split (model_share): talks, deals, and margin over cost
+per talk, a lost sale counting 0.
 """
 import json
 import os
@@ -72,6 +75,23 @@ def score(rows, s=None):
     return {"deals": len(sold), "revenue": int(sum(p for p, _ in sold)), "margin": int(sum(p - t["cost"] for p, t in sold))}
 
 
+def model_vs_rule(hours=24):
+    """The seller's own split: negotiations the model haggled against those the rules haggled, same hours."""
+    out = {}
+    for t in talks(hours):
+        k = "model" if t.get("model_on") else "rule"
+        o = out.setdefault(k, {"talks": 0, "deals": 0, "margin": 0, "list": 0})
+        o["talks"] += 1
+        o["list"] += t["list_price"]
+        if t.get("event") == "deal" and t.get("price") is not None:
+            o["deals"] += 1
+            o["margin"] += t["price"] - t["cost"]
+    for o in out.values():
+        o["margin_per_talk"] = round(o["margin"] / o["talks"])
+        o["margin_of_list"] = round(o.pop("margin") / o.pop("list"), 3) if o["list"] else 0
+    return out
+
+
 def run(strategy, bounds, hours=24):
     """Our talks of the last `hours` under what we did, the current strategy and each playbook."""
     import playbooks_r3
@@ -79,10 +99,10 @@ def run(strategy, bounds, hours=24):
     if not rows:
         return {}
     real = [t.get("price") if t.get("event") == "deal" else None for t in rows]
-    ours = [replay(t) for t in rows]
-    same = sum((a is None) == (b is None) and (a is None or abs(a - b) <= 1) for a, b in zip(real, ours))
+    ruled = [(a, replay(t)) for a, t in zip(real, rows) if not t.get("model_on")]
+    same = sum((a is None) == (b is None) and (a is None or abs(a - b) <= 1) for a, b in ruled)
     sold = [(p, t) for p, t in zip(real, rows) if p is not None]
-    out = {"talks": len(rows), "hours": hours, "fidelity": round(same / len(rows), 2),
+    out = {"talks": len(rows), "hours": hours, "fidelity": round(same / len(ruled), 2) if ruled else None,
            "actual": {"deals": len(sold), "revenue": int(sum(p for p, _ in sold)), "margin": int(sum(p - t["cost"] for p, t in sold))},
            "current": score(rows, strategy)}
     for name in playbooks_r3.PLAYBOOKS:

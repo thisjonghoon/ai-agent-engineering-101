@@ -73,6 +73,7 @@ async def main():
     port = free_port()
     p = subprocess.Popen([sys.executable, str(HERE / "seller_r3.py"), "--port", str(port)], cwd=HERE,
                          env=dict(os.environ, MARKET_DIR=str(md), AB_DIR=str(md), DEMAND_LOG=str(md / "demand_r3.jsonl"),
+                                  SELLER_MODEL_SHARE="0",           # the A2A cases test the rules; the model is stubbed below
                                   TALKS_LOG=str(md / "talks_r3.jsonl")))
     base = f"http://127.0.0.1:{port}"
     for _ in range(100):
@@ -173,6 +174,41 @@ async def main():
         check("replaying what we did gives what happened (fidelity 1.0 on fixed test buyers), playbooks are scored",
               res["fidelity"] == 1.0 and res["actual"]["deals"] == len(deals) and "costco" in res and "walmart_edlp" in res,
               {k: res[k] for k in ("fidelity", "actual", "current", "costco", "walmart_edlp")})
+        # the seller's model turn (stubbed: no model call): honest limits kept whatever it answers
+        import harness
+        seller_r3.MARKET_DIR = md
+        sel = seller_r3.Seller()
+        unit = dict(UNITS[0])
+        mk = lambda: {"unit": unit, "ask": 95000, "floor": 78000, "offers": [70000], "turns": 1, "model_calls": 0}
+        s = dict(seller_r3.strategy(), max_turns=6)
+        async def fake(answer):
+            async def ask(prompt, **kw):
+                fake.prompt = prompt
+                return answer
+            harness.ask = ask
+            return await sel.think("t-test", mk(), 70000, s)
+        a = await fake({"why": "fair", "action": "counter", "price": 50000})
+        b = await fake({"why": "greedy", "action": "counter", "price": 120000})
+        c = await fake({"why": "take it", "action": "accept", "price": 70000})
+        d = await fake({"oops": 1})
+        e = await fake({"why": "ok", "action": "counter", "price": 88000})
+        check("the model's counter is kept between the floor and our last ask, an accept under the floor and a bad "
+              "answer go to the rules, and the prompt carries the unit, offers, stock and demand",
+              a["price"] == 78000 and b["price"] == 95000 and c is None and d is None and e["price"] == 88000
+              and "[70000]" in fake.prompt and "Our stock of this SKU: 1" in fake.prompt and "Demand for it" in fake.prompt,
+              [a, b, c, d, e])
+        await seller_r3.MODEL_SLOTS.acquire(); await seller_r3.MODEL_SLOTS.acquire(); await seller_r3.MODEL_SLOTS.acquire()
+        busy = await fake({"why": "x", "action": "counter", "price": 90000})
+        for _ in range(3):
+            seller_r3.MODEL_SLOTS.release()
+        check("with every model slot busy the rules decide at once", busy is None, busy)
+        rows = [dict(x, model_on=True) for x in talks[:1]] + talks[1:]
+        (md / "talks_mix.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows))
+        simulate_r3.TALKS = md / "talks_mix.jsonl"
+        mv = simulate_r3.model_vs_rule()
+        check("model and rule talks are compared side by side; fidelity leaves model talks out",
+              mv["model"]["talks"] == 1 and mv["rule"]["talks"] == len(talks) - 1
+              and simulate_r3.run(meta_r3.current(), meta_r3.BOUNDS)["fidelity"] == 1.0, mv)
     finally:
         p.terminate()
     print(f"\n{sum(ok)}/{len(ok)} passed")

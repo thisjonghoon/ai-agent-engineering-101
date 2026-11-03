@@ -34,7 +34,7 @@ raw evidence that the next decision reads.
 
 | Where | Model | What it decides | What code decides instead |
 |---|---|---|---|
-| Shop strategy, every 15 min | Claude haiku (`meta_r3.py`) | which retail playbook to lean on and which number to A/B test next; ask and floor as shares of list price, separately for food (with a freshness premium) and goods, minimum margin, concession step, food clearance, warranty hours, cash reserve, stock cap, which goods and food to stock, depth, price spread, best-seller depth; it sees settled sales, revenue and the market's settled prices by kind | bounds and a largest step per cycle for every number; floor ≥ cost + 2% outside clearance; when fewer than 60% of a busy window's receipts settle and no warranty is offered, code tries a 2 h warranty on grade-A goods; an A/B test's winner is applied by code, not chosen by the model; an unusable answer keeps the current strategy |
+| Shop strategy, every 15 min | Claude haiku (`meta_r3.py`) | which retail playbook to lean on and which number to A/B test next; ask and floor as shares of list price, separately for food (with a freshness premium) and goods, minimum margin, concession step, food clearance, warranty hours, cash reserve, stock cap, which goods and food to stock, depth, price spread, best-seller depth; it sees settled sales, revenue and the market's settled prices by kind | bounds and a largest step per cycle for every number; floor ≥ cost + 2% for a fresh unit, lower only by named rules (food near its date down to cost × clear_frac; goods past goods_age_days down to cost + aged_margin; the last 24 h down to cost, the last final_hours down to cost × final_frac, since stock left at the end is lost); when fewer than 60% of a busy window's receipts settle and no warranty is offered, code tries a 2 h warranty on grade-A goods; an A/B test's winner is applied by code, not chosen by the model; an unusable answer keeps the current strategy |
 | Shop, each haggle turn | none (code) | — | `seller_r3.py`: counter moves `step` toward the offer, never under the floor; accept at or above the floor after two offers or at the midpoint; while an A/B test runs, each negotiation draws one arm and keeps it. No model per turn, so a busy market does not queue behind `claude -p` |
 | Buyer, each order | Claude haiku (`buyer_r3.py` via `buyer.py`) | each offer in the haggle, with a one-line reason (the ReAct trace) | which shop and SKU (expected surplus), bans (false grade claims, broken goods without warranty), cap = min(budget, 0.9 × list), accept policy for the kit |
 | Ideas | Claude sonnet (`meta_explore.py`, from week 7) | proposals only | everything |
@@ -42,6 +42,19 @@ raw evidence that the next decision reads.
 All Claude calls go through `claude -p` with no tools, no settings, no session persistence, on the subscription.
 
 ### 1.2 Context
+
+How past deals and reputation reach the next decision:
+
+| Evidence | Kept in | Read by | Decision it changes |
+|---|---|---|---|
+| A shop lied about a grade, or its goods broke without warranty | `memory.jsonl` (our buyer's raw lines) | `buyer_r3.shop_record` on every order | that shop is banned (2 lies, or 1 in its first 3 deals, or 2 breakages) |
+| What a shop took from us, and how its asks moved in our last talks | `memory.jsonl` | `shop_record` → the haggle prompt and the expected price | which shop is tried first, where our opening offer starts |
+| What every shop settled for with anyone, and whether its claims were true | the market's ledger (settle entries, last 6 h) | `buyer_r3.ledger_claims` | expected price at shops we never paid; liars dropped before we meet them |
+| How each strategy version did (settled sales, revenue, margin, profit, stock) | `logs/strategies_r3.jsonl` | the meta-harness, every 15 min | the next ask, floor, step, warranty, stock policy |
+| Each negotiation's offers and outcome | `logs/talks_r3.jsonl` | `simulate_r3` → the meta-harness | which playbook to lean on, which number to A/B test |
+| Margin per negotiation under two values at the same hour | `logs/ab_r3.jsonl` | `ab_r3.winner` → code | the winning value is written into the strategy |
+| Our stars and rank among shops and players | the market's board | `meta_r3.standing`, `rank_r3` | where the meta-harness trades margin for sales or stars |
+| Orders our buyer gets, requests our shop gets | `logs/demand_r3.jsonl` | `restock_r3` via `demand_r3.signals` | which categories and SKUs are bought, at what price point |
 
 - **Buyer memory, raw evidence only** (`memory.jsonl`, LongMemEval-V2 style). Each settled deal (grade, claim,
   whether the claim was true, shelf life left, price against list), each refusal the kit wrote to `payments.jsonl`,
@@ -85,7 +98,7 @@ All Claude calls go through `claude -p` with no tools, no settings, no session p
     reference price;
   - every request to our shop, a miss counting double.
 
-  Both decay over 48 hours and steer the restock's categories, SKUs and price points.
+  Both decay with a 48-hour half-life and steer the restock's categories, SKUs and price points.
 - **The goal itself is context** (`rank_r3.py`). The rubric grades our percentile on the board's Players table
   (shop ALL + buyer ALL) when the round ends. The meta-harness reads that table each cycle: our rank, the leader's
   gap, the instructor's agent as a floor, and which part has the most to gain. Until the board fills the table, the
@@ -103,6 +116,24 @@ All Claude calls go through `claude -p` with no tools, no settings, no session p
   `demand.json` (categories only; the market publishes no demand weights).
 
 ### 1.3 Tools
+
+**What is a tool here.** Each shop publishes `/.well-known/acp.json`. Our copy of the kit turns every entry in it into
+a tool object (`AcpTool` in `market_kit.py`):
+- a name, a description and a JSON Schema input (`spec()`, in the shape model APIs take);
+- a call that checks the arguments against that schema, accepts only safe path segments, and stays on the shop's own
+  host.
+
+The checkout then runs through these tools: `create`, `get`, `complete`, found by their ACP name or, failing that, by
+method and path (`pick_tool`).
+
+**Code, not a model, calls them.** That is on purpose: a payment must never go out twice or above the mandate.
+- Before a session exists, a failure falls back to the kit's fixed checkout.
+- After a session exists, the fixed code may send one `complete` on that same session, at most.
+- Once a `complete` has been sent, nothing is sent again.
+
+A model takes part only before the checkout, in the haggle that produces the receipt being paid. Our own shop's
+`acp.json` describes each input as JSON Schema (`AcpShop.card`), so other students' buyers can make tools from it the
+same way.
 
 | Tool | Who uses it | Made how |
 |---|---|---|
@@ -133,7 +164,7 @@ See `architecture.pdf`. In short:
 
 | | Kit baseline (starter_round3) | Ours |
 |---|---|---|
-| Seller | a model at every turn; ships the unit that expires first; no quality talk, no warranty; never under cost | code prices from a strategy the meta-harness rewrites; honest grade claim (one grade lower near a line), the market's certificate; warranty only when the meta-harness sets one (0 at the start, since a refund costs the whole price and the break rate is unknown); near-date food cleared under cost (a spoiled unit loses all of its cost) |
+| Seller | a model at every turn; ships the unit that expires first; no quality talk, no warranty; never under cost | code prices from a strategy the meta-harness rewrites; honest grade claim (none within an hour of a grade line, where the grade could change before settle), the market's certificate; warranty only when the meta-harness sets one (0 at the start, since a refund costs the whole price and the break rate is unknown); near-date food cleared under cost (a spoiled unit loses all of its cost) |
 | Stock | a few random SKUs | one unit per category near its median price first (a buyer only sees shops that hold the ordered category); where settled deals show, depth plus a cheaper and a dearer SKU (orders take SKUs at 0.5-1.5x a hidden reference price); the SKUs the ledger keeps settling, bought by themselves; categories that buyers ask for in forum "wanted" posts first; cash reserve and stock cap; no buying in the last 36 h |
 | Buyer | picks and haggles | expected-surplus choice over (shop, SKU), memory of raw evidence, bans for false claims and unwarranted breakages, accept policy (certificate, shelf life, grade) checked by the kit before paying |
 | Checkout | fixed code; inputs described as short strings | tools made from each shop's `acp.json`, fixed code only as a fallback; our card in JSON Schema |

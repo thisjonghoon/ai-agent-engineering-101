@@ -8,7 +8,7 @@
 \begin{document}
 \centering
 {\Large\bfseries Round 3 agents of \texttt{thisjonghoon}: models, context and tools}\\[2mm]
-{\small Blue: a model decides. Grey: code decides. Green: context we keep. Orange: tools. Dashed boxes are what kit v4 does for everyone.}\\[4mm]
+{\small Blue: a model decides. Grey: code decides. Green: context we keep. Orange: tools. Dashed boxes: run inside kit v4 (the kit calls our code as its hooks). Bottom strip: the kit's baseline.}\\[4mm]
 \resizebox{\linewidth}{!}{\begin{tikzpicture}[
   font=\small, node distance=6mm and 8mm, >={Stealth[length=2.2mm]},
   model/.style={draw=blue!60!black, fill=blue!8, rounded corners, align=center, minimum height=10mm, text width=34mm},
@@ -22,7 +22,7 @@
 \node[code, text width=70mm, fill=yellow!10] (market) {\textbf{market.ourolabs.ai}\\ orders with open AP2 mandates, \texttt{/api/supply}, \texttt{/api/settle}, hash-chained ledger, forum};
 
 % --- shop column (left)
-\node[ctx, below left=14mm and 36mm of market] (inv) {\texttt{inventory.json}\\ units, cost, grade, shelf life};
+\node[ctx, below left=18mm and 36mm of market] (inv) {\texttt{inventory.json}\\ units, cost, grade, shelf life};
 \node[model, below=of inv] (meta) {\textbf{meta\_r3.py} (haiku, 15 min)\\ prices and stock policy from past versions};
 \node[ctx, below=of meta] (hist) {\texttt{strategies\_r3.jsonl}\\ every version and how it did};
 \node[ctx, right=10mm of meta, text width=28mm] (strat) {\texttt{strategy\_r3.json}};
@@ -35,8 +35,8 @@
 \node[ctx, below=5mm of ab, text width=24mm, font=\scriptsize] (demand) {\textbf{demand\_r3}: hidden demand from our buyer's orders and asks to our shop};
 
 % --- buyer column (right)
-\node[ctx, below right=14mm and 36mm of market] (mem) {\texttt{memory.jsonl}\\ raw evidence: deals, lies, breaks, refusals};
-\node[model, below=of mem] (buyer) {\textbf{buyer\_r3.py} (haiku per offer)\\ pick shop and SKU by expected surplus, haggle};
+\node[ctx, below right=18mm and 36mm of market] (mem) {\texttt{memory.jsonl}\\ raw evidence: deals, lies, breaks, refusals};
+\node[model, below=of mem] (buyer) {\textbf{buyer\_r3.py}\\ haiku: each offer, with a one-line why (ReAct)\\ {\scriptsize (code picks shop and SKU)}};
 \node[code, below=of buyer] (guards) {code guards: cap = min(budget, 0.9 list), bans, accept policy};
 \node[ctx, left=10mm of buyer, text width=28mm] (intel) {ledger settles\\ (price and claim honesty per shop)};
 \node[tool, below=of intel, text width=28mm] (tools) {\textbf{checkout tools from each shop's acp.json} (JSON Schema)};
@@ -44,8 +44,8 @@
 
 % --- kit boxes
 \begin{scope}[on background layer]
-\node[kit, fit=(inv)(shopacp)(ab), label={[font=\scriptsize]above:kit v4: stock files, restock runs, checkout, settle}] {};
-\node[kit, fit=(tools)(mem)(review), label={[font=\scriptsize]above:kit v4 (our copy): orders, AP2 closed mandates, payments.jsonl}] {};
+\node[kit, fit=(inv)(shopacp)(ab), label={[font=\scriptsize, anchor=south west]north west:kit v4 runs: stock files, restock hook, checkout}] {};
+\node[kit, fit=(tools)(mem)(review), label={[font=\scriptsize, anchor=south east]north east:kit v4, our copy: orders, AP2 mandates, payments}] {};
 \end{scope}
 
 % --- arrows
@@ -71,15 +71,21 @@
 \draw[->] (buyer) -- (guards);
 \draw[->] (guards) -- (tools);
 \draw[->] (tools.north west) to[bend left=25] node[lab]{closed mandates} (shopacp.south east);
-\draw[<->, dashed] (buyer.north west) to[bend right=12] node[lab, pos=0.55]{A2A haggle (other shops)} (seller.east);
+\draw[<->, dashed] (buyer.north west) to[bend right=12] node[lab, pos=0.55]{A2A haggle: our buyer with any shop, any buyer with ours} (seller.east);
 \draw[->] (review.north) |- node[lab, pos=0.3]{reviews, posts} ([yshift=3mm]market.east);
 \draw[->] (review) |- (mem.east);
+% --- the kit's baseline, for comparison
+\node[draw=black!40, dotted, fill=black!2, align=left, text width=230mm, font=\scriptsize, anchor=north]
+  at ([yshift=-3mm]current bounding box.south) (base) {\textbf{Kit baseline (starter\_round3):}
+  seller = a model at every turn, ships the unit that expires first, no grade talk, no warranty $\;\cdot\;$
+  restock = random SKUs when stock runs low $\;\cdot\;$ buyer = model picks and haggles, no memory $\;\cdot\;$
+  checkout = fixed code $\;\cdot\;$ no meta-harness, no A/B, no replay, no demand estimate, no forum, no goal.};
 \end{tikzpicture}}
 
-\vspace{4mm}
-\begin{minipage}{0.95\linewidth}\small
+\vspace{1mm}
+\begin{minipage}{0.97\linewidth}\footnotesize
 \textbf{Different from the kit's baseline.} The starter seller asks a model at every turn and never offers a warranty; ours
-prices by code from a strategy the meta-harness rewrites, claims grades honestly (one grade lower near a line), shows the
+prices by code from a strategy the meta-harness rewrites, claims grades honestly (and makes no claim within an hour of a grade line), shows the
 market's certificate, warrants goods only when the meta-harness turns it on, and clears food before it spoils. The starter has no restock (the kit then buys random SKUs when stock runs low) and no buyer memory;
 ours buys breadth first and depth where the ledger shows settled deals, and the buyer keeps raw evidence (grade lies,
 breakages, refusals) and derives each shop's record when it reads it. The kit pays with fixed code; our copy makes the

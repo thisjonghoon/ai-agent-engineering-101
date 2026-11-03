@@ -38,6 +38,9 @@ MARKET = "https://market.ourolabs.ai"
 DEFAULTS = {"reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
             "goods_frac": 0.35, "food_first": 0.5,
             "depth": 3, "half_life_hours": 12, "stop_hours": 36, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540}    # 2026-11-17 23:59 KST
+BANKRUPT_LINE = 500_000  # below this a shop may file, and the 5,000,000 it gets comes off profit
+CASH_FLOOR = 700_000     # code's own floor under any reserve_cash the meta-harness sets: the line plus a cushion
+WARRANTY_CUSHION = 300_000  # more while goods are sold with a warranty: a break refunds the whole price
 EST_COST = 0.6          # expected cost as a share of list price before the grade is drawn (A 55-75, B 40-60, C 25-45)
 
 
@@ -146,13 +149,15 @@ def main():
         score[cat] += 2 * n
 
     stock = sum(u["cost"] for u in units)
-    spend = min(inv.get("balance", 0) - s["reserve_cash"], s["stock_value"] - stock)
+    warranty = (read_json(HERE / "strategy_r3.json", {}).get("warranty_hours") or 0) > 0
+    floor = max(s["reserve_cash"], CASH_FLOOR + (WARRANTY_CUSHION if warranty else 0))
+    spend = min(inv.get("balance", 0) - floor, s["stock_value"] - stock)
     stopping = s["round_end"] and now > s["round_end"] - s["stop_hours"] * 3600
     buy, why = [], ""
     if stopping:
         why = "round ends soon: no new stock"
     elif spend <= 0:
-        why = f"spend limit reached (balance {inv.get('balance')}, stock at cost {stock})"
+        why = f"spend limit reached (balance {inv.get('balance')}, cash floor {floor}, stock at cost {stock})"
     else:
         live = [u for u in units if u.get("grade") != "expired"]
         count, held = Counter(u["category"] for u in live), Counter(u["sku"] for u in live)

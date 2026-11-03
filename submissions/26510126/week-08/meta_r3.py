@@ -39,7 +39,7 @@ EVERY = 15 * 60
 BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min_margin": (0.02, 0.40, 0.04),
           "step": (0.2, 0.7, 0.1), "clear_hours": (2, 24, 4), "clear_frac": (0.3, 1.0, 0.1),
           "warranty_hours": (0, 6, 2), "max_turns": (3, 8, 1),
-          "reserve_cash": (1_000_000, 3_000_000, 250_000), "stock_value": (500_000, 3_500_000, 500_000),
+          "reserve_cash": (700_000, 3_000_000, 250_000), "stock_value": (500_000, 4_300_000, 500_000),
           "max_list": (30_000, 400_000, 50_000), "min_shelf_hours": (24, 720, 48), "depth": (1, 6, 1),
           "endgame_hours": (12, 24, 6), "endgame_frac": (1.0, 1.2, 0.1), "final_hours": (2, 12, 2),
           "final_frac": (0.3, 1.0, 0.1), "ask_frac_food": (0.70, 1.00, 0.05), "floor_frac_food": (0.45, 0.95, 0.05),
@@ -62,7 +62,9 @@ ask = list x ask_frac (food: ask_frac_food, scaled up to +/- fresh_premium by sh
 floor = max(cost x (1 + min_margin), list x floor_frac (food: floor_frac_food)). Each counter moves `step` of the way
 to the buyer's offer. Food with under clear_hours left (or grade C) may go down to cost x clear_frac. In the last endgame_hours of the
 round the floor drops to cost x endgame_frac, in the last final_hours to cost x final_frac (stock left at the end is lost).
-Restock keeps at most stock_value of stock at cost and never spends below reserve_cash; it skips goods listed above
+Restock keeps at most stock_value of stock at cost and never spends below reserve_cash (code also keeps 700,000, and
+1,000,000 while a warranty is on: below 500,000 a shop goes bankrupt and the 5,000,000 it gets comes off profit; more
+stock means more chances to sell but also more food that can expire and goods that pay storage); it skips goods listed above
 max_list and food that keeps less than min_shelf_hours, and holds up to `depth` units where things sell, plus a
 cheaper and a dearer SKU (spread_low/spread_high x the category median) there, and up to sku_depth units of SKUs the
 market keeps settling. Categories that buyers ask for on the forum come first. Food plans rank food_first higher and

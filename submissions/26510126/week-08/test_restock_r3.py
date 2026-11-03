@@ -70,4 +70,23 @@ buy = json.loads(out.getvalue().splitlines()[-1])["buy"]
 kinds = [catalog[b["sku"]]["kind"] for b in buy]
 case("food first: with 600,000 of goods held (cap 0.35 x 2,000,000 = 700,000), the buy is food plus at most "
      "one 30,000 goods unit", kinds.count("food") >= 9 and kinds.count("goods") <= 1, {"food": kinds.count("food"), "goods": kinds.count("goods")})
+
+# the cash floor holds under any reserve the meta-harness sets: reserve 0 and a huge stock cap still keep 700,000
+real = restock_r3.strategy
+restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=10_000_000)
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 800_000, "units": []}), encoding="utf-8")
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+res = json.loads(out.getvalue().splitlines()[-1])
+spent = sum(catalog[b["sku"]]["list_price"] * restock_r3.EST_COST * b["qty"] for b in res["buy"])
+case("reserve 0 from the meta-harness: code still keeps 700,000 (balance 800,000, so at most 100,000 spent)",
+     0 < spent <= 100_000, {"spent (estimated)": spent, "lines": len(res["buy"])})
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 650_000, "units": []}), encoding="utf-8")
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+res = json.loads(out.getvalue().splitlines()[-1])
+case("under the cash floor nothing is bought", res["buy"] == [] and "cash floor 700000" in res["why"], res["why"])
+restock_r3.strategy = real
 print(f"\n{sum(ok)}/{len(ok)} passed")

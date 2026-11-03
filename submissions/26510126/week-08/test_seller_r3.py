@@ -114,6 +114,12 @@ async def main():
         near = dict(UNITS[2], expires_at=time.time() + (0.80 * 168 + 0.5) * 3600)   # half an hour above the A line
         check("no grade claim within an hour of a line", seller_r3.grade_now(near)[2] is None, seller_r3.grade_now(near))
 
+        aged = dict(UNITS[0], supplied_at=time.time() - 6 * 86400)    # goods 6 days in stock (storage 1% a day)
+        fresh = dict(UNITS[0], supplied_at=time.time() - 3600)
+        s0 = seller_r3.strategy()
+        check("goods past goods_age_days may go down to cost + 3%", seller_r3.prices(aged, s0)[1] == 61800
+              and seller_r3.prices(fresh, s0)[1] == 78000, (seller_r3.prices(aged, s0), seller_r3.prices(fresh, s0)))
+
         import ab_r3                                     # A/B: same folder as the seller subprocess
         ab_r3.EXPERIMENT, ab_r3.LOG = md / "experiment_r3.json", md / "logs" / "ab_r3.jsonl"
         check("no experiment file: the seller logs no A/B events", not ab_r3.LOG.exists(), ab_r3.LOG)

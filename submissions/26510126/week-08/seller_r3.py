@@ -19,6 +19,7 @@ Started from the course's starter_round3/seller.py (A2A side, unit lookup, recei
     10 s old, and the kit refuses a checkout for a unit already gone).
 A/B test (ab_r3.py, experiment_r3.json): when an experiment is on, a new negotiation for a unit of its kind draws
 one of two values of one strategy number and keeps it to the end; the outcome goes to logs/ab_r3.jsonl.
+Goods older than `goods_age_days` (storage is 1% of cost a day) may go down to cost x (1 + aged_margin).
 In the last `endgame_hours` of the round the floor drops to cost (endgame_frac), and in the last `final_hours`
 under it (final_frac): stock left at the end has cost money and earns nothing.
 Rounds 0-2 have no stock: the week-07 items are sold at the old reserves so the shop keeps working before Round 3.
@@ -52,7 +53,8 @@ STRATEGY = HERE / "strategy_r3.json"
 DEFAULTS = {"ask_frac": 0.95, "floor_frac": 0.78, "min_margin": 0.10, "step": 0.4,
             "clear_hours": 6, "clear_frac": 0.6, "warranty_hours": 0, "max_turns": 6,
             "endgame_hours": 24, "endgame_frac": 1.0, "final_hours": 6, "final_frac": 0.6,
-            "ask_frac_food": 0.95, "floor_frac_food": 0.78, "fresh_premium": 0.10}
+            "ask_frac_food": 0.95, "floor_frac_food": 0.78, "fresh_premium": 0.10,
+            "goods_age_days": 5, "aged_margin": 0.03}
 ROUND_END = 1794927540                                       # 2026-11-17 23:59 KST: stock left then is a loss
 OFFER = re.compile(r"(?<![A-Za-z0-9])\d[\d,]*(?![A-Za-z0-9])")   # a number on its own, not the digits of a SKU
 FOOD_CUTS = (0.80, 0.45)                                     # shelf life left: A at or above 80%, B at or above 45%
@@ -163,6 +165,10 @@ def prices(u, s):
     # clear food by the hours it has left, not by grade: a grade-C unit can still have days (review, 11/2)
     if u.get("kind") == "food" and hours is not None and (hours < s["clear_hours"] or (grade == "C" and hours < 24)):
         floor = cost * s["clear_frac"]
+    # goods pay 1% of cost a day while they wait: past goods_age_days the floor drops to cost plus aged_margin, so a
+    # slow unit goes before it eats its margin in storage
+    if u.get("kind") != "food" and u.get("supplied_at") and (time.time() - u["supplied_at"]) / 86400 > s["goods_age_days"]:
+        floor = min(floor, cost * (1 + s["aged_margin"]))
     left = (ROUND_END - time.time()) / 3600                  # the end of the round: unsold stock earns nothing
     if left < s["final_hours"]:
         floor = min(floor, cost * s["final_frac"])

@@ -16,6 +16,10 @@ Code only; the meta-harness (meta_r3.py) moves the numbers in strategy_r3.json. 
   - The SKUs that settle again and again in the ledger, bought by themselves (up to sku_depth units).
   - "Wanted" posts on the forum (구합니다, looking for ...) that name one of our categories or SKUs raise that
     category for this run.
+  - Food first (11/3, the instructor's hint: get a feel for the market with food). Goods pay 1% of cost a day while
+    they wait and may break, food costs nothing to hold until its date; so goods at cost stay under `goods_frac` of
+    `stock_value`, goods above `max_list` are skipped, and food plans rank `food_first` higher. The meta-harness
+    can move all three once goods are seen to sell.
   - Stop buying `stop_hours` before the round ends: unsold stock at the end is a loss.
 The state between runs (last units seen, ledger position, scores) is in .market/restock_state.json.
 """
@@ -31,7 +35,8 @@ import httpx
 
 HERE = Path(__file__).resolve().parent
 MARKET = "https://market.ourolabs.ai"
-DEFAULTS = {"reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 150_000, "min_shelf_hours": 96,
+DEFAULTS = {"reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
+            "goods_frac": 0.35, "food_first": 0.5,
             "depth": 3, "half_life_hours": 12, "stop_hours": 36, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540}    # 2026-11-17 23:59 KST
 EST_COST = 0.6          # expected cost as a share of list price before the grade is drawn (A 55-75, B 40-60, C 25-45)
 
@@ -173,7 +178,7 @@ def main():
             depth = 1 + (min(s["depth"] - 1, math.ceil(score[cat] / 2)) if score[cat] >= 1 else 0)
             if d["kind"] == "food":
                 depth = min(depth, 2)
-            prio = score[cat] + (1 if count[cat] == 0 else 0)
+            prio = score[cat] + (1 if count[cat] == 0 else 0) + (s["food_first"] if d["kind"] == "food" else 0)
             plan(prio, near(med), depth)
             # where things sell, a cheaper and a dearer SKU too: an order takes SKUs at 0.5-1.5x a hidden reference
             # price, so one SKU at the median misses the orders whose range sits above or below it
@@ -189,12 +194,15 @@ def main():
                 continue
             plan(1.5 * sc, dict(c, sku=sku), min(s["sku_depth"], math.ceil(sc / 2)))
         ranked = sorted(plans.values(), key=lambda p: (-p[0], p[1]["list_price"]))
+        goods_room = s["goods_frac"] * s["stock_value"] - sum(u["cost"] for u in live if u.get("kind") == "goods")
         for prio, c, qty in ranked:
             if len(buy) >= 10:
                 break
             cost = c["list_price"] * EST_COST * qty
-            if cost > spend:
+            if cost > spend or (c["kind"] == "goods" and cost > goods_room):
                 continue
+            if c["kind"] == "goods":
+                goods_room -= cost
             buy.append({"sku": c["sku"], "qty": int(qty)})
             spend -= cost
         why = (f"{len(ranked)} SKUs short, buying {len(buy)} lines"

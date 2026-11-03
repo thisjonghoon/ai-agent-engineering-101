@@ -47,4 +47,27 @@ w = wanted([post("old", "라면 구합니다", age=7 * 3600)])
 case("a post older than six hours counts nothing", not w, dict(w))
 w = wanted([post("sku", "looking for G0000abcd"), "not a dict", {"text": None}])
 case("a SKU in a post maps to its category; malformed posts are skipped", w.get("가구>침대") == 1, dict(w))
+
+# food first, and goods held under goods_frac of stock_value (goods pay storage and may break)
+md = Path(tempfile.mkdtemp(prefix="restock-main-"))
+demand = [{"item": f"g{i}", "category": f"G>{i}", "kind": "goods", "median_price": 50000} for i in range(30)]
+demand += [{"item": f"f{i}", "category": f"F>{i}", "kind": "food", "median_price": 10000} for i in range(30)]
+catalog = {f"SG{i}": {"category": f"G>{i}", "kind": "goods", "list_price": 50000, "name": f"g{i}"} for i in range(30)}
+catalog.update({f"SF{i}": {"category": f"F>{i}", "kind": "food", "list_price": 10000, "shelf_hours": 200, "name": f"f{i}"}
+                for i in range(30)})
+held = [{"unit": f"u{i}", "sku": f"SG{i}", "category": f"G>{i}", "kind": "goods", "grade": "B", "cost": 30000,
+         "supplied_at": NOW, "expires_at": None} for i in range(20)]               # 600,000 of goods already
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 4_000_000, "units": held}), encoding="utf-8")
+(md / "catalog.json").write_text(json.dumps(catalog), encoding="utf-8")
+(md / "demand.json").write_text(json.dumps(demand), encoding="utf-8")
+restock_r3.ledger_settles = lambda after: ([], after)
+import contextlib, io, sys
+out = io.StringIO()
+sys.argv = ["restock_r3.py", "--state", str(md)]
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+buy = json.loads(out.getvalue().splitlines()[-1])["buy"]
+kinds = [catalog[b["sku"]]["kind"] for b in buy]
+case("food first: with 600,000 of goods held (cap 0.35 x 2,000,000 = 700,000), the buy is food plus at most "
+     "one 30,000 goods unit", kinds.count("food") >= 9 and kinds.count("goods") <= 1, {"food": kinds.count("food"), "goods": kinds.count("goods")})
 print(f"\n{sum(ok)}/{len(ok)} passed")

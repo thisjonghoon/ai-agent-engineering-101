@@ -44,7 +44,8 @@ BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min
           "endgame_hours": (12, 24, 6), "endgame_frac": (1.0, 1.2, 0.1), "final_hours": (2, 12, 2),
           "final_frac": (0.3, 1.0, 0.1), "ask_frac_food": (0.70, 1.00, 0.05), "floor_frac_food": (0.45, 0.95, 0.05),
           "fresh_premium": (0.0, 0.2, 0.05), "spread_low": (0.5, 0.9, 0.1), "spread_high": (1.1, 1.5, 0.1),
-          "sku_depth": (1, 6, 1)}
+          "sku_depth": (1, 6, 1), "goods_frac": (0.1, 0.8, 0.1), "food_first": (0.0, 1.0, 0.25),
+          "goods_age_days": (2, 10, 1), "aged_margin": (0.0, 0.2, 0.03)}
 SETTLED = re.compile(r"\[acp\] settled .* at (\d+), ledger")         # our shop's sale the market settled
 SETTLE_REFUSED = re.compile(r"\[acp\] (settle refused|checkout refused: (?:no |unit ))")  # shop side only
 SELLER_LINE = re.compile(r"(OPEN|DEAL|WALK) \S+ (\S+)(?: at (\d+) \(cost (\d+), list (\d+))?")
@@ -64,7 +65,9 @@ round the floor drops to cost x endgame_frac, in the last final_hours to cost x 
 Restock keeps at most stock_value of stock at cost and never spends below reserve_cash; it skips goods listed above
 max_list and food that keeps less than min_shelf_hours, and holds up to `depth` units where things sell, plus a
 cheaper and a dearer SKU (spread_low/spread_high x the category median) there, and up to sku_depth units of SKUs the
-market keeps settling. Categories that buyers ask for on the forum come first.
+market keeps settling. Categories that buyers ask for on the forum come first. Food plans rank food_first higher and
+goods at cost stay under goods_frac of stock_value (goods pay storage and may break; start with food, give goods more
+room once they are seen to sell). Goods older than goods_age_days may sell down to cost x (1 + aged_margin).
 
 Now ("deals" are signed receipts; only "settled" sales earn money, a receipt the buyer's kit refuses to pay earns
 nothing; market_price_list_* is where all shops' settled prices sit as a share of list price): {now}

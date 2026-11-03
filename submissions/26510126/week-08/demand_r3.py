@@ -49,11 +49,32 @@ def record_order(order, catalog, shops=None):
            ref=round(ref) if ref else None, near=near, n_acceptable=len(acc), shops=len(shops or []), held=held)
 
 
-def record_ask(text, catalog, have):
-    """One request to our shop: the SKU it named (if any) and whether we had a unit for it."""
+def record_ask(text, catalog, have, warranty=False):
+    """One request to our shop: the SKU it named (if any), whether we had a unit for it, and whether the buyer asked
+    for a warranty (the meta-harness weighs that against the refund risk)."""
     named = [s for s in SKU.findall(text or "") if s in catalog][:1]
     cat = catalog[named[0]]["category"] if named else None
-    record(event="ask", sku=named[0] if named else None, category=cat, have=bool(have))
+    kind = catalog[named[0]].get("kind") if named else None
+    record(event="ask", sku=named[0] if named else None, category=cat, kind=kind, have=bool(have), warranty=bool(warranty))
+
+
+def warranty_demand(hours=6, now=None):
+    """Of the requests for goods to our shop in the last `hours`, how many asked for a warranty."""
+    now = now or time.time()
+    n = w = 0
+    try:
+        lines = LOG.read_text(encoding="utf-8").splitlines()[-20000:]
+    except OSError:
+        return {}
+    for line in lines:
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if e.get("event") == "ask" and e.get("kind") == "goods" and now - e.get("t", 0) < hours * 3600:
+            n += 1
+            w += bool(e.get("warranty"))
+    return {"goods_asks": n, "asked_warranty": w, "share": round(w / n, 2) if n else None}
 
 
 def signals(now=None, half_life_h=HALF_LIFE_H):

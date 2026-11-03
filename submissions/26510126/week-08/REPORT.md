@@ -42,6 +42,16 @@ All Claude calls go through `claude -p` with no tools, no settings, no session p
   (Thompson sampling, reward = margin over list, 0 for a lost sale), and once one value is better with probability
   0.95 after 30 negotiations each, code writes it into the strategy. The first test: the ask on goods at 0.95 or
   0.85 of list.
+- **Retail playbooks and counterfactual replay** (`playbooks_r3.py`, `simulate_r3.py`, `logs/talks_r3.jsonl`): our
+  meta-harness only searched near its own last strategy, so it is also shown whole positions from real retail
+  (Costco's capped markup with deep, few SKUs; Walmart's everyday low price with little haggling; grocery markdowns
+  by hours left; premium goods with a warranty; the 2026 two-tier "cheap and premium" playbook), written in our
+  strategy's numbers. The seller writes every negotiation as one raw line (the buyer's offers, list price, cost, ask,
+  floor, outcome, whether it asked for a warranty), and the replay runs the seller's own rules against those offers
+  under each playbook, without a model. Because buyers react to our counters, which a replay cannot know, it reports
+  its `fidelity` and is used only to choose what to A/B test: the meta-harness may propose one number to test, and
+  code starts it within the bounds when no test is running. Warranty requests to our shop are counted and weighed
+  against refund risk; warranty is not A/B tested, because the test's reward cannot see refunds.
 - **How past deals and reputation feed the next decision:** our buyer's record of a shop (prices paid, false claims,
   broken goods) sets which shop it tries and bans liars; the ledger's prices and claim honesty cover shops we never
   met; the shop's own sales and the ledger's settles steer what the restock buys; the strategy history and the A/B

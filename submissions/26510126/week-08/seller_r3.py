@@ -67,8 +67,26 @@ def log(msg):
     print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
 
 
-def ab_end(task_id, deal, event, reward=0.0):
-    """Record how a negotiation in an A/B experiment ended; a failure here never stops a sale."""
+TALKS = Path(os.environ.get("TALKS_LOG") or HERE / "logs" / "talks_r3.jsonl")
+WARRANTY_WORDS = re.compile(r"warrant|guarantee|보증|보장|AS\b", re.I)
+
+
+def ab_end(task_id, deal, event, reward=0.0, price=None):
+    """Record how a negotiation ended: one raw line in logs/talks_r3.jsonl (the buyer's offers, the unit's list price
+    and cost, our ask and floor, the outcome) for simulate_r3.py to replay under other strategies, and the A/B
+    outcome when it ran in an experiment. A failure here never stops a sale."""
+    if deal and deal["unit"].get("unit"):
+        u = deal["unit"]
+        try:
+            TALKS.parent.mkdir(exist_ok=True)
+            with TALKS.open("a", encoding="utf-8") as f:
+                f.write(json.dumps({"t": round(time.time(), 1), "task": task_id[:8], "sku": u["sku"], "kind": u.get("kind"),
+                                    "list_price": u["list_price"], "cost": u["cost"], "ask0": deal.get("ask0"),
+                                    "floor": deal["floor"], "clear": deal.get("clear"), "offers": deal["offers"],
+                                    "turns": deal["turns"], "event": event, "price": price,
+                                    "warranty_ask": deal.get("warranty_ask"), "ab": deal.get("ab")}) + "\n")
+        except (OSError, KeyError, TypeError):
+            pass
     if deal and deal.get("ab"):
         try:
             ab_r3.record(id=deal["ab"][0], arm=deal["ab"][1], task=task_id, event=event, reward=round(reward, 4))
@@ -239,7 +257,8 @@ class Seller(AgentExecutor):
         if deal is None:
             u = find_unit(text, self.taken())
             if u is None or u.get("unit"):
-                demand_r3.record_ask(text, catalog(), have=u is not None)   # what buyers came for (demand_r3.py)
+                demand_r3.record_ask(text, catalog(), have=u is not None,       # what buyers came for (demand_r3.py)
+                                     warranty=bool(WARRANTY_WORDS.search(text)))
             if u is None:
                 await up.reject(say("Sorry, we have none of that in stock."))
                 return
@@ -252,8 +271,12 @@ class Seller(AgentExecutor):
                 if arm:
                     s, ab = dict(s, **{e["param"]: e["arms"][arm]}), (e["id"], arm)
             ask, floor = prices(u, s)
+            normal = max(u["cost"] * (1 + s["min_margin"]), u["list_price"] * min(
+                s["floor_frac_food"] if u.get("kind") == "food" else s["floor_frac"], 1.0))
             deal = self.open[task.id] = {"unit": u, "ask": ask, "floor": floor, "offers": [], "turns": 0,
-                                         "t": time.time(), "s": s if ab else None, "ab": ab}
+                                         "t": time.time(), "s": s if ab else None, "ab": ab, "ask0": ask,
+                                         "clear": floor < 0.99 * normal,     # clearance, aged or endgame floor
+                                         "warranty_ask": bool(WARRANTY_WORDS.search(text))}
             if ab:
                 try:
                     ab_r3.record(id=ab[0], arm=ab[1], task=task.id, event="open", sku=u["sku"], kind=u.get("kind"),
@@ -283,7 +306,7 @@ class Seller(AgentExecutor):
             await up.complete(say(f"Deal: {u['name']} at {price}."))
             if u.get("unit"):
                 self.sold[u["unit"]] = time.time()
-            ab_end(task.id, deal, "deal", (price - u["cost"]) / u["list_price"] if u.get("list_price") else 0.0)
+            ab_end(task.id, deal, "deal", (price - u["cost"]) / u["list_price"] if u.get("list_price") else 0.0, price)
             log(f"DEAL {task.id[:8]} {u['sku']} at {price} (cost {u['cost']}, list {u['list_price']}, turns {deal['turns']})")
             del self.open[task.id]
             return

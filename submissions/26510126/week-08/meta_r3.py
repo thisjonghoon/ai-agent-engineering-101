@@ -27,7 +27,10 @@ import time
 from pathlib import Path
 
 import ab_r3
+import demand_r3
 import harness
+import playbooks_r3
+import simulate_r3
 
 HERE = Path(__file__).resolve().parent
 MD = HERE / ".market"
@@ -95,10 +98,29 @@ each among all shops on the board; `standing` shows ours. Percentiles reward bei
 the lead: once profit sits high, a little margin given up for more sales or better stars can raise the score more,
 and a loss of profit percentile costs the most.
 
+Playbooks of real retailers, in our numbers (each sets only the numbers listed):
+{playbooks}
+`sim` replays our own negotiations of the last day under the current strategy and under each playbook, against the
+offers buyers really sent (no model involved): deals, revenue and margin over cost, next to what actually happened.
+Buyers' later offers depend on our counters, which the replay cannot know, so trust it only as far as `fidelity`
+(the share of talks where replaying what we did gives what really happened) and treat it as a reason to test, not to
+switch. A whole playbook can be moved toward over several cycles within the steps; a single number worth checking
+with live buyers can be proposed as an A/B test (below), which code starts when no test is running.
+
+`warranty_demand` counts requests for goods to our shop in the last 6 hours that asked for a warranty. A warranty
+(grade-A goods only) may win those buyers and their kits' payment checks, but a broken unit refunds the whole price
+and the break rate is hidden; weigh it with the share of receipts that settle and profit, and change warranty_hours
+in steps, watching the next cycles.
+
 Last versions, oldest first (each with how it did while it ran; older ones show only what changed and the key results):
 {history}
 
-Answer with JSON only: {{"strategy": {{...every key...}}, "reason": "<one sentence>"}}"""
+Answer with JSON only: {{"strategy": {{...every key...}}, "playbook": "<the playbook this leans on, or none>",
+"ab": null or {{"param": "<one of {ab_params}>", "kind": "food" | "goods", "value": <the value to test against now>}},
+"reason": "<one sentence>"}}"""
+AB_PARAMS = ("ask_frac", "floor_frac", "min_margin", "step", "max_turns", "ask_frac_food", "floor_frac_food",
+             "fresh_premium", "clear_hours", "clear_frac")      # read per negotiation by the seller; warranty is not
+# tested this way because the A/B reward cannot see refunds
 
 
 def read_json(path, default):
@@ -234,6 +256,11 @@ def snapshot(since):
     snap.update(seller_lines(since))
     snap.update(market_prices())
     snap.update(standing())
+    snap["warranty_demand"] = demand_r3.warranty_demand()
+    try:
+        snap["sim"] = simulate_r3.run(current(), BOUNDS)
+    except Exception as e:                               # the replay is advice; it never stops a cycle
+        snap["sim"] = {"error": type(e).__name__}
     return snap
 
 
@@ -277,6 +304,21 @@ def history_lines(hist, after, last=30):
     return out
 
 
+def start_ab(ask, s):
+    """Start the A/B test the harness asked for, when it names a number the seller reads per negotiation, a kind,
+    and a value inside the bounds that differs from the strategy's: arm A is the strategy's value, arm B the new one."""
+    if not isinstance(ask, dict) or ask.get("param") not in AB_PARAMS or ask.get("kind") not in ("food", "goods"):
+        return None
+    v = ask.get("value")
+    lo, hi, _ = BOUNDS[ask["param"]]
+    if not isinstance(v, (int, float)) or isinstance(v, bool) or not lo <= v <= hi or v == s[ask["param"]]:
+        return None
+    e = {"on": True, "id": f"{ask['param']}-{ask['kind']}-{time.strftime('%m%d%H%M')}", "param": ask["param"],
+         "kind": ask["kind"], "arms": {"A": s[ask["param"]], "B": v}, "min_n": 30, "p_win": 0.95, "started": time.time()}
+    ab_r3.EXPERIMENT.write_text(json.dumps(e, ensure_ascii=False, indent=1), encoding="utf-8")
+    return e
+
+
 async def cycle():
     cur = current()
     hist = [json.loads(l) for l in HISTORY.read_text(encoding="utf-8").splitlines() if l.strip()] if HISTORY.exists() else []
@@ -293,7 +335,8 @@ async def cycle():
     after = [h["before"] for h in hist[1:]] + [now]
     shown = "\n".join(history_lines(hist, after))
     # our own measurements only (no other agent's text); history_lines keeps it near 30,000 characters
-    ans = await harness.ask(PROMPT.format(bounds=bounds, now=json.dumps(now, ensure_ascii=False), history=shown or "(none)"),
+    ans = await harness.ask(PROMPT.format(bounds=bounds, now=json.dumps(now, ensure_ascii=False), history=shown or "(none)",
+                                          playbooks=playbooks_r3.for_prompt(), ab_params=", ".join(AB_PARAMS)),
                             max_chars=60_000)
     new = (ans or {}).get("strategy") if isinstance((ans or {}).get("strategy"), dict) else None
     s = guard(new or {}, cur)
@@ -310,15 +353,18 @@ async def cycle():
         s[exp["param"]] = min(max(exp["arms"][win], lo), hi)     # the test's own evidence, not a step from now
         ab_done = dict(exp, on=False, result={"winner": win, "summary": now["ab"], "time": time.time()})
         ab_r3.EXPERIMENT.write_text(json.dumps(ab_done, ensure_ascii=False, indent=1), encoding="utf-8")
+    ab_new = None if exp else start_ab((ans or {}).get("ab"), s)
     changed = {k: (cur[k], s[k]) for k in s if s[k] != cur[k]}
     STRATEGY.write_text(json.dumps(s, indent=1), encoding="utf-8")
     HISTORY.parent.mkdir(exist_ok=True)
     with HISTORY.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"time": time.time(), "strategy": s, "before": now, "reason": (ans or {}).get("reason"),
                             "harness_ok": new is not None, "probe": probe,
-                            "ab_result": ab_done and ab_done["result"]}, ensure_ascii=False) + "\n")
+                            "ab_result": ab_done and ab_done["result"], "ab_started": ab_new,
+                            "playbook": (ans or {}).get("playbook")}, ensure_ascii=False) + "\n")
     harness.log("META", f"{'kept' if not changed else 'changed ' + json.dumps(changed)}: {(ans or {}).get('reason')}"
-                + (f"; A/B {exp['id']} won by {win} ({exp['param']} = {exp['arms'][win]})" if ab_done else ""))
+                + (f"; A/B {exp['id']} won by {win} ({exp['param']} = {exp['arms'][win]})" if ab_done else "")
+                + (f"; A/B {ab_new['id']} started: {ab_new['param']} {ab_new['arms']}" if ab_new else ""))
 
 
 async def main():

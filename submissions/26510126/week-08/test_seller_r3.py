@@ -72,7 +72,8 @@ async def main():
     (md / "catalog.json").write_text(json.dumps(CATALOG), encoding="utf-8")
     port = free_port()
     p = subprocess.Popen([sys.executable, str(HERE / "seller_r3.py"), "--port", str(port)], cwd=HERE,
-                         env=dict(os.environ, MARKET_DIR=str(md), AB_DIR=str(md), DEMAND_LOG=str(md / "demand_r3.jsonl")))
+                         env=dict(os.environ, MARKET_DIR=str(md), AB_DIR=str(md), DEMAND_LOG=str(md / "demand_r3.jsonl"),
+                                  TALKS_LOG=str(md / "talks_r3.jsonl")))
     base = f"http://127.0.0.1:{port}"
     for _ in range(100):
         try:
@@ -104,6 +105,7 @@ async def main():
         t = await haggle(base, "Test Lamp (G1)", [100000])
         check("a sold unit is not offered again within 60 s", receipt(t) is None, (t or {}).get("status", {}).get("state"))
         import seller_r3                                # in-process: a buyer that left without cancelling
+        seller_r3.TALKS = md / "talks_inproc.jsonl"     # never the live log
         sel = seller_r3.Seller()
         sel.open["gone"] = {"unit": {"unit": "u-x"}, "t": time.time() - seller_r3.OPEN_HOLD - 1}
         sel.open["live"] = {"unit": {"unit": "u-y"}, "t": time.time()}
@@ -151,6 +153,26 @@ async def main():
         picks = [ab_r3.choose("goods")[1] for _ in range(200)]
         check("the bandit leans to the arm that earns more, and a winner is called", picks.count("B") > 150
               and ab_r3.winner() == "B", {"B share": picks.count("B") / 200, "summary": ab_r3.summary()})
+        # raw talks for the replay (simulate_r3.py), and warranty requests (demand_r3.warranty_demand)
+        inv = json.loads((md / "inventory.json").read_text())
+        inv["units"].append(dict(UNITS[4], unit="u-goods4", sku="G4", name="Test Shelf"))
+        (md / "inventory.json").write_text(json.dumps(inv), encoding="utf-8")
+        (md / "catalog.json").write_text(json.dumps(dict(CATALOG, G4={"shelf_hours": None})), encoding="utf-8")
+        await haggle(base, "Test Shelf (G4), with a warranty please", [40000, 41000, 42000, 43000, 44000, 45000, 46000])
+        talks = [json.loads(l) for l in (md / "talks_r3.jsonl").read_text().splitlines()]
+        deals = [x for x in talks if x["event"] == "deal"]
+        check("every ended negotiation is one raw line with the buyer's offers, ask, floor and outcome",
+              deals and all(x["offers"] and x["ask0"] and x["floor"] and x["price"] for x in deals)
+              and any(x["event"] == "walk" for x in talks), [(x["sku"], x["event"], x["offers"], x["price"]) for x in talks])
+        check("a request that asks for a warranty is marked", any(x["warranty_ask"] for x in talks)
+              and any(json.loads(l).get("warranty") for l in (md / "demand_r3.jsonl").read_text().splitlines()),
+              [x["warranty_ask"] for x in talks])
+        import simulate_r3, meta_r3
+        simulate_r3.TALKS = md / "talks_r3.jsonl"
+        res = simulate_r3.run(meta_r3.current(), meta_r3.BOUNDS)
+        check("replaying what we did gives what happened (fidelity 1.0 on fixed test buyers), playbooks are scored",
+              res["fidelity"] == 1.0 and res["actual"]["deals"] == len(deals) and "costco" in res and "walmart_edlp" in res,
+              {k: res[k] for k in ("fidelity", "actual", "current", "costco", "walmart_edlp")})
     finally:
         p.terminate()
     print(f"\n{sum(ok)}/{len(ok)} passed")

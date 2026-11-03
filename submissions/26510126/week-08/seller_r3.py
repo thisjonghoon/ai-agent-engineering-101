@@ -193,10 +193,33 @@ def grade_now(u):
     return grade, hours, None if near else grade
 
 
+HOURS = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h\b|hours?|시간)", re.I)
+
+
+def needed_hours(text):
+    """The shelf life the buyer asked for ("at least 594 hours", "540 h", "180시간"), or 0."""
+    hs = [float(h) for h in HOURS.findall(text or "") if 0 < float(h) <= 5000]
+    return max(hs, default=0)
+
+
+def pick(units, need):
+    """Among fitting units, the one to clear first (food that expires first, goods that arrived first), but for
+    food only among those with the shelf life the buyer asked for; if none has it, the freshest: two 2-star reviews
+    on 11/3 were for food that expired before the buyer's stated need while a fresher unit sat on our shelf."""
+    left = lambda u: (u["expires_at"] - time.time()) / 3600 if u.get("expires_at") else float("inf")
+    if need and units and any(u.get("kind") == "food" for u in units):
+        ok = [u for u in units if left(u) >= need]
+        if not ok:
+            return max(units, key=left)
+        units = ok
+    return min(units, key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]))
+
+
 def find_unit(text, taken=()):
     """The in-stock unit that fits what the buyer asked for (SKU first, then name or category). Among fitting units
-    the one to clear first: food that expires first, goods that arrived first."""
+    the one to clear first that still lasts as long as the buyer asked (pick)."""
     want = text.lower()
+    need = needed_hours(text)
     inv = read_json(MARKET_DIR / "inventory.json", {})
     if inv.get("round", 0) < 3:
         item = next((k for k in RESERVE if k in want), None)
@@ -205,13 +228,16 @@ def find_unit(text, taken=()):
     units = [u for u in inv.get("units", []) if u["grade"] != "expired" and u["unit"] not in taken]
     named = [u for u in units if u["sku"].lower() in want]
     if named:
-        return min(named, key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]))
+        return pick(named, need)
     fit = [u for u in units if (u.get("name") or "").lower() in want
            or (u.get("category") or "").split(">")[-1].lower() in want]
     # asked by category only: the order takes SKUs at 0.5-1.5x a reference price we cannot see, so offer the unit
     # whose list price is nearest the category's median first, then the one to clear first
     med = {d["category"]: d["median_price"] for d in read_json(MARKET_DIR / "demand.json", [])}
     off = lambda u: abs(u["list_price"] / med[u["category"]] - 1) if med.get(u.get("category")) else 0
+    if need and fit:
+        best = min(round(off(u), 1) for u in fit)
+        return pick([u for u in fit if round(off(u), 1) == best], need)
     return min(fit, key=lambda u: (round(off(u), 1), u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
 
 

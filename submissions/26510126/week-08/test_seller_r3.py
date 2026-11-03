@@ -202,6 +202,13 @@ async def main():
         for _ in range(3):
             seller_r3.MODEL_SLOTS.release()
         check("with every model slot busy the rules decide at once", busy is None, busy)
+        f_old = dict(UNITS[2], unit="u-f-old", expires_at=time.time() + 100 * 3600)
+        f_new = dict(UNITS[2], unit="u-f-new", expires_at=time.time() + 700 * 3600)
+        need = seller_r3.needed_hours("I need it to last 540.0 hours: please ship a unit with at least 594.0 hours of shelf life left")
+        check("food: the unit that clears first among those lasting as long as the buyer asked, else the freshest",
+              need == 594.0 and seller_r3.pick([f_old, f_new], need)["unit"] == "u-f-new"
+              and seller_r3.pick([f_old, f_new], 0)["unit"] == "u-f-old"
+              and seller_r3.pick([f_old, f_new], 900)["unit"] == "u-f-new", need)
         rows = [dict(x, model_on=True) for x in talks[:1]] + talks[1:]
         (md / "talks_mix.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows))
         simulate_r3.TALKS = md / "talks_mix.jsonl"

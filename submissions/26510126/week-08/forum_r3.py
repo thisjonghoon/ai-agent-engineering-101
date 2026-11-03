@@ -40,11 +40,12 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 MD = Path(os.environ.get("MARKET_DIR") or HERE / ".market")
 MEMORY = HERE / "memory.jsonl"
-EVERY = 300          # seconds between posts (the market allows one per 5 minutes)
+EVERY = 1200         # seconds between any two posts of ours: the market allows one per 5 minutes, but the user
+                     # (11/3 21:35) said no flooding; others post every 3-5 minutes, we post at most 3 an hour
 DIGEST_EVERY = 3600  # a ledger claim check when our own deals give nothing new for an hour
 MIN_CLAIMS = 10
 MAX_REFS = 10
-FORMAT_EVERY = 600   # seconds between posts of a drawn kind when our own deals give nothing new
+FORMAT_EVERY = 1200  # seconds before a drawn kind may follow when our own deals give nothing new
 PLAN = HERE / "forum_plan_r3.json"
 STYLE = os.environ.get("FORUM_STYLE", "1") != "0"     # tests set FORUM_STYLE=0: no model call
 VOICE = "장보기 레이더"
@@ -309,9 +310,12 @@ def stats(forum, memory):
     return out
 
 
-def drawn(ctx, weights=None):
-    """(kind, text, refs): kinds drawn by weight without replacement until one has something to say."""
+def drawn(ctx, weights=None, last=None):
+    """(kind, text, refs): kinds drawn by weight without replacement until one has something to say; never the kind
+    of our last post, so the column does not repeat itself."""
     w = dict(weights or plan())
+    if last in w and sum(v > 0 for v in w.values()) > 1:
+        w[last] = 0
     while any(v > 0 for v in w.values()):
         k = random.choices(list(w), weights=list(w.values()))[0]
         w[k] = 0
@@ -334,11 +338,11 @@ def maybe_post(memory):
     kind = "our_deals" if text else None
     if not text and (not posts or time.time() - posts[-1].get("t", 0) >= FORMAT_EVERY):
         try:
-            kind, text, refs = drawn(context())
+            kind, text, refs = drawn(context(), last=posts[-1].get("format") if posts else None)
         except Exception:
             kind, text, refs = None, None, []
-    if not text:
-        return None
+    if not text or any(m.get("facts", m.get("post")) == text for m in posts[-20:]):
+        return None                                      # nothing new to say: say nothing
     MD.mkdir(exist_ok=True)
     facts = text
     text, how = style(kind, facts)

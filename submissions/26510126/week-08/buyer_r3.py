@@ -8,7 +8,8 @@ did not last `use_within_hours` or the goods broke), forum votes on our posts, a
 1. Learn. New lines of the kit's payments.jsonl (why it did not pay) and broken.jsonl (goods that broke) become
    memory evidence first, so this order already avoids last order's trap.
 2. Pick. Every (shop, SKU) the kit lists for the order is a candidate. Code ranks them by expected surplus:
-   list price minus the price we expect to pay (what this shop took from us before, as a share of list price),
+   list price minus the price we expect to pay (what this shop took from us before, as a share of list price; with a
+   shop we never paid, what it settled for with everyone in the market's ledger),
    with shops our memory or the ledger caught lying about grades, or whose goods broke on us, left out.
    Food whose shelf life cannot cover `use_within_hours` even at grade B is a last resort.
 3. Trade. buyer.shop() haggles over A2A as in weeks 6-7 (harness offers, code guards), opening with
@@ -127,15 +128,17 @@ def shop_record(name, memory):
     return "; ".join(notes), banned, statistics.median(shares[-5:]) if shares else None
 
 
-def ledger_claims():
-    """Per shop URL or name: (settles, dishonest claims) from the market's ledger, the last six hours."""
+def ledger_claims(cat=None):
+    """Per shop name: (settles, dishonest claims, median price as a share of list or None) from the market's ledger,
+    the last six hours. The share is what the shop settled for with any buyer: a shop that sells cheap to others is
+    worth trying first even before we have paid it ourselves."""
     try:
         entries = market_intel.load_recent(timeout=5.0)
     except Exception:
         return {}
     names = {e["data"]["url"].rstrip("/"): e["data"]["name"] for e in entries
              if e["kind"] == "join" and e["data"].get("role") == "shop" and e["data"].get("url")}
-    out = {}
+    out, shares = {}, {}
     for e in entries:
         if e["kind"] != "settle":
             continue
@@ -144,7 +147,11 @@ def ledger_claims():
         name = names.get(shop, shop.rsplit("/shop/", 1)[-1])
         n, bad = out.get(name, (0, 0))
         out[name] = (n + 1, bad + (d.get("claim_honest") is False))
-    return out
+        lp = ((cat or {}).get(d.get("item")) or {}).get("list_price")
+        if lp and isinstance(d.get("amount"), (int, float)):
+            shares.setdefault(name, []).append(d["amount"] / lp)
+    return {k: (n, bad, statistics.median(shares[k][-10:]) if len(shares.get(k, [])) >= 3 else None)
+            for k, (n, bad) in out.items()}
 
 
 def candidates(order, shops, cat, memory, claims):
@@ -154,7 +161,7 @@ def candidates(order, shops, cat, memory, claims):
     out, skipped = [], []
     for s in shops:
         note, banned, share = shop_record(s["name"], memory)
-        n, bad = claims.get(s["name"], (0, 0))
+        n, bad, market_share = (tuple(claims.get(s["name"], ())) + (0, 0, None))[:3]
         if n >= 5 and bad / n >= 0.3:
             banned = True
             note += f"; market ledger: {bad} of its last {n} settled grade claims were false"
@@ -169,7 +176,7 @@ def candidates(order, shops, cat, memory, claims):
                 continue
             # what we expect to pay there, and whether our limit reaches it: an expensive SKU whose shop floor sits
             # above our limit only looks like a big surplus (review, 11/2), so the chance of a deal weighs it
-            expect = lp * (share or PRICE_GUESS)
+            expect = lp * (share or market_share or PRICE_GUESS)
             limit = min(order["budget"], int(lp * CAP))
             p_deal = 1.0 if limit >= expect else (limit / expect) ** 4
             surplus = (lp - min(expect, limit)) * p_deal
@@ -224,7 +231,7 @@ async def main(args, shops, memory, remember):
     order = load(args.order, {})
     cat = catalog()
     sync_kit_files(memory, remember)
-    cands = candidates(order, shops, cat, memory, ledger_claims())
+    cands = candidates(order, shops, cat, memory, ledger_claims(cat))
     if not cands:
         log("PICK", f"no listed shop has a SKU of {order.get('item')} we can buy")
         print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)

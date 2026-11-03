@@ -204,6 +204,26 @@ def main():
     case("forum note: only new facts, with ledger refs", p.get("refs") == [777] and "claimed A shipped B (#777)" in p.get("post", "")
          and "liar-shop" not in p.get("post", ""), p.get("post", "")[:200])
 
+    # 7. a shop we never paid: what it settled for with everyone in the ledger sets the price we expect there
+    cat7 = {"G9": {"list_price": 100000, "kind": "goods"}}
+    entries = [{"kind": "join", "data": {"role": "shop", "url": "http://cheap", "name": "cheap-shop"}},
+               {"kind": "join", "data": {"role": "shop", "url": "http://dear", "name": "dear-shop"}}]
+    entries += [{"kind": "settle", "data": {"shop": "http://cheap", "item": "G9", "amount": 55000, "claim_honest": True}}] * 4
+    entries += [{"kind": "settle", "data": {"shop": "http://dear", "item": "G9", "amount": 92000, "claim_honest": True}}] * 4
+    entries += [{"kind": "settle", "data": {"shop": "http://new", "item": "G9", "amount": 40000}}]       # one settle: no share yet
+    real = buyer_r3.market_intel.load_recent
+    buyer_r3.market_intel.load_recent = lambda timeout=5.0: entries
+    claims = buyer_r3.ledger_claims(cat7)
+    buyer_r3.market_intel.load_recent = real
+    case("ledger: per-shop settle share of list (3 or more settles)", claims.get("cheap-shop") == (4, 0, 0.55)
+         and claims.get("dear-shop") == (4, 0, 0.92) and claims.get("http://new") == (1, 0, None), str(claims))   # a shop with no join entry keeps its URL
+    order7 = {"order": "o-7", "category": "가구>의자", "budget": 95000, "kind": "goods", "acceptable": ["G9"]}
+    shops7 = [{"name": n, "url": f"http://{n}", "offers": [{"sku": "G9", "qty": 1}]} for n in ("dear-shop", "cheap-shop", "new")]
+    ranked = [c[1]["name"] for c in buyer_r3.candidates(order7, shops7, cat7, [], claims)]
+    case("never-paid shops ranked by their market price: cheap first, unknown in the middle, dear last",
+         ranked == ["cheap-shop", "new", "dear-shop"], str(ranked))
+    case("old two-number ledger records still read", bool(buyer_r3.candidates(order7, shops7[:1], cat7, [], {"dear-shop": (4, 0)})))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 

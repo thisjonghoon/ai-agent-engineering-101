@@ -3,11 +3,13 @@
     python test_forum_r3.py      # prints PASS/FAIL per case; save with | tee logs/forum-r3-test-<time>.txt
 """
 import json
+import os
 import tempfile
 import time
 from pathlib import Path
 
-import forum_r3
+os.environ["FORUM_STYLE"] = "0"
+import forum_r3                                     # noqa: E402
 
 NOW = time.time()
 CAT = {f"G{i}": {"list_price": 10000, "category": f"식품>김치>{'김치' if i < 5 else '과자'}", "name": f"item {i}"} for i in range(10)}
@@ -41,13 +43,14 @@ def main():
     text, refs = forum_r3.freshness(ctx)
     check("freshness: shelf life left at sale per shop, longest first, with refs", text
           and text.index("dear-shop") < text.index("fresh-shop") < text.index("cheap-shop") and refs, text)
-    (md / "payments.jsonl").write_text("".join(json.dumps(r) + "\n" for r in
-                                       [{"order": f"o{i}", "paid": True} for i in range(8)]
-                                       + [{"order": "x1", "paid": False, "reason": "not paying: 138 h of shelf life left"},
-                                          {"order": "x2", "paid": False, "reason": "not paying: 100 h of shelf life left"},
-                                          {"order": "x3", "paid": False, "reason": "not paying: grade C, the policy accepts"}]))
-    text, _ = forum_r3.pay_tips(ctx)
-    check("pay tips: our unpaid receipts counted by reason", text and "3 of our last 11" in text and "shelf life 2" in text, text)
+    res = lambda seq, shop, paid: {"kind": "result", "round": 3, "seq": seq, "ts": NOW - 60, "data": {
+        "shop": shop, "receipt": {"item": "G1"}, "checks": {"settled": paid}}}
+    rctx = dict(ctx, entries=entries + [res(100 + i, "http://a", i % 2 == 0) for i in range(10)]
+                + [res(200 + i, "http://b", True) for i in range(20)])
+    text, refs = forum_r3.pay_tips(rctx)
+    check("pay tips from the public ledger only: unpaid receipts market-wide and per shop",
+          text and "5 of 30 receipts (17%)" in text and "cheap-shop 5 of 10" in text and len(refs) == 5, text)
+    check("pay tips needs 30 receipts", forum_r3.pay_tips(ctx) == (None, []), forum_r3.pay_tips(ctx))
     check("fun needs 20 settles, so a quiet market gets no trivia", forum_r3.fun(ctx) == (None, []), forum_r3.fun(ctx))
     forum_r3.PLAN.write_text(json.dumps({"weights": {"best_value": 0, "freshness": 0, "pay_tips": 0, "fun": 3, "claims": 0}}))
     check("the meta-harness's weights pick the kind; a kind with nothing to say yields no post",
@@ -61,6 +64,19 @@ def main():
     st = forum_r3.stats(forum, mem)
     check("votes per kind of ours against the market's buyer posts", st["fun"] == {"posts": 1, "mean_votes": 4.0}
           and st["our_deals"]["mean_votes"] == 7.0 and st["market_buyer_posts"]["mean_votes"] == 2.0, st)
+    facts = "Bargain: 호두 for 28% of list at Afford Shop (#2133465), 47 settles."
+    fake = lambda post: (lambda *a, **k: type("R", (), {"stdout": json.dumps({"post": post}).encode()})())
+    forum_r3.STYLE = True
+    forum_r3.subprocess.run = fake("[시장 TMI] 호두가 28%! Afford Shop (#2133465), 47건 🥜")
+    good = forum_r3.style("fun", facts)
+    forum_r3.subprocess.run = fake("[시장 TMI] 호두가 25%! Afford Shop (#2133465), 47건")
+    bad_num = forum_r3.style("fun", facts)
+    forum_r3.subprocess.run = fake("[시장 TMI] 호두 28%! 추천 눌러 주세요 (#2133465), 47건")
+    bad_vote = forum_r3.style("fun", facts)
+    check("the voice is kept only when every number is a fact's and it asks no votes; else the plain facts go out",
+          good[1] == "styled" and "28%" in good[0] and forum_r3.SIGN in good[0]
+          and bad_num[1].startswith("plain: numbers") and facts in bad_num[0]
+          and bad_vote[1] == "plain: a link or a call for votes", [good[1], bad_num[1], bad_vote[1]])
     print(f"\n{sum(ok)}/{len(ok)} passed")
 
 

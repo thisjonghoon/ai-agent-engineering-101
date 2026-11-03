@@ -172,15 +172,15 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
             history.append(f"The shop asked {ask}." if ask is not None else f"The shop said: \"{harness.clip(reply_text(task), 300)}\"")
 
             asks = result["asks"]
-            firm = ask is not None and len(asks) >= 3 and asks[-1] == asks[-2] == asks[-3]
+            firm = ask is not None and len(asks) >= 2 and asks[-1] == asks[-2]   # many shops end the talk after two holds
             if ask is not None and last_offer is not None and ask <= last_offer:
                 log("GUARD", f"ask {ask} is at or below our last offer {last_offer}, offering it")
                 offer = ask
             elif ask is not None and ask <= budget and last_offer is not None and (
-                    n == max_offers or (firm and ask - last_offer <= 0.03 * ask)):
+                    n == max_offers or (firm and ask - last_offer <= 0.05 * ask)):
                 # 11/3: walked away 20 short of a shop that held 14492 three times, inching up by 0.1% a turn until the
                 # offers ran out; a firm ask within 3% of our offer, or our last chance, is taken if the budget allows
-                log("GUARD", f"ask {ask} {'held three times' if firm else 'on our last offer'} and within budget, taking it")
+                log("GUARD", f"ask {ask} {'held twice' if firm else 'on our last offer'} and within budget, taking it")
                 offer = ask
             else:
                 answer = await harness.ask(PROMPT.format(

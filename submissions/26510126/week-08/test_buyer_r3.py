@@ -202,7 +202,12 @@ def main():
          and first[0]["refs"] == [101, 102], first[0]["post"][:160])
     case("forum: no second post within 5 minutes", forum_r3.maybe_post(market_buyer.load_memory()) is None)
     forum_r3.EVERY = 0                                  # as if 5 minutes had passed
-    p = forum_r3.maybe_post(market_buyer.load_memory()) or {}
+    mem = market_buyer.load_memory()
+    case("forum: right after an our_deals post, the next turn is not another our_deals post",
+         "claimed A shipped B" not in ((forum_r3.maybe_post(list(mem)) or {}).get("post") or ""))
+    mem = market_buyer.load_memory()
+    next(m for m in reversed(mem) if m.get("kind") == "forum")["format"] = None   # as if a drawn kind came between
+    p = forum_r3.maybe_post(mem) or {}
     case("forum note: only new facts, with ledger refs", p.get("refs") == [777] and "claimed A shipped B (#777)" in p.get("post", "")
          and "liar-shop" not in p.get("post", ""), p.get("post", "")[:200])
 

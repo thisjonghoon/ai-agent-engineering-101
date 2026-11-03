@@ -334,11 +334,14 @@ def maybe_post(memory):
     posts = [m for m in memory if m.get("kind") == "forum"]
     if posts and time.time() - posts[-1].get("t", 0) < EVERY:
         return None
-    text, refs = note(memory)
+    last = posts[-1].get("format") if posts else None
+    # our own deals are one kind among the others: after an our_deals post the next turn goes to a drawn kind, or the
+    # column never gets past them on a busy day (11/3 21:33-23:19: six our_deals posts in a row)
+    text, refs = note(memory) if last != "our_deals" else (None, [])
     kind = "our_deals" if text else None
     if not text and (not posts or time.time() - posts[-1].get("t", 0) >= FORMAT_EVERY):
         try:
-            kind, text, refs = drawn(context(), last=posts[-1].get("format") if posts else None)
+            kind, text, refs = drawn(context(), last=last)
         except Exception:
             kind, text, refs = None, None, []
     if not text or any(m.get("facts", m.get("post")) == text for m in posts[-20:]):

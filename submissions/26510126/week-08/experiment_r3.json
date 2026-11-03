@@ -1,0 +1,1 @@
+{"on": false, "id": "ask-goods-1", "param": "ask_frac", "kind": "goods", "arms": {"A": 0.95, "B": 0.85}, "min_n": 30, "p_win": 0.95}

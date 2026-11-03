@@ -14,6 +14,9 @@ Each cycle:
   3. Code guards the answer: every number is clamped to its bounds and to a step from the current value (so
      min_margin keeps the floor at cost plus 2% or more, except food near its date and the round's last hours, where
      the seller's clearance rules apply), and an unusable answer keeps the current strategy.
+  4. A/B test (ab_r3.py): while an experiment runs, its numbers per arm are shown to the harness; once one arm is
+     better with probability p_win after min_n negotiations each, code writes that value into the strategy and
+     turns the experiment off (the harness does not pick the winner; it only sees the result).
 seller_r3.py and restock_r3.py read strategy_r3.json on every request and run, so a change applies at once.
 """
 import argparse
@@ -23,6 +26,7 @@ import re
 import time
 from pathlib import Path
 
+import ab_r3
 import harness
 
 HERE = Path(__file__).resolve().parent
@@ -64,6 +68,10 @@ market keeps settling. Categories that buyers ask for on the forum come first.
 
 Now ("deals" are signed receipts; only "settled" sales earn money, a receipt the buyer's kit refuses to pay earns
 nothing; market_price_list_* is where all shops' settled prices sit as a share of list price): {now}
+
+ab, when present, is an A/B test running inside the shop: each new negotiation of its kind draws one of two values
+of `param` (arms), whatever the strategy says, and mean_reward is margin over list price per negotiation (0 for a lost
+one). Code ends it and keeps the better value; until then a change to that number does not reach those negotiations.
 
 Last versions, oldest first (each with how it did while it ran):
 {history}
@@ -188,6 +196,9 @@ async def cycle():
     hist = [json.loads(l) for l in HISTORY.read_text(encoding="utf-8").splitlines() if l.strip()] if HISTORY.exists() else []
     since = hist[-1]["time"] if hist else time.time() - EVERY
     now = snapshot(since)
+    exp = ab_r3.experiment()
+    if exp:
+        now["ab"] = ab_r3.summary(exp)
     if (now.get("round") or 0) < 3:
         harness.log("META", f"round {now.get('round')}: no Round 3 stock yet, strategy unchanged")
         return
@@ -205,13 +216,22 @@ async def cycle():
     probe = None
     if (now.get("deals") or 0) >= 5 and (now.get("settled") or 0) < 0.6 * now["deals"] and s["warranty_hours"] == 0:
         s["warranty_hours"], probe = 2, f"{now['settled']} of {now['deals']} receipts settled: trying a 2 h warranty"
+    ab_done = None
+    win = ab_r3.winner(exp) if exp else None
+    if win and exp["param"] in BOUNDS:
+        lo, hi, _ = BOUNDS[exp["param"]]
+        s[exp["param"]] = min(max(exp["arms"][win], lo), hi)     # the test's own evidence, not a step from now
+        ab_done = dict(exp, on=False, result={"winner": win, "summary": now["ab"], "time": time.time()})
+        ab_r3.EXPERIMENT.write_text(json.dumps(ab_done, ensure_ascii=False, indent=1), encoding="utf-8")
     changed = {k: (cur[k], s[k]) for k in s if s[k] != cur[k]}
     STRATEGY.write_text(json.dumps(s, indent=1), encoding="utf-8")
     HISTORY.parent.mkdir(exist_ok=True)
     with HISTORY.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"time": time.time(), "strategy": s, "before": now, "reason": (ans or {}).get("reason"),
-                            "harness_ok": new is not None, "probe": probe}, ensure_ascii=False) + "\n")
-    harness.log("META", f"{'kept' if not changed else 'changed ' + json.dumps(changed)}: {(ans or {}).get('reason')}")
+                            "harness_ok": new is not None, "probe": probe,
+                            "ab_result": ab_done and ab_done["result"]}, ensure_ascii=False) + "\n")
+    harness.log("META", f"{'kept' if not changed else 'changed ' + json.dumps(changed)}: {(ans or {}).get('reason')}"
+                + (f"; A/B {exp['id']} won by {win} ({exp['param']} = {exp['arms'][win]})" if ab_done else ""))
 
 
 async def main():

@@ -17,6 +17,8 @@ Started from the course's starter_round3/seller.py (A2A side, unit lookup, recei
     is not published; the meta-harness may raise it if buyers refuse checkouts for want of one).
   - Units promised in an open negotiation or sold in the last 60 s are not offered again (inventory.json can be
     10 s old, and the kit refuses a checkout for a unit already gone).
+A/B test (ab_r3.py, experiment_r3.json): when an experiment is on, a new negotiation for a unit of its kind draws
+one of two values of one strategy number and keeps it to the end; the outcome goes to logs/ab_r3.jsonl.
 In the last `endgame_hours` of the round the floor drops to cost (endgame_frac), and in the last `final_hours`
 under it (final_frac): stock left at the end has cost money and earns nothing.
 Rounds 0-2 have no stock: the week-07 items are sold at the old reserves so the shop keeps working before Round 3.
@@ -40,6 +42,8 @@ from a2a.server.routes import create_agent_card_routes, create_jsonrpc_routes
 from a2a.server.tasks import InMemoryTaskStore, TaskUpdater
 from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 
+import ab_r3
+
 HERE = Path(__file__).resolve().parent
 NAME = "thisjonghoon"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no stock: the week-07 items
@@ -58,6 +62,15 @@ OPEN_HOLD = 120     # seconds a negotiation keeps its unit before another buyer 
 
 def log(msg):
     print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
+
+
+def ab_end(task_id, deal, event, reward=0.0):
+    """Record how a negotiation in an A/B experiment ended; a failure here never stops a sale."""
+    if deal and deal.get("ab"):
+        try:
+            ab_r3.record(id=deal["ab"][0], arm=deal["ab"][1], task=task_id, event=event, reward=round(reward, 4))
+        except OSError:
+            pass
 
 
 def canon(d):
@@ -186,7 +199,7 @@ class Seller(AgentExecutor):
         self.sold = {k: t for k, t in self.sold.items() if now - t < RECENT_SOLD}
         # a buyer that leaves without cancelling must not hold the unit forever (review, 11/2)
         for k in [k for k, d in self.open.items() if now - d.get("t", now) > OPEN_HOLD]:
-            self.open.pop(k, None)
+            ab_end(k, self.open.pop(k, None), "gone")
         return {d["unit"]["unit"] for d in self.open.values() if d["unit"].get("unit")} | set(self.sold)
 
     async def execute(self, context, event_queue):
@@ -197,19 +210,34 @@ class Seller(AgentExecutor):
         up = TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id)
         say = lambda text: up.new_agent_message(parts=[new_text_part(text)])
         text = get_message_text(context.message) or ""
-        s = strategy()
         deal = self.open.get(task.id)
+        s = deal["s"] if deal and deal.get("s") else strategy()      # an A/B arm keeps its value to the end
 
         if deal is None:
             u = find_unit(text, self.taken())
             if u is None:
                 await up.reject(say("Sorry, we have none of that in stock."))
                 return
+            ab = None
+            if u.get("unit"):
+                try:
+                    e, arm = ab_r3.choose(u.get("kind"))
+                except (OSError, ValueError, KeyError):
+                    e, arm = None, None
+                if arm:
+                    s, ab = dict(s, **{e["param"]: e["arms"][arm]}), (e["id"], arm)
             ask, floor = prices(u, s)
             deal = self.open[task.id] = {"unit": u, "ask": ask, "floor": floor, "offers": [], "turns": 0,
-                                         "t": time.time()}
+                                         "t": time.time(), "s": s if ab else None, "ab": ab}
+            if ab:
+                try:
+                    ab_r3.record(id=ab[0], arm=ab[1], task=task.id, event="open", sku=u["sku"], kind=u.get("kind"),
+                                 list_price=u["list_price"], cost=u["cost"], ask=ask, floor=floor)
+                except OSError:
+                    pass
             t, words = terms(u, s)
-            log(f"OPEN {task.id[:8]} {u['sku']} {u['name'][:30]} list {u['list_price']} cost {u['cost']} ask {ask} floor {floor}")
+            log(f"OPEN {task.id[:8]} {u['sku']} {u['name'][:30]} list {u['list_price']} cost {u['cost']} ask {ask} floor {floor}"
+                + (f" ab {ab[0]}:{ab[1]}" if ab else ""))
             await up.requires_input(say(f"{u['name']} ({u['sku']}){': ' + words if words else ''}. "
                                         f"List price {u['list_price']}, asking {ask}. Send your offer as a number."))
             return
@@ -230,11 +258,13 @@ class Seller(AgentExecutor):
             await up.complete(say(f"Deal: {u['name']} at {price}."))
             if u.get("unit"):
                 self.sold[u["unit"]] = time.time()
+            ab_end(task.id, deal, "deal", (price - u["cost"]) / u["list_price"] if u.get("list_price") else 0.0)
             log(f"DEAL {task.id[:8]} {u['sku']} at {price} (cost {u['cost']}, list {u['list_price']}, turns {deal['turns']})")
             del self.open[task.id]
             return
         if deal["turns"] >= s["max_turns"]:
             await up.reject(say(f"Sorry, {floor} is as low as we go. No deal."))
+            ab_end(task.id, deal, "walk")
             log(f"WALK {task.id[:8]} {u['sku']} offers {deal['offers']} floor {floor}")
             del self.open[task.id]
             return
@@ -245,7 +275,7 @@ class Seller(AgentExecutor):
 
     async def cancel(self, context, event_queue):
         task = context.current_task
-        self.open.pop(task.id, None)
+        ab_end(task.id, self.open.pop(task.id, None), "gone")
         await TaskUpdater(event_queue=event_queue, task_id=task.id, context_id=task.context_id).cancel()
 
 

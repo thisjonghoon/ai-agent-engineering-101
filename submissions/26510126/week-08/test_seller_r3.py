@@ -4,7 +4,8 @@
 
 Starts the seller on a free port with MARKET_DIR pointing at a temporary folder holding inventory.json and
 catalog.json, then negotiates over A2A with buyer.py's Shop client and checks the receipt: price never under the
-floor, honest claim, warranty on goods, cleared food sold under cost, no unit promised twice.
+floor, honest claim, warranty on goods, cleared food sold under cost, no unit promised twice; and the A/B test
+(ab_r3.py): off without an experiment file, both arms drawn first, its arm kept and logged, a clear winner found.
 """
 import asyncio
 import json
@@ -31,8 +32,10 @@ UNITS = [
      "kind": "food", "cost": 18000, "grade": "A", "supplied_at": NOW - 3600, "expires_at": NOW + 150 * 3600, "cert": {}},
     {"unit": "u-old", "sku": "F2", "name": "Old Kimchi", "category": "식품>김치/반찬/즉석요리>김치", "list_price": 30000,
      "kind": "food", "cost": 18000, "grade": "C", "supplied_at": NOW - 160 * 3600, "expires_at": NOW + 3 * 3600, "cert": {}},
+    {"unit": "u-goods3", "sku": "G3", "name": "Test Desk", "category": "가구/침구>가구>책상", "list_price": 100000,
+     "kind": "goods", "cost": 50000, "grade": "B", "supplied_at": NOW - 10, "expires_at": None, "cert": {}},
 ]
-CATALOG = {"G1": {"shelf_hours": None}, "G2": {"shelf_hours": None}, "F1": {"shelf_hours": 168}, "F2": {"shelf_hours": 168}}
+CATALOG = {"G1": {"shelf_hours": None}, "G2": {"shelf_hours": None}, "G3": {"shelf_hours": None}, "F1": {"shelf_hours": 168}, "F2": {"shelf_hours": 168}}
 
 
 def free_port():
@@ -69,7 +72,7 @@ async def main():
     (md / "catalog.json").write_text(json.dumps(CATALOG), encoding="utf-8")
     port = free_port()
     p = subprocess.Popen([sys.executable, str(HERE / "seller_r3.py"), "--port", str(port)], cwd=HERE,
-                         env=dict(os.environ, MARKET_DIR=str(md)))
+                         env=dict(os.environ, MARKET_DIR=str(md), AB_DIR=str(md)))
     base = f"http://127.0.0.1:{port}"
     for _ in range(100):
         try:
@@ -80,7 +83,7 @@ async def main():
     ok = []
 
     def check(name, cond, detail):
-        ok.append(cond)
+        ok.append(bool(cond))
         print(f"{'PASS' if cond else 'FAIL'}  {name}: {detail}", flush=True)
 
     try:
@@ -110,6 +113,34 @@ async def main():
         seller_r3.MARKET_DIR = md
         near = dict(UNITS[2], expires_at=time.time() + (0.80 * 168 + 0.5) * 3600)   # half an hour above the A line
         check("no grade claim within an hour of a line", seller_r3.grade_now(near)[2] is None, seller_r3.grade_now(near))
+
+        import ab_r3                                     # A/B: same folder as the seller subprocess
+        ab_r3.EXPERIMENT, ab_r3.LOG = md / "experiment_r3.json", md / "logs" / "ab_r3.jsonl"
+        check("no experiment file: the seller logs no A/B events", not ab_r3.LOG.exists(), ab_r3.LOG)
+        ab_r3.EXPERIMENT.write_text(json.dumps({"on": True, "id": "t1", "param": "ask_frac", "kind": "goods",
+                                                "arms": {"A": 0.95, "B": 0.70}, "min_n": 30, "p_win": 0.95}))
+        check("an experiment on goods leaves food alone", ab_r3.choose("food") == (None, None), ab_r3.choose("food"))
+        t = await haggle(base, "Test Desk (G3)", [80000, 80000])   # at or over both arms' floors
+        r = receipt(t)
+        ev = [json.loads(l) for l in ab_r3.LOG.read_text().splitlines()]
+        opened = [e for e in ev if e["event"] == "open"]
+        ended = [e for e in ev if e["event"] == "deal"]
+        arm_ask = {"A": 95000, "B": 70000}
+        check("a negotiation draws an arm, asks with it and logs open and deal with the margin",
+              r and len(opened) == 1 and opened[0]["ask"] == arm_ask[opened[0]["arm"]] and len(ended) == 1
+              and ended[0]["reward"] == round((r["price"] - 50000) / 100000, 4) and r["price"] >= 55000,
+              {"receipt": r and r["price"], "events": ev})
+        seen = [ab_r3.choose("goods")[1] for _ in range(1)]
+        check("the arm with fewer negotiations is drawn first", seen == ["B" if opened[0]["arm"] == "A" else "A"], seen)
+        with ab_r3.LOG.open("a") as f:                   # 40 negotiations each: B earns more
+            for i in range(40):
+                for arm, rew in (("A", 0.05 if i % 2 else 0.0), ("B", 0.15 if i % 3 else 0.0)):
+                    f.write(json.dumps({"id": "t1", "arm": arm, "task": f"{arm}{i}", "event": "open"}) + "\n")
+                    f.write(json.dumps({"id": "t1", "arm": arm, "task": f"{arm}{i}", "event": "deal" if rew else "walk",
+                                        "reward": rew}) + "\n")
+        picks = [ab_r3.choose("goods")[1] for _ in range(200)]
+        check("the bandit leans to the arm that earns more, and a winner is called", picks.count("B") > 150
+              and ab_r3.winner() == "B", {"B share": picks.count("B") / 200, "summary": ab_r3.summary()})
     finally:
         p.terminate()
     print(f"\n{sum(ok)}/{len(ok)} passed")

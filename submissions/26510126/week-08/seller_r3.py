@@ -6,7 +6,8 @@ Started from the course's starter_round3/seller.py (A2A side, unit lookup, recei
   - Prices are set by code from strategy_r3.json, which the meta-harness (meta_r3.py, Claude haiku) rewrites.
   - Haggling: in a share of negotiations (model_share, drawn once per negotiation) Claude haiku makes each turn's
     call, ReAct style: it reads the unit (grade, shelf life left, list and cost), our ask and floor, every offer so
-    far, the turns left, our stock of that SKU and how often buyers ask for it, and answers with a one-line reason
+    far, the turns left, our stock of that SKU, how often buyers ask for it and what the market paid for it and its
+    category lately (prices_r3.py: the ledger, with the forum's price posts checked against it), and answers with a one-line reason
     and accept or a counter. Code keeps it honest and safe: it accepts only at or above the floor, counters only
     between the buyer's offer and our last ask (never raising it), and when the model is busy (MODEL_SLOTS calls at
     once), slow (MODEL_TIMEOUT s) or answers nonsense, the rules below decide that turn, so a busy market never
@@ -55,6 +56,7 @@ from a2a.types import AgentCapabilities, AgentCard, AgentInterface, AgentSkill
 import ab_r3
 import demand_r3
 import harness
+import prices_r3
 
 HERE = Path(__file__).resolve().parent
 NAME = "thisjonghoon"
@@ -79,6 +81,7 @@ date, and a buyer who walks away buys elsewhere.
 Unit: {name} ({kind}), grade {grade}, {life}. List price {lp}, our cost {cost}.
 Our floor is {floor} (never below it); our last ask was {ask}. The buyer's offers so far, oldest first: {offers}.
 Turns left before we must walk away: {left}. Our stock of this SKU: {stock}. Demand for it lately: {demand}.
+What the market paid lately (public ledger): {market}.
 Either accept the last offer ({offer}) or counter with a whole number from {lo} to {hi}. A counter far above the offer
 may lose the buyer; accepting too early leaves money on the table.
 Answer with JSON only: {{"why": "<at most twelve words>", "action": "accept" or "counter", "price": <your counter>}}"""
@@ -384,7 +387,8 @@ class Seller(AgentExecutor):
         prompt = SELL_PROMPT.format(
             name=harness.clip(u.get("name"), 60), kind=u.get("kind"), grade=grade, life=life, lp=u["list_price"],
             cost=u["cost"], floor=deal["floor"], ask=hi, offers=deal["offers"][-6:], offer=offer,
-            left=s["max_turns"] - deal["turns"], stock=stock, demand=demand_of(u["sku"]), lo=lo, hi=max(lo, hi))
+            left=s["max_turns"] - deal["turns"], stock=stock, demand=demand_of(u["sku"]), lo=lo, hi=max(lo, hi),
+            market=prices_r3.line(MARKET_DIR, u["sku"], u.get("category")))
         deal["model_calls"] += 1
         async with MODEL_SLOTS:
             ans = await harness.ask(prompt, tries=1, timeout=MODEL_TIMEOUT, max_chars=4000)

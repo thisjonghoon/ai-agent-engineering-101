@@ -30,6 +30,7 @@ from pathlib import Path
 import buyer
 import demand_r3
 import forum_r3
+import prices_r3
 import market_intel
 import harness
 from harness import log
@@ -278,7 +279,9 @@ async def attempt(order, cat, s, off, lp, note, remember):
     else:
         opening += ". Please ship a grade A or B unit with the market's certificate; a warranty is welcome."
     hint = (f"The list price is {lp}. Shops buy stock at 25-75% of list price, so start well below list "
-            f"(around half) and raise slowly. Our record with this shop: {note}.\n")
+            f"(around half) and raise slowly. Our record with this shop: {note}.\n"
+            f"What the market paid lately (public ledger): "
+            f"{prices_r3.line(MD, sku, (cat.get(sku) or {}).get('category'))}.\n")
     try:
         result = await buyer.shop(s["url"], name, limit, memory=hint, max_raise=0.4, max_offers=MAX_OFFERS,
                                   opening=opening)

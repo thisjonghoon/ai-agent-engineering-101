@@ -31,6 +31,7 @@ import argparse
 import json
 import math
 import re
+import sys
 import time
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -241,6 +242,11 @@ def main():
         why = (f"{len(ranked)} SKUs short, buying {len(buy)} lines" + (f" (runs {gap:.0f} s apart: depth x{scale:.1f})" if scale > 1 else "")
                + (f"; forum asks for {', '.join(k.split('>')[-1] for k in list(wanted)[:5])}" if wanted else ""))
     (md / "restock_state.json").write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
+    try:
+        import prices_r3                         # going prices from the ledger, forum claims checked (prices_r3.py)
+        prices_r3.write(md)
+    except Exception as e:                       # the price file is advice; never stop a restock for it
+        print(f"[prices] not written: {type(e).__name__}", file=sys.stderr)
     print(json.dumps({"buy": buy, "why": why}, ensure_ascii=False))
 
 

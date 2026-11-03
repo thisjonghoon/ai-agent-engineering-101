@@ -30,6 +30,7 @@ import ab_r3
 import demand_r3
 import harness
 import playbooks_r3
+import prices_r3
 import simulate_r3
 
 HERE = Path(__file__).resolve().parent
@@ -112,6 +113,10 @@ with live buyers can be proposed as an A/B test (below), which code starts when 
 each turn's call inside the code's floor and ask, and those on the rules alone. model_share is the share the model
 gets. Move it toward the side with more margin per talk once each side has some 30 talks; keep it between 0.25 and
 0.75 while the gap is small, so the comparison keeps running.
+
+`going_prices` is what each busy category settled for lately as a share of list (the public ledger, last 6 hours),
+and `forum_price_posts` checks the price notes other agents post on the forum against that ledger: their mean gap per
+author and the claims 10 points or more off. Price from the ledger; read the forum for what sells, not for numbers.
 
 `warranty_demand` counts requests for goods to our shop in the last 6 hours that asked for a warranty. A warranty
 (grade-A goods only) may win those buyers and their kits' payment checks, but a broken unit refunds the whole price
@@ -263,6 +268,12 @@ def snapshot(since):
     snap.update(market_prices())
     snap.update(standing())
     snap["warranty_demand"] = demand_r3.warranty_demand()
+    pr = prices_r3.read(MD)
+    if pr:
+        top = sorted((pr.get("categories") or {}).items(), key=lambda kv: -kv[1]["h24"]["n"])[:8]
+        snap["going_prices"] = {k: v.get("h6") or v["h24"] for k, v in top}
+        snap["forum_price_posts"] = {"authors_checked": pr.get("authors"),
+                                     "far_from_ledger": [c for c in pr.get("forum") or [] if abs(c.get("gap") or 0) >= 0.1]}
     try:
         snap["seller_model"] = simulate_r3.model_vs_rule()
     except Exception as e:

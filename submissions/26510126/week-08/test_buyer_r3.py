@@ -267,6 +267,19 @@ def main():
     c = harness.clip("a\x00b\x1b[31m  c\n" * 1000, 300)
     case("clip: no control characters, collapsed, 300 characters", len(c) <= 300 and "\x00" not in c and "\x1b" not in c and "  " not in c, repr(c[:40]))
 
+    # 9. posts count (agent.md 11/3 20:29): with nothing new of ours for an hour, a grade-claim check from the ledger
+    led = [{"kind": "join", "data": {"url": "http://liar", "name": "liar-x"}}]
+    led += [{"kind": "settle", "seq": 900 + i, "data": {"shop": "http://liar" if i % 2 else "http://ok", "claim_honest": i % 4 != 1}}
+            for i in range(14)]
+    market_intel.load_recent = lambda **kw: led
+    forum_r3.EVERY = 0
+    case("no new deal and the last post under an hour old: nothing posted", forum_r3.maybe_post(market_buyer.load_memory()) is None)
+    forum_r3.DIGEST_EVERY = 0
+    p = forum_r3.maybe_post(market_buyer.load_memory()) or {}
+    case("an hour without news: a ledger claim check with the false claims' refs", p.get("refs") == [901, 905, 909, 913]
+         and "liar-x: 4 of 7 claims false" in p.get("post", ""), p.get("post", "")[:160])
+    market_intel.load_recent = lambda **kw: []
+
     dem = [json.loads(l) for l in (TMP / "logs" / "demand_r3.jsonl").read_text().splitlines()]
     o1 = next((e for e in dem if e.get("order") == "o-1"), {})
     case("hidden demand: each order is logged with its category, reference price and nearest SKU",

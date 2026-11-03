@@ -70,8 +70,15 @@ def load_recent(hours=RECENT_HOURS, timeout=8.0, max_pages=40):
     except (FileNotFoundError, json.JSONDecodeError):
         entries = load_ledger(timeout=timeout, max_pages=max_pages)
     after = max((e["seq"] for e in entries), default=0)
+    cut = time.time() - hours * 3600
     try:
         with httpx.Client(timeout=timeout) as client:
+            # a cache older than the window would page forward from there for ever (11/3: 40 pages of Round 2 a
+            # call, all cut, so the next call started from the same place): jump to the last max_pages pages instead
+            if max((e["ts"] for e in entries if e["kind"] not in ("join", "round")), default=0) < cut:
+                last = client.get(f"{MARKET}/api/ledger", params={"after": -PAGE}).json()
+                if last:
+                    after = max(after, last[0]["seq"] - 1 - PAGE * (max_pages - 1))
             for _ in range(max_pages):
                 page = client.get(f"{MARKET}/api/ledger", params={"after": after} if after else None).json()
                 page = [e for e in page if e["seq"] > after]
@@ -83,7 +90,6 @@ def load_recent(hours=RECENT_HOURS, timeout=8.0, max_pages=40):
                     break
     except (httpx.HTTPError, ValueError, KeyError) as e:
         print(f"[intel] ledger fetch failed ({e!r}), using {len(entries)} recent entries", file=sys.stderr)
-    cut = time.time() - hours * 3600
     entries = [e for e in entries if e["kind"] in ("join", "round") or e["ts"] >= cut]
     if entries:
         os.makedirs(os.path.dirname(RECENT), exist_ok=True)

@@ -50,7 +50,12 @@ SETTLED = re.compile(r"\[acp\] settled .* at (\d+), ledger")         # our shop'
 SETTLE_REFUSED = re.compile(r"\[acp\] (settle refused|checkout refused: (?:no |unit ))")  # shop side only
 SELLER_LINE = re.compile(r"(OPEN|DEAL|WALK) \S+ (\S+)(?: at (\d+) \(cost (\d+), list (\d+))?")
 
-PROMPT = """You set the strategy of an online shop in a market of AI buyers. Profit is the shop's balance minus its
+PROMPT = """GOAL: the highest Players rank we can reach (shop ALL + buyer ALL), and above the instructor's own agent q00,
+while staying honest: true grade claims, the market's certificate shown, no votes against others, no selling below
+cost except to clear stock that would otherwise be lost. `players` in the numbers below shows our rank, q00's, and the
+part with the most to gain; push the shop's part of that.
+
+You set the strategy of an online shop in a market of AI buyers. Profit is the shop's balance minus its
 starting capital at the end of the round, so stock that never sells is a loss; the shop is also ranked by revenue
 and by stars. The shop buys units (cost is 25-75% of list price, set by a random grade) and sells them by haggling.
 Food loses its grade as it ages and is thrown away at its date; goods pay 1% of cost a day in storage and some break
@@ -189,7 +194,8 @@ def standing():
     margin for stars or revenue when that moves the score more."""
     try:
         import httpx
-        rows = httpx.get("https://market.ourolabs.ai/api/board", timeout=8).json().get("shops") or []
+        board = httpx.get("https://market.ourolabs.ai/api/board", timeout=8).json()
+        rows = board.get("shops") or []
     except Exception:
         return {}
     ours = next((r for r in rows if r.get("name") == "thisjonghoon"), None)
@@ -200,9 +206,15 @@ def standing():
         return {"standing_parts": pct}
     stars = sorted(r["stars"] for r in rows if isinstance(r.get("stars"), (int, float)) and r.get("reviews"))
     q = lambda f: stars[min(len(stars) - 1, int(f * len(stars)))] if stars else None
-    return {"standing": {"shops": len(rows), "profit_pct": pct["profit"], "revenue_pct": pct["revenue"],
-                         "stars_pct": pct["stars"], "score": round(0.5 * pct["profit"] + 0.3 * pct["revenue"] + 0.2 * pct["stars"], 3),
-                         "our_stars": ours.get("stars"), "market_stars_p25_median_p75": [q(0.25), q(0.5), q(0.75)]}}
+    out = {"standing": {"shops": len(rows), "profit_pct": pct["profit"], "revenue_pct": pct["revenue"],
+                        "stars_pct": pct["stars"], "score": round(0.5 * pct["profit"] + 0.3 * pct["revenue"] + 0.2 * pct["stars"], 3),
+                        "our_stars": ours.get("stars"), "market_stars_p25_median_p75": [q(0.25), q(0.5), q(0.75)]}}
+    try:
+        import rank_r3                                   # Players rank and the gap to the instructor's q00
+        out["players"] = rank_r3.standing(board)
+    except Exception:
+        pass
+    return out
 
 
 def snapshot(since):

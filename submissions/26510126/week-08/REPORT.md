@@ -1,6 +1,6 @@
 # Week 08 (midterm) — our shop and buyer in the Round 3 market
 
-**Status, 2026-11-01 (draft).** Round 3 runs 11/3 to 11/17 23:59 (the date moved on 10/31, with kit v4 and the
+**Status, 2026-11-03 (draft).** Round 3 runs 11/3 to 11/17 23:59 (the date moved on 10/31, with kit v4 and the
 economy rules). Sections 1 and 2 describe the agents built for Round 3; section 3 is filled in from the Round 3 logs.
 The one-page figure is `architecture.tex` / `architecture.pdf`.
 
@@ -19,8 +19,8 @@ The one-page figure is `architecture.tex` / `architecture.pdf`.
 
 | Where | Model | What it decides | What code decides instead |
 |---|---|---|---|
-| Shop strategy, every 15 min | Claude haiku (`meta_r3.py`) | ask and floor as shares of list price, separately for food (with a freshness premium) and goods, minimum margin, concession step, food clearance, warranty hours, cash reserve, stock cap, which goods and food to stock, depth, price spread, best-seller depth; it sees settled sales, revenue and the market's settled prices by kind | bounds and a largest step per cycle for every number; floor ≥ cost + 2% outside clearance; when fewer than 60% of a busy window's receipts settle and no warranty is offered, code tries a 2 h warranty on grade-A goods; an unusable answer keeps the current strategy |
-| Shop, each haggle turn | none (code) | — | `seller_r3.py`: counter moves `step` toward the offer, never under the floor; accept at or above the floor after two offers or at the midpoint. No model per turn, so a busy market does not queue behind `claude -p` |
+| Shop strategy, every 15 min | Claude haiku (`meta_r3.py`) | ask and floor as shares of list price, separately for food (with a freshness premium) and goods, minimum margin, concession step, food clearance, warranty hours, cash reserve, stock cap, which goods and food to stock, depth, price spread, best-seller depth; it sees settled sales, revenue and the market's settled prices by kind | bounds and a largest step per cycle for every number; floor ≥ cost + 2% outside clearance; when fewer than 60% of a busy window's receipts settle and no warranty is offered, code tries a 2 h warranty on grade-A goods; an A/B test's winner is applied by code, not chosen by the model; an unusable answer keeps the current strategy |
+| Shop, each haggle turn | none (code) | — | `seller_r3.py`: counter moves `step` toward the offer, never under the floor; accept at or above the floor after two offers or at the midpoint; while an A/B test runs, each negotiation draws one arm and keeps it. No model per turn, so a busy market does not queue behind `claude -p` |
 | Buyer, each order | Claude haiku (`buyer_r3.py` via `buyer.py`) | each offer in the haggle | which shop and SKU (expected surplus), bans (false grade claims, broken goods without warranty), cap = min(budget, 0.9 × list), accept policy for the kit |
 | Ideas | Claude sonnet (`meta_explore.py`, from week 7) | proposals only | everything |
 
@@ -32,8 +32,21 @@ All Claude calls go through `claude -p` with no tools, no settings, no session p
   whether the claim was true, shelf life left, price against list), each refusal the kit wrote to `payments.jsonl`,
   and each broken item from `broken.jsonl` (matched to our last purchase of that name, so we know the shop and the
   warranty) is appended; nothing is summarised on write. The shop's record is derived when an order reads it.
-- **The market's record:** settle entries from the ledger (what sold, claim honesty), read in small pages; the
+- **The market's record:** settle entries from the ledger (what sold, at what share of list, claim honesty), read in
+  small pages. The buyer expects a shop it never paid to charge what that shop settled for with everyone (median of
+  its last 10 settles), so cheap shops are tried first and its own memory takes over once it has paid there; the
   restock keeps a decaying score per category in `.market/restock_state.json`.
+- **A/B evidence** (`logs/ab_r3.jsonl`, `ab_r3.py`): the meta-harness compares a 15-minute window with the one before,
+  but traffic moves more than prices between hours (on 11/3, 8 deals in a night half hour, 73 in a late-morning one).
+  So one strategy number is also tested inside the shop: each negotiation draws one of two values at the same hour
+  (Thompson sampling, reward = margin over list, 0 for a lost sale), and once one value is better with probability
+  0.95 after 30 negotiations each, code writes it into the strategy. The first test: the ask on goods at 0.95 or
+  0.85 of list.
+- **How past deals and reputation feed the next decision:** our buyer's record of a shop (prices paid, false claims,
+  broken goods) sets which shop it tries and bans liars; the ledger's prices and claim honesty cover shops we never
+  met; the shop's own sales and the ledger's settles steer what the restock buys; the strategy history and the A/B
+  log steer the prices; reviews of our deals become stars, and our forum notes carry ledger refs so other buyers can
+  check them.
 - **Meta-harness history** (`logs/strategies_r3.jsonl`): every strategy version with what happened while it ran
   (deals, walk-aways, price as a share of list, margin over cost, profit, stock at cost, ageing stock). The harness
   sees the last 30; a version's outcome is the measurement stored at the next decision, so nothing is re-measured.
@@ -76,9 +89,17 @@ See `architecture.pdf`. In short:
 | Buyer | picks and haggles | expected-surplus choice over (shop, SKU), memory of raw evidence, bans for false claims and unwarranted breakages, accept policy (certificate, shelf life, grade) checked by the kit before paying |
 | Checkout | fixed code; inputs described as short strings | tools made from each shop's `acp.json`, fixed code only as a fallback; our card in JSON Schema |
 | Forum | none | facts from our settled deals with ledger refs, at most one post in 5 minutes |
+| Learning | none | the meta-harness over strategy versions, plus an A/B test inside the shop that holds the hour fixed |
+
+**What moves without an order.** Week 9 places the rounds on the weak notion of agency (Wooldridge and Jennings,
+1995): autonomy, reactivity, social ability and pro-activeness, the last absent until Round 3. Ours acts first in
+three places, each with a reason to act and a limit: the restock buys before demand shows (one unit per category, more
+only where settles or forum "wanted" posts show demand, within a cash reserve and a stock cap); the forum notes are
+written only when our settled evidence is new (Horvitz's 1999 threshold in a crude form: speak first only with
+something checkable to say); and the meta-harness and the A/B test change prices between orders.
 
 ## 3. Round 3 results
 
 TODO from 11/3: settled deals (shop and buyer), Players rank, refused settlements quoted from `logs/market-kit.log`
-and `.market/payments.jsonl`, and "값 다시 정하기" (`python reprice_dashboard.py`: opening ask and deal price before
+and `.market/payments.jsonl` (`python r3_results.py` prints them as Markdown), the A/B results (`python ab_r3.py`), and "값 다시 정하기" (`python reprice_dashboard.py`: opening ask and deal price before
 and after the budgets left the ledger).

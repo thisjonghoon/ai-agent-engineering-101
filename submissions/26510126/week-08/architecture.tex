@@ -28,18 +28,19 @@
 \node[code, below=of strat, text width=28mm] (restock) {\textbf{restock\_r3.py}\\ breadth, then depth where settles show};
 \node[code, above=of strat, text width=28mm] (seller) {\textbf{seller\_r3.py}\\ ask, floor, concession; honest claim, warranty if set};
 \node[tool, above=of seller, text width=28mm] (shopacp) {A2A card + ACP checkout (kit proxy)};
+\node[code, right=6mm of restock, text width=22mm, font=\scriptsize] (ab) {\textbf{ab\_r3.py}\\ A/B: two values drawn per negotiation, winner by code};
 
 % --- buyer column (right)
 \node[ctx, below right=14mm and 36mm of market] (mem) {\texttt{memory.jsonl}\\ raw evidence: deals, lies, breaks, refusals};
 \node[model, below=of mem] (buyer) {\textbf{buyer\_r3.py} (haiku per offer)\\ pick shop and SKU by expected surplus, haggle};
 \node[code, below=of buyer] (guards) {code guards: cap = min(budget, 0.9 list), bans, accept policy};
-\node[ctx, left=10mm of buyer, text width=28mm] (intel) {ledger settles\\ (claim honesty per shop)};
+\node[ctx, left=10mm of buyer, text width=28mm] (intel) {ledger settles\\ (price and claim honesty per shop)};
 \node[tool, below=of intel, text width=28mm] (tools) {\textbf{checkout tools from each shop's acp.json} (JSON Schema)};
 \node[code, right=10mm of buyer, text width=30mm] (review) {\textbf{review\_r3.py}\\ \textbf{forum\_r3.py}\\ stars and facts from settled deals};
 
 % --- kit boxes
 \begin{scope}[on background layer]
-\node[kit, fit=(inv)(shopacp), label={[font=\scriptsize]above:kit v4: stock files, restock runs, checkout, settle}] {};
+\node[kit, fit=(inv)(shopacp)(ab), label={[font=\scriptsize]above:kit v4: stock files, restock runs, checkout, settle}] {};
 \node[kit, fit=(tools)(mem)(review), label={[font=\scriptsize]above:kit v4 (our copy): orders, AP2 closed mandates, payments.jsonl}] {};
 \end{scope}
 
@@ -53,6 +54,8 @@
 \draw[->] (strat) -- (restock);
 \draw[->] (restock.south) |- node[lab, pos=0.75]{buy lines} ($(hist.south)+(0,-6mm)$) -| ([xshift=-12mm]inv.west) |- (inv.west);
 \draw[->] (seller) -- (shopacp);
+\draw[<->] (ab.north) |- node[lab, pos=0.3]{arm, outcome} (seller.east);
+\draw[->] (ab) -- node[lab]{winner} (strat);
 \draw[->] (shopacp.east) -| node[lab, pos=0.7]{settle} ([xshift=-22mm]market.south);
 
 \draw[->] (market) -| node[lab, pos=0.75]{order, open mandates} (mem);
@@ -70,9 +73,11 @@
 \begin{minipage}{0.95\linewidth}\small
 \textbf{Different from the kit's baseline.} The starter seller asks a model at every turn and never offers a warranty; ours
 prices by code from a strategy the meta-harness rewrites, claims grades honestly (one grade lower near a line), shows the
-market's certificate, warrants goods only when the meta-harness turns it on, and clears food before it spoils. The starter has no restock and no buyer memory;
+market's certificate, warrants goods only when the meta-harness turns it on, and clears food before it spoils. The starter has no restock (the kit then buys random SKUs when stock runs low) and no buyer memory;
 ours buys breadth first and depth where the ledger shows settled deals, and the buyer keeps raw evidence (grade lies,
 breakages, refusals) and derives each shop's record when it reads it. The kit pays with fixed code; our copy makes the
 checkout tools from each shop's \texttt{acp.json} and falls back to the fixed code only before a session exists.
+Prices also learn inside the shop: an A/B test draws one of two values per negotiation at the same hour, so the
+market's traffic swings do not decide which value wins.
 \end{minipage}
 \end{document}

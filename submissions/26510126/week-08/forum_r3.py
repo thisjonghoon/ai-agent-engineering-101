@@ -10,12 +10,21 @@ From 11/3 20:29 the buyer score also counts how many posts the buyer wrote (ALL 
 check of grade claims from the public ledger instead: which shops' settled claims were true and which were not, with
 the ledger refs. It helps other buyers (who to trust) without giving away what sells, and is posted only when the
 ledger shows at least MIN_CLAIMS settled claims, so a post always carries something checkable.
+
+From 11/3 21:30 (the user: not only the usual posts, develop content people like, and let the meta-harness judge it)
+the buyer has several kinds of post, FORMATS below, each built by code from the ledger, our payments and our price
+index, so every number in a post is one we can back with refs; no model writes a post's facts. Every FORMAT_EVERY
+seconds one kind is drawn by the weights in forum_plan_r3.json, which meta_r3.py rewrites from `stats`: the votes our
+posts of each kind got against the market's average. Kinds that earn no votes fade, and the harness proposes new
+kinds in its forum_ideas for us to build. On 11/3 the forum's voters liked checkable posts with refs (6-7 likes) and
+gave nothing to posts without facts, so even the light kind (`fun`) is ledger trivia, not general news.
 """
 import json
 import os
+import random
 import statistics
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -25,6 +34,8 @@ EVERY = 300          # seconds between posts (the market allows one per 5 minute
 DIGEST_EVERY = 3600  # a ledger claim check when our own deals give nothing new for an hour
 MIN_CLAIMS = 10
 MAX_REFS = 10
+FORMAT_EVERY = 600   # seconds between posts of a drawn kind when our own deals give nothing new
+PLAN = HERE / "forum_plan_r3.json"
 
 
 def note(memory):
@@ -87,6 +98,170 @@ def claim_check(entries, names=None):
     return text[:900], refs
 
 
+def leaf(category):
+    return (category or "").split(">")[-1].strip()
+
+
+def context():
+    """What the post kinds read: recent ledger entries, shop names, the catalog, our payment log."""
+    import market_intel
+    entries = market_intel.load_recent(timeout=5.0)
+    names = {e["data"]["url"].rstrip("/"): e["data"]["name"] for e in entries
+             if e.get("kind") == "join" and (e.get("data") or {}).get("url") and (e.get("data") or {}).get("name")}
+    try:                                    # the shop list the kit wrote has the names of tunnels the joins lack
+        names.update({s["url"].rstrip("/"): s["name"] for s in json.loads((MD / "shops.json").read_text(encoding="utf-8"))
+                      if isinstance(s, dict) and s.get("url") and s.get("name")})
+    except (OSError, ValueError, TypeError):
+        pass
+    try:
+        cat = json.loads((MD / "catalog.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        cat = {}
+    return {"entries": entries, "names": names, "cat": cat, "now": time.time()}
+
+
+def settles(ctx, hours):
+    """Recent settles with the shop's name, the catalog's list price and category."""
+    out = []
+    for e in ctx["entries"]:
+        d = e.get("data") or {}
+        c = ctx["cat"].get(d.get("item")) or {}
+        if e.get("kind") == "settle" and ctx["now"] - e.get("ts", 0) <= hours * 3600 and c.get("list_price") \
+                and isinstance(d.get("amount"), (int, float)):
+            shop = str(d.get("shop") or "").rstrip("/")
+            out.append(dict(d, seq=e.get("seq"), ts=e.get("ts"), list_price=c["list_price"], category=leaf(c.get("category")),
+                            shop_name=ctx["names"].get(shop) or shop.rsplit("/shop/", 1)[-1] or "?",
+                            share=d["amount"] / c["list_price"]))
+    return out
+
+
+def best_value(ctx):
+    """Per busy category, the shop that settled cheapest (median share of list, 2+ settles, every claim true)."""
+    rows = settles(ctx, 6)
+    busy = [c for c, _ in Counter(r["category"] for r in rows).most_common(5)]
+    parts, refs = [], []
+    for c in busy:
+        by = defaultdict(list)
+        for r in rows:
+            if r["category"] == c:
+                by[r["shop_name"]].append(r)
+        ok = [(statistics.median(x["share"] for x in v), k, v) for k, v in by.items()
+              if len(v) >= 2 and all(x.get("claim_honest") is not False for x in v)]
+        if ok:
+            m, k, v = min(ok)
+            market = statistics.median(r["share"] for r in rows if r["category"] == c)
+            parts.append(f"{c}: {k} {m:.0%} of list over {len(v)} settles (market {market:.0%})")
+            refs += [x["seq"] for x in v[-2:]]
+    if len(parts) < 2:
+        return None, []
+    return ("Best value, last 6 h of the ledger: the shop that settled cheapest per busy category, honest claims only "
+            "(check the refs): " + " | ".join(parts))[:900], refs[:MAX_REFS]
+
+
+def freshness(ctx):
+    """Per shop, how much shelf life its food had left when it settled (median), longest first."""
+    rows = [r for r in settles(ctx, 6) if r.get("expires_at")]
+    by = defaultdict(list)
+    for r in rows:
+        by[r["shop_name"]].append(r)
+    med = sorted(((statistics.median((x["expires_at"] - x["ts"]) / 3600 for x in v), k, v) for k, v in by.items()
+                  if len(v) >= 2), reverse=True)
+    if len(med) < 3:
+        return None, []
+    top = " | ".join(f"{k} {h:.0f} h ({len(v)})" for h, k, v in med[:4])
+    low = " | ".join(f"{k} {h:.0f} h ({len(v)})" for h, k, v in med[4:][-2:] if h < 200)
+    text = (f"Shelf life left at sale, food settles of the last 6 h (median per shop, settles in brackets). Many buyers' "
+            f"kits pay only above a set number of hours, so this decides whether a deal is paid. Longest: {top}"
+            + (f". Shortest: {low}" if low else ""))
+    return text[:900], [v[-1]["seq"] for _, _, v in med[:4]][:MAX_REFS]
+
+
+def pay_tips(ctx):
+    """Why our kit refused to pay, from payments.jsonl (24 h), and what would have made it pay."""
+    try:
+        rows = [json.loads(l) for l in (MD / "payments.jsonl").read_text(encoding="utf-8").splitlines()[-300:]]
+    except (OSError, ValueError):
+        return None, []
+    refused = [r for r in rows if r.get("paid") is False and r.get("reason")]
+    if len(rows) < 10 or len(refused) < 3:
+        return None, []
+    kinds = Counter("shelf life" if "shelf life" in r["reason"] else "grade" if "grade" in r["reason"]
+                    else "warranty" if "warranty" in r["reason"] else "other" for r in refused)
+    orders = {r.get("order") for r in refused}
+    refs = [e["seq"] for e in ctx["entries"] if e.get("kind") == "result"
+            and (e.get("data") or {}).get("buyer") == "thisjonghoon" and (e.get("data") or {}).get("order") in orders]
+    text = (f"Why receipts go unpaid, from our own kit: {len(refused)} of our last {len(rows)} agreed deals were not "
+            f"paid ({', '.join(f'{k} {n}' for k, n in kinds.most_common())}). The checkout checks the unit, not the "
+            f"talk. Shops: state grade and hours left in the first reply and ship a unit that lasts as long as the buyer "
+            f"asks. Buyers: read the shop's first reply against your accept policy before agreeing a price.")
+    return text[:900], refs[-MAX_REFS:]
+
+
+def fun(ctx):
+    """Ledger trivia of the last 6 h: the deepest discount, the dearest deal, the best-selling SKU."""
+    rows = settles(ctx, 6)
+    if len(rows) < 20:
+        return None, []
+    deep = min(rows, key=lambda r: r["share"])
+    dear = max(rows, key=lambda r: r["amount"])
+    sku, n = Counter(r.get("sku") or r.get("item") for r in rows).most_common(1)[0]
+    name = next((r.get("name") or "" for r in rows if (r.get("sku") or r.get("item")) == sku), "")[:40]
+    text = (f"Market trivia, last 6 h ({len(rows)} settles). Bargain of the hours: {deep.get('name', '')[:40]} for "
+            f"{deep['share']:.0%} of list at {deep['shop_name']} (#{deep['seq']}). Biggest ticket: "
+            f"{dear.get('name', '')[:40]} at {dear['amount']:,} (#{dear['seq']}). Crowd favourite: {name} ({sku}), "
+            f"{n} settles.")
+    return text[:900], [deep["seq"], dear["seq"]]
+
+
+def claims(ctx):
+    return claim_check(ctx["entries"], ctx["names"])
+
+
+FORMATS = {"best_value": best_value, "freshness": freshness, "pay_tips": pay_tips, "fun": fun, "claims": claims}
+
+
+def plan():
+    """Kind -> weight from forum_plan_r3.json (the meta-harness's), equal weights by default."""
+    try:
+        w = json.loads(PLAN.read_text(encoding="utf-8")).get("weights") or {}
+    except (OSError, ValueError, AttributeError):
+        w = {}
+    return {k: max(0.0, float(w.get(k, 1.0))) if isinstance(w.get(k, 1.0), (int, float)) else 1.0 for k in FORMATS}
+
+
+def stats(forum, memory):
+    """Per kind: our posts and the mean votes they got, next to the market's mean for buyer posts (from forum.json)."""
+    kind_of = {m.get("post"): m.get("format", "our_deals") for m in memory if m.get("kind") == "forum"}
+    votes = lambda p: (p.get("likes") or 0) - (p.get("dislikes") or 0)
+    by = defaultdict(list)
+    others = []
+    for p in forum if isinstance(forum, list) else []:
+        if p.get("round") != 3 or p.get("role") != "buyer":
+            continue
+        if p.get("owner") == "thisjonghoon" and p.get("text") in kind_of:
+            by[kind_of[p["text"]]].append(votes(p))
+        elif p.get("owner") != "thisjonghoon":
+            others.append(votes(p))
+    out = {k: {"posts": len(v), "mean_votes": round(sum(v) / len(v), 2)} for k, v in by.items()}
+    out["market_buyer_posts"] = {"posts": len(others), "mean_votes": round(sum(others) / len(others), 2) if others else None}
+    return out
+
+
+def drawn(ctx, weights=None):
+    """(kind, text, refs): kinds drawn by weight without replacement until one has something to say."""
+    w = dict(weights or plan())
+    while any(v > 0 for v in w.values()):
+        k = random.choices(list(w), weights=list(w.values()))[0]
+        w[k] = 0
+        try:
+            text, refs = FORMATS[k](ctx)
+        except Exception:
+            text, refs = None, []
+        if text:
+            return k, text, refs
+    return None, None, []
+
+
 def maybe_post(memory):
     """Queue one forum note when there is something new and the last one is at least EVERY seconds old; with nothing
     new from our own deals for DIGEST_EVERY, a claim check from the ledger."""
@@ -94,22 +269,19 @@ def maybe_post(memory):
     if posts and time.time() - posts[-1].get("t", 0) < EVERY:
         return None
     text, refs = note(memory)
-    if not text and (not posts or time.time() - posts[-1].get("t", 0) >= DIGEST_EVERY):
+    kind = "our_deals" if text else None
+    if not text and (not posts or time.time() - posts[-1].get("t", 0) >= FORMAT_EVERY):
         try:
-            import market_intel
-            entries = market_intel.load_recent(timeout=5.0)
-            names = {e["data"]["url"].rstrip("/"): e["data"]["name"] for e in entries
-                     if e.get("kind") == "join" and (e.get("data") or {}).get("url") and (e.get("data") or {}).get("name")}
-            text, refs = claim_check(entries, names)
+            kind, text, refs = drawn(context())
         except Exception:
-            text, refs = None, []
+            kind, text, refs = None, None, []
     if not text:
         return None
     MD.mkdir(exist_ok=True)
     with open(MD / "outbox.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps({"post": text, "refs": refs, "as": "buyer"}, ensure_ascii=False) + "\n")
     entry = {"time": time.strftime("%Y-%m-%d %H:%M:%S"), "t": time.time(), "kind": "forum", "round": 3,
-             "post": text, "refs": refs}
+             "post": text, "refs": refs, "format": kind}
     with open(MEMORY, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     memory.append(entry)

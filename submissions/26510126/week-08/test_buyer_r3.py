@@ -274,7 +274,7 @@ def main():
     market_intel.load_recent = lambda **kw: led
     forum_r3.EVERY = 0
     case("no new deal and the last post under an hour old: nothing posted", forum_r3.maybe_post(market_buyer.load_memory()) is None)
-    forum_r3.DIGEST_EVERY = 0
+    forum_r3.DIGEST_EVERY = forum_r3.FORMAT_EVERY = 0
     p = forum_r3.maybe_post(market_buyer.load_memory()) or {}
     case("an hour without news: a ledger claim check with the false claims' refs", p.get("refs") == [901, 905, 909, 913]
          and "liar-x: 4 of 7 claims false" in p.get("post", ""), p.get("post", "")[:160])

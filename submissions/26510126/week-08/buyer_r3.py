@@ -28,6 +28,10 @@ import statistics
 import time
 from pathlib import Path
 
+import asyncio
+
+import httpx
+
 import buyer
 import demand_r3
 import forum_r3
@@ -53,10 +57,11 @@ MAX_OFFERS = 8
 MAX_TRIES = 3        # shops tried per order when a negotiation ends without a deal
 RETRY_UNTIL = 150    # seconds into the order after which no new shop is tried (the kit stops the buyer at 300 s)
 MAX_RAISE = 0.4      # each offer moves at most this share of the gap to the shop's ask
+SCOUTS = 3           # buyer team: shops asked for a first quote at once before one negotiation starts
 # The meta-harness tunes these numbers from how our buyer did (meta_r3.py BUYER_BOUNDS, the user on 11/4: the
 # harness should make such fixes, not a person); each run reads its plan, the defaults above when it has none.
 PLAN = Path(os.environ.get("BUYER_PLAN") or Path(__file__).resolve().parent / "buyer_plan_r3.json")
-PLAN_KEYS = ("CAP", "FOOD_MARGIN", "C_CAP", "C_WARRANTY", "MAX_TRIES", "MAX_RAISE", "FIRM_GAP")
+PLAN_KEYS = ("CAP", "FOOD_MARGIN", "C_CAP", "C_WARRANTY", "MAX_TRIES", "MAX_RAISE", "FIRM_GAP", "SCOUTS")
 
 
 def load_plan():
@@ -69,7 +74,7 @@ def load_plan():
             if k == "FIRM_GAP":
                 buyer.FIRM_GAP = v
             else:
-                globals()[k] = int(v) if k in ("MAX_TRIES", "C_WARRANTY") else v
+                globals()[k] = int(v) if k in ("MAX_TRIES", "C_WARRANTY", "SCOUTS") else v
     return plan
 
 
@@ -313,6 +318,7 @@ async def main(args, shops, memory, remember):
         return
     for c in cands[:5]:
         log("CAND", f"{c[1]['name']} {c[2]['sku']} {c[2].get('name', '')[:30]} list {c[3]} surplus~{c[0]:.0f}: {c[4]}")
+    cands = await team(order, cat, cands)
     # try the best candidate, then up to two more at other shops while the kit's 300 s per order allows
     # a shop that answers "none in stock" or a broken reply at once costs no time and does not use up a try
     # (11/3 21:06-21:33: 30 of 69 talks ended that way, while three tries ended many orders)
@@ -337,19 +343,74 @@ async def main(args, shops, memory, remember):
     print(json.dumps(out, ensure_ascii=False), flush=True)
 
 
+def opening_for(order, name, sku):
+    opening = f"I want to buy {name} ({sku})"
+    if order.get("kind") == "food" and order.get("use_within_hours"):
+        return opening + (f". I need it to last {order['use_within_hours']} hours: please ship a unit with at least "
+                          f"{accept_policy(order)['min_hours_left']} hours of shelf life left, with the market's certificate.")
+    return opening + (". Please ship a grade A or B unit with the market's certificate; a grade C unit only with a "
+                      f"{C_WARRANTY} h warranty or at a refurbished price. A warranty is welcome.")
+
+
+async def scout(order, cat, s, off, lp):
+    """One scout of the buyer team: ask one shop for this SKU, read its first answer (no model), cancel the talk.
+    {"state", "ask", "text"}; "error" when the shop cannot be reached."""
+    name = harness.clip((cat.get(off["sku"]) or {}).get("name") or off.get("name") or off["sku"], 80)
+    try:
+        async with httpx.AsyncClient(timeout=20) as client:
+            shop = buyer.Shop(client, s["url"])
+            await shop.read_card()
+            t = await shop.send(opening_for(order, name, off["sku"]))
+            if t is None:
+                return {"state": "error"}
+            st, ask, text = buyer.state(t), buyer.asking_price(t), buyer.reply_text(t)
+            if st == "TASK_STATE_INPUT_REQUIRED":
+                await shop.cancel(t["id"])               # no unit held for us while the team decides
+            return {"state": st, "ask": ask, "text": text}
+    except Exception as e:
+        return {"state": "error", "error": type(e).__name__}
+
+
+async def team(order, cat, cands):
+    """The buyer team (after dragonash's team-run agents, 11/4): SCOUTS scouts ask the best candidate shops for a quote
+    at the same time, then the lead negotiates where the quote leaves the most surplus. Shops that answer "none in
+    stock", fail to answer, or state a grade or shelf life our kit would not pay for are dropped before any talk; one
+    negotiation at a time follows, so we never agree with two shops for one order."""
+    if SCOUTS < 2 or len(cands) < 2:
+        return cands
+    picked, seen = [], set()
+    for c in cands:
+        if c[1]["name"] not in seen:
+            picked.append(c)
+            seen.add(c[1]["name"])
+        if len(picked) >= SCOUTS:
+            break
+    quotes = await asyncio.gather(*(scout(order, cat, c[1], c[2], c[3]) for c in picked))
+    dropped, quoted = set(), []
+    for c, q in zip(picked, quotes):
+        why = screen_for(order, c[3])(q.get("text") or "") if q["state"] == "TASK_STATE_INPUT_REQUIRED" else None
+        if q["state"] != "TASK_STATE_INPUT_REQUIRED" or isinstance(why, str):
+            dropped.add((c[1]["name"], c[2]["sku"]))
+            log("SCOUT", f"{c[1]['name']} {c[2]['sku']}: dropped ({why or q['state']})")
+            continue
+        cap = why["cap"] if isinstance(why, dict) else min(order["budget"], int(c[3] * CAP))
+        ask = q.get("ask")
+        # what is left at the ask, weighed by the chance of getting there when the ask is above what we pay
+        value = (c[3] - min(ask, cap)) * min(1.0, cap / ask) ** 4 if isinstance(ask, (int, float)) and ask > 0 else c[0]
+        quoted.append((value, c))
+        log("SCOUT", f"{c[1]['name']} {c[2]['sku']}: asks {ask} of list {c[3]} (surplus at the ask ~{value:.0f})")
+    lead = [c for _, c in sorted(quoted, key=lambda x: -x[0])]
+    rest = [c for c in cands if c not in picked and (c[1]["name"], c[2]["sku"]) not in dropped]
+    return lead + rest
+
+
 async def attempt(order, cat, s, off, lp, note, remember):
     """One negotiation with one shop over one SKU; returns the result line for the kit."""
     # the catalog's name first: the name in a shop's offer is the shop's own text and goes into our prompt
     name, sku = harness.clip((cat.get(off["sku"]) or {}).get("name") or off.get("name") or off["sku"], 80), off["sku"]
     limit = min(order["budget"], int(lp * CAP))
     log("CHOOSE", f"{s['name']} {s['url']}: {name} ({sku}), list {lp}, paying at most {limit}")
-    opening = f"I want to buy {name} ({sku})"
-    if order.get("kind") == "food" and order.get("use_within_hours"):
-        opening += (f". I need it to last {order['use_within_hours']} hours: please ship a unit with at least "
-                    f"{accept_policy(order)['min_hours_left']} hours of shelf life left, with the market's certificate.")
-    else:
-        opening += (". Please ship a grade A or B unit with the market's certificate; a grade C unit only with a "
-                    f"{C_WARRANTY} h warranty or at a refurbished price. A warranty is welcome.")
+    opening = opening_for(order, name, sku)
     hint = (f"The list price is {lp}. Shops buy stock at 25-75% of list price. Open below what the market paid lately "
             f"(its lower quartile, below, is a fair opening; far under it, shops walk away) and raise slowly. "
             f"Our record with this shop: {note}.\n"

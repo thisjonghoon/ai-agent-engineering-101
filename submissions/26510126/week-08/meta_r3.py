@@ -145,7 +145,8 @@ buyer's numbers now (plan). Set buyer_plan (any of {buyer_keys}) to win more dea
 as a share of list; FOOD_MARGIN the shelf life we demand beyond use_within_hours; C_CAP the most we pay for grade C
 goods without a C_WARRANTY-hour warranty (worth it while (1 - C's break rate) is well above C_CAP); MAX_TRIES the
 shops tried per order; MAX_RAISE how far one offer moves toward the ask; FIRM_GAP how close to an ask held twice we
-take it. Bounds and steps: {buyer_bounds}. If the buyer needs something no number can do, say it in code_ideas.
+take it; SCOUTS how many shops the buyer team asks for a quote at once before the lead negotiates with the best
+(1 turns the team off). Bounds and steps: {buyer_bounds}. If the buyer needs something no number can do, say it in code_ideas.
 
 Our buyer's own forum posts are the other half of this job: votes on them are 30% of our buyer's ALL and the
 number of posts 10%. Code writes each post from the ledger and our own logs (every number checkable, with refs) in
@@ -174,9 +175,10 @@ Answer with JSON only: {{"strategy": {{...every key...}}, "playbook": "<the play
 # our buyer's numbers (buyer_r3.py PLAN_KEYS): lo, hi, largest step per cycle. The user (11/4): the harness, not a
 # person, makes these fixes; code keeps every value inside its bounds.
 BUYER_BOUNDS = {"CAP": (0.75, 0.95, 0.05), "FOOD_MARGIN": (1.0, 1.3, 0.05), "C_CAP": (0.4, 0.8, 0.05),
-                "C_WARRANTY": (2, 6, 2), "MAX_TRIES": (2, 6, 1), "MAX_RAISE": (0.2, 0.7, 0.1), "FIRM_GAP": (0.0, 0.1, 0.02)}
+                "C_WARRANTY": (2, 6, 2), "MAX_TRIES": (2, 6, 1), "MAX_RAISE": (0.2, 0.7, 0.1), "FIRM_GAP": (0.0, 0.1, 0.02),
+                "SCOUTS": (1, 5, 1)}
 BUYER_DEFAULTS = {"CAP": 0.9, "FOOD_MARGIN": 1.1, "C_CAP": 0.65, "C_WARRANTY": 6, "MAX_TRIES": 3, "MAX_RAISE": 0.4,
-                  "FIRM_GAP": 0.05}
+                  "FIRM_GAP": 0.05, "SCOUTS": 3}
 BUYER_PLAN = HERE / "buyer_plan_r3.json"
 ADVICE = HERE / "advice_r3.json"     # notes from the supervisor (Claude, watching for the user): advice, not orders
 

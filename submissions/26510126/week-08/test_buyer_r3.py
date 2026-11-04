@@ -324,6 +324,21 @@ def main():
     case("a malformed shop card is an error the buyer catches, not an exit", "raise RuntimeError" in
          inspect.getsource(buyer_r3.buyer.Shop.read_card) and "raise SystemExit" not in inspect.getsource(buyer_r3.buyer.Shop.read_card))
 
+    # 14. the buyer team (11/4): scouts ask the top shops at once; shops out of stock or off-policy are dropped and
+    # the lead starts where the quote leaves the most surplus
+    async def fake_scout(order, cat, s, off, lp):
+        return {"A": {"state": "TASK_STATE_REJECTED", "text": "Sorry, none in stock."},
+                "B": {"state": "TASK_STATE_INPUT_REQUIRED", "ask": 90000, "text": "grade A. Asking 90000"},
+                "C": {"state": "TASK_STATE_INPUT_REQUIRED", "ask": 60000, "text": "grade B. Asking 60000"}}[s["name"]]
+    real, buyer_r3.scout = buyer_r3.scout, fake_scout
+    buyer_r3.SCOUTS, buyer_r3.CAP = 3, 0.9
+    mk = lambda n, est: (est, {"name": n, "url": "http://" + n}, {"sku": "G" + n}, 100000, "")
+    order_t = {"kind": "goods", "budget": 200000}
+    got = asyncio.run(buyer_r3.team(order_t, {}, [mk("A", 50000), mk("B", 40000), mk("C", 30000), mk("D", 20000)]))
+    buyer_r3.scout = real
+    case("buyer team: out-of-stock shop dropped, cheapest quote negotiated first, unscouted shops kept after",
+         [c[1]["name"] for c in got] == ["C", "B", "D"], str([c[1]["name"] for c in got]))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 

@@ -254,12 +254,13 @@ def main():
                 qty = max(qty, int(s.get("dear_depth", 4)) - held[c["sku"]])
                 if qty <= 0:
                     continue
+            qty = min(int(qty), 20)    # the market takes 1-20 units a line: 24 was refused (400) 18 times on 11/4
             cost = c["list_price"] * EST_COST * surge.get(c["sku"], 1.0) * qty
             if cost > spend or (c["kind"] == "goods" and cost > goods_room):
                 continue
             if c["kind"] == "goods":
                 goods_room -= cost
-            buy.append({"sku": c["sku"], "qty": int(qty)})
+            buy.append({"sku": c["sku"], "qty": qty})
             spend -= cost
         why = (f"{len(ranked)} SKUs short, buying {len(buy)} lines" + (f" (runs {gap:.0f} s apart: depth x{scale:.1f})" if scale > 1 else "")
                + (f"; {len(surged)} SKUs left out for the market's surge (over {s.get('surge_max', 1.15)}x)" if surged else "")

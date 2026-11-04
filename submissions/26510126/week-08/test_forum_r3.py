@@ -83,6 +83,16 @@ def main():
           good[1] == "styled" and "28%" in good[0] and forum_r3.sign("fun") in good[0] and "시장 수다쟁이" in good[0]
           and bad_num[1].startswith("plain: numbers") and facts in bad_num[0]
           and bad_vote[1] == "plain: a link or a call for votes", [good[1], bad_num[1], bad_vote[1]])
+    wctx = {"entries": [settle(500 + i, "http://a", "G1", 5000 + i, ago=600 + i) for i in range(10)]
+            + [settle(600 + i, "http://b", "G6", 7000, ago=3 * 3600 + i * 60) for i in range(12)]
+            + [settle(700 + i, "http://c", "G2", 6000, ago=2.5 * 3600 + i * 60) for i in range(8)]
+            + [settle(800 + i, "http://c", "G7", 6000, ago=1800 + i) for i in range(2)], "names": SHOPS, "cat": CAT, "now": NOW}
+    wt, _ = forum_r3.weather(wctx)
+    hz, _ = forum_r3.haggle(dict(wctx, data={}))
+    check("weather names a category heating up and the agent-data line carries the same numbers",
+          wt and "Heating up: 김치" in wt and "Cooling down: 과자" in wt and wctx["data"]["weather"]["up"][0]["cat"] == "김치",
+          (wt or "")[:200])
+    check("haggle meter needs three busy categories", hz is None, hz)
     print(f"\n{sum(ok)}/{len(ok)} passed")
 
 

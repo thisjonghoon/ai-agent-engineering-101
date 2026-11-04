@@ -51,7 +51,8 @@ VOTES = Path(os.environ.get("FORUM_VOTES") or HERE / "logs" / "forum_votes_r3.js
 STYLE = os.environ.get("FORUM_STYLE", "1") != "0"     # tests set FORUM_STYLE=0: no model call
 VOICE = "장보기 레이더"
 SERIES = {"our_deals": "[직접 사봤습니다]", "best_value": "[오늘의 득템 지도]", "freshness": "[신선도 리포트]",
-          "pay_tips": "[결제가 막히는 이유]", "fun": "[시장 TMI]", "claims": "[정직 가게 명예의 전당]"}
+          "pay_tips": "[결제가 막히는 이유]", "fun": "[시장 TMI]", "claims": "[정직 가게 명예의 전당]",
+          "weather": "[시장 날씨]", "haggle": "[흥정 온도계]"}
 # the influencer team (11/4, the user): each kind has its own writer with a voice and a byline; the community
 # specialist gives more of the column to the writers whose posts earn votes (forum_plan_r3.json weights)
 WRITERS = {
@@ -61,6 +62,8 @@ WRITERS = {
     "pay_tips": ("결제 코치", "a practical coach who turns a market problem into two clear tips"),
     "fun": ("시장 수다쟁이", "a playful trivia host who finds the funny side of the numbers"),
     "claims": ("정직 감시관", "a firm but fair auditor: facts and refs, never insults"),
+    "weather": ("시장 기상캐스터", "a cheerful forecaster who reports sales as sunshine and rain, most useful number first"),
+    "haggle": ("흥정 온도계", "a sharp negotiation coach who tells agents where offers close, punchy and practical"),
 }
 SIGN = f"— {VOICE} 📡 숫자는 refs의 원장 기록 그대로"
 
@@ -300,7 +303,60 @@ def claims(ctx):
     return claim_check(ctx["entries"], ctx["names"])
 
 
-FORMATS = {"best_value": best_value, "freshness": freshness, "pay_tips": pay_tips, "fun": fun, "claims": claims}
+def weather(ctx):
+    """Settles per hour in the last 2 h against the 4 h before, per category: which are heating up, which cooling,
+    and what they settle at. Something an agent can act on now (11/4, the user: posts agents like, less predictable)."""
+    rows = settles(ctx, 6)
+    cut = ctx["now"] - 2 * 3600
+    by = defaultdict(lambda: [0, 0, []])
+    for r in rows:
+        b = by[r["category"]]
+        if r["ts"] >= cut:
+            b[0] += 1
+            b[2].append(r["share"])
+        else:
+            b[1] += 1
+    moves = [(round((n2 / 2 - n4 / 4) / (n4 / 4), 2), c, round(n2 / 2, 1), round(n4 / 4, 1),
+              round(statistics.median(sh), 2) if sh else None) for c, (n2, n4, sh) in by.items() if n4 >= 8 and n2 >= 2]
+    if len(moves) < 2:
+        return None, []
+    moves.sort(reverse=True)
+    up, down = [m for m in moves[:2] if m[0] > 0.1], [m for m in moves[-2:] if m[0] < -0.1]
+    if not up and not down:
+        return None, []
+    line = lambda m: (f"{m[1]} {m[2]}/h (from {m[3]}/h, {m[0]:+.0%})" + (f", paid {m[4]:.0%} of list" if m[4] else ""))
+    text = ("Market weather, settles per hour in the last 2 h against the 4 h before. "
+            + (f"Heating up: {'; '.join(line(m) for m in up)}. " if up else "")
+            + (f"Cooling down: {'; '.join(line(m) for m in down)}. " if down else "")
+            + "Sellers: rising categories sell through; buyers: cooling ones are where shops sit on stock.")
+    ctx.setdefault("data", {})["weather"] = {"window": "2h vs prior 4h", "up": [
+        {"cat": m[1], "per_h": m[2], "prev_per_h": m[3], "paid_share": m[4]} for m in up], "down": [
+        {"cat": m[1], "per_h": m[2], "prev_per_h": m[3], "paid_share": m[4]} for m in down]}
+    refs = [r["seq"] for r in rows if r["ts"] >= cut and r["category"] in {m[1] for m in up + down}][-MAX_REFS:]
+    return text[:900], refs
+
+
+def haggle(ctx):
+    """Where offers close, per busy category (6 h): the share of list paid at the 25th, 50th and 75th percentile."""
+    rows = settles(ctx, 6)
+    busy = [c for c, n in Counter(r["category"] for r in rows).most_common(5) if n >= 8]
+    if len(busy) < 3:
+        return None, []
+    data, parts = {}, []
+    for c in busy:
+        sh = sorted(r["share"] for r in rows if r["category"] == c)
+        q = lambda f: sh[min(len(sh) - 1, int(f * len(sh)))]
+        data[c] = {"p25": round(q(0.25), 2), "median": round(q(0.5), 2), "p75": round(q(0.75), 2), "n": len(sh)}
+        parts.append(f"{c} {q(0.25):.0%} / {q(0.5):.0%} / {q(0.75):.0%} (n={len(sh)})")
+    text = ("Haggle meter, share of list paid in the last 6 h, as 25th / median / 75th percentile: " + " | ".join(parts)
+            + ". Buyers: a quarter of these deals closed at or under the 25th percentile. Sellers: a quarter still "
+              "closed above the 75th.")
+    ctx.setdefault("data", {})["haggle"] = {"window_h": 6, "categories": data}
+    return text[:900], [r["seq"] for r in rows if r["category"] in busy][-MAX_REFS:]
+
+
+FORMATS = {"best_value": best_value, "freshness": freshness, "pay_tips": pay_tips, "fun": fun, "claims": claims,
+           "weather": weather, "haggle": haggle}
 
 
 def plan():
@@ -383,10 +439,12 @@ def maybe_post(memory):
     # our own deals are one kind among the others: after an our_deals post the next turn goes to a drawn kind, or the
     # column never gets past them on a busy day (11/3 21:33-23:19: six our_deals posts in a row)
     text, refs = note(memory) if last != "our_deals" else (None, [])
-    kind = "our_deals" if text else None
+    kind, data = ("our_deals" if text else None), None
     if not text and (not posts or time.time() - posts[-1].get("t", 0) >= FORMAT_EVERY):
         try:
-            kind, text, refs = drawn(context(), last=last)
+            ctx = context()
+            kind, text, refs = drawn(ctx, last=last)
+            data = (ctx.get("data") or {}).get(kind)
         except Exception:
             kind, text, refs = None, None, []
     if not text or any(m.get("facts", m.get("post")) == text for m in posts[-20:]):
@@ -394,6 +452,10 @@ def maybe_post(memory):
     MD.mkdir(exist_ok=True)
     facts = text
     text, how = style(kind, facts)
+    if data:                                           # the same numbers as one line other agents can parse
+        line = "agent-data: " + json.dumps(dict(data, kind=kind), ensure_ascii=False, separators=(",", ":"))
+        if len(line) <= 600:
+            text += "\n" + line
     with open(MD / "outbox.jsonl", "a", encoding="utf-8") as f:
         f.write(json.dumps({"post": text, "refs": refs, "as": "buyer"}, ensure_ascii=False) + "\n")
     entry = {"time": time.strftime("%Y-%m-%d %H:%M:%S"), "t": time.time(), "kind": "forum", "round": 3,

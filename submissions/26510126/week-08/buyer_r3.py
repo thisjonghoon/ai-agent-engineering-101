@@ -70,6 +70,9 @@ SCOUT_WAIT = 6       # seconds the scouts wait for quotes; a slower shop is left
 AVOID = MD / "avoid_r3.json"
 AVOID_SECS = 900
 SHORT_SECS = 3600
+# A pair with 2+ earlier quick rejects in memory waits an hour, not 900 s (11/4: 252 of 1,423 trades were rejects with no
+# price; Gc01583a5 at 25512088 had 5 at differing budgets and food_hours, so the 900 s wait ran out between orders).
+DEAD_SECS = 3600
 # A talk that ended with every ask above our limit (11/4 since 15:00: 14 of 28 talks were no-deals, 8 of them three pairs
 # retried across orders with budgets at or below list, e.g. 25620027 G1d19ebee four times at limits of 206100 or less
 # against a 229000 list) leaves that lowest ask as the pair's floor for an hour: the next order expects at least that.
@@ -421,7 +424,9 @@ async def main(args, shops, memory, remember):
         talks += not quick
         if quick:
             quick_shops.add(s["name"])
-            avoid_add(s["name"], off["sku"], "quick reject", AVOID_SECS)
+            avoid_add(s["name"], off["sku"], "quick reject",
+                      DEAD_SECS if code_ab_r3.on("4583666882c6", order.get("order")) and dead_pair(s["name"], off["sku"], memory)
+                      else AVOID_SECS)
     forum_r3.maybe_post(memory)
     print(json.dumps(out, ensure_ascii=False), flush=True)
 
@@ -507,6 +512,13 @@ async def scout_wave(order, cat, picked, dropped, quoted):
         value = (c[3] - min(ask, cap)) * min(1.0, cap / ask) ** 4 if isinstance(ask, (int, float)) and ask > 0 else c[0]
         quoted.append((value, c))
         log("SCOUT", f"{c[1]['name']} {c[2]['sku']}: asks {ask} of list {c[3]} (surplus at the ask ~{value:.0f})")
+
+
+def dead_pair(shop, sku, memory):
+    """True when memory already holds at least 2 earlier quick rejects (rejected, no asks) of this shop/SKU pair."""
+    return sum(m.get("kind") == "trade" and m.get("round") == 3 and m.get("shop") == shop and m.get("sku") == sku
+               and m.get("outcome") == "no_deal" and m.get("end") == "TASK_STATE_REJECTED"
+               and not [a for a in m.get("asks") or [] if a is not None] for m in memory) >= 2
 
 
 def rejects_after_two(name, memory):

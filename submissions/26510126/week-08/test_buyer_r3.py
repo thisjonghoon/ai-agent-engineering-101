@@ -436,6 +436,14 @@ def main():
          got.get("state") == "TASK_STATE_COMPLETED" and got["offers"][-1] == got["asks"][-1] == 27075,
          str((got.get("state"), got.get("offers"), got.get("asks"))))
 
+    # 21. a pair with 2+ earlier quick rejects waits an hour (11/4: Gc01583a5 at 25512088, 5 quick rejects at other budgets)
+    qr = {"kind": "trade", "round": 3, "shop": "Q", "sku": "GQ", "outcome": "no_deal", "end": "TASK_STATE_REJECTED", "asks": []}
+    priced = dict(qr, asks=[30000, 28500])
+    case("a pair is dead after 2 earlier quick rejects, not after 1 or after rejects that had asks",
+         buyer_r3.dead_pair("Q", "GQ", [qr] * 2) and not buyer_r3.dead_pair("Q", "GQ", [qr])
+         and not buyer_r3.dead_pair("Q", "GQ", [qr, priced, priced]) and not buyer_r3.dead_pair("Q", "GX", [qr] * 2),
+         str(buyer_r3.dead_pair("Q", "GQ", [qr] * 2)))
+
     # 19. a buyer number on trial: the orders whose hash falls in arm B run its new value, the rest the plan's
     buyer_r3.PLAN.write_text(json.dumps({"CAP": 0.85}))
     trial = buyer_r3.PLAN.with_name("buyer_ab_r3.json")

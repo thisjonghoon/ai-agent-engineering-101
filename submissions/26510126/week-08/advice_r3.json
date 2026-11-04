@@ -11,6 +11,10 @@
   {
    "t": 1793761586.1407201,
    "text": "max_list: the score rise from 0.788 to 0.811 did not come from it. Since 11:08 (max_list 130000) only 2 of our talks were for units listed above 80000 (both sold, 125,002 revenue), and 1 such unit is in stock now; the new stock arrives only in supply windows. Hold max_list at 230000 until dearer units have been bought and had time to sell (two or three supply windows), then judge by their sell-through, days in storage and refunds, not by the score of the next cycle."
+  },
+  {
+   "t": 1793763517.5497038,
+   "text": "Revenue is our weakest shop term (pct 0.60; the top shop sold 274M against our 31M, mostly furniture). We hold 13.2M in cash and only 1.1M of stock at cost, while goods_frac 0.45 of stock_value 2.5M leaves about 1.1M for goods, about seven mattresses. 103 of the last 865 asks to our shop (12%) found nothing in stock. stock_value may now go up to 8,000,000 (750,000 a cycle). Suggest raising it step by step while dearer goods keep selling within a few supply windows; keep reserve_cash, and watch unsold days and refunds."
   }
  ]
 }

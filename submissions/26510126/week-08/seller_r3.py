@@ -72,7 +72,11 @@ DEFAULTS = {"ask_frac": 0.95, "floor_frac": 0.78, "min_margin": 0.10, "step": 0.
 ROUND_END = 1794927540                                       # 2026-11-17 23:59 KST: stock left then is a loss
 OFFER = re.compile(r"(?<![A-Za-z0-9])\d[\d,]*(?![A-Za-z0-9])")   # a number on its own, not the digits of a SKU
 FOOD_CUTS = (0.80, 0.45)                                     # shelf life left: A at or above 80%, B at or above 45%
-RECENT_SOLD = 60
+RECENT_SOLD = 600   # seconds a unit we signed a receipt for is not offered again (60 until 11/4)
+# The kit's checkout holds a unit while a session is open and never lets an abandoned session go, so one unit was
+# refused at checkout 16 times (11/4 13:09-13:52) while we kept choosing it. A unit we agreed on twice that is still
+# in stock is taken as held and not offered again until the kit restarts (the kit's code, kit v4, is not ours to change).
+STUCK_AFTER = 2
 OPEN_HOLD = 120     # seconds a negotiation keeps its unit before another buyer may be offered it
 MODEL_SLOTS = asyncio.Semaphore(3)    # model calls at once; a turn that finds them all busy is decided by the rules
 MODEL_TIMEOUT = 8                     # seconds (haiku answered in 3.7 s at the median, 5.3 s at p90, over 160k calls)
@@ -332,14 +336,16 @@ class Seller(AgentExecutor):
     def __init__(self):
         self.open = {}      # task id -> {"unit", "ask", "floor", "offers", "turns"}
         self.sold = {}      # unit -> time a receipt was signed
+        self.dealt = {}     # unit -> receipts signed for it (a unit still in stock after two is held by the kit)
 
     def taken(self):
         now = time.time()
         self.sold = {k: t for k, t in self.sold.items() if now - t < RECENT_SOLD}
+        stuck = {k for k, n in self.dealt.items() if n >= STUCK_AFTER}
         # a buyer that leaves without cancelling must not hold the unit forever (review, 11/2)
         for k in [k for k, d in self.open.items() if now - d.get("t", now) > OPEN_HOLD]:
             ab_end(k, self.open.pop(k, None), "gone")
-        return {d["unit"]["unit"] for d in self.open.values() if d["unit"].get("unit")} | set(self.sold)
+        return {d["unit"]["unit"] for d in self.open.values() if d["unit"].get("unit")} | set(self.sold) | stuck
 
     async def execute(self, context, event_queue):
         task = context.current_task
@@ -418,6 +424,9 @@ class Seller(AgentExecutor):
             await up.complete(say(f"Deal: {u['name']} at {price}."))
             if u.get("unit"):
                 self.sold[u["unit"]] = time.time()
+                self.dealt[u["unit"]] = self.dealt.get(u["unit"], 0) + 1
+                if self.dealt[u["unit"]] == STUCK_AFTER:
+                    log(f"STUCK {u['unit']} agreed {STUCK_AFTER} times and still offered: left out until a restart")
             ab_end(task.id, deal, "deal", (price - u["cost"]) / u["list_price"] if u.get("list_price") else 0.0, price)
             log(f"DEAL {task.id[:8]} {u['sku']} at {price} (cost {u['cost']}, list {u['list_price']}, turns {deal['turns']})")
             del self.open[task.id]

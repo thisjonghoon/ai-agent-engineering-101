@@ -44,6 +44,8 @@ def main():
     case("a playbook A/B puts the playbook's per-talk numbers in arm B and the strategy's in arm A",
          got and got["arms"]["B"].get("ask_frac") == 0.85 and got["arms"]["A"].get("ask_frac") == 0.95
          and "goods_frac" not in got["arms"]["B"], json.dumps(got))
+    case("a started playbook A/B is a valid experiment the seller draws from",
+         ab_r3.experiment() is not None and ab_r3.choose("goods")[1] in ("A", "B"), str(ab_r3.experiment()))
     case("an unknown playbook starts nothing", meta_r3.start_ab({"playbook": "nope", "kind": "goods"}, s) is None)
 
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")

@@ -44,7 +44,8 @@ def experiment():
     except (OSError, ValueError):
         return None
     ok = (e.get("on") is True and isinstance(e.get("param"), str) and isinstance(e.get("arms"), dict)
-          and len(e["arms"]) == 2 and all(isinstance(v, (int, float)) for v in e["arms"].values()))
+          and len(e["arms"]) == 2 and all(isinstance(v, (int, float)) or (isinstance(v, dict) and v and all(
+              isinstance(x, (int, float)) for x in v.values())) for v in e["arms"].values()))   # a number or a playbook
     return e if ok else None
 
 

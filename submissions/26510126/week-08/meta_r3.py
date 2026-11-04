@@ -692,7 +692,8 @@ async def cycle():
                             "forum_ideas": [harness.clip(x, 300) for x in ((ans or {}).get("forum_ideas") or [])[:3]
                                             if isinstance(x, str)]}, ensure_ascii=False) + "\n")
     harness.log("META", f"{'kept' if not changed else 'changed ' + json.dumps(changed)}: {(ans or {}).get('reason')}"
-                + (f"; A/B {exp['id']} won by {win} ({exp['param']} = {exp['arms'][win]})" if ab_done else "")
+                + ((f"; A/B {exp['id']} ended in a tie, the strategy keeps its value" if win == "tie" else
+                    f"; A/B {exp['id']} won by {win} ({exp['param']} = {exp['arms'][win]})") if ab_done else "")
                 + (f"; A/B {ab_new['id']} started: {ab_new['param']} {ab_new['arms']}" if ab_new else ""))
 
 

@@ -14,6 +14,7 @@ are; when every specialist fails, meta_r3.py falls back to its single prompt.
 """
 import asyncio
 import json
+import os
 
 import harness
 
@@ -23,6 +24,14 @@ GOAL = ("GOAL: first place on the board's Players table (our shop ALL + our buye
 MERCH_KEYS = ("reserve_cash", "stock_value", "max_list", "min_shelf_hours", "depth", "spread_low", "spread_high",
               "sku_depth", "goods_frac", "food_first", "window_depth", "order_weight")
 MANAGER_MODEL = "sonnet"
+REVIEWER = ["hermes", "--safe-mode", "--ignore-rules", "-z"]   # GPT through the user's ChatGPT plan (Hermes, 11/4)
+REVIEW = """You are a skeptical reviewer on a different model from the team (GPT), checking four specialists'
+proposals for an online shop and buyer agent in a market of AI agents, before their manager decides. For each
+proposal, say keep, trim or reject, and why, in one short sentence: look for changes judged on too little time or
+too few talks, results compared across cycles of different length, one team's evidence used for another's numbers,
+and changes that fight each other. The proposals:
+{proposals}
+Answer with JSON only: {{"sales": "...", "merch": "...", "buying": "...", "community": "...", "overall": "..."}}"""
 RESULT_KEYS = ("deals", "revenue", "profit", "settled", "margin")
 ROLES = {
     "sales": {
@@ -147,6 +156,26 @@ def history(hist, after, keys, last=12):
     return "\n".join(out) or "(none)"
 
 
+async def second_opinion(proposals, timeout=90):
+    """GPT's review of the proposals through Hermes (the user's ChatGPT plan), or None: a different model's read of the
+    same evidence, so one model's blind spot is less likely to pass. Off with META_GPT=0; never stops a cycle."""
+    if os.environ.get("META_GPT", "1") == "0":
+        return None
+    try:
+        proc = await asyncio.create_subprocess_exec(*REVIEWER, REVIEW.format(proposals=proposals[:12000]),
+                                                    cwd=harness.EMPTY_DIR, stdout=asyncio.subprocess.PIPE,
+                                                    stderr=asyncio.subprocess.PIPE)
+        out, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+        ans = harness.parse_json(out.decode(errors="replace"))
+        return ans if isinstance(ans, dict) else None
+    except (OSError, asyncio.TimeoutError, ValueError):
+        try:
+            proc.kill()
+        except Exception:
+            pass
+        return None
+
+
 async def specialist(role, now, cur, plan, hist, after, advice, bounds, buyer_bounds, ab_params, extra_data):
     r = ROLES[role]
     keys = role_keys(role, bounds, buyer_bounds)
@@ -176,11 +205,17 @@ async def decide(now, cur, plan, hist, after, advice, bounds, buyer_bounds, ab_p
         {k: v for k, v in (a or {}).items() if k in ("proposal", "ab", "recruit", "playbook", "why", "ideas")},
         ensure_ascii=False) for r, a in got.items())
     standing = json.dumps({k: now.get(k) for k in ("standing", "players")}, ensure_ascii=False)
+    review = await second_opinion(proposals)
+    if review:
+        harness.log("TEAM", f"second opinion (GPT): {harness.clip(json.dumps(review, ensure_ascii=False), 300)}")
+        proposals += "\n\nSecond opinion from a reviewer on another model (GPT; advice, weigh it):\n" + json.dumps(
+            review, ensure_ascii=False)
     # the manager decides once a cycle: the larger model (sonnet), where judgment matters most; specialists use haiku
     m = await harness.ask(MANAGER.format(goal=GOAL, standing=standing, hist=history(hist, after, ()), advice=advice,
                                          proposals=proposals), model=MANAGER_MODEL, timeout=180, max_chars=40_000)
     if isinstance(m, dict) and isinstance(m.get("strategy"), dict):
         m["team"] = {r: (a or {}).get("proposal") for r, a in got.items()}
+        m["second_opinion"] = review
         return m
     # no manager answer: take each proposal as it is (the code still bounds every number)
     sales, merch, buying, comm = (got.get(r) or {} for r in ("sales", "merch", "buying", "community"))

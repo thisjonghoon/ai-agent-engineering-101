@@ -644,7 +644,7 @@ async def cycle():
                             "ab_result": ab_done and ab_done["result"], "ab_started": ab_new,
                             "playbook": (ans or {}).get("playbook"), "forum_weights": (ans or {}).get("forum_weights"),
                             "buyer_changed": buyer_changed, "team_changes": team_changes,
-                            "specialists": (ans or {}).get("team"),
+                            "specialists": (ans or {}).get("team"), "second_opinion": (ans or {}).get("second_opinion"),
                             "code_ideas": [harness.clip(x, 300) for x in ((ans or {}).get("code_ideas") or [])[:2]
                                            if isinstance(x, str)],
                             "forum_ideas": [harness.clip(x, 300) for x in ((ans or {}).get("forum_ideas") or [])[:3]

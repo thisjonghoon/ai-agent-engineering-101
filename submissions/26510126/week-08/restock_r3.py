@@ -30,6 +30,7 @@ The state between runs (last units seen, ledger position, scores) is in .market/
 import argparse
 import json
 import math
+import os
 import re
 import sys
 import time
@@ -42,7 +43,8 @@ import demand_r3
 
 HERE = Path(__file__).resolve().parent
 MARKET = "https://market.ourolabs.ai"
-DEFAULTS = {"reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
+STRATEGY = Path(os.environ.get("STRATEGY_FILE") or HERE / "strategy_r3.json")   # tests: the defaults, not the live file
+DEFAULTS = {"dear_first": 1.0, "reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
             "goods_frac": 0.35, "food_first": 0.5,
             "depth": 3, "half_life_hours": 12, "stop_hours": 36, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540,
             "window_depth": 2.0, "order_weight": 1.0}    # 2026-11-17 23:59 KST
@@ -63,7 +65,7 @@ def read_json(path, default):
 
 def strategy():
     s = dict(DEFAULTS)
-    s.update({k: v for k, v in read_json(HERE / "strategy_r3.json", {}).items() if k in DEFAULTS and isinstance(v, (int, float))})
+    s.update({k: v for k, v in read_json(STRATEGY, {}).items() if k in DEFAULTS and isinstance(v, (int, float))})
     return s
 
 
@@ -175,7 +177,7 @@ def main():
         score[cat] += 2 * n
 
     stock = sum(u["cost"] for u in units)
-    warranty = (read_json(HERE / "strategy_r3.json", {}).get("warranty_hours") or 0) > 0
+    warranty = (read_json(STRATEGY, {}).get("warranty_hours") or 0) > 0
     floor = max(s["reserve_cash"], line + CUSHION + (WARRANTY_CUSHION if warranty else 0))
     spend = min(inv.get("balance", 0) - floor, s["stock_value"] - stock)
     stopping = s["round_end"] and now > s["round_end"] - s["stop_hours"] * 3600
@@ -227,7 +229,11 @@ def main():
             if c["kind"] == "food" and (c.get("shelf_hours") or 0) < 48:
                 continue
             plan(1.5 * sc, dict(c, sku=sku), min(20, round(s["sku_depth"] * scale), math.ceil(sc * scale / 2)))
-        ranked = sorted(plans.values(), key=lambda p: (-p[0], p[1]["list_price"]))
+        # a supply window lasts 3 minutes and the kit buys about one line in 10 s, so the order of the lines decides
+        # what gets bought: dear goods first (11/4 13:04: three mattresses bought one each sold within minutes, the
+        # top shop made 57M from furniture at 459,240 a sale, while pillows, kimchi and water took the early lines)
+        dear = lambda c: s.get("dear_first", 1.0) * min(3.0, c["list_price"] / 150_000) if c.get("kind") == "goods" else 0
+        ranked = sorted(plans.values(), key=lambda p: (-(p[0] + dear(p[1])), -p[1]["list_price"]))
         goods_room = s["goods_frac"] * s["stock_value"] - sum(u["cost"] for u in live if u.get("kind") == "goods")
         for prio, c, qty in ranked:
             if len(buy) >= 10:

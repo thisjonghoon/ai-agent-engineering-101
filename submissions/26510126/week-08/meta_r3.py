@@ -46,7 +46,7 @@ BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min
           "step": (0.2, 0.7, 0.1), "clear_hours": (2, 24, 4), "clear_frac": (0.3, 1.0, 0.1),
           "warranty_hours": (0, 6, 2), "max_turns": (3, 8, 1),
           "reserve_cash": (700_000, 3_000_000, 250_000), "stock_value": (500_000, 8_000_000, 1_000_000),
-          "max_list": (30_000, 1_500_000, 200_000), "min_shelf_hours": (24, 720, 48), "depth": (1, 6, 1),
+          "max_list": (30_000, 1_500_000, 200_000), "dear_first": (0.0, 3.0, 0.5), "min_shelf_hours": (24, 720, 48), "depth": (1, 6, 1),
           "endgame_hours": (12, 24, 6), "endgame_frac": (1.0, 1.2, 0.1), "final_hours": (2, 12, 2),
           "final_frac": (0.3, 1.0, 0.1), "ask_frac_food": (0.70, 1.00, 0.05), "floor_frac_food": (0.45, 0.95, 0.05),
           "fresh_premium": (0.0, 0.2, 0.05), "spread_low": (0.5, 0.9, 0.1), "spread_high": (1.1, 1.5, 0.1),

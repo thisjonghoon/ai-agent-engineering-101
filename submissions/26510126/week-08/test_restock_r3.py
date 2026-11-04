@@ -13,6 +13,8 @@ from pathlib import Path
 
 import restock_r3
 
+restock_r3.STRATEGY = Path(tempfile.mkdtemp(prefix="restock-strategy-")) / "none.json"   # the defaults, not the live file
+
 NOW = time.time()
 DEMAND = [{"item": "김치", "category": "식품>김치"}, {"item": "의자", "category": "가구>의자"},
           {"item": "침대", "category": "가구>침대"}, {"item": "라면", "category": "식품>라면"},

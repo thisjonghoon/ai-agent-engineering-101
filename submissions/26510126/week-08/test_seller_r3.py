@@ -70,11 +70,13 @@ async def main():
     md = Path(tempfile.mkdtemp(prefix="r3md-"))
     (md / "inventory.json").write_text(json.dumps({"round": 3, "units": UNITS}), encoding="utf-8")
     (md / "catalog.json").write_text(json.dumps(CATALOG), encoding="utf-8")
+    (md / "team_r3.json").write_text(json.dumps({"buyer": [{"id": "b-test", "rank": "lead", "style": {}}], "seller": [{"id": "s-test", "rank": "lead", "style": {}}], "changes": []}))
     port = free_port()
     p = subprocess.Popen([sys.executable, str(HERE / "seller_r3.py"), "--port", str(port)], cwd=HERE,
                          env=dict(os.environ, MARKET_DIR=str(md), AB_DIR=str(md), DEMAND_LOG=str(md / "demand_r3.jsonl"),
                                   SELLER_MODEL_SHARE="0",           # the A2A cases test the rules; the model is stubbed below
                                   STRATEGY_FILE=str(md / "no-strategy.json"),   # the defaults, not what the meta-harness set
+                                  TEAM_ROSTER=str(md / "team_r3.json"),          # one neutral member, no style
                                   TALKS_LOG=str(md / "talks_r3.jsonl")))
     base = f"http://127.0.0.1:{port}"
     for _ in range(100):

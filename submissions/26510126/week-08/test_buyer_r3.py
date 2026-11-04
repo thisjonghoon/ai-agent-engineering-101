@@ -30,6 +30,7 @@ MD = TMP / ".market"
 MD.mkdir()
 os.environ["MARKET_DIR"] = str(MD)
 os.environ["FORUM_VOTES"] = str(MD / "forum_votes.json")
+os.environ["TEAM_ROSTER"] = str(MD / "team_r3.json")   # one neutral member: the cases test the numbers, not a style
 os.environ["FORUM_STYLE"] = "0"                 # forum posts: the plain facts, no model call
 sys.path.insert(0, str(TMP))
 os.chdir(TMP)
@@ -63,6 +64,8 @@ CATALOG = {
     "F3": {"sku": "F3", "name": "겉절이 2kg", "category": "식품>김치", "list_price": 40000, "kind": "food", "shelf_hours": 20},
 }
 (MD / "catalog.json").write_text(json.dumps(CATALOG, ensure_ascii=False))
+(MD / "team_r3.json").write_text(json.dumps({"buyer": [{"id": "b-test", "rank": "lead", "style": {}}],
+                                             "seller": [{"id": "s-test", "rank": "lead", "style": {}}], "changes": []}))
 
 
 def free_port():

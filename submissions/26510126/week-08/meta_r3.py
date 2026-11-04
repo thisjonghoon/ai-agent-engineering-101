@@ -31,6 +31,7 @@ import demand_r3
 import harness
 import playbooks_r3
 import prices_r3
+import team_r3
 import simulate_r3
 
 HERE = Path(__file__).resolve().parent
@@ -148,6 +149,12 @@ shops tried per order; MAX_RAISE how far one offer moves toward the ask; FIRM_GA
 take it; SCOUTS how many shops the buyer team asks for a quote at once before the lead negotiates with the best
 (1 turns the team off). Bounds and steps: {buyer_bounds}. If the buyer needs something no number can do, say it in code_ideas.
 
+Both sides run as teams with ranks (`teams`): each member is a style over the numbers above (buyer: MAX_RAISE,
+FIRM_GAP, OPEN low|p25|median; seller: ask_delta, floor_delta on ask_frac/floor_frac, step). The lead gets 60% of
+talks, the senior 25%, the junior 15%. Code promotes by reward per talk (buyer: surplus; seller: margin over cost as
+a share of list) and replaces a junior that trails the lead after 40 talks. When you see a style worth trying,
+propose it in recruits; it joins at the next replacement. Bounds: {team_bounds}.
+
 Our buyer's own forum posts are the other half of this job: votes on them are 30% of our buyer's ALL and the
 number of posts 10%. Code writes each post from the ledger and our own logs (every number checkable, with refs) in
 one of these kinds: our_deals (our settled deals, posted whenever there are new ones), best_value (the cheapest honest
@@ -169,6 +176,7 @@ Answer with JSON only: {{"strategy": {{...every key...}}, "playbook": "<the play
 "ab": null or {{"param": "<one of {ab_params}>", "kind": "food" | "goods", "value": <the value to test against now>}},
 "forum_weights": {{"best_value": <0-3>, "freshness": <0-3>, "pay_tips": <0-3>, "fun": <0-3>, "claims": <0-3>}},
 "buyer_plan": {{"<key>": <value>, ...}} or {{}},
+"recruits": {{"buyer": {{...style...}} or null, "seller": {{...style...}} or null}},
 "code_ideas": ["<up to 2: a change to our buyer or shop that no number can make, and the evidence>"],
 "forum_ideas": ["<up to 3: what a post shows (its id) and what we do with it, or what code would have to change>"],
 "reason": "<one sentence>"}}"""
@@ -236,6 +244,31 @@ def buyer_diag(hours=6):
         out["goods_break_rate_24h"] = {g: round(sum(u in broke for u, x in grade.items() if x == g) /
                                                 max(1, sum(x == g for x in grade.values())), 3) for g in "ABC"}
     except Exception:
+        pass
+    return out
+
+
+def team_records():
+    """Per team member, (time, reward) for each talk it ran: the buyer's surplus (list - price on a deal, else 0) from
+    memory.jsonl, the seller's margin over cost as a share of list (0 when no deal) from talks_r3.jsonl."""
+    out = {"buyer": {}, "seller": {}}
+    try:
+        for l in (HERE / "memory.jsonl").read_text(encoding="utf-8").splitlines()[-30000:]:
+            if '"member"' not in l or '"kind": "trade"' not in l:
+                continue
+            r = json.loads(l)
+            if r.get("member"):
+                t = time.mktime(time.strptime(r["time"], "%Y-%m-%d %H:%M:%S"))
+                v = (r["list_price"] - r["price"]) if r.get("outcome") == "deal" and r.get("price") else 0
+                out["buyer"].setdefault(r["member"], []).append((t, v))
+        for l in simulate_r3.TALKS.read_text(encoding="utf-8").splitlines()[-30000:]:
+            if '"member"' not in l:
+                continue
+            t = json.loads(l)
+            if t.get("member"):
+                v = (t["price"] - t["cost"]) / t["list_price"] if t.get("event") == "deal" and t.get("price") else 0
+                out["seller"].setdefault(t["member"], []).append((t["t"], v))
+    except (OSError, ValueError, KeyError, TypeError):
         pass
     return out
 
@@ -414,6 +447,10 @@ def snapshot(since):
     snap.update(standing())
     snap["warranty_demand"] = demand_r3.warranty_demand()
     snap["our_reviews"] = our_reviews()
+    try:
+        snap["teams"] = dict(team_r3.summary(), recent_changes=(team_r3.load().get("changes") or [])[-4:])
+    except Exception as e:
+        snap["teams"] = {"error": type(e).__name__}
     snap["buyer"] = dict(buyer_diag(), plan=dict(BUYER_DEFAULTS, **{k: v for k, v in read_json(BUYER_PLAN, {}).items()
                                                                   if k in BUYER_BOUNDS}))
     try:
@@ -524,6 +561,7 @@ async def cycle():
     # keeps the history near 30,000 characters
     ans = await harness.ask(PROMPT.format(bounds=bounds, now=json.dumps(now, ensure_ascii=False), history=shown or "(none)",
                                           forum=forum_digest(), buyer_keys=", ".join(BUYER_BOUNDS), advice=advice(),
+                                          team_bounds=json.dumps(team_r3.BOUNDS),
                                           buyer_bounds=json.dumps(BUYER_BOUNDS),
                                           playbooks=playbooks_r3.for_prompt(), ab_params=", ".join(AB_PARAMS)),
                             max_chars=60_000)
@@ -552,6 +590,15 @@ async def cycle():
         ab_done = dict(exp, on=False, result={"winner": win, "summary": now["ab"], "time": time.time()})
         ab_r3.EXPERIMENT.write_text(json.dumps(ab_done, ensure_ascii=False, indent=1), encoding="utf-8")
     ab_new = None if exp else start_ab((ans or {}).get("ab"), s)
+    team_changes = []
+    try:                                                # promotion and replacement in both teams
+        rec = team_records()
+        recruits = (ans or {}).get("recruits") if isinstance((ans or {}).get("recruits"), dict) else {}
+        for side in ("buyer", "seller"):
+            team_changes += team_r3.review(side, rec[side], recruit=recruits.get(side) if isinstance(
+                recruits.get(side), dict) else None)
+    except Exception as e:
+        team_changes = [f"review failed: {type(e).__name__}"]
     bp = (ans or {}).get("buyer_plan")
     buyer_changed = {}
     if isinstance(bp, dict):                            # the buyer's numbers, clamped to bounds and one step a cycle
@@ -580,7 +627,7 @@ async def cycle():
                             "harness_ok": new is not None, "probe": probe,
                             "ab_result": ab_done and ab_done["result"], "ab_started": ab_new,
                             "playbook": (ans or {}).get("playbook"), "forum_weights": (ans or {}).get("forum_weights"),
-                            "buyer_changed": buyer_changed,
+                            "buyer_changed": buyer_changed, "team_changes": team_changes,
                             "code_ideas": [harness.clip(x, 300) for x in ((ans or {}).get("code_ideas") or [])[:2]
                                            if isinstance(x, str)],
                             "forum_ideas": [harness.clip(x, 300) for x in ((ans or {}).get("forum_ideas") or [])[:3]

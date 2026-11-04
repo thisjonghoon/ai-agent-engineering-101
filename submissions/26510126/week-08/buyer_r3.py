@@ -36,6 +36,7 @@ import buyer
 import demand_r3
 import forum_r3
 import prices_r3
+import team_r3
 import market_intel
 import harness
 from harness import log
@@ -422,18 +423,30 @@ async def attempt(order, cat, s, off, lp, note, remember):
     limit = min(order["budget"], int(lp * CAP))
     log("CHOOSE", f"{s['name']} {s['url']}: {name} ({sku}), list {lp}, paying at most {limit}")
     opening = opening_for(order, name, sku)
-    hint = (f"The list price is {lp}. Shops buy stock at 25-75% of list price. Open below what the market paid lately "
-            f"(its lower quartile, below, is a fair opening; far under it, shops walk away) and raise slowly. "
+    try:                                                  # the buying team member this talk goes to (team_r3.py)
+        member, style = team_r3.choose("buyer")
+    except (OSError, ValueError, KeyError, TypeError):
+        member, style = "", {}
+    opening_style = {
+        "low": "Open at about half of list or lower and raise slowly; losing a few talks for a better price is fine.",
+        "median": "Open a little under what the market paid lately (its median, below) and close fast.",
+    }.get(style.get("OPEN"), "Open below what the market paid lately (its lower quartile, below, is a fair opening; far "
+                             "under it, shops walk away) and raise slowly.")
+    firm_gap, buyer.FIRM_GAP = buyer.FIRM_GAP, style.get("FIRM_GAP", buyer.FIRM_GAP)
+    hint = (f"The list price is {lp}. Shops buy stock at 25-75% of list price. {opening_style} "
             f"Our record with this shop: {note}.\n"
             f"What the market paid lately (public ledger): "
             f"{prices_r3.line(MD, sku, (cat.get(sku) or {}).get('category'))}.\n")
     try:
-        result = await buyer.shop(s["url"], name, limit, memory=hint, max_raise=MAX_RAISE, max_offers=MAX_OFFERS,
+        log("TEAM", f"{member or 'no team'} haggles this one {json.dumps(style)}")
+        result = await buyer.shop(s["url"], name, limit, memory=hint, max_raise=style.get("MAX_RAISE", MAX_RAISE),
+                                  max_offers=MAX_OFFERS,
                                   opening=opening, screen=screen_for(order, lp))
     except Exception as e:
         log("ERROR", f"trade with {s['name']} failed: {e!r}")
         result = {"state": "error", "asks": [], "offers": [], "error": type(e).__name__}
 
+    buyer.FIRM_GAP = firm_gap
     receipt = result.get("receipt")
     deal = result.get("state") == "TASK_STATE_COMPLETED"
     agreed = result["offers"][-1] if deal and result.get("offers") else None
@@ -446,7 +459,8 @@ async def attempt(order, cat, s, off, lp, note, remember):
               "list_price": lp, "budget": order.get("budget"), "food_hours": order.get("use_within_hours"),
               "outcome": "bad_receipt" if problem else "deal" if deal else "no_deal", "end": result.get("state"),
               "price": agreed, "asks": result.get("asks", []), "offers": result.get("offers", []),
-              "receipt": receipt, "problem": problem, "stars": stars, "screened": result.get("screened")})
+              "receipt": receipt, "problem": problem, "stars": stars, "screened": result.get("screened"),
+              "member": member})
     return {"shop": s["url"], "receipt": receipt if deal and not problem else None, "stars": stars,
             "review": text, "accept": accept_policy(order, receipt, lp),
             "_quick": not result.get("asks") and result.get("state") in ("TASK_STATE_REJECTED", "error")}

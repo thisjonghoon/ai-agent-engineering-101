@@ -57,6 +57,7 @@ import ab_r3
 import demand_r3
 import harness
 import prices_r3
+import team_r3
 
 HERE = Path(__file__).resolve().parent
 NAME = "thisjonghoon"
@@ -152,7 +153,8 @@ def ab_end(task_id, deal, event, reward=0.0, price=None):
                                     "floor": deal["floor"], "clear": deal.get("clear"), "offers": deal["offers"],
                                     "turns": deal["turns"], "event": event, "price": price,
                                     "warranty_ask": deal.get("warranty_ask"), "model_on": deal.get("model_on", False),
-                                    "model_calls": deal.get("model_calls", 0), "ab": deal.get("ab")}) + "\n")
+                                    "model_calls": deal.get("model_calls", 0), "ab": deal.get("ab"),
+                                    "member": deal.get("member", "")}) + "\n")
         except (OSError, KeyError, TypeError):
             pass
     if deal and deal.get("ab"):
@@ -358,8 +360,13 @@ class Seller(AgentExecutor):
             if u is None:
                 await up.reject(say("Sorry, we have none of that in stock."))
                 return
-            ab = None
+            ab, member = None, ""
             if u.get("unit"):
+                try:                                      # the sales team member this talk goes to (team_r3.py)
+                    member, style = team_r3.choose("seller")
+                    s = team_r3.apply_seller(s, style)
+                except (OSError, ValueError, KeyError, TypeError):
+                    member = ""
                 try:
                     e, arm = ab_r3.choose(u.get("kind"))
                 except (OSError, ValueError, KeyError):
@@ -370,7 +377,8 @@ class Seller(AgentExecutor):
             normal = max(u["cost"] * (1 + s["min_margin"]), u["list_price"] * min(
                 s["floor_frac_food"] if u.get("kind") == "food" else s["floor_frac"], 1.0))
             deal = self.open[task.id] = {"unit": u, "ask": ask, "floor": floor, "offers": [], "turns": 0,
-                                         "t": time.time(), "s": s if ab else None, "ab": ab, "ask0": ask,
+                                         "t": time.time(), "s": s if (ab or member) else None, "ab": ab, "ask0": ask,
+                                         "member": member,
                                          "clear": floor < 0.99 * normal,     # clearance, aged or endgame floor
                                          "warranty_ask": bool(WARRANTY_WORDS.search(text)),
                                          "model_on": bool(u.get("unit")) and random.random() < s["model_share"],

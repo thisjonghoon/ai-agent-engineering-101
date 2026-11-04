@@ -1,0 +1,61 @@
+{
+ "buyer": [
+  {
+   "id": "b-balanced",
+   "rank": "lead",
+   "style": {
+    "OPEN": "p25"
+   },
+   "joined": 1793761758.8435788
+  },
+  {
+   "id": "b-patient",
+   "rank": "senior",
+   "style": {
+    "MAX_RAISE": 0.25,
+    "FIRM_GAP": 0.02,
+    "OPEN": "low"
+   },
+   "joined": 1793761758.8435788
+  },
+  {
+   "id": "b-closer",
+   "rank": "junior",
+   "style": {
+    "MAX_RAISE": 0.6,
+    "FIRM_GAP": 0.08,
+    "OPEN": "median"
+   },
+   "joined": 1793761758.8435788
+  }
+ ],
+ "seller": [
+  {
+   "id": "s-steady",
+   "rank": "lead",
+   "style": {},
+   "joined": 1793761758.8435788
+  },
+  {
+   "id": "s-premium",
+   "rank": "senior",
+   "style": {
+    "ask_delta": 0.06,
+    "floor_delta": 0.02,
+    "step": 0.2
+   },
+   "joined": 1793761758.8435788
+  },
+  {
+   "id": "s-volume",
+   "rank": "junior",
+   "style": {
+    "ask_delta": -0.05,
+    "floor_delta": -0.03,
+    "step": 0.6
+   },
+   "joined": 1793761758.8435788
+  }
+ ],
+ "changes": []
+}

@@ -111,8 +111,9 @@ with live buyers can be proposed as an A/B test (below), which code starts when 
 
 `seller_model` compares the seller's two kinds of negotiation in the same hours: those where a model (haiku) makes
 each turn's call inside the code's floor and ask, and those on the rules alone. model_share is the share the model
-gets. Move it toward the side with more margin per talk once each side has some 30 talks; keep it between 0.25 and
-0.75 while the gap is small, so the comparison keeps running.
+gets; it covers only talks since the model's prompt last changed. Keep model_share at 0.25 or more until the model
+side has 30 talks there; then move it toward the side with more margin per talk, and keep it between 0.25 and 0.75
+while the gap is small, so the comparison keeps running.
 
 `going_prices` is what each busy category settled for lately as a share of list (the public ledger, last 6 hours),
 and `forum_price_posts` checks the price notes other agents post on the forum against that ledger: their mean gap per
@@ -152,6 +153,7 @@ Answer with JSON only: {{"strategy": {{...every key...}}, "playbook": "<the play
 "forum_weights": {{"best_value": <0-3>, "freshness": <0-3>, "pay_tips": <0-3>, "fun": <0-3>, "claims": <0-3>}},
 "forum_ideas": ["<up to 3: what a post shows (its id) and what we do with it, or what code would have to change>"],
 "reason": "<one sentence>"}}"""
+MODEL_PROMPT_SINCE = 1793752281   # 11/4 09:31 KST: the seller model sees the rule's move and both sides' record (43f0447)
 AB_PARAMS = ("ask_frac", "floor_frac", "min_margin", "step", "max_turns", "ask_frac_food", "floor_frac_food",
              "fresh_premium", "clear_hours", "clear_frac")      # read per negotiation by the seller; warranty is not
 # tested this way because the A/B reward cannot see refunds
@@ -340,7 +342,9 @@ def snapshot(since):
         snap["forum_price_posts"] = {"authors_checked": pr.get("authors"),
                                      "far_from_ledger": [c for c in pr.get("forum") or [] if abs(c.get("gap") or 0) >= 0.1]}
     try:
-        snap["seller_model"] = simulate_r3.model_vs_rule()
+        # only talks since the seller model's prompt last changed: older model talks measure a model that is gone
+        hours = max(0.5, min(24.0, (time.time() - MODEL_PROMPT_SINCE) / 3600))
+        snap["seller_model"] = dict(simulate_r3.model_vs_rule(hours), since_prompt_change_h=round(hours, 1))
     except Exception as e:
         snap["seller_model"] = {"error": type(e).__name__}
     try:

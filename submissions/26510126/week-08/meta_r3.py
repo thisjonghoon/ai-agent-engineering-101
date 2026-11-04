@@ -22,6 +22,7 @@ seller_r3.py and restock_r3.py read strategy_r3.json on every request and run, s
 import argparse
 import asyncio
 import json
+import os
 import re
 import time
 from pathlib import Path
@@ -225,8 +226,8 @@ def buyer_diag(hours=6):
         if lost:
             gaps = sorted((r["asks"][-1] - r["offers"][-1]) / r["asks"][-1] for r in lost if r["asks"][-1])
             out["lost_talks_gap_to_ask_median"] = round(gaps[len(gaps) // 2], 3) if gaps else None
-        pays = [json.loads(l) for l in (MD / "payments.jsonl").read_text(encoding="utf-8").splitlines()[-400:]]
-        out["payments"] = {"paid": sum(bool(x.get("paid")) for x in pays), "refused": dict(Counter(
+        pays = [json.loads(l) for l in (MD / "payments.jsonl").read_text(encoding="utf-8").splitlines()[-100:]]
+        out["payments"] = {"last": len(pays), "paid": sum(bool(x.get("paid")) for x in pays), "refused": dict(Counter(
             re.sub(r"[\d.]+", "N", (x.get("reason") or "?"))[:50] for x in pays if not x.get("paid")).most_common(4))}
     except (OSError, ValueError):
         pass
@@ -273,6 +274,7 @@ def team_records():
     return out
 
 
+TEAM = os.environ.get("META_TEAM", "1") != "0"   # 0: the single prompt, as before 11/4 12:40
 MODEL_PROMPT_SINCE = 1793752281   # 11/4 09:31 KST: the seller model sees the rule's move and both sides' record (43f0447)
 AB_PARAMS = ("ask_frac", "floor_frac", "min_margin", "step", "max_turns", "ask_frac_food", "floor_frac_food",
              "fresh_premium", "clear_hours", "clear_frac")      # read per negotiation by the seller; warranty is not
@@ -559,12 +561,26 @@ async def cycle():
     shown = "\n".join(history_lines(hist, after))
     # other agents' text enters only clipped (forum_digest: 30 posts x 220 characters, reviews x 100); history_lines
     # keeps the history near 30,000 characters
-    ans = await harness.ask(PROMPT.format(bounds=bounds, now=json.dumps(now, ensure_ascii=False), history=shown or "(none)",
+    ans = None
+    if TEAM:                                            # four specialists and a manager (meta_team_r3.py)
+        import meta_team_r3
+        try:
+            _, sku_w, _ = demand_r3.signals()
+            demand = dict(sorted(sku_w.items(), key=lambda kv: -kv[1])[:15])
+        except Exception:
+            demand = {}
+        plan = dict(BUYER_DEFAULTS, **{k: v for k, v in read_json(BUYER_PLAN, {}).items() if k in BUYER_BOUNDS})
+        extra = {"merch": {"demand_top_skus": demand}, "community_text": "Other agents' recent posts:\n" + forum_digest(),
+                 "sales_text": "Retail playbooks (sim scores each):\n" + playbooks_r3.for_prompt()}
+        ans = await meta_team_r3.decide(now, cur, plan, hist, after, advice(), BOUNDS, BUYER_BOUNDS,
+                                        ", ".join(AB_PARAMS), extra)
+    if ans is None:
+        ans = await harness.ask(PROMPT.format(bounds=bounds, now=json.dumps(now, ensure_ascii=False), history=shown or "(none)",
                                           forum=forum_digest(), buyer_keys=", ".join(BUYER_BOUNDS), advice=advice(),
                                           team_bounds=json.dumps(team_r3.BOUNDS),
                                           buyer_bounds=json.dumps(BUYER_BOUNDS),
                                           playbooks=playbooks_r3.for_prompt(), ab_params=", ".join(AB_PARAMS)),
-                            max_chars=60_000)
+                                max_chars=60_000)
     new = (ans or {}).get("strategy") if isinstance((ans or {}).get("strategy"), dict) else None
     s = guard(new or {}, cur)
     # the user chose (11/4) to try the reworked seller model: model_share stays at 0.25 or more until the model side
@@ -628,6 +644,7 @@ async def cycle():
                             "ab_result": ab_done and ab_done["result"], "ab_started": ab_new,
                             "playbook": (ans or {}).get("playbook"), "forum_weights": (ans or {}).get("forum_weights"),
                             "buyer_changed": buyer_changed, "team_changes": team_changes,
+                            "specialists": (ans or {}).get("team"),
                             "code_ideas": [harness.clip(x, 300) for x in ((ans or {}).get("code_ideas") or [])[:2]
                                            if isinstance(x, str)],
                             "forum_ideas": [harness.clip(x, 300) for x in ((ans or {}).get("forum_ideas") or [])[:3]

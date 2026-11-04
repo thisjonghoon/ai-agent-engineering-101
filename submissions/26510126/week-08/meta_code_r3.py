@@ -57,6 +57,11 @@ MAX_LINES = 150
 BUILD_EVERY = 90 * 60
 MAX_PER_DAY = 8
 CHECK_AFTER = 60 * 60
+# an A/B arm needs this many orders before its verdict, waiting up to CHECK_MAX: on 11/4 0abcb4b read +243% surplus
+# per order on 70 orders an arm, because 10 dear-item talks fell in its arm and 4 in the other (its dear close rate
+# was in fact lower, 40% against 50%); a few dear orders swing a small arm
+MIN_ORDERS = 150
+CHECK_MAX = 3 * 3600
 DROP = 0.4          # a guard metric falling this much reverts any change
 WORSE = 0.15        # the hypothesis' own metric moving this much the wrong way reverts it
 AGENT_TIMEOUT = 15 * 60
@@ -160,16 +165,19 @@ def check():
     for i, r in enumerate(rows):
         if r.get("source") != "meta (auto)" or r.get("verdict") or time.time() - r["t"] < CHECK_AFTER:
             continue
-        if r.get("ab_key"):                         # the same hour, orders without the change against orders with it
-            k = r["ab_key"]
-            before = metrics_r3.window(r["t"], r["t"] + CHECK_AFTER, keep=lambda o: code_ab_r3.arm(k, o) == "A")
-            after = metrics_r3.window(r["t"], r["t"] + CHECK_AFTER, keep=lambda o: code_ab_r3.arm(k, o) == "B")
+        if r.get("ab_key"):                         # the same hours, orders without the change against orders with it
+            k, end = r["ab_key"], min(time.time(), r["t"] + CHECK_MAX)
+            before = metrics_r3.window(r["t"], end, keep=lambda o: code_ab_r3.arm(k, o) == "A")
+            after = metrics_r3.window(r["t"], end, keep=lambda o: code_ab_r3.arm(k, o) == "B")
+            if min(before.get("orders") or 0, after.get("orders") or 0) < MIN_ORDERS and time.time() < r["t"] + CHECK_MAX:
+                continue                            # too few orders an arm yet: the trial runs on
             code_ab_r3.stop()
         else:
             before = r["baseline"] if isinstance(r.get("baseline"), dict) else metrics_r3.window(r["t"] - 3600, r["t"])
             after = metrics_r3.window(r["t"], r["t"] + CHECK_AFTER)
         text, why = judge(r, before, after)
-        text += " (A/B: same hours, half the orders each)" if r.get("ab_key") else " (the hour before against the hour after)"
+        text += (f" (A/B: same hours, {before.get('orders')} and {after.get('orders')} orders)" if r.get("ab_key")
+                 else " (the hour before against the hour after)")
         if why:
             prev = git("rev-parse", f"{r['commit']}^").stdout.strip()
             for f in r.get("files", []):

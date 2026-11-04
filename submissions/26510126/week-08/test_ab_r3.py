@@ -57,7 +57,7 @@ def main():
     real_window = meta_r3.metrics_r3.window
     def fake_window(t0, t1, base=None, keep=None):       # arm B (CAP 0.80) closes fewer orders, same surplus
         b = keep("o-b") if keep else False
-        return {"buyer_surplus_order": 15000, "buyer_close_rate": 0.45 if b else 0.65, "orders": 50}
+        return {"buyer_surplus_order": 15000, "buyer_close_rate": 0.45 if b else 0.65, "orders": 200}
     meta_r3.metrics_r3.window = fake_window
     import code_ab_r3
     real_arm, code_ab_r3.arm = code_ab_r3.arm, lambda key, o: "B" if o == "o-b" else "A"

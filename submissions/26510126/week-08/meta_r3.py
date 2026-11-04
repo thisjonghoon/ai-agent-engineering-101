@@ -216,6 +216,8 @@ def buyer_trial_verdict():
     t0, t1 = t["started"], time.time()
     a = metrics_r3.window(t0, t1, keep=lambda o: code_ab_r3.arm(t["key"], o) == "A")
     b = metrics_r3.window(t0, t1, keep=lambda o: code_ab_r3.arm(t["key"], o) == "B")
+    if min(a.get("orders") or 0, b.get("orders") or 0) < 150 and t1 - t0 < 3 * 3600:
+        return {}                                   # too few orders an arm: a few dear orders would decide it
     gain, close = metrics_r3.change("buyer_surplus_order", a, b), metrics_r3.change("buyer_close_rate", a, b)
     win = t["B"] if gain is not None and gain > 0.03 and (close is None or close > -BUYER_GUARD) else t["A"]
     plan = dict(BUYER_DEFAULTS, **{k: v for k, v in read_json(BUYER_PLAN, {}).items() if k in BUYER_BOUNDS})

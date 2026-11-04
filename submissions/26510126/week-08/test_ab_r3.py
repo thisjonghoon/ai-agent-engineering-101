@@ -67,6 +67,18 @@ def main():
          and json.loads(meta_r3.BUYER_PLAN.read_text())["CAP"] == 0.85 and json.loads(meta_r3.BUYER_TRIAL.read_text()) == {}
          and "inner loop (buyer A/B)" in meta_r3.CODE_CHANGES.read_text(), str(got))
 
+    # both arms reach min_n before the draw leans: an arm with fewer ended negotiations is drawn first
+    e3 = {"on": True, "id": "t3", "param": "ask_frac", "kind": "goods", "arms": {"A": 0.9, "B": 0.85}, "min_n": 30,
+          "p_win": 0.95, "started": time.time()}
+    ab_r3.EXPERIMENT.write_text(json.dumps(e3))
+    for i in range(25):
+        ab_r3.record(id="t3", arm="A", task=f"x{i}", event="open")
+        ab_r3.record(id="t3", arm="A", task=f"x{i}", event="deal", reward=0.3)
+    for i in range(12):
+        ab_r3.record(id="t3", arm="B", task=f"y{i}", event="open")
+        ab_r3.record(id="t3", arm="B", task=f"y{i}", event="walk", reward=0.0)
+    case("an arm short of min_n is drawn even when the other earns more", ab_r3.choose("goods")[1] == "B")
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
 
 

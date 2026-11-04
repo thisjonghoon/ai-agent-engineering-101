@@ -94,7 +94,9 @@ def choose(kind):
         return None, None
     r = rewards(e["id"])
     arms = list(e["arms"])
-    short = [a for a in arms if len(r.get(a, [])) < FIRST]
+    # both arms get min_n negotiations before the bandit leans (11/4 23:00: after FIRST = 10 each, arm A drew 208 and
+    # arm B 18, so B could never reach min_n and the test could only end as a tie)
+    short = [a for a in arms if len(r.get(a, [])) < max(FIRST, e.get("min_n", 30))]
     if short:
         return e, min(short, key=lambda a: len(r.get(a, [])))
     draw = {a: random.gauss(*posterior(r.get(a, []))) for a in arms}

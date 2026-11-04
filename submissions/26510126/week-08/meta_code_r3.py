@@ -86,7 +86,10 @@ This folder is a copy of the agent: the code, and raw traces under traces/ (talk
 shop had; memory.jsonl: our buyer's trades and payments; payments.jsonl; demand_r3.jsonl: orders and asks;
 market-kit.log: the buyer's and kit's lines with SCOUT, CAND, GUARD, ASK, OUT). Read the code before you claim it
 lacks something. Find ONE change, in these files only: {allowed}, that should move a costly term, backed by numbers
-you counted in the traces. Not: a change already in the code or in the list above, a number the tuning team can set
+you counted in the traces. Read the ledger first: when changes aimed at one metric keep measuring flat or worse, aim
+at another term. The shop's cash and revenue are the costliest shop terms, and restock_r3.py (what and how much the
+shop stocks) reaches them: on 11/4 stocking dear furniture took dear sales from about 4 to about 60 an hour, more
+than any buyer-side change so far. Not: a change already in the code or in the list above, a number the tuning team can set
 (it already moves those), anything about payments, keys or the seller.
 
 Answer with one JSON object on the last line, nothing after it:

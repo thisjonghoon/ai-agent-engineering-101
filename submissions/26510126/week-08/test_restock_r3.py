@@ -128,7 +128,7 @@ for is_open in (False, True):
     res = json.loads(out.getvalue().splitlines()[-1])
     if is_open:
         q = {b["sku"]: b["qty"] for b in res["buy"]}
-        case("window open: depth x2 for a selling food category (4 units), lines bought", q.get("SF1") == 4 and len(res["buy"]) == 10,
+        case("window open: depth x2 for a selling food category (4 units), lines bought", q.get("SF1") == 4 and len(res["buy"]) == restock_r3.DEFAULTS["lines"],
              {"SF1": q.get("SF1"), "lines": len(res["buy"]), "why": res["why"]})
     else:
         st_after = json.loads((md / "restock_state.json").read_text())
@@ -177,4 +177,7 @@ res = json.loads(out.getvalue().splitlines()[-1])
 skus = [b["sku"] for b in res["buy"]]
 case("a SKU the market surged to 1.47x is not bought; one at 1.02x still is", "SH1" not in skus and "SH2" in skus
      and "surge" in res["why"], {"buy": skus, "why": res["why"]})
+# a dear SKU (list 150,000 or more) is bought dear_depth units deep (11/4: the top shops sold 470-575 such units in 6 h)
+assert "dear_depth" in restock_r3.DEFAULTS
+case("dear goods get dear_depth units a line", restock_r3.DEFAULTS["dear_depth"] >= 2 and restock_r3.DEFAULTS["lines"] >= 14)
 print(f"\n{sum(ok)}/{len(ok)} passed")

@@ -443,6 +443,10 @@ KEY = ("minutes", "settled", "revenue", "deals", "opens", "walks", "settle_refus
 FULL = 6              # the latest versions are shown whole
 
 
+HEAVY = ("sim", "going_prices", "forum_price_posts", "forum_ours", "forum_weights", "buyer", "our_reviews",
+         "warranty_demand", "seller_model", "ab")
+
+
 def history_lines(hist, after, last=30):
     """The last `last` versions as one JSON line each (LongMemEval-V2: raw evidence stays in strategies_r3.jsonl, the
     prompt gets what this decision needs). The newest FULL show the whole strategy and outcome; older ones only the
@@ -451,7 +455,10 @@ def history_lines(hist, after, last=30):
     out = []
     for i, (h, a) in enumerate(pairs[-last:], start=max(0, len(pairs) - last)):
         if i >= len(pairs) - FULL:
-            out.append(json.dumps({"strategy": h["strategy"], "after": a}, ensure_ascii=False))
+            # the heavy parts of a past snapshot are in `now` for the current hour; repeating them six times took the
+            # prompt over its 60,000-character guard on 11/4 09:57, and the cycle was skipped
+            out.append(json.dumps({"strategy": h["strategy"], "after": {k: v for k, v in a.items() if k not in HEAVY}},
+                                  ensure_ascii=False))
             continue
         prev = pairs[i - 1][0]["strategy"] if i else {}
         diff = {k: v for k, v in h["strategy"].items() if prev.get(k) != v}

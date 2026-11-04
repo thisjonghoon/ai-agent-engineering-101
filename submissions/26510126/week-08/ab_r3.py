@@ -31,9 +31,11 @@ LOG = AB_DIR / "logs" / "ab_r3.jsonl"
 FIRST = 10              # negotiations each arm gets before the bandit leans
 # an experiment with no winner ends as a tie once both arms have MAX_N negotiations or it has run MAX_HOURS (11/4:
 # ask_frac_food 0.92 against 0.90 ran 20 h and 4,193 negotiations without a winner, and while it ran no other test
-# could start); a tie keeps the strategy's value
-MAX_N = 400
-MAX_HOURS = 6
+# could start); a tie keeps the strategy's value. 11/4 22:00: two tests in 25 hours, both ties, while 13 days remain
+# and every other test waits for the one slot; a difference too small to show in 250 talks an arm or 2 hours is too
+# small to matter next to the gaps on the board
+MAX_N = 250
+MAX_HOURS = 2
 PRIOR = (0.10, 2)       # prior mean reward and its weight in negotiations (a 10% margin on list, weakly held)
 SD_MIN = 0.05
 

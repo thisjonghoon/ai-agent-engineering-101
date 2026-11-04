@@ -138,7 +138,8 @@ apply to us. Put what you take from them into the strategy where a number expres
 Our buyer is the other half of the Players total (its ALL: 0.5 surplus, 0.3 forum votes, 0.1 deals, 0.1 posts). A
 settled deal is worth the SKU's list price to the order, 0 if food does not last use_within_hours or goods break (a
 warranty refunds the price), so surplus = list - price on every deal that holds. `buyer` shows how its talks ended
-(deal, none_in_stock, screened: the shop's own words failed our payment policy, shop_ended_talk, we_walked), the
+(deal; other_shop_none_in_stock: the shop we tried had no unit for us, which our own shop's stock cannot change;
+screened: that shop's own words failed our payment policy; shop_ended_talk; we_walked), the
 median gap to the ask in talks we lost, why the kit refused to pay, the market's goods break rate per grade, and the
 buyer's numbers now (plan). Set buyer_plan (any of {buyer_keys}) to win more deals that hold: CAP is the most we pay
 as a share of list; FOOD_MARGIN the shelf life we demand beyond use_within_hours; C_CAP the most we pay for grade C
@@ -201,7 +202,7 @@ def buyer_diag(hours=6):
                 if '"kind": "trade"' in l]
         rows = [r for r in rows if r.get("round") == 3 and r.get("time", "") >= cut]
         end = lambda r: ("deal" if r.get("outcome") == "deal" else "screened" if r.get("screened")
-                         else "none_in_stock" if r.get("end") == "TASK_STATE_REJECTED" and not r.get("asks")
+                         else "other_shop_none_in_stock" if r.get("end") == "TASK_STATE_REJECTED" and not r.get("asks")
                          else "shop_ended_talk" if r.get("end") == "TASK_STATE_REJECTED" else "we_walked"
                          if r.get("end") == "walked" else str(r.get("end") or r.get("outcome")))
         from collections import Counter

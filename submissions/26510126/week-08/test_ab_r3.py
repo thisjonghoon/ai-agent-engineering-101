@@ -48,6 +48,25 @@ def main():
          ab_r3.experiment() is not None and ab_r3.choose("goods")[1] in ("A", "B"), str(ab_r3.experiment()))
     case("an unknown playbook starts nothing", meta_r3.start_ab({"playbook": "nope", "kind": "goods"}, s) is None)
 
+    # a buyer number on trial: half the orders (code_ab_r3.arm) run B; after the trial the halves decide
+    meta_r3.BUYER_TRIAL, meta_r3.BUYER_PLAN = TMP / "buyer_ab_r3.json", TMP / "buyer_plan_r3.json"
+    meta_r3.CODE_CHANGES = TMP / "logs" / "code_changes_r3.jsonl"
+    meta_r3.BUYER_PLAN.write_text(json.dumps({"CAP": 0.85}))
+    meta_r3.BUYER_TRIAL.write_text(json.dumps({"key": "CAP-t", "param": "CAP", "A": 0.85, "B": 0.8,
+                                               "started": time.time() - 4000}))
+    real_window = meta_r3.metrics_r3.window
+    def fake_window(t0, t1, base=None, keep=None):       # arm B (CAP 0.80) closes fewer orders, same surplus
+        b = keep("o-b") if keep else False
+        return {"buyer_surplus_order": 15000, "buyer_close_rate": 0.45 if b else 0.65, "orders": 50}
+    meta_r3.metrics_r3.window = fake_window
+    import code_ab_r3
+    real_arm, code_ab_r3.arm = code_ab_r3.arm, lambda key, o: "B" if o == "o-b" else "A"
+    got = meta_r3.buyer_trial_verdict()
+    code_ab_r3.arm, meta_r3.metrics_r3.window = real_arm, real_window
+    case("a buyer number that gains no surplus and costs closes is not taken", got == {"CAP": (0.85, 0.85)}
+         and json.loads(meta_r3.BUYER_PLAN.read_text())["CAP"] == 0.85 and json.loads(meta_r3.BUYER_TRIAL.read_text()) == {}
+         and "inner loop (buyer A/B)" in meta_r3.CODE_CHANGES.read_text(), str(got))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
 
 

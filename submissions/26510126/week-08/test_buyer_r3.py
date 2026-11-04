@@ -436,6 +436,21 @@ def main():
          got.get("state") == "TASK_STATE_COMPLETED" and got["offers"][-1] == got["asks"][-1] == 27075,
          str((got.get("state"), got.get("offers"), got.get("asks"))))
 
+    # 19. a buyer number on trial: the orders whose hash falls in arm B run its new value, the rest the plan's
+    buyer_r3.PLAN.write_text(json.dumps({"CAP": 0.85}))
+    trial = buyer_r3.PLAN.with_name("buyer_ab_r3.json")
+    trial.write_text(json.dumps({"key": "CAP-t", "param": "CAP", "A": 0.85, "B": 0.8}))
+    ids = [f"o-{i}" for i in range(40)]
+    seen = {}
+    for o in ids:
+        buyer_r3.load_plan(o)
+        seen[o] = buyer_r3.CAP
+    case("half the orders run the number on trial, by the order's hash",
+         all(seen[o] == (0.8 if buyer_r3.code_ab_r3.arm("CAP-t", o) == "B" else 0.85) for o in ids)
+         and 0.8 in seen.values() and 0.85 in seen.values(), str(sorted(set(seen.values()))))
+    trial.write_text("{}")
+    buyer_r3.load_plan("o-1")
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 

@@ -74,7 +74,7 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 \node[model=26mm] (sp4) at (15.8,-11.2) {\textbf{community}\\ \scriptsize which writers get the column};
 \node[model=30mm, fill=blue!3] (gpt) at (6.6,-13.5) {\textbf{reviewer (GPT via Hermes)}\\ \scriptsize keep / trim / reject each};
 \node[model=34mm, fill=blue!15] (mgr) at (10.8,-13.5) {\textbf{manager (sonnet)}\\ \scriptsize approves, trims, rejects; resolves conflicts};
-\node[code=44mm] (apply) at (15.6,-13.5) {\textbf{code}: bounds and one step a cycle, A/B winner (a number or a whole retail playbook), promotions by reward per talk};
+\node[code=44mm] (apply) at (15.6,-13.5) {\textbf{code}: bounds, one step a cycle; every change on A/B (shop: a number or a playbook; buyer: half the orders); promotions};
 \begin{scope}[on background layer]
 \node[team, fit=(sp1)(sp4)(gpt)(apply), label={[font=\scriptsize\bfseries, anchor=south west]north west:INNER LOOP: the tuning team moves numbers inside bounds, every 15 min (meta\_r3 + meta\_team\_r3)}] (metabox) {};
 \end{scope}

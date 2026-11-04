@@ -28,6 +28,8 @@ import time
 from pathlib import Path
 
 import ab_r3
+import code_ab_r3
+import metrics_r3
 import demand_r3
 import harness
 import playbooks_r3
@@ -52,7 +54,9 @@ BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min
           "fresh_premium": (0.0, 0.2, 0.05), "spread_low": (0.5, 0.9, 0.1), "spread_high": (1.1, 1.5, 0.1),
           "sku_depth": (1, 6, 1), "goods_frac": (0.1, 0.8, 0.1), "food_first": (0.0, 1.0, 0.25),
           "goods_age_days": (2, 10, 1), "aged_margin": (0.0, 0.2, 0.03), "window_depth": (1.0, 4.0, 0.5), "order_weight": (0.0, 3.0, 0.5),
-          "model_share": (0.0, 1.0, 0.25), "market_ask": (0.9, 1.3, 0.05),
+          # the seller's haiku negotiator lost to the rule (11/4 10:00, 33 talks: 2,128 margin a talk against 3,207)
+          # and its share kept drawing proposals; it stays off, a measured result rather than a live knob
+          "model_share": (0.0, 0.0, 0.0), "market_ask": (0.9, 1.3, 0.05),
           "surge_max": (1.0, 1.5, 0.05)}
 SETTLED = re.compile(r"\[acp\] settled .* at (\d+), ledger")         # our shop's sale the market settled
 SETTLE_REFUSED = re.compile(r"\[acp\] (settle refused|checkout refused: (?:no |unit ))")  # shop side only
@@ -105,18 +109,8 @@ and a loss of profit percentile costs the most.
 
 Playbooks of real retailers, in our numbers (each sets only the numbers listed):
 {playbooks}
-`sim` replays our own negotiations of the last day under the current strategy and under each playbook, against the
-offers buyers really sent (no model involved): deals, revenue and margin over cost, next to what actually happened.
-Buyers' later offers depend on our counters, which the replay cannot know, so trust it only as far as `fidelity`
-(the share of talks where replaying what we did gives what really happened) and treat it as a reason to test, not to
-switch. A whole playbook can be moved toward over several cycles within the steps; a single number worth checking
-with live buyers can be proposed as an A/B test (below), which code starts when no test is running.
-
-`seller_model` compares the seller's two kinds of negotiation in the same hours: those where a model (haiku) makes
-each turn's call inside the code's floor and ask, and those on the rules alone. model_share is the share the model
-gets; it covers only talks since the model's prompt last changed. Keep model_share at 0.25 or more until the model
-side has 30 talks there; then move it toward the side with more margin per talk, and keep it between 0.25 and 0.75
-while the gap is small, so the comparison keeps running.
+A playbook is tried on live buyers as arm B of the A/B test (below), and a single number worth checking the same
+way; code starts the test when no test is running.
 
 `going_prices` is what each busy category settled for lately as a share of list (the public ledger, last 6 hours),
 and `forum_price_posts` checks the price notes other agents post on the forum against that ledger: their mean gap per
@@ -190,6 +184,12 @@ BUYER_BOUNDS = {"CAP": (0.75, 0.95, 0.05), "FOOD_MARGIN": (1.0, 1.3, 0.05), "C_C
 BUYER_DEFAULTS = {"CAP": 0.9, "FOOD_MARGIN": 1.1, "C_CAP": 0.65, "C_WARRANTY": 6, "MAX_TRIES": 3, "MAX_RAISE": 0.4,
                   "FIRM_GAP": 0.05, "SCOUTS": 3, "CLOSE_GAP": 0.05}
 BUYER_PLAN = HERE / "buyer_plan_r3.json"
+# one buyer number on trial at a time: half the orders (by the order id's hash, as for a code trial) run its new value,
+# and after BUYER_TRIAL_SECS the halves are compared over the same hours on surplus per order, with the close rate as
+# a guard; the winner goes into the plan and both the trial and its result into the ledger both loops read
+BUYER_TRIAL = HERE / "buyer_ab_r3.json"
+BUYER_TRIAL_SECS = 3600
+BUYER_GUARD = 0.2
 ADVICE = HERE / "advice_r3.json"     # notes from the supervisor (Claude, watching for the user): advice, not orders
 
 
@@ -206,6 +206,31 @@ def advice(hours=24, n=3):
 
 
 CODE_CHANGES = HERE / "logs" / "code_changes_r3.jsonl"
+
+
+def buyer_trial_verdict():
+    """Judge the buyer number on trial once it has run BUYER_TRIAL_SECS: {param: (old, kept)} or {}."""
+    t = read_json(BUYER_TRIAL, {})
+    if not t.get("param") or time.time() - t.get("started", time.time()) < BUYER_TRIAL_SECS:
+        return {}
+    t0, t1 = t["started"], time.time()
+    a = metrics_r3.window(t0, t1, keep=lambda o: code_ab_r3.arm(t["key"], o) == "A")
+    b = metrics_r3.window(t0, t1, keep=lambda o: code_ab_r3.arm(t["key"], o) == "B")
+    gain, close = metrics_r3.change("buyer_surplus_order", a, b), metrics_r3.change("buyer_close_rate", a, b)
+    win = t["B"] if gain is not None and gain > 0.03 and (close is None or close > -BUYER_GUARD) else t["A"]
+    plan = dict(BUYER_DEFAULTS, **{k: v for k, v in read_json(BUYER_PLAN, {}).items() if k in BUYER_BOUNDS})
+    plan[t["param"]] = win
+    BUYER_PLAN.write_text(json.dumps(dict(plan, t=time.time()), indent=1), encoding="utf-8")
+    BUYER_TRIAL.write_text("{}", encoding="utf-8")
+    verdict = (f"{'kept' if win == t['B'] else 'not taken'}; surplus/order {a.get('buyer_surplus_order')} -> "
+               f"{b.get('buyer_surplus_order')}, close rate {a.get('buyer_close_rate')} -> {b.get('buyer_close_rate')} "
+               f"({a.get('orders')} vs {b.get('orders')} orders, same hours)")
+    with CODE_CHANGES.open("a", encoding="utf-8") as f:
+        f.write(json.dumps({"t": t0, "commit": "-", "source": "inner loop (buyer A/B)",
+                            "change": f"buyer {t['param']} {t['A']} -> {t['B']} on half the orders",
+                            "evidence": "the buying specialist's proposal", "metric": "buyer_surplus_order",
+                            "after": verdict, "verdict": verdict}, ensure_ascii=False) + "\n")
+    return {t["param"]: (t["A"], win)}
 
 
 def code_changes(n=4):
@@ -493,16 +518,9 @@ def snapshot(since):
         snap["going_prices"] = {k: v.get("h6") or v["h24"] for k, v in top}
         snap["forum_price_posts"] = {"authors_checked": pr.get("authors"),
                                      "far_from_ledger": [c for c in pr.get("forum") or [] if abs(c.get("gap") or 0) >= 0.1]}
-    try:
-        # only talks since the seller model's prompt last changed: older model talks measure a model that is gone
-        hours = max(0.5, min(24.0, (time.time() - MODEL_PROMPT_SINCE) / 3600))
-        snap["seller_model"] = dict(simulate_r3.model_vs_rule(hours), since_prompt_change_h=round(hours, 1))
-    except Exception as e:
-        snap["seller_model"] = {"error": type(e).__name__}
-    try:
-        snap["sim"] = simulate_r3.run(current(), BOUNDS)
-    except Exception as e:                               # the replay is advice; it never stops a cycle
-        snap["sim"] = {"error": type(e).__name__}
+    # the replay of our talks under each playbook (simulate_r3) and the seller-model comparison are no longer shown:
+    # the replay could not know how buyers answer our counters (its fidelity was low), and playbooks are now tried on
+    # live buyers in the A/B test; the negotiator model is off (model_share above)
     return snap
 
 
@@ -608,7 +626,7 @@ async def cycle():
             demand = {}
         plan = dict(BUYER_DEFAULTS, **{k: v for k, v in read_json(BUYER_PLAN, {}).items() if k in BUYER_BOUNDS})
         extra = {"merch": {"demand_top_skus": demand}, "community_text": "Other agents' recent posts:\n" + forum_digest(),
-                 "sales_text": "Retail playbooks (sim scores each):\n" + playbooks_r3.for_prompt()}
+                 "sales_text": "Retail playbooks (each can be arm B of the A/B test):\n" + playbooks_r3.for_prompt()}
         ans = await meta_team_r3.decide(now, cur, plan, hist, after, advice(), BOUNDS, BUYER_BOUNDS,
                                         ", ".join(AB_PARAMS), extra)
     if ans is None:
@@ -620,15 +638,6 @@ async def cycle():
                                 max_chars=60_000)
     new = (ans or {}).get("strategy") if isinstance((ans or {}).get("strategy"), dict) else None
     s = guard(new or {}, cur)
-    # the user chose (11/4) to try the reworked seller model: model_share stays at 0.25 or more until the model side
-    # has 30 talks since its prompt changed (the harness set it to 0 at 09:58 against the prompt's own rule)
-    try:
-        since_h = max(0.5, (time.time() - MODEL_PROMPT_SINCE) / 3600)
-        model_talks = (simulate_r3.model_vs_rule(since_h).get("model") or {}).get("talks", 0)
-    except Exception:
-        model_talks = 0
-    if model_talks < 30 and s.get("model_share", 0) < 0.25:
-        s["model_share"] = 0.25
     # receipts that never settle: the buyer's kit refused to pay (its accept policy: certificate, shelf life, grade,
     # warranty). We cannot see why from the shop, so when most of a busy window does not settle and we offer no
     # warranty, code tries a short one on grade-A goods; the harness sees the result next cycle and may undo it
@@ -659,7 +668,7 @@ async def cycle():
     except Exception as e:
         team_changes = [f"review failed: {type(e).__name__}"]
     bp = (ans or {}).get("buyer_plan")
-    buyer_changed = {}
+    buyer_changed = buyer_trial_verdict()
     if isinstance(bp, dict):                            # the buyer's numbers, clamped to bounds and one step a cycle
         old = dict(BUYER_DEFAULTS, **{k: v for k, v in read_json(BUYER_PLAN, {}).items() if k in BUYER_BOUNDS})
         new = dict(old)
@@ -668,9 +677,12 @@ async def cycle():
             if isinstance(v, (int, float)) and not isinstance(v, bool):
                 v = min(max(v, old[k] - step, lo), old[k] + step, hi)
                 new[k] = int(round(v)) if isinstance(lo, int) and isinstance(hi, int) else round(v, 3)
-        buyer_changed = {k: (old[k], new[k]) for k in new if new[k] != old[k]}
-        if buyer_changed:
-            BUYER_PLAN.write_text(json.dumps(dict(new, t=time.time()), indent=1), encoding="utf-8")
+        wanted = {k: (old[k], new[k]) for k in new if new[k] != old[k]}
+        if wanted and not read_json(BUYER_TRIAL, {}).get("param"):
+            k, (a, b) = next(iter(wanted.items()))       # the first change goes on trial; the rest wait their turn
+            BUYER_TRIAL.write_text(json.dumps({"key": f"{k}-{time.strftime('%m%d%H%M')}", "param": k, "A": a, "B": b,
+                                               "started": time.time()}), encoding="utf-8")
+            buyer_changed = dict(buyer_changed, **{f"trial {k}": (a, b)})
     fw = (ans or {}).get("forum_weights")
     if isinstance(fw, dict):                            # the buyer's post kinds (forum_r3.py), clamped to 0-3
         import forum_r3

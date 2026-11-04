@@ -79,17 +79,28 @@ PLAN = Path(os.environ.get("BUYER_PLAN") or Path(__file__).resolve().parent / "b
 PLAN_KEYS = ("CAP", "FOOD_MARGIN", "C_CAP", "C_WARRANTY", "MAX_TRIES", "MAX_RAISE", "FIRM_GAP", "SCOUTS", "CLOSE_GAP")
 
 
-def load_plan():
+def set_number(k, v):
+    if k in ("FIRM_GAP", "CLOSE_GAP"):
+        setattr(buyer, k, v)
+    else:
+        globals()[k] = int(v) if k in ("MAX_TRIES", "C_WARRANTY", "SCOUTS") else v
+
+
+def load_plan(order_id=None):
+    """The meta-harness's numbers; while one of them is on trial (buyer_ab_r3.json, started by meta_r3), half the
+    orders, by the same hash as a code trial (code_ab_r3.arm), run its new value B, so it is judged over the same hours
+    (11/4: CAP went 0.85 -> 0.80 on thin evidence while 29 of 538 deals had been paid at 0.80-0.85 of list)."""
     try:
         plan = json.loads(PLAN.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
     for k, v in (plan if isinstance(plan, dict) else {}).items():
         if k in PLAN_KEYS and isinstance(v, (int, float)) and not isinstance(v, bool):
-            if k in ("FIRM_GAP", "CLOSE_GAP"):
-                setattr(buyer, k, v)
-            else:
-                globals()[k] = int(v) if k in ("MAX_TRIES", "C_WARRANTY", "SCOUTS") else v
+            set_number(k, v)
+    trial = load(PLAN.with_name("buyer_ab_r3.json"), {})
+    if order_id and isinstance(trial, dict) and trial.get("param") in PLAN_KEYS and \
+            isinstance(trial.get("B"), (int, float)) and code_ab_r3.arm(trial.get("key"), order_id) == "B":
+        set_number(trial["param"], trial["B"])
     return plan
 
 
@@ -366,8 +377,8 @@ def review(result, name, lp, problem):
 
 
 async def main(args, shops, memory, remember):
-    load_plan()
     order = load(args.order, {})
+    load_plan(order.get("order"))
     cat = catalog()
     demand_r3.record_order(order, cat, shops)            # a sample of the hidden demand (demand_r3.py)
     sync_kit_files(memory, remember)

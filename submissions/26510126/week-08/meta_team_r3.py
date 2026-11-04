@@ -38,13 +38,13 @@ ROLES = {
         "title": "head of sales",
         "task": ("You set how the shop prices and haggles: ask and floor as shares of list (goods and food), the "
                  "least margin over cost, how fast it concedes, how many turns it haggles, clearance of food near its "
-                 "date, warranty hours on grade-A goods, endgame floors, and model_share (the share of talks the "
-                 "haiku negotiator runs; the rule beat it so far). The shop's ALL weighs profit 0.5, revenue 0.3, "
+                 "date, warranty hours on grade-A goods, endgame floors, and how far the ask follows the market "
+                 "(market_ask). The shop's ALL weighs profit 0.5, revenue 0.3, "
                  "stars 0.2 as percentiles among shops. You may propose one A/B test of a per-negotiation number and "
                  "a seller-team recruit style."),
         "data": ("minutes", "opens", "deals", "walks", "settled", "settle_refused", "revenue", "price_list", "margin",
                  "profit", "standing", "market_food_price_list", "market_goods_price_list", "going_prices",
-                 "our_reviews", "seller_model", "sim", "ab", "warranty_demand", "rules"),
+                 "our_reviews", "ab", "warranty_demand", "rules"),
         "extra": ('"ab": null or {{"param": "<one of {ab_params}>", "kind": "food" | "goods", "value": <v>}} or '
                   '{{"playbook": "<a playbook name>", "kind": "food" | "goods"}} (a whole playbook against the strategy, on live buyers), '
                   '"recruit": null or {{"ask_delta": <-0.1..0.1>, "floor_delta": <-0.08..0.08>, "step": <0.2..0.7>}}, '

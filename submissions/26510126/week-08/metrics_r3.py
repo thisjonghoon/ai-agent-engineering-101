@@ -12,6 +12,8 @@ window(t0, t1): the fixed metrics a hypothesis may name, from our own logs (code
   shelf_refused_h       payments the kit refused for too little shelf life, per hour
   shop_deals_h          deals our shop closed per hour
   shop_margin_h         (price - cost) of those deals per hour
+  forum_votes_post      net votes per post our buyer wrote in the window (forum.json keeps the newest 100 posts, so
+                        only the last hours can be read; forum votes are 0.3 of the buyer's ALL)
 """
 import json
 import time
@@ -22,7 +24,7 @@ BOARD = HERE / "logs" / "board" / "board-round3.json"
 SHOP_TERMS = {"profit": 0.5, "revenue": 0.3, "stars": 0.2}
 BUYER_TERMS = {"surplus": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}
 METRICS = ("buyer_close_rate", "buyer_surplus_order", "buyer_paid_h", "shelf_refused_h", "shop_deals_h",
-           "shop_margin_h")
+           "shop_margin_h", "forum_votes_post")
 LOWER_IS_BETTER = {"shelf_refused_h"}
 ME = "thisjonghoon"
 
@@ -101,6 +103,13 @@ def window(t0, t1, base=HERE, keep=None):
             refused += 1
     surplus = sum((lists.get(m.get("order")) or 0) - (m.get("price") or 0) for m in paid if lists.get(m.get("order")))
     sold = [x for x in jl(base / "logs" / "talks_r3.jsonl") if x.get("price") and t0 <= x.get("t", 0) < t1]
+    try:
+        posts = json.loads((base / ".market" / "forum.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        posts = []
+    posts = posts if isinstance(posts, list) else posts.get("posts", []) if isinstance(posts, dict) else []
+    ours = [p for p in posts if isinstance(p, dict) and p.get("author") == ME and p.get("role", "buyer") == "buyer"
+            and t0 <= (p.get("ts") or 0) < t1]
     return {
         "buyer_close_rate": round(len(paid) / len(orders), 3) if orders else None,
         "buyer_surplus_order": round(surplus / len(orders)) if orders else None,
@@ -108,6 +117,8 @@ def window(t0, t1, base=HERE, keep=None):
         "shelf_refused_h": round(refused / hours, 1),
         "shop_deals_h": round(len(sold) / hours, 1),
         "shop_margin_h": round(sum(x["price"] - (x.get("cost") or 0) for x in sold) / hours),
+        "forum_votes_post": round(sum((p.get("likes") or 0) - (p.get("dislikes") or 0) for p in ours) / len(ours), 2)
+        if ours else None,
         "orders": len(orders),
     }
 

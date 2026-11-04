@@ -242,6 +242,14 @@ own logs, and is kept in git with its numbers:
   ask at that line (`market_ask`, the team's knob). On the buyer side, 119 talks were lost while the shop's ask was
   inside our limit, 86 of them because the shop ended the talk at a median 4.6% above our last offer (0.79 of list,
   a 21% surplus left for nothing); the buyer now takes such an ask (`CLOSE_GAP`, the team's knob, 5% at first).
+- **One way to change anything (11/4 21:50).** Every change now runs as an A/B over the same hours: a seller number or
+  a whole playbook on half the shop's talks (Thompson sampling), a buyer number or a code change on half the buyer's
+  orders (by a hash of the order id), and a verdict writes the result to the ledger both loops read; the supervisor's
+  own changes go into the same ledger. The buyer's CAP had gone 0.85 -> 0.80 on one cycle's reasoning while 29 of 538
+  deals in 6 h were paid at 0.80-0.85 of list. Taken out: the seller's negotiator model (it lost to the rule, 2,128
+  against 3,207 margin a talk, yet kept drawing proposals) and the replay of our talks under each playbook (it could
+  not know how buyers answer our counters; playbooks are now tried on live buyers). Added: a forum metric (net votes
+  per post), so the outer loop can aim at forum votes, the second-costliest term (0.17 points).
 - **The tests that taught nothing, and the playbooks nobody used.** An A/B of 0.92 against 0.90 of list for food
   ran 20 hours and 4,193 talks without a winner and kept every other test from starting; tests now end as a tie
   after 400 talks an arm or 6 hours. The retail playbooks were text in a prompt (25 of 30 cycles leaned on none);

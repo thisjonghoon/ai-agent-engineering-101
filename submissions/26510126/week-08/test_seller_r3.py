@@ -74,6 +74,7 @@ async def main():
     p = subprocess.Popen([sys.executable, str(HERE / "seller_r3.py"), "--port", str(port)], cwd=HERE,
                          env=dict(os.environ, MARKET_DIR=str(md), AB_DIR=str(md), DEMAND_LOG=str(md / "demand_r3.jsonl"),
                                   SELLER_MODEL_SHARE="0",           # the A2A cases test the rules; the model is stubbed below
+                                  STRATEGY_FILE=str(md / "no-strategy.json"),   # the defaults, not what the meta-harness set
                                   TALKS_LOG=str(md / "talks_r3.jsonl")))
     base = f"http://127.0.0.1:{port}"
     for _ in range(100):
@@ -107,6 +108,7 @@ async def main():
         check("a sold unit is not offered again within 60 s", receipt(t) is None, (t or {}).get("status", {}).get("state"))
         import seller_r3                                # in-process: a buyer that left without cancelling
         seller_r3.TALKS = md / "talks_inproc.jsonl"     # never the live log
+        seller_r3.STRATEGY = md / "no-strategy.json"    # nor the live strategy
         sel = seller_r3.Seller()
         sel.open["gone"] = {"unit": {"unit": "u-x"}, "t": time.time() - seller_r3.OPEN_HOLD - 1}
         sel.open["live"] = {"unit": {"unit": "u-y"}, "t": time.time()}
@@ -180,7 +182,7 @@ async def main():
         sel = seller_r3.Seller()
         unit = dict(UNITS[0])
         mk = lambda: {"unit": unit, "ask": 95000, "floor": 78000, "offers": [70000], "turns": 1, "model_calls": 0}
-        s = dict(seller_r3.strategy(), max_turns=6)
+        s = dict(seller_r3.strategy(), max_turns=6, step=0.4)   # the live strategy file moves step
         async def fake(answer):
             async def ask(prompt, **kw):
                 fake.prompt = prompt
@@ -195,7 +197,8 @@ async def main():
         check("the model's counter is kept between the floor and our last ask, an accept under the floor and a bad "
               "answer go to the rules, and the prompt carries the unit, offers, stock and demand",
               a["price"] == 78000 and b["price"] == 95000 and c is None and d is None and e["price"] == 88000
-              and "[70000]" in fake.prompt and "Our stock of this SKU: 1" in fake.prompt and "Demand for it" in fake.prompt,
+              and "[70000]" in fake.prompt and "Our stock of this SKU: 1" in fake.prompt and "Demand for it" in fake.prompt
+              and "fixed rule would counter at 85000" in fake.prompt,
               [a, b, c, d, e])
         await seller_r3.MODEL_SLOTS.acquire(); await seller_r3.MODEL_SLOTS.acquire(); await seller_r3.MODEL_SLOTS.acquire()
         busy = await fake({"why": "x", "action": "counter", "price": 90000})

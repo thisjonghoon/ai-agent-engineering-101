@@ -62,7 +62,7 @@ HERE = Path(__file__).resolve().parent
 NAME = "thisjonghoon"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no stock: the week-07 items
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", HERE / ".market"))
-STRATEGY = HERE / "strategy_r3.json"
+STRATEGY = Path(os.environ.get("STRATEGY_FILE") or HERE / "strategy_r3.json")   # tests: the defaults, not the live file
 DEFAULTS = {"ask_frac": 0.95, "floor_frac": 0.78, "min_margin": 0.10, "step": 0.4,
             "clear_hours": 6, "clear_frac": 0.6, "warranty_hours": 0, "max_turns": 6,
             "endgame_hours": 24, "endgame_frac": 1.0, "final_hours": 6, "final_frac": 0.6,
@@ -82,10 +82,39 @@ Unit: {name} ({kind}), grade {grade}, {life}. List price {lp}, our cost {cost}.
 Our floor is {floor} (never below it); our last ask was {ask}. The buyer's offers so far, oldest first: {offers}.
 Turns left before we must walk away: {left}. Our stock of this SKU: {stock}. Demand for it lately: {demand}.
 What the market paid lately (public ledger): {market}.
+Our shop's fixed rule would {rule_move} here. {record} Treat the floor as a hard limit, not a target: beat the rule,
+do not undercut it. Counter at or above the rule's counter unless the buyer has shown it will not move and few turns
+are left; accept when the offer is at least what the rule would take.
 Either accept the last offer ({offer}) or counter with a whole number from {lo} to {hi}. A counter far above the offer
 may lose the buyer; accepting too early leaves money on the table.
 Answer with JSON only: {{"why": "<at most twelve words>", "action": "accept" or "counter", "price": <your counter>}}"""
 DEMAND = {"t": 0, "sku": {}}
+RECORD = {"t": 0, "text": ""}
+
+
+def record_line():
+    """How the rule's talks and the model's talks did in the last 24 h (talks_r3.jsonl, cached 10 min): the share
+    that sold and the median price over the floor. On 11/4 the model sold 36% at 1.03x the floor against the rule's
+    43% at 1.11x: it gave margin away early without saving sales, so the model now sees both numbers each turn."""
+    if time.time() - RECORD["t"] < 600:
+        return RECORD["text"]
+    out = {}
+    try:
+        cut = time.time() - 24 * 3600
+        for line in TALKS.read_text(encoding="utf-8").splitlines()[-20000:]:
+            t = json.loads(line)
+            if t.get("t", 0) >= cut and t.get("event") in ("deal", "walk") and t.get("floor"):
+                o = out.setdefault("model" if t.get("model_on") else "rule", [0, []])
+                o[0] += 1
+                if t["event"] == "deal" and t.get("price"):
+                    o[1].append(t["price"] / t["floor"])
+    except (OSError, ValueError, KeyError, TypeError):
+        out = {}
+    part = lambda k: (f"{k} talks that got an offer sold {len(out[k][1]) / out[k][0]:.0%} at "
+                      f"{sorted(out[k][1])[len(out[k][1]) // 2]:.2f}x the floor (median)") if out.get(k) and out[k][1] else None
+    parts = [x for x in (part("rule"), part("model")) if x]
+    RECORD.update(t=time.time(), text=("Last 24 h: " + "; ".join(parts) + ".") if parts else "")
+    return RECORD["text"]
 
 
 def demand_of(sku):
@@ -410,11 +439,16 @@ class Seller(AgentExecutor):
         life = f"{hours:.0f} h of shelf life left" if u.get("kind") == "food" and hours is not None else \
             f"in stock {(time.time() - (u.get('supplied_at') or time.time())) / 3600:.0f} h"
         stock = sum(x.get("sku") == u["sku"] for x in read_json(MARKET_DIR / "inventory.json", {}).get("units", []))
+        mid = (hi + deal["floor"]) / 2
+        if offer >= deal["floor"] and (len(deal["offers"]) >= 2 or offer >= mid):
+            rule_move = f"accept the offer {offer}"
+        else:
+            rule_move = f"counter at {max(deal['floor'], int(round(hi - s['step'] * (hi - offer))))}"
         prompt = SELL_PROMPT.format(
             name=harness.clip(u.get("name"), 60), kind=u.get("kind"), grade=grade, life=life, lp=u["list_price"],
             cost=u["cost"], floor=deal["floor"], ask=hi, offers=deal["offers"][-6:], offer=offer,
             left=s["max_turns"] - deal["turns"], stock=stock, demand=demand_of(u["sku"]), lo=lo, hi=max(lo, hi),
-            market=prices_r3.line(MARKET_DIR, u["sku"], u.get("category")))
+            market=prices_r3.line(MARKET_DIR, u["sku"], u.get("category")), rule_move=rule_move, record=record_line())
         deal["model_calls"] += 1
         async with MODEL_SLOTS:
             ans = await harness.ask(prompt, tries=1, timeout=MODEL_TIMEOUT, max_chars=4000)

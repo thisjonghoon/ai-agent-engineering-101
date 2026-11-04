@@ -290,7 +290,14 @@ def candidates(order, shops, cat, memory, claims):
             limit = min(order["budget"], int(lp * CAP))
             p_deal = 1.0 if limit >= expect else (limit / expect) ** 4
             surplus = (lp - min(expect, limit)) * p_deal
-            short = order.get("kind") == "food" and need and info.get("shelf_hours") and \
+            if code_ab_r3.on("6796c7e893b6", order.get("order")):
+                # 88 of 826 payments were refused (25620027 22 of 48, jiseokkk 21 of 79): an agreed deal the kit refuses
+                # is an order with no sale, so a shop that gets paid ranks above one that is only quoted lower
+                pays = [m for m in memory if m.get("kind") == "payment" and m.get("round") == 3 and m.get("shop") == s["name"]]
+                if len(pays) >= 5:
+                    paid = sum(1 for m in pays if m.get("paid"))
+                    surplus *= (paid + 1) / (len(pays) + 1)
+            short =order.get("kind") == "food" and need and info.get("shelf_hours") and \
                 info["shelf_hours"] * B_SHARE < need * FOOD_MARGIN
             if short:
                 surplus *= 0.3                          # even a grade-B unit may not last: a last resort

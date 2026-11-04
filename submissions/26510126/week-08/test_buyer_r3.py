@@ -381,6 +381,18 @@ def main():
          before == ["H", "J"] and after == ["J", "H"] and buyer_r3.avoided(buyer_r3.avoid_load(), "H", "GH", of) is None,
          f"{before} then {after}")
 
+    # 16c. a shop whose agreed deals the kit keeps refusing ranks behind one that gets paid, even when quoted lower
+    buyer_r3.AVOID.write_text("{}")
+    shop_p = [{"name": "K", "url": "http://K", "offers": [{"sku": "GK", "qty": 1}]},
+              {"name": "L", "url": "http://L", "offers": [{"sku": "GK", "qty": 1}]}]
+    pay = lambda s, ok: {"kind": "payment", "round": 3, "shop": s, "paid": ok}
+    mem_p = [pay("K", i < 2) for i in range(6)] + [pay("L", True) for _ in range(6)]
+    cat_p = {"GK": {"list_price": 100000}}
+    op = {"kind": "goods", "budget": 200000, "acceptable": ["GK"]}
+    got = [c[1]["name"] for c in buyer_r3.candidates(op, shop_p, cat_p, mem_p, {"K": (0, 0, 0.5), "L": (0, 0, 0.6)})]
+    case("a shop that is refused 4 of 6 payments ranks behind a cheaper-quoted-by-share one that is always paid",
+         got == ["L", "K"], str(got))
+
     # 17. a refused payment for short shelf life: that pair waits only for orders asking more hours than it shipped
     buyer_r3.avoid_add("S", "GS", "short shelf life", 3600, hours=200.0)
     av = buyer_r3.avoid_load()

@@ -3,6 +3,10 @@
   {
    "t": 1793754308.9727292,
    "text": "1) buyer.talks.none_in_stock counts OTHER shops answering our buyer 'none in stock'; it is not our shop's stock. Our sku_depth/window_depth do not change it; raise them only for our own stock-outs (our shop's lost asks in demand). 2) FOOD_MARGIN: the 57 shelf-life refusals were mostly before the buyer began reading the shop's stated hours and leaving before a deal (11/3 21:20); in our last 60 payments only 2 were refused for shelf life. Each step up asks shops for longer shelf life than the order needs, so fewer shops can serve it. 1.1-1.15 looks enough; raise it only if shelf-life refusals in payments rise again."
+  },
+  {
+   "t": 1793757222.297131,
+   "text": "Revenue is our weakest shop term (0.545) and you found every lever flat for 10 cycles. The market's revenue is ~85% furniture/bedding (24 h ledger: 622M of 730M), and our max_list 80000 and goods_frac 0.25 keep us out of most of it. The ledger's last 24 h of 가구/침구 settles by list price: under 80k 1508 sold at 0.74 of list, broke 3.9%; 80-150k 636 at 0.75, broke 3.6%; 150-450k 1944 at 0.75, broke 3.3%. Dearer units sell as often, at the same share of list, and break no more. Suggest one step at a time: max_list up (e.g. 130000), goods_frac up one step, keeping reserve_cash; then watch sell-through of the dearer units, storage days and refunds for two or three cycles before the next step. Your call."
   }
  ]
 }

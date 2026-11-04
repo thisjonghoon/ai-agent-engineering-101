@@ -180,4 +180,18 @@ case("a SKU the market surged to 1.47x is not bought; one at 1.02x still is", "S
 # a dear SKU (list 150,000 or more) is bought dear_depth units deep (11/4: the top shops sold 470-575 such units in 6 h)
 assert "dear_depth" in restock_r3.DEFAULTS
 case("dear goods get dear_depth units a line", restock_r3.DEFAULTS["dear_depth"] >= 2 and restock_r3.DEFAULTS["lines"] >= 14)
+# a goods category whose reference is above max_list but within 2x (sofa/chair ~1.4M-2M at max_list 1.4M) is stocked
+cat4 = dict(cat3, SD0={"category": "G>dear", "kind": "goods", "list_price": 120000, "name": "dear"})
+(md / "catalog.json").write_text(json.dumps(cat4), encoding="utf-8")
+(md / "demand.json").write_text(json.dumps(demand + [{"item": "dear", "category": "G>dear", "kind": "goods", "median_price": 120000}]),
+                                encoding="utf-8")
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 4_000_000, "units": []}), encoding="utf-8")
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {}}),
+                                       encoding="utf-8")
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+res = json.loads(out.getvalue().splitlines()[-1])
+case("goods at 120,000 (max_list 80,000, under 2x) are stocked by the category loop", "SD0" in [b["sku"] for b in res["buy"]],
+     [b["sku"] for b in res["buy"]])
 print(f"\n{sum(ok)}/{len(ok)} passed")

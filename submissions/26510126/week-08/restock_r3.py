@@ -212,7 +212,7 @@ def main():
         for d in demand:
             # the SKU to stock first: nearest the reference price our orders point to, else the category's median
             cat, med = d["category"], ref.get(d["category"]) or d["median_price"]
-            if d["kind"] == "goods" and med > s["max_list"]:
+            if d["kind"] == "goods" and med > s["max_list"] * 2:     # the same 2x bound as the SKU loop below: 14 of 127 goods orders point at 1.4M+
                 continue
             ok_food = lambda c: d["kind"] != "food" or score[cat] >= 3 or (c.get("shelf_hours") or 0) >= s["min_shelf_hours"]
             skus = [c for c in by_cat.get(cat, []) if c["list_price"] <= max(s["max_list"], med) and ok_food(c)]

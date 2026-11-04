@@ -47,6 +47,7 @@ MIN_CLAIMS = 10
 MAX_REFS = 10
 FORMAT_EVERY = 1200  # seconds before a drawn kind may follow when our own deals give nothing new
 PLAN = HERE / "forum_plan_r3.json"
+VOTES = Path(os.environ.get("FORUM_VOTES") or HERE / "logs" / "forum_votes_r3.json")   # votes per post, kept after forum.json (the last 100 posts) drops them
 STYLE = os.environ.get("FORUM_STYLE", "1") != "0"     # tests set FORUM_STYLE=0: no model call
 VOICE = "장보기 레이더"
 SERIES = {"our_deals": "[직접 사봤습니다]", "best_value": "[오늘의 득템 지도]", "freshness": "[신선도 리포트]",
@@ -292,19 +293,40 @@ def plan():
     return {k: max(0.0, float(w.get(k, 1.0))) if isinstance(w.get(k, 1.0), (int, float)) else 1.0 for k in FORMATS}
 
 
-def stats(forum, memory):
-    """Per kind: our posts and the mean votes they got, next to the market's mean for buyer posts (from forum.json)."""
-    kind_of = {m.get("post"): m.get("format", "our_deals") for m in memory if m.get("kind") == "forum"}
-    votes = lambda p: (p.get("likes") or 0) - (p.get("dislikes") or 0)
-    by = defaultdict(list)
-    others = []
+def track(forum, memory, path=None):
+    """Add what forum.json shows now to the vote record: for each Round 3 buyer post, its latest votes, and for ours
+    the kind it was (matched by its text to memory). forum.json holds only the last 100 posts, so without this record
+    the votes of our older posts were lost to the meta-harness (11/4: one of 45 posts still visible)."""
+    path = path or VOTES
+    try:
+        rec = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        rec = {"ours": {}, "others": {}}
+    kind_of = {m.get("post"): m.get("format") or "our_deals" for m in memory if m.get("kind") == "forum"}
     for p in forum if isinstance(forum, list) else []:
-        if p.get("round") != 3 or p.get("role") != "buyer":
+        if p.get("round") != 3 or p.get("role") != "buyer" or p.get("id") is None:
             continue
-        if p.get("owner") == "thisjonghoon" and p.get("text") in kind_of:
-            by[kind_of[p["text"]]].append(votes(p))
-        elif p.get("owner") != "thisjonghoon":
-            others.append(votes(p))
+        v = (p.get("likes") or 0) - (p.get("dislikes") or 0)
+        if p.get("owner") == "thisjonghoon":
+            rec["ours"][str(p["id"])] = {"kind": kind_of.get(p.get("text"), "our_deals"), "votes": v}
+        else:
+            rec["others"][str(p["id"])] = v
+    try:
+        path.parent.mkdir(exist_ok=True)
+        path.write_text(json.dumps(rec, ensure_ascii=False), encoding="utf-8")
+    except OSError:
+        pass
+    return rec
+
+
+def stats(forum, memory, path=None):
+    """Per kind: our posts and the mean votes they got, next to the market's mean for buyer posts, over every post the
+    vote record has seen (track), not only the 100 forum.json shows now."""
+    rec = track(forum, memory, path)
+    by = defaultdict(list)
+    for x in rec["ours"].values():
+        by[x["kind"]].append(x["votes"])
+    others = list(rec["others"].values())
     out = {k: {"posts": len(v), "mean_votes": round(sum(v) / len(v), 2)} for k, v in by.items()}
     out["market_buyer_posts"] = {"posts": len(others), "mean_votes": round(sum(others) / len(others), 2) if others else None}
     return out
@@ -332,6 +354,10 @@ def maybe_post(memory):
     """Queue one forum note when there is something new and the last one is at least EVERY seconds old; with nothing
     new from our own deals for DIGEST_EVERY, a claim check from the ledger."""
     posts = [m for m in memory if m.get("kind") == "forum"]
+    try:                                               # every order: keep the votes before forum.json drops them
+        track(json.loads((MD / "forum.json").read_text(encoding="utf-8")), memory)
+    except (OSError, ValueError):
+        pass
     if posts and time.time() - posts[-1].get("t", 0) < EVERY:
         return None
     last = posts[-1].get("format") if posts else None

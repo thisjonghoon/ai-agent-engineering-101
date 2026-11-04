@@ -29,6 +29,7 @@ for f in ("buyer.py", "buyer_r3.py", "forum_r3.py", "review_r3.py", "market_buye
 MD = TMP / ".market"
 MD.mkdir()
 os.environ["MARKET_DIR"] = str(MD)
+os.environ["FORUM_VOTES"] = str(MD / "forum_votes.json")
 os.environ["FORUM_STYLE"] = "0"                 # forum posts: the plain facts, no model call
 sys.path.insert(0, str(TMP))
 os.chdir(TMP)

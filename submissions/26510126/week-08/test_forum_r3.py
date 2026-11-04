@@ -61,9 +61,15 @@ def main():
     forum = [{"round": 3, "role": "buyer", "owner": "thisjonghoon", "text": "P1", "likes": 5, "dislikes": 1},
              {"round": 3, "role": "buyer", "owner": "thisjonghoon", "text": "P2", "likes": 7},
              {"round": 3, "role": "buyer", "owner": "other", "text": "Q", "likes": 2}]
-    st = forum_r3.stats(forum, mem)
+    forum = [dict(x, id=i) for i, x in enumerate(forum)]
+    st = forum_r3.stats(forum, mem, md / "votes.json")
     check("votes per kind of ours against the market's buyer posts", st["fun"] == {"posts": 1, "mean_votes": 4.0}
           and st["our_deals"]["mean_votes"] == 7.0 and st["market_buyer_posts"]["mean_votes"] == 2.0, st)
+    later = [dict(forum[0], likes=9, dislikes=0)]           # the other posts have left forum.json
+    st2 = forum_r3.stats(later, mem, md / "votes.json")
+    check("votes are kept after forum.json drops a post, and updated while it still shows",
+          st2["fun"] == {"posts": 1, "mean_votes": 9.0} and st2["our_deals"]["mean_votes"] == 7.0
+          and st2["market_buyer_posts"]["posts"] == 1, st2)
     facts = "Bargain: 호두 for 28% of list at Afford Shop (#2133465), 47 settles."
     fake = lambda post: (lambda *a, **k: type("R", (), {"stdout": json.dumps({"post": post}).encode()})())
     forum_r3.STYLE = True

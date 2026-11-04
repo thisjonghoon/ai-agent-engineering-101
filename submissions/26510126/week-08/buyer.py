@@ -45,6 +45,12 @@ Pay as little as you can, but a deal within your budget is better than no deal.
 Answer with one JSON object and nothing else ("why": your reason in at most twelve words):
 {{"why": "<reason>", "action": "offer" | "walk", "price": <integer>}}"""
 
+PLAN = """You are a buyer about to haggle for a {item} with a shop. Your budget, the most you may ever pay, is {budget};
+the shop does not know it. {memory}{quote}The shop asks {ask}.
+Plan the whole haggle at once: where your first offer goes and the most you will pay in the end. Code then makes the
+offers, conceding a set share of the gap each turn, and takes any ask at or under your most.
+Answer with one JSON object and nothing else ("why": at most twelve words):
+{{"why": "<reason>", "open": <integer>, "most": <integer>}}"""
 PATIENCE = """Shops have a lowest price they will accept and may end the talk after a few low offers in a row,
 so raise your offers steadily instead of repeating low ones.
 """
@@ -147,7 +153,8 @@ def as_int(value):
 FIRM_GAP = 0.05      # take an ask the shop held twice when it is within this share of our offer (buyer_plan_r3.json)
 
 
-async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFFERS, opening=None, screen=None):
+async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFFERS, opening=None, screen=None,
+               plan=False):
     """Negotiate one item. `memory` is what market_buyer.py remembers about this shop (empty in week 6).
     `max_raise` (market_buyer.py only): raise at most this share of the gap between our last offer and the ask.
     `opening` (Round 3): the first message, e.g. "I want to buy <name> (<sku>)"; default "I want to buy a <item>".
@@ -192,6 +199,25 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
                 # offers ran out; a firm ask within 3% of our offer, or our last chance, is taken if the budget allows
                 log("GUARD", f"ask {ask} {'held twice' if firm else 'on our last offer'} and within budget, taking it")
                 offer = ask
+            elif plan and ask is not None:
+                # plan mode (a fast team member, 11/4): one model call fixes the opening and the most we pay, code
+                # concedes after that; an order took 36 s, 21 of them in per-offer model calls
+                if n == 1 or "most" not in result:
+                    p = await harness.ask(PLAN.format(item=item, budget=budget, memory=memory, ask=ask,
+                                                      quote=""), max_chars=8000) or {}
+                    o, most = as_int(p.get("open")), as_int(p.get("most"))
+                    most = min(most if most else budget, budget)
+                    result["most"] = most
+                    log("THINK", f"{harness.clip(str(p.get('why') or ''), 120)} -> plan open {o} most {most}")
+                    offer = min(o if o else int(most * 0.8), most, ask)
+                elif ask <= result["most"]:
+                    offer = ask
+                    log("GUARD", f"ask {ask} within our planned most {result['most']}, taking it")
+                else:
+                    gap = ask - (last_offer or 0)
+                    offer = min(result["most"], (last_offer or 0) + max(1, int((max_raise or 0.4) * gap)))
+                if last_offer is not None and offer < last_offer:
+                    offer = last_offer
             else:
                 answer = await harness.ask(PROMPT.format(
                     item=item, budget=budget, memory=memory, history="\n".join(history[:-1]) or "(nothing yet)",

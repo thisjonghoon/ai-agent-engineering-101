@@ -36,6 +36,7 @@ DEFAULT = {
         {"id": "b-balanced", "rank": "lead", "style": {"OPEN": "p25"}},
         {"id": "b-patient", "rank": "senior", "style": {"MAX_RAISE": 0.25, "FIRM_GAP": 0.02, "OPEN": "low"}},
         {"id": "b-closer", "rank": "junior", "style": {"MAX_RAISE": 0.6, "FIRM_GAP": 0.08, "OPEN": "median"}},
+        {"id": "b-fast", "rank": "junior", "style": {"PLAN": 1, "MAX_RAISE": 0.4, "OPEN": "p25"}},
     ],
     "seller": [
         {"id": "s-steady", "rank": "lead", "style": {}},
@@ -89,6 +90,8 @@ def clamp(side, style):
     for k, v in (style or {}).items():
         if k == "OPEN" and side == "buyer" and v in OPENINGS:
             out[k] = v
+        elif k == "PLAN" and side == "buyer":
+            out[k] = 1 if v else 0
         elif k in BOUNDS[side] and isinstance(v, (int, float)) and not isinstance(v, bool):
             lo, hi, _ = BOUNDS[side][k]
             out[k] = round(min(max(v, lo), hi), 3)

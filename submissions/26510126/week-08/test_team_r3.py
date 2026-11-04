@@ -32,7 +32,7 @@ ch = team_r3.review("buyer", recs, now=1e12 + 1)
 r = {m["id"]: m["rank"] for m in team_r3.load()["buyer"]}
 check("the best earner is promoted to lead and a junior far behind after its trial is replaced by a recruit",
       r.get("b-patient") == "lead" and r.get("b-balanced") == "senior" and "b-closer" not in r
-      and any("replaced" in c for c in ch) and len(team_r3.load()["buyer"]) == 3, ch)
+      and any("replaced" in c for c in ch) and len(team_r3.load()["buyer"]) == len(team_r3.DEFAULT["buyer"]), ch)
 recs2 = {m["id"]: [(1e12 + 2, 500)] * 5 for m in team_r3.load()["seller"]}
 ch2 = team_r3.review("seller", recs2, recruit={"ask_delta": 0.5}, now=1e12 + 3)
 check("members with too few talks are not ranked", ch2 == [], ch2)

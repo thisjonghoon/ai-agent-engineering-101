@@ -6,7 +6,9 @@
    "style": {
     "OPEN": "p25"
    },
-   "joined": 1793761758.8435788
+   "joined": 1793761758.8435788,
+   "talks": 17,
+   "reward": 7368.7059
   },
   {
    "id": "b-patient",
@@ -16,7 +18,9 @@
     "FIRM_GAP": 0.02,
     "OPEN": "low"
    },
-   "joined": 1793761758.8435788
+   "joined": 1793761758.8435788,
+   "talks": 4,
+   "reward": 27586.75
   },
   {
    "id": "b-closer",
@@ -26,25 +30,41 @@
     "FIRM_GAP": 0.08,
     "OPEN": "median"
    },
-   "joined": 1793761758.8435788
+   "joined": 1793761758.8435788,
+   "talks": 1,
+   "reward": 8340.0
+  },
+  {
+   "id": "b-fast",
+   "rank": "junior",
+   "style": {
+    "PLAN": 1,
+    "MAX_RAISE": 0.4,
+    "OPEN": "p25"
+   },
+   "joined": 1793763190.4066088
   }
  ],
  "seller": [
   {
    "id": "s-steady",
-   "rank": "lead",
+   "rank": "senior",
    "style": {},
-   "joined": 1793761758.8435788
+   "joined": 1793761758.8435788,
+   "talks": 41,
+   "reward": 0.1828
   },
   {
    "id": "s-premium",
-   "rank": "senior",
+   "rank": "lead",
    "style": {
     "ask_delta": 0.06,
     "floor_delta": 0.02,
     "step": 0.2
    },
-   "joined": 1793761758.8435788
+   "joined": 1793761758.8435788,
+   "talks": 21,
+   "reward": 0.2028
   },
   {
    "id": "s-volume",
@@ -54,8 +74,23 @@
     "floor_delta": -0.03,
     "step": 0.6
    },
-   "joined": 1793761758.8435788
+   "joined": 1793761758.8435788,
+   "talks": 8,
+   "reward": 0.145
   }
  ],
- "changes": []
+ "changes": [
+  {
+   "t": 1793762737,
+   "change": "seller s-premium: senior -> lead (0.2028 per talk over 21)"
+  },
+  {
+   "t": 1793762737,
+   "change": "seller s-steady: lead -> senior (0.1828 per talk over 41)"
+  },
+  {
+   "t": 1793763190,
+   "change": "buyer b-fast joined as junior: plans the haggle with one model call, code concedes"
+  }
+ ]
 }

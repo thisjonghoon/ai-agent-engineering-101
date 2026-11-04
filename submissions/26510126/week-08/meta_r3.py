@@ -261,7 +261,10 @@ def team_records():
             if r.get("member"):
                 t = time.mktime(time.strptime(r["time"], "%Y-%m-%d %H:%M:%S"))
                 v = (r["list_price"] - r["price"]) if r.get("outcome") == "deal" and r.get("price") else 0
-                out["buyer"].setdefault(r["member"], []).append((t, v))
+                # surplus per minute of talk: orders come one at a time, so a faster member serves more of them
+                v = v * 60 / max(10.0, r["secs"]) if isinstance(r.get("secs"), (int, float)) else None
+                if v is not None:
+                    out["buyer"].setdefault(r["member"], []).append((t, v))
         for l in simulate_r3.TALKS.read_text(encoding="utf-8").splitlines()[-30000:]:
             if '"member"' not in l:
                 continue

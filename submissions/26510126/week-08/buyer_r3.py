@@ -59,6 +59,7 @@ MAX_TRIES = 3        # shops tried per order when a negotiation ends without a d
 RETRY_UNTIL = 150    # seconds into the order after which no new shop is tried (the kit stops the buyer at 300 s)
 MAX_RAISE = 0.4      # each offer moves at most this share of the gap to the shop's ask
 SCOUTS = 3           # buyer team: shops asked for a first quote at once before one negotiation starts
+SCOUT_WAIT = 6       # seconds the scouts wait for quotes; a slower shop is left out of this order
 # The meta-harness tunes these numbers from how our buyer did (meta_r3.py BUYER_BOUNDS, the user on 11/4: the
 # harness should make such fixes, not a person); each run reads its plan, the defaults above when it has none.
 PLAN = Path(os.environ.get("BUYER_PLAN") or Path(__file__).resolve().parent / "buyer_plan_r3.json")
@@ -397,7 +398,13 @@ async def team(order, cat, cands):
             seen.add(c[1]["name"])
         if len(picked) >= SCOUTS:
             break
-    quotes = await asyncio.gather(*(scout(order, cat, c[1], c[2], c[3]) for c in picked))
+    # wait at most SCOUT_WAIT seconds: the slowest shop set the pace (9.5 s median, one took 27 s)
+    tasks = [asyncio.create_task(scout(order, cat, c[1], c[2], c[3])) for c in picked]
+    done, _ = await asyncio.wait(tasks, timeout=SCOUT_WAIT)
+    quotes = [t.result() if t in done else {"state": "slow"} for t in tasks]
+    for t in tasks:
+        if t not in done:
+            t.cancel()
     dropped, quoted = set(), []
     for c, q in zip(picked, quotes):
         why = screen_for(order, c[3])(q.get("text") or "") if q["state"] == "TASK_STATE_INPUT_REQUIRED" else None
@@ -437,16 +444,18 @@ async def attempt(order, cat, s, off, lp, note, remember):
             f"Our record with this shop: {note}.\n"
             f"What the market paid lately (public ledger): "
             f"{prices_r3.line(MD, sku, (cat.get(sku) or {}).get('category'))}.\n")
+    t0 = time.time()
     try:
         log("TEAM", f"{member or 'no team'} haggles this one {json.dumps(style)}")
         result = await buyer.shop(s["url"], name, limit, memory=hint, max_raise=style.get("MAX_RAISE", MAX_RAISE),
-                                  max_offers=MAX_OFFERS,
+                                  max_offers=MAX_OFFERS, plan=bool(style.get("PLAN")),
                                   opening=opening, screen=screen_for(order, lp))
     except Exception as e:
         log("ERROR", f"trade with {s['name']} failed: {e!r}")
         result = {"state": "error", "asks": [], "offers": [], "error": type(e).__name__}
 
     buyer.FIRM_GAP = firm_gap
+    secs = round(time.time() - t0, 1)
     receipt = result.get("receipt")
     deal = result.get("state") == "TASK_STATE_COMPLETED"
     agreed = result["offers"][-1] if deal and result.get("offers") else None
@@ -460,7 +469,7 @@ async def attempt(order, cat, s, off, lp, note, remember):
               "outcome": "bad_receipt" if problem else "deal" if deal else "no_deal", "end": result.get("state"),
               "price": agreed, "asks": result.get("asks", []), "offers": result.get("offers", []),
               "receipt": receipt, "problem": problem, "stars": stars, "screened": result.get("screened"),
-              "member": member})
+              "member": member, "secs": secs})
     return {"shop": s["url"], "receipt": receipt if deal and not problem else None, "stars": stars,
             "review": text, "accept": accept_policy(order, receipt, lp),
             "_quick": not result.get("asks") and result.get("state") in ("TASK_STATE_REJECTED", "error")}

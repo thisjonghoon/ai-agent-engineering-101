@@ -156,6 +156,10 @@ against the market's mean for buyer posts. Set forum_weights (0-3 per kind, a ki
 earns votes, keep some weight on kinds with few posts so they get tried, and propose new kinds people would value in
 forum_ideas (only facts we can back with refs; no general news).
 
+Notes from the supervisor who watches this harness for the user (advice with evidence, not orders; weigh them, and
+say in reason what you did with each):
+{advice}
+
 Last versions, oldest first (each with how it did while it ran; older ones show only what changed and the key results):
 {history}
 
@@ -173,6 +177,18 @@ BUYER_BOUNDS = {"CAP": (0.75, 0.95, 0.05), "FOOD_MARGIN": (1.0, 1.3, 0.05), "C_C
 BUYER_DEFAULTS = {"CAP": 0.9, "FOOD_MARGIN": 1.1, "C_CAP": 0.65, "C_WARRANTY": 6, "MAX_TRIES": 3, "MAX_RAISE": 0.4,
                   "FIRM_GAP": 0.05}
 BUYER_PLAN = HERE / "buyer_plan_r3.json"
+ADVICE = HERE / "advice_r3.json"     # notes from the supervisor (Claude, watching for the user): advice, not orders
+
+
+def advice(hours=24, n=3):
+    """The supervisor's latest notes of the last `hours`, newest last, or "(none)". The user (11/4): the harness runs
+    seller and buyer; the supervisor only stops bad choices and, when loosening something looks better after watching,
+    says so here with its evidence. The harness weighs a note like any other evidence and may decline it."""
+    notes = read_json(ADVICE, {}).get("notes") or []
+    cut = time.time() - hours * 3600
+    notes = [x for x in notes if isinstance(x, dict) and x.get("t", 0) >= cut and isinstance(x.get("text"), str)][-n:]
+    return "\n".join(f"- {time.strftime('%m/%d %H:%M', time.localtime(x['t']))}: {x['text'][:600]}" for x in notes) \
+        or "(none)"
 
 
 def buyer_diag(hours=6):
@@ -504,7 +520,7 @@ async def cycle():
     # other agents' text enters only clipped (forum_digest: 30 posts x 220 characters, reviews x 100); history_lines
     # keeps the history near 30,000 characters
     ans = await harness.ask(PROMPT.format(bounds=bounds, now=json.dumps(now, ensure_ascii=False), history=shown or "(none)",
-                                          forum=forum_digest(), buyer_keys=", ".join(BUYER_BOUNDS),
+                                          forum=forum_digest(), buyer_keys=", ".join(BUYER_BOUNDS), advice=advice(),
                                           buyer_bounds=json.dumps(BUYER_BOUNDS),
                                           playbooks=playbooks_r3.for_prompt(), ab_params=", ".join(AB_PARAMS)),
                             max_chars=60_000)

@@ -45,7 +45,7 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 \end{scope}
 
 % ================= buyer (right)
-\node[code=48mm] (scouts) at (21.5,-1.9) {\textbf{scouts}: ask up to 5 shops for a quote at once, drop out-of-stock or off-policy};
+\node[code=66mm, inner sep=2pt] (scouts) at (21.5,-1.9) {\textbf{scouts}: up to 5 shops quote at once, a second wave if all are out; drop out-of-stock or off-policy, and pairs that failed us wait};
 \node[member] (b1) at (19.4,-4.3) {\textbf{lead} 60\%\\ balanced};
 \node[member] (b2) at (21.5,-4.3) {\textbf{senior} 25\%\\ patient};
 \node[member] (b3) at (23.6,-4.3) {\textbf{junior} 15\%\\ closer};
@@ -60,6 +60,9 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 
 % ================= forum writers (centre right)
 \node[model=50mm] (forum) at (13,-3.3) {\textbf{forum column} (Jangbogi Radar): 8 writers, one per kind (deals, weather, haggle meter, freshness, claims ...)\\ \scriptsize facts by code from the ledger; haiku writers, a GPT editor per draft, every number checked by code; \texttt{agent-data} JSON line};
+
+% ================= A/B inside the shop (centre left)
+\node[code=96mm, font=\scriptsize, minimum height=6mm, inner sep=2pt] (ab) at (12.9,-7.5) {\textbf{A/B inside the shop}: each talk draws value A or B at the same hour (Thompson sampling); code keeps the winner at $p \ge 0.95$ after 30 talks each (\texttt{experiment\_r3.json}, \texttt{ab\_r3.jsonl})};
 
 % ================= centre: the haggle
 \draw[<->, dashed, thick] (seller.east) -- node[lab, above=1mm]{A2A haggle: our buyer with any shop,} node[lab, below=1mm]{any buyer with our shop} (guards.west);
@@ -109,6 +112,8 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 \draw[->] (apply.south) |- (plans.east);
 \draw[->] (plans.west) -| node[lab, pos=0.7]{strategy, styles} ([xshift=-8mm]restock.south);
 \draw[->] (plans.east) -| node[lab, pos=0.8]{plan, styles} ([xshift=-1mm]guards.south);
+\draw[->] (ab.west) -| node[lab, pos=0.25]{A or B per talk} ([xshift=12mm]seller.south);
+\draw[->] ([xshift=40mm]ab.south) -- node[lab, left=1mm, pos=0.55]{margin per arm; winner into the strategy} ([xshift=40mm]ab.south |- metabox.north);
 \draw[->] (user) -- (supv);
 \draw[->] (supv) -- (advice);
 \draw[->, violet!70!black] (advice.west) -- node[lab]{advice} (metabox.east |- advice.west);

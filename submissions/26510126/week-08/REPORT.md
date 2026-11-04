@@ -202,6 +202,11 @@ own logs, and is kept in git with its numbers:
 - **A buying team.** After dragonash's team-run agents: scouts ask the best candidate shops for a quote at once and
   the lead haggles where the quote leaves the most surplus. Orders with a deal went from 78% to 81% and surplus per
   order from 11,161 to 16,954 in the first hours (43 orders; to be confirmed over the round).
+- **The buyer side was the gap, and the team found why.** At 14:40 on 11/4 we were 20th of 51: shop 0.725, buyer
+  0.509. We closed 39% of orders against 50-65% for the top buyers, and 422 of ~680 orders without a deal ended with
+  the shops asked out of stock. From the meta-harness's code idea, the scouts now send a second wave to other shops when
+  the first wave is all out, and a shop/SKU pair that dropped us or shipped too short a food unit waits
+  (`.market/avoid_r3.json`). Orders closed rose to 62% from 14:40 to 16:20 (130 of 210), and we reached 16th.
 - **Teams with ranks** (after another student's team with promotions): three styles a side, promoted by reward per
   talk, so a style is tried on live talks without betting the shop on it.
 - **The negotiator model lost to the rule.** At first haiku conceded to the floor early (of talks with an offer, 85%

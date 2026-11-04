@@ -166,10 +166,12 @@ def check():
         if r.get("source") != "meta (auto)" or r.get("verdict") or time.time() - r["t"] < CHECK_AFTER:
             continue
         if r.get("ab_key"):                         # the same hours, orders without the change against orders with it
-            k, end = r["ab_key"], min(time.time(), r["t"] + CHECK_MAX)
+            # a trial cut short (trial_end: another trial took the slot) is judged on the hours it ran split
+            k, end = r["ab_key"], min(time.time(), r["t"] + CHECK_MAX, r.get("trial_end") or time.time())
             before = metrics_r3.window(r["t"], end, keep=lambda o: code_ab_r3.arm(k, o) == "A")
             after = metrics_r3.window(r["t"], end, keep=lambda o: code_ab_r3.arm(k, o) == "B")
-            if min(before.get("orders") or 0, after.get("orders") or 0) < MIN_ORDERS and time.time() < r["t"] + CHECK_MAX:
+            if min(before.get("orders") or 0, after.get("orders") or 0) < MIN_ORDERS and \
+                    time.time() < r["t"] + CHECK_MAX and not r.get("trial_end"):
                 continue                            # too few orders an arm yet: the trial runs on
             code_ab_r3.stop()
         else:
@@ -283,6 +285,10 @@ def engineer_prompt():
 
 
 def build():
+    # one code trial at a time: on 11/5 00:24 a new build took the A/B slot while 0a26016 still waited for its 150
+    # orders an arm, so 0a26016 ran on every order from then on
+    if any(r.get("source") == "meta (auto)" and not r.get("verdict") for r in jl(CHANGES)):
+        return
     day = [a for a in jl(ATTEMPTS) if time.time() - a.get("t", 0) < 86400]
     if len(day) >= MAX_PER_DAY or (day and time.time() - day[-1]["t"] < BUILD_EVERY):
         return

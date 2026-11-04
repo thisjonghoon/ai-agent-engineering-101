@@ -80,7 +80,16 @@ def main():
     mc.code_ab_r3.stop()
     case("after the verdict the change runs on every order", all(mc.code_ab_r3.on("k1", o) for o in ids[:20]))
 
-    # 6. the build budget: one build every BUILD_EVERY
+    # 6. one code trial at a time: no build while an automatic change waits for its verdict
+    mc.CHANGES = live / "changes.jsonl"
+    mc.append(mc.CHANGES, {"t": time.time(), "source": "meta (auto)", "commit": "x1", "ab_key": "k9"})
+    mc.WORK = tmp / "auto-wait"
+    mc.ATTEMPTS = live / "attempts-empty.jsonl"
+    mc.build()
+    case("no build while another automatic change waits for its verdict", not mc.WORK.exists())
+    mc.ATTEMPTS = live / "attempts.jsonl"
+
+    # 7. the build budget: one build every BUILD_EVERY
     mc.append(mc.ATTEMPTS, {"t": time.time() - 60, "key": "x"})
     mc.WORK = tmp / "auto"
     mc.build()

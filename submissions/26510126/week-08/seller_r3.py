@@ -362,13 +362,16 @@ class Seller(AgentExecutor):
         self.open = {}      # task id -> {"unit", "ask", "floor", "offers", "turns"}
         self.sold = {}      # unit -> time a receipt was signed
         self.dealt = {}     # unit -> times receipts were signed for it (two within STUCK_SECS: held by the kit)
+        # a unit set aside once that gets stuck again is held for good: 11/5 03:16-04:19 one unit came back after each
+        # 30 minutes and was refused at checkout again each time
+        self.held, self.stuck_once = set(), set()
 
     def taken(self):
         now = time.time()
         self.sold = {k: t for k, t in self.sold.items() if now - t < RECENT_SOLD}
         self.dealt = {k: [x for x in ts if now - x < STUCK_SECS] for k, ts in self.dealt.items()}
         self.dealt = {k: ts for k, ts in self.dealt.items() if ts}
-        stuck = {k for k, ts in self.dealt.items() if len(ts) >= STUCK_AFTER}
+        stuck = {k for k, ts in self.dealt.items() if len(ts) >= STUCK_AFTER} | self.held
         # a buyer that leaves without cancelling must not hold the unit forever (review, 11/2)
         for k in [k for k, d in self.open.items() if now - d.get("t", now) > OPEN_HOLD]:
             ab_end(k, self.open.pop(k, None), "gone")
@@ -454,7 +457,12 @@ class Seller(AgentExecutor):
                 self.sold[u["unit"]] = time.time()
                 self.dealt.setdefault(u["unit"], []).append(time.time())
                 if len(self.dealt[u["unit"]]) == STUCK_AFTER:
-                    log(f"STUCK {u['unit']} agreed {STUCK_AFTER} times and still offered: left out for {STUCK_SECS // 60} min")
+                    if u["unit"] in self.stuck_once:
+                        self.held.add(u["unit"])
+                        log(f"STUCK {u['unit']} stuck again: left out until a restart")
+                    else:
+                        self.stuck_once.add(u["unit"])
+                        log(f"STUCK {u['unit']} agreed {STUCK_AFTER} times and still offered: left out for {STUCK_SECS // 60} min")
             ab_end(task.id, deal, "deal", (price - u["cost"]) / u["list_price"] if u.get("list_price") else 0.0, price)
             log(f"DEAL {task.id[:8]} {u['sku']} at {price} (cost {u['cost']}, list {u['list_price']}, turns {deal['turns']})")
             del self.open[task.id]

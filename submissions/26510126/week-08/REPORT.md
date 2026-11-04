@@ -9,9 +9,15 @@ The one-page figure is `architecture.tex` / `architecture.pdf`.
 - **Buyer:** `market_buyer.py` → `buyer_r3.py`: scouts ask several shops for a quote at once, then one member of a
   buying team with ranks haggles with the best (Claude haiku per offer); a raw-evidence memory, a review hook and a
   forum column; it pays through our copy of kit v4, which makes the checkout tools from each shop's `acp.json`.
-- **Meta-harness as a team** (`meta_r3.py` + `meta_team_r3.py`): every 15 minutes four specialists (sales,
-  merchandising, buying, community; Claude haiku, in parallel) propose changes to their own numbers and a manager
-  (Claude sonnet) approves, trims or rejects them; code bounds and applies the result, and promotes team members.
+- **Two loops aimed at the grade.** The *inner loop* (`meta_r3.py` + `meta_team_r3.py`) moves numbers every 15
+  minutes: four specialists (sales, merchandising, buying, community; Claude haiku, in parallel) propose changes to
+  their own numbers, a manager (Claude sonnet) approves, trims or rejects them, code bounds and applies the result and
+  promotes team members; an A/B test inside the shop tries one number or a whole retail playbook on live buyers. The
+  *outer loop* (`meta_code_r3.py`) changes the harness's own code every 90 minutes: an engineer agent reads the code
+  and the raw traces and writes one hypothesis aimed at the board term that costs the most points
+  (`metrics_r3.py`), a coder agent builds it with a test, a code gate puts it live, and an hour later code keeps or
+  reverts it by the metric it named. Expected and measured results go to one ledger
+  (`logs/code_changes_r3.jsonl`) that both loops read.
 - **Supervisor** (Claude Code, for the user): watches every decision, stops bad ones with evidence, and steers through
   notes the manager reads as advice (`advice_r3.json`), not by setting numbers itself.
 - **Why not the Worker any more.** Until Round 2 the shop was a Cloudflare Worker (`deploy/`) that also served its own
@@ -29,6 +35,12 @@ raw evidence that the next decision reads.
   offer, raise cap) and ends the loop (walk, max offers).
 - **The meta-harness is the same loop, slowed down** to 15 minutes. It observes what the last version did, decides
   the next strategy, and code clamps it. Its outcome is read on the next cycle.
+- **The outer loop is the same loop over code** (11/4). Numbers cannot fix everything: the scouts asked shops that
+  were out of stock, the A/B slot stayed blocked by a test with no winner, the buyer haggled past an affordable ask.
+  Until 11/4 17:00 the supervisor did this by hand from the data; now an engineer agent does the diagnosis
+  (observe: code, traces, the ledger of past changes; think: one hypothesis with the metric it should move and by how
+  much), a coder agent acts in a copy, and code judges: the gate before it goes live, the named metric an hour after.
+  The supervisor still watches it, reads each automatic diff and pushes the commits.
 - **Memory follows LongMemEval-V2:**
   - raw evidence only, appended and never summarised on write; summaries are derived on read;
   - static facts and dynamic ones, with the newest evidence winning;
@@ -183,16 +195,16 @@ See `architecture.pdf`. In short:
 
 | | Kit baseline (starter_round3) | Ours |
 |---|---|---|
-| Decisions | none (the person sets the agent) | a team: four specialists propose from their own evidence, a manager decides, code bounds it; a supervisor stops bad choices and leaves notes as advice |
+| Decisions | none (the person sets the agent) | two loops: a team moves numbers every 15 min (four specialists propose from their own evidence, a GPT reviewer, a manager decides, code bounds it); an engineer and a coder agent change the code every 90 min, one hypothesis at a time, gated by tests and judged by its own metric after an hour; a supervisor watches both and leaves notes as advice |
 | Teams | one buyer, one seller | buyer: scouts quote several shops at once, a member haggles with the best; both sides have members with ranks (lead 60%, senior 25%, junior 15% of talks), promoted by reward per talk and replaced when they trail |
-| Seller | a model at every turn; ships the unit that expires first; no quality talk, no warranty; never under cost | code prices from a strategy the meta-harness rewrites; honest grade claim (none within an hour of a grade line, where the grade could change before settle), the market's certificate; warranty only when the meta-harness sets one (0 at the start, since a refund costs the whole price and the break rate is unknown); near-date food cleared under cost (a spoiled unit loses all of its cost) |
+| Seller | a model at every turn; ships the unit that expires first; no quality talk, no warranty; never under cost | code prices from a strategy the meta-harness rewrites; honest grade claim (none within an hour of a grade line, where the grade could change before settle), the market's certificate; warranty only when the meta-harness sets one (0 at the start, since a refund costs the whole price and the break rate is unknown); near-date food cleared under cost (a spoiled unit loses all of its cost); the ask follows the market down to the 75th percentile of what the SKU settled for, never under cost + margin |
 | Stock | a few random SKUs | one unit per category near its median price first (a buyer only sees shops that hold the ordered category); where settled deals show, depth plus a cheaper and a dearer SKU (orders take SKUs at 0.5-1.5x a hidden reference price); the SKUs the ledger keeps settling, bought by themselves; categories that buyers ask for in forum "wanted" posts first; cash reserve and stock cap; no buying in the last 36 h |
-| Buyer | picks and haggles | expected-surplus choice over (shop, SKU), memory of raw evidence, bans for false claims and unwarranted breakages, accept policy (certificate, shelf life, grade) checked by the kit before paying |
+| Buyer | picks and haggles | expected-surplus choice over (shop, SKU), memory of raw evidence, bans for false claims and unwarranted breakages, accept policy (certificate, shelf life, grade) checked by the kit before paying; an affordable ask within a few percent of its offer is taken rather than haggled away |
 | Checkout | fixed code; inputs described as short strings | tools made from each shop's `acp.json`, fixed code only as a fallback; our card in JSON Schema |
 | Forum | none | a column (`장보기 레이더`) in kinds built from the ledger (best value, freshness, unpaid receipts, trivia, grade claims, our deals), styled by a model under a number check, at most one post in 10 minutes (20 until 11/4 17:05); kinds weighted by the votes they earn |
-| Learning | none | the meta-harness over strategy versions; an A/B test inside the shop that holds the hour fixed; replays of our own negotiations under real retailers' playbooks to choose what to test |
+| Learning | none | the meta-harness over strategy versions; an A/B test inside the shop that holds the hour fixed and tries a number or a whole retail playbook (Costco, Walmart, IKEA, grocery markdown, premium, two-track) on live buyers, ending as a tie after 400 talks an arm or 6 h; a ledger of code hypotheses with expected and measured results |
 | Demand | `demand.json` categories only | hidden demand estimated from the orders our buyer receives and the requests our shop gets |
-| Goal | none | the board's Players table read every cycle: first place, the instructor's agent as a floor |
+| Goal | none | the board's Players table read every cycle: first place, the instructor's agent as a floor; the points each board term costs us, by the midterm's weights, chooses what the outer loop works on |
 
 **What the first day taught, and what changed (11/3-11/4).** Each change came from a measurement on the ledger or our
 own logs, and is kept in git with its numbers:
@@ -223,6 +235,16 @@ own logs, and is kept in git with its numbers:
   arrived.
 - **A bug in kit v4's checkout, reported.** An unpaid checkout session never expires, so its unit was refused 16
   times; the seller now leaves such a unit out, and the bug went to the course discussion (#378) with the lines.
+- **Both sides were too strict (the user, 11/4 17:20, after another agent's forum post listed us as asking 33%
+  above the going price).** Six hours of talks: 92% of our food talks opened above the market's 75th percentile
+  (0.92 of list against 0.70 settled) and closed 37% of the time, those at or under it 65%. The seller now stops its
+  ask at that line (`market_ask`, the team's knob). On the buyer side, 119 talks were lost while the shop's ask was
+  inside our limit, 86 of them because the shop ended the talk at a median 4.6% above our last offer (0.79 of list,
+  a 21% surplus left for nothing); the buyer now takes such an ask (`CLOSE_GAP`, the team's knob, 5% at first).
+- **The tests that taught nothing, and the playbooks nobody used.** An A/B of 0.92 against 0.90 of list for food
+  ran 20 hours and 4,193 talks without a winner and kept every other test from starting; tests now end as a tie
+  after 400 talks an arm or 6 hours. The retail playbooks were text in a prompt (25 of 30 cycles leaned on none);
+  now a whole playbook can be arm B of the A/B test, and IKEA was added for our furniture.
 - **Speed and resilience.** An order took 36 s (scouts 9.5 s, haggle 21 s); scouts now wait 6 s, a fast member plans
   its haggle in one model call, and buyer members are ranked by surplus per minute. Every model call fails over from
   Claude to GPT, and the buyer haggles by code if both fail, so a usage limit does not stop the agents.

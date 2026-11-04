@@ -42,16 +42,33 @@ def main():
     (work / "buyer_r3.py").write_text("A = 1\n" + "".join(f"v{i} = {i}\n" for i in range(mc.MAX_LINES + 1)))
     case("more than MAX_LINES added lines is refused", "added lines" in str(mc.gate(work)[1]))
 
-    # 2. the next idea: the newest strategy's ideas first, an idea already tried is skipped
-    mc.STRATEGIES.write_text(json.dumps({"code_ideas": ["Route scouts to shops with stock of dear SKUs first",
-                                                        "Remember shops that ship short food for an hour"]}) + "\n")
-    idea, key, _ = mc.next_idea()
-    case("the first untried idea is picked", idea.startswith("Route scouts"))
-    mc.append(mc.ATTEMPTS, {"t": time.time() - 99999, "key": key})
-    idea2, _, _ = mc.next_idea()
-    case("a tried idea is not tried again", idea2.startswith("Remember shops"), str(idea2))
+    # 2. the verdict: the change's own metric, then the guards
+    before = {"buyer_close_rate": 0.6, "buyer_paid_h": 60, "shop_deals_h": 100, "shelf_refused_h": 8}
+    r = {"metric": "buyer_close_rate", "expected": 0.1}
+    text, why = mc.judge(r, before, dict(before, buyer_close_rate=0.66))
+    case("a change that moved its metric as expected is kept", not why and "+10%" in text, text)
+    case("a change whose metric fell more than WORSE is reverted",
+         mc.judge(r, before, dict(before, buyer_close_rate=0.45))[1], str(mc.judge(r, before, dict(before, buyer_close_rate=0.45))))
+    case("a guard falling more than DROP reverts even a change that met its metric",
+         mc.judge(r, before, dict(before, buyer_close_rate=0.7, shop_deals_h=50))[1])
+    case("a lower-is-better metric that fell counts as better",
+         not mc.judge({"metric": "shelf_refused_h"}, before, dict(before, shelf_refused_h=4))[1])
 
-    # 3. the build budget: one build every BUILD_EVERY
+    # 3. the engineer's answer: the JSON on its last line, after prose
+    case("the hypothesis is read from the last JSON line",
+         mc.last_json('I read buyer.py.\n{"hypothesis": "x", "metric": "buyer_paid_h"}')["metric"] == "buyer_paid_h")
+    case("no JSON, no hypothesis", mc.last_json("nothing to do") is None)
+
+    # 4. what the midterm grades: points lost per board term, by its weights
+    board = {"shops": [{"name": "thisjonghoon", "deals": 1, "profit": 5, "revenue": 1, "stars": 4.0},
+                       {"name": "x", "deals": 1, "profit": 9, "revenue": 9, "stars": 4.9}],
+             "buyers": [{"name": "thisjonghoon", "deals": 3, "surplus": 1, "forum": 0.5, "posts": 9},
+                        {"name": "x", "deals": 5, "surplus": 9, "forum": 0.6, "posts": 1}]}
+    gap = mc.metrics_r3.score_gap(board)
+    case("the costliest term comes first (buyer surplus: weight 0.5, beaten by the other)",
+         gap[0][:2] == ("buyer", "surplus") or gap[0][:2] == ("shop", "profit"), str(gap[:3]))
+
+    # 5. the build budget: one build every BUILD_EVERY
     mc.append(mc.ATTEMPTS, {"t": time.time() - 60, "key": "x"})
     mc.WORK = tmp / "auto"
     mc.build()

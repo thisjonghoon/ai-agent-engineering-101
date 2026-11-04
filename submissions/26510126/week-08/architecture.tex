@@ -7,10 +7,10 @@
 \pagestyle{empty}
 \begin{document}
 \centering
-{\Large\bfseries Round 3 agents of \texttt{thisjonghoon}: teams that propose, code that decides the limits}\\[1mm]
+{\Large\bfseries Round 3 agents of \texttt{thisjonghoon}: two loops aimed at the grade, models propose, code decides}\\[1mm]
 {\small Blue: a model decides (haiku; manager sonnet; reviewer GPT). Grey: code decides. Green: context we keep. Orange: tools.
-Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops bad choices.}\\[2mm]
-\resizebox{!}{0.76\textheight}{\begin{tikzpicture}[
+Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops bad choices. Orange box: the outer loop.}\\[2mm]
+\resizebox{!}{0.71\textheight}{\begin{tikzpicture}[
   font=\small, >={Stealth[length=2.2mm]},
   model/.style={draw=blue!60!black, fill=blue!8, rounded corners, align=center, minimum height=9mm, text width=#1},
   model/.default=30mm,
@@ -74,9 +74,9 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 \node[model=26mm] (sp4) at (15.8,-11.2) {\textbf{community}\\ \scriptsize which writers get the column};
 \node[model=30mm, fill=blue!3] (gpt) at (6.6,-13.5) {\textbf{reviewer (GPT via Hermes)}\\ \scriptsize keep / trim / reject each};
 \node[model=34mm, fill=blue!15] (mgr) at (10.8,-13.5) {\textbf{manager (sonnet)}\\ \scriptsize approves, trims, rejects; resolves conflicts};
-\node[code=44mm] (apply) at (15.6,-13.5) {\textbf{code}: bounds and one step a cycle, A/B winner, promotions and replacements by reward per talk};
+\node[code=44mm] (apply) at (15.6,-13.5) {\textbf{code}: bounds and one step a cycle, A/B winner (a number or a whole retail playbook), promotions by reward per talk};
 \begin{scope}[on background layer]
-\node[team, fit=(sp1)(sp4)(gpt)(apply), label={[font=\scriptsize\bfseries, anchor=south west]north west:META-HARNESS TEAM, every 15 min (meta\_r3 + meta\_team\_r3)}] (metabox) {};
+\node[team, fit=(sp1)(sp4)(gpt)(apply), label={[font=\scriptsize\bfseries, anchor=south west]north west:INNER LOOP: the tuning team moves numbers inside bounds, every 15 min (meta\_r3 + meta\_team\_r3)}] (metabox) {};
 \end{scope}
 
 % outputs of the team
@@ -84,15 +84,26 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 
 % ================= supervisor (right)
 \node[sup=34mm] (user) at (24.5,-11.2) {\textbf{the user}\\ \scriptsize sets the goal: first place};
-\node[sup=34mm] (supv) at (24.5,-13.3) {\textbf{supervisor} (Claude Code)\\ \scriptsize watches every decision (\texttt{watch\_r3}), stops bad ones with evidence, writes notes};
+\node[sup=34mm] (supv) at (24.5,-13.3) {\textbf{supervisor} (Claude Code)\\ \scriptsize watches both loops (\texttt{watch\_r3}), reads each automatic diff, stops bad choices with evidence, writes notes};
 \node[ctx=34mm] (advice) at (24.5,-15.4) {\texttt{advice\_r3.json}\\ notes the team reads as advice};
 
+% ================= outer loop: the harness changes its own code
+\node[code=30mm] (goal) at (2.9,-18.0) {\textbf{goal}: points each board term costs us, live board, the midterm's weights \scriptsize(\texttt{metrics\_r3})};
+\node[model=40mm] (eng) at (7.3,-18.0) {\textbf{engineer} (sonnet)\\ \scriptsize reads code, raw traces, the ledger; one hypothesis: change, metric, expected};
+\node[model=28mm] (coder) at (11.6,-18.0) {\textbf{coder} (sonnet)\\ \scriptsize the change and a test, in a copy};
+\node[code=32mm] (gate) at (15.4,-18.0) {\textbf{gate}: allowed files, no payment or key lines, all suites; then live, committed};
+\node[code=34mm] (verdict) at (19.6,-18.0) {\textbf{verdict} after 1 h: its metric vs the hour before; reverted if worse or a guard falls};
+\node[ctx=30mm] (ledger) at (24.4,-18.0) {\texttt{code\_changes\_r3.jsonl}\\ hypothesis, expected, measured};
+\begin{scope}[on background layer]
+\node[team, fill=orange!4, draw=orange!60!black, fit=(goal)(eng)(verdict)(ledger), label={[font=\scriptsize\bfseries, anchor=south west]north west:OUTER LOOP: the harness changes its own code, one hypothesis every 90 min (meta\_code\_r3)}] (outerbox) {};
+\end{scope}
+
 % ================= context row (bottom)
-\node[ctx=36mm] (c1) at (2.3,-17.2) {\texttt{talks\_r3.jsonl}: every negotiation (offers, ask, floor, outcome, member)};
-\node[ctx=36mm] (c2) at (6.4,-17.2) {\texttt{strategies\_r3.jsonl}: every version, results per hour};
-\node[ctx=36mm] (c3) at (10.5,-17.2) {\texttt{prices\_r3}: going prices from the ledger; forum price claims checked};
-\node[ctx=36mm] (c4) at (14.6,-17.2) {\texttt{demand\_r3}: hidden demand from orders and asks; \texttt{rank\_r3}: Players table};
-\node[ctx=36mm] (c5) at (18.7,-17.2) {\texttt{forum\_votes\_r3}: votes per post and writer; simulate + playbooks: what-if replays};
+\node[ctx=36mm] (c1) at (2.3,-20.5) {\texttt{talks\_r3.jsonl}: every negotiation (offers, ask, floor, outcome, member)};
+\node[ctx=36mm] (c2) at (6.4,-20.5) {\texttt{strategies\_r3.jsonl}: every version, results per hour};
+\node[ctx=36mm] (c3) at (10.5,-20.5) {\texttt{prices\_r3}: going prices from the ledger; forum price claims checked};
+\node[ctx=36mm] (c4) at (14.6,-20.5) {\texttt{demand\_r3}: hidden demand from orders and asks; \texttt{rank\_r3}: Players table};
+\node[ctx=36mm] (c5) at (18.7,-20.5) {\texttt{forum\_votes\_r3}: votes per post and writer; simulate + playbooks: what-if replays};
 
 % ================= arrows
 \draw[->] (market.west) -| node[lab, pos=0.3]{supply, settles} (shopacp.north);
@@ -118,6 +129,14 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 \draw[->] (supv) -- (advice);
 \draw[->, violet!70!black] (advice.west) -- node[lab]{advice} (metabox.east |- advice.west);
 \draw[->, violet!70!black] (supv.west) -- node[lab]{watches} (metabox.east |- supv.west);
+\draw[->] (goal) -- (eng);
+\draw[->] (eng) -- (coder);
+\draw[->] (coder) -- (gate);
+\draw[->] (gate) -- (verdict);
+\draw[->] (verdict) -- (ledger);
+\draw[->, dashed] (ledger.south) -- ++(0,-0.75) -| node[lab, pos=0.25]{the next hypothesis reads what the last one did} (eng.south);
+\draw[->] (5.0,-14.45) |- node[lab, pos=0.35]{code ideas} (eng.west);
+\draw[->, dashed] (ledger.north) -- node[lab]{results} (ledger.north |- advice.south);
 \foreach \c in {c1,c2,c3,c4,c5} \draw[->, green!45!black] (\c.north) -- ++(0,0.5);
 
 % ================= the kit's baseline
@@ -130,6 +149,6 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 
 \vspace{1mm}
 \begin{minipage}{0.98\linewidth}\scriptsize
-\textbf{How it differs from the kit.} Every decision is a proposal checked by code. Every 15 minutes four specialists (haiku) each read only their own evidence and propose changes to their own numbers; a reviewer on another model (GPT, through the user's ChatGPT plan) reads the proposals skeptically; a manager (sonnet) approves, trims or rejects each; code bounds every number to a range and one step a cycle, applies an A/B test's winner, and promotes or replaces team members by their reward per talk (buyer: surplus; seller: margin over list). Both the shop and the buyer run as teams with ranks: a lead takes 60\% of talks, a senior 25\%, a junior 15\%, so a new style is tried on live talks without betting the shop on it. The buyer's scouts ask several shops for a quote at once and the lead haggles only where the quote leaves the most surplus. The forum is a column of eight writers whose facts code builds from the ledger; the community specialist gives the column to the writers whose posts earn votes. A supervisor watches each decision for the user, stops bad ones with evidence and steers only through notes the team reads as advice. Changes came from measurements (grade C breaks 17.9\% of the time; the buying team raised surplus per order by about half in its first hours; the haiku negotiator lost to the rule and was turned off; results are compared per hour after a 4-minute cycle was read against a 15-minute one).
+\textbf{How it differs from the kit.} Two loops aim at the grade itself (shop ALL + buyer ALL, percentiles by the midterm's weights). The \emph{inner loop} moves numbers every 15 minutes: four haiku specialists each read only their own evidence and propose; a GPT reviewer reads the proposals skeptically; a sonnet manager approves, trims or rejects; code bounds each number and steps it once a cycle, and an A/B test inside the shop tries one number, or a whole retail playbook (Costco, Walmart, IKEA, grocery markdown, premium, two-track), on live buyers at the same hours. The \emph{outer loop} changes what no number can: every 90 minutes an engineer agent reads the code, the raw traces and the ledger of past changes and writes one hypothesis aimed at the term that costs the most points, with the metric it should move; a coder agent builds it with a test in a copy; a code gate (allowed files, no payment or key lines, every suite) puts it live; an hour later code compares that metric with the hour before and keeps or reverts it, and the expected and measured result goes to the ledger both loops read. Both the shop and the buyer run as ranked teams (60/25/15\% of talks, promoted by reward per talk); the seller follows the market (its ask stops at the 75th percentile of what the SKU settled for, never under cost + margin); the buyer's scouts quote several shops at once and it closes an ask within a few percent of its offer. A supervisor watches both loops for the user, reads each automatic change, and steers only through notes. Evidence moved each step: grade C breaks 17.9\%; 422 of 680 lost orders were other shops' stock-outs (second scout wave: closed orders 39\% $\to$ 62\%); 92\% of food talks opened above the market and closed 37\% against 65\%; an A/B of 0.92 vs 0.90 ran 4,193 talks with no winner and blocked every other test.
 \end{minipage}
 \end{document}

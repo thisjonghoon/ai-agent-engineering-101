@@ -1,21 +1,26 @@
-"""The meta-harness changes its own code (the user, 11/4 17:10: the market is not real money, so give the harness more
-room to act on its own ideas; the supervisor keeps watching).
+"""The outer loop: the meta-harness changes its own code (the user, 11/4 17:10: the market is not real money, so give
+the harness more room to act on its own ideas; the supervisor keeps watching).
 
-meta_r3 runs `python meta_code_r3.py` in the background after a cycle. One run does at most one of two things:
+The inner loop (meta_r3, every 15 min) moves numbers inside bounds. This loop changes what no number can: one
+hypothesis at a time, from the grade back to the code.
 
-1. check: an automatic change at least CHECK_AFTER old gets a verdict. Paid buyer deals and closed shop deals per hour
-   after it are compared with the hour before; when either fell by more than DROP, the files go back to the commit
-   before the change (a new commit, history kept) and the verdict says why.
-2. build: the newest code idea of the team that no run has tried yet is handed to a coding agent (Claude Code,
-   `claude -p` on the user's subscription, sonnet) in a copy of the agent folder outside the repository. Code then
-   gates its work: only ALLOWED files may change, no added line may touch payments, keys or processes (FORBIDDEN),
-   at most MAX_LINES added, and every test suite has to pass in the copy. A change that passes is copied into the
-   live folder file by file (write, then rename), committed, and logged in logs/code_changes_r3.jsonl as
-   "meta (auto)" with the hour before as its baseline; one that fails is logged in logs/code_attempts_r3.jsonl.
+    goal      metrics_r3.score_gap(): the points each board term (shop profit/revenue/stars, buyer surplus/votes/
+              deals/posts) costs us, from the live board, by the midterm's own weights
+    engineer  a coding agent that reads the code, the raw traces (talks, payments, scouts, orders) and the ledger of
+              past hypotheses with their results, and writes ONE hypothesis for the costliest term it can move: the
+              change, the files, the metric that should move (metrics_r3.METRICS) and by how much. The team's own
+              code ideas are inputs, not orders; an idea the code already does, or one tried before, is skipped.
+    coder     a second agent that makes the change and a test in a copy of the folder outside the repository
+    gate      code: only ALLOWED files, no line touching payments, keys or processes, at most MAX_LINES added, every
+              suite passing in the copy; then the files go live (write, rename) and are committed
+    verdict   an hour later code compares the named metric with the hour before (metrics_r3.window): kept, or
+              reverted in a new commit when it moved the wrong way by more than WORSE, or when the guard metrics
+              (buyer paid deals, shop deals per hour) fell by more than DROP. Expected and measured go into the
+              ledger (logs/code_changes_r3.jsonl), which both loops and the next engineer read.
 
-Never changed by this: the kit (market_kit.py, payments, mandates, checkout), the seller (a long-running process:
-its ideas go to the supervisor), meta_r3 / meta_code_r3 themselves (the gate does not rewrite its own gate).
-At most one build every BUILD_EVERY and MAX_PER_DAY a day; a lock keeps two runs from overlapping.
+meta_r3 starts `python meta_code_r3.py` in the background after each cycle; one run gives a verdict or builds one
+hypothesis. Never changed here: the kit (payments, mandates, checkout), the seller (a long-running process), meta_r3
+and this file (the gate does not rewrite itself). One build per BUILD_EVERY, MAX_PER_DAY a day, behind a lock.
 """
 import hashlib
 import json
@@ -26,6 +31,8 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+
+import metrics_r3
 
 HERE = Path(__file__).resolve().parent
 MARKET = Path.home() / "Developer" / "agent-market"
@@ -49,32 +56,59 @@ MAX_LINES = 150
 BUILD_EVERY = 90 * 60
 MAX_PER_DAY = 8
 CHECK_AFTER = 60 * 60
-DROP = 0.4
+DROP = 0.4          # a guard metric falling this much reverts any change
+WORSE = 0.15        # the hypothesis' own metric moving this much the wrong way reverts it
 AGENT_TIMEOUT = 15 * 60
+TRACES = {"logs/talks_r3.jsonl": 3000, "memory.jsonl": 3000, ".market/payments.jsonl": 500,
+          "logs/demand_r3.jsonl": 3000, "logs/market-kit.log": 6000, "logs/strategies_r3.jsonl": 6}
 
-CODER = """You are the coding hand of a trading agent's meta-harness (a Round 3 market of AI shops and buyers; the money
-is a classroom game). The team proposed this code idea from its evidence:
+ENGINEER = """You are the engineer of a trading agent's meta-harness: an online market of AI shops and buyers (Round 3;
+the money is a classroom game). Our place on the board is shop ALL + buyer ALL, each a weighted sum of percentiles.
+What each term costs us now (points lost = weight x (1 - our percentile)):
+{gap}
 
-IDEA: {idea}
+Our own metrics, per hour, oldest first (the metric names a hypothesis may use: {metrics}):
+{windows}
 
-Recent results the idea came from (the team's own notes):
-{context}
+Code changes so far, with what was expected and what was measured (newest last):
+{ledger}
 
-Make the smallest change in this folder that carries the idea out, in these files only: {allowed}.
+Code ideas the tuning team wrote lately (inputs, not orders; some describe what the code already does):
+{ideas}
+
+This folder is a copy of the agent: the code, and raw traces under traces/ (talks_r3.jsonl: every negotiation our
+shop had; memory.jsonl: our buyer's trades and payments; payments.jsonl; demand_r3.jsonl: orders and asks;
+market-kit.log: the buyer's and kit's lines with SCOUT, CAND, GUARD, ASK, OUT). Read the code before you claim it
+lacks something. Find ONE change, in these files only: {allowed}, that should move a costly term, backed by numbers
+you counted in the traces. Not: a change already in the code or in the list above, a number the tuning team can set
+(it already moves those), anything about payments, keys or the seller.
+
+Answer with one JSON object on the last line, nothing after it:
+{{"hypothesis": "<the change, one sentence>", "why": "<the counts from the traces that back it>",
+  "files": ["<file>"], "metric": "<one of the metric names>", "expected": <signed relative change, e.g. 0.1>,
+  "term": "<the board term it serves>"}}
+or {{"skip": "<why no change is worth making now>"}}"""
+
+CODER = """You are the coding hand of a trading agent's meta-harness (an online market of AI shops and buyers; the
+money is a classroom game). The engineer wrote this hypothesis from the traces:
+
+{spec}
+
+Make the smallest change in this folder that carries it out, in these files only: {allowed}.
 Rules:
 - Do not touch payments, checkout, mandates, keys, the kit (market_kit.py) or the seller; do not start processes,
   delete files or call new network hosts. Honesty rules stay: never claim a grade, shelf life or price that is not
   true, never pay above the budget.
-- Match the code around it: same comment density, naming and style; a comment says why, with the evidence.
+- Match the code around it: same comment density, naming and style; a comment says why, with the engineer's numbers.
 - Add one test case for the change to the matching test_*.py, in the style of the cases there.
 - Run that test file with: {py} <test file>   and fix until it passes.
-- If the idea cannot be done safely in these files, change nothing and say why in one line.
+- If it cannot be done safely in these files, change nothing and say why in one line.
 End with one line: CHANGED: <what you changed, in one sentence> or SKIPPED: <why>."""
 
 
 def jl(path):
     try:
-        return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
+        return [json.loads(x) for x in Path(path).read_text(encoding="utf-8").splitlines() if x.strip()]
     except (OSError, ValueError):
         return []
 
@@ -92,21 +126,6 @@ def git(*args):
     return subprocess.run(["git", *args], cwd=HERE, capture_output=True, text=True, timeout=120)
 
 
-def rates(t0, t1):
-    """(buyer paid deals per hour, shop closed deals per hour) between t0 and t1."""
-    hours = max((t1 - t0) / 3600, 0.25)
-    paid = 0
-    for m in jl(HERE / "memory.jsonl"):
-        if m.get("kind") == "payment" and m.get("paid"):
-            try:
-                t = time.mktime(time.strptime(m["time"], "%Y-%m-%d %H:%M:%S"))
-            except (KeyError, ValueError, TypeError):
-                continue
-            paid += t0 <= t < t1
-    sold = sum(1 for x in jl(LOGS / "talks_r3.jsonl") if x.get("price") and t0 <= x.get("t", 0) < t1)
-    return round(paid / hours, 1), round(sold / hours, 1)
-
-
 def deploy(files, src):
     for f in files:
         tmp = HERE / f".{f}.auto"
@@ -114,15 +133,32 @@ def deploy(files, src):
         os.replace(tmp, HERE / f)
 
 
+def judge(r, before, after):
+    """(verdict text, reasons to revert) for one change: its own metric, then the guards."""
+    why = []
+    own = metrics_r3.change(r.get("metric"), before, after) if r.get("metric") else None
+    if own is not None and own < -WORSE:
+        why.append(f"{r['metric']} {own:+.0%}")
+    for g in ("buyer_paid_h", "shop_deals_h"):
+        b, a = before.get(g), after.get(g)
+        if b and a is not None and a < b * (1 - DROP):
+            why.append(f"guard {g} {b} -> {a}")
+    expected = r.get("expected")
+    text = (f"{r.get('metric')}: expected {expected:+.0%}, measured {own:+.0%}" if isinstance(expected, (int, float))
+            and own is not None else f"{r.get('metric')}: {before.get(r.get('metric'))} -> {after.get(r.get('metric'))}")
+    return text, why
+
+
 def check():
-    """Verdict on automatic changes old enough; True when one was judged."""
+    """Verdict on the automatic change that is an hour old; True when one was judged."""
     rows = jl(CHANGES)
     for i, r in enumerate(rows):
         if r.get("source") != "meta (auto)" or r.get("verdict") or time.time() - r["t"] < CHECK_AFTER:
             continue
-        before, after = r.get("baseline") or rates(r["t"] - 3600, r["t"]), rates(r["t"], r["t"] + CHECK_AFTER)
-        worse = [n for n, b, a in zip(("buyer paid/h", "shop deals/h"), before, after) if b and a < b * (1 - DROP)]
-        if worse:
+        before = r["baseline"] if isinstance(r.get("baseline"), dict) else metrics_r3.window(r["t"] - 3600, r["t"])
+        after = metrics_r3.window(r["t"], r["t"] + CHECK_AFTER)
+        text, why = judge(r, before, after)
+        if why:
             prev = git("rev-parse", f"{r['commit']}^").stdout.strip()
             for f in r.get("files", []):
                 old = git("show", f"{prev}:submissions/26510126/week-08/{f}")
@@ -131,29 +167,16 @@ def check():
                     tmp.write_text(old.stdout, encoding="utf-8")
                     os.replace(tmp, HERE / f)
             git("add", *r.get("files", []))
-            git("commit", "-q", "-m", f"week-08: [auto revert] {r['change'][:80]} - {', '.join(worse)} fell more than "
-                f"{DROP:.0%} in the hour after ({before} -> {after})")
-            r["verdict"] = f"reverted: {', '.join(worse)} {before} -> {after}"
+            git("commit", "-q", "-m", f"week-08: [auto revert] {r['change'][:80]} - {'; '.join(why)} in the hour after")
+            r["verdict"] = f"reverted ({'; '.join(why)}); {text}"
         else:
-            r["verdict"] = f"kept: {before} -> {after} (buyer paid/h, shop deals/h)"
-        r["after"] = r["verdict"]
+            r["verdict"] = f"kept; {text}"
+        r["after"], r["measured"] = r["verdict"], after
         rows[i] = r
         CHANGES.write_text("".join(json.dumps(x, ensure_ascii=False) + "\n" for x in rows), encoding="utf-8")
         log(r["verdict"] + f" for {r['commit']}")
         return True
     return False
-
-
-def next_idea():
-    tried = {a.get("key") for a in jl(ATTEMPTS)}
-    for s in reversed(jl(STRATEGIES)[-8:]):
-        for idea in s.get("code_ideas") or []:
-            if not isinstance(idea, str) or len(idea) < 20:
-                continue
-            key = hashlib.sha1(idea[:120].lower().encode()).hexdigest()[:12]
-            if key not in tried:
-                return idea, key, s.get("reason") or ""
-    return None, None, None
 
 
 def gate(work):
@@ -186,35 +209,86 @@ def gate(work):
     return changed, None
 
 
-def build():
-    day = [a for a in jl(ATTEMPTS) if time.time() - a.get("t", 0) < 86400]
-    if len(day) >= MAX_PER_DAY or (day and time.time() - day[-1]["t"] < BUILD_EVERY):
-        return
-    idea, key, context = next_idea()
-    if not idea:
-        return
-    work = WORK / time.strftime("%m%d-%H%M")
-    if work.exists():
-        return
+def agent(prompt, work, tools):
+    """What a `claude -p` agent printed in `work` (stderr when it printed nothing), or "timeout"."""
+    env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
+    try:
+        # the prompt goes on stdin: --allowedTools takes every argument after it as a tool name
+        r = subprocess.run(["claude", "-p", "--model", "sonnet", "--setting-sources", "", "--no-session-persistence",
+                            "--allowedTools", tools], input=prompt, cwd=work, env=env, capture_output=True,
+                           text=True, timeout=AGENT_TIMEOUT)
+        return r.stdout.strip() or r.stderr.strip()[-300:]
+    except subprocess.TimeoutExpired:
+        return "timeout"
+
+
+def last_json(text):
+    for line in reversed((text or "").splitlines()):
+        line = line.strip().strip("`")
+        if line.startswith("{") and line.endswith("}"):
+            try:
+                return json.loads(line)
+            except ValueError:
+                continue
+    return None
+
+
+def copy_folder(work):
     work.mkdir(parents=True)
     for p in HERE.iterdir():
         if p.is_file() and (p.suffix == ".py" or (p.suffix == ".json" and p.stat().st_size < 200_000)):
             shutil.copy2(p, work / p.name)
     (work / "logs").mkdir()
-    log(f"building {key}: {idea[:120]}")
-    env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
-    prompt = CODER.format(idea=idea, context=str(context)[:3000], allowed=", ".join(sorted(ALLOWED)), py=PY)
-    # the agent works in the copy; if it wrote to the live folder anyway, those files go back before the gate
-    snap = {p.name: p.read_bytes() for p in HERE.glob("*.py")}
+    (work / "traces").mkdir()
+    for rel, n in TRACES.items():                       # the newest lines of each trace, read-only evidence
+        try:
+            lines = (HERE / rel).read_text(encoding="utf-8", errors="replace").splitlines()[-n:]
+        except OSError:
+            continue
+        (work / "traces" / Path(rel).name).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def engineer_prompt():
+    now = time.time()
+    windows = "\n".join(f"- {time.strftime('%H:%M', time.localtime(now - h * 3600))}-"
+                        f"{time.strftime('%H:%M', time.localtime(now - (h - 1) * 3600))}: "
+                        f"{json.dumps(metrics_r3.window(now - h * 3600, now - (h - 1) * 3600))}" for h in (3, 2, 1))
+    ledger = "\n".join(f"- [{x.get('source')}] {str(x.get('change'))[:140]} | metric {x.get('metric', '-')}, "
+                       f"expected {x.get('expected', '-')} | {str(x.get('after') or 'not judged yet')[:140]}"
+                       for x in jl(CHANGES)[-12:]) or "(none)"
+    ideas = [i for s in jl(STRATEGIES)[-3:] for i in (s.get("code_ideas") or []) if isinstance(i, str)]
+    return ENGINEER.format(gap=metrics_r3.gap_text(), metrics=", ".join(metrics_r3.METRICS), windows=windows,
+                           ledger=ledger, ideas="\n".join(f"- {i[:300]}" for i in ideas[-6:]) or "(none)",
+                           allowed=", ".join(sorted(ALLOWED)))
+
+
+def build():
+    day = [a for a in jl(ATTEMPTS) if time.time() - a.get("t", 0) < 86400]
+    if len(day) >= MAX_PER_DAY or (day and time.time() - day[-1]["t"] < BUILD_EVERY):
+        return
+    work = WORK / time.strftime("%m%d-%H%M")
+    if work.exists():
+        return
+    copy_folder(work)
     t0 = time.time()
-    try:
-        r = subprocess.run(["claude", "-p", "--model", "sonnet", "--setting-sources", "", "--no-session-persistence",
-                            "--allowedTools", f"Read,Edit,Write,Glob,Grep,Bash({PY} test_*)"],
-                           input=prompt, cwd=work, env=env, capture_output=True, text=True, timeout=AGENT_TIMEOUT)
-        # the prompt goes on stdin: --allowedTools takes every argument after it as a tool name
-        said = (r.stdout.strip().splitlines() or [r.stderr.strip()[-300:]])[-1][:300]
-    except subprocess.TimeoutExpired:
-        said = "timeout"
+    log("engineer reading the code and traces")
+    said = agent(engineer_prompt(), work, "Read,Glob,Grep")
+    spec = last_json(said)
+    row = {"t": time.time(), "secs": round(time.time() - t0), "work": str(work)}
+    if not spec or spec.get("skip") or spec.get("metric") not in metrics_r3.METRICS or not spec.get("hypothesis"):
+        row.update(key=f"engineer-{time.strftime('%m%d%H%M')}",
+                   result=f"no hypothesis: {(spec or {}).get('skip') or said[-200:]}")
+        append(ATTEMPTS, row)
+        log(row["result"])
+        return
+    key = hashlib.sha1(spec["hypothesis"][:120].lower().encode()).hexdigest()[:12]
+    row.update(key=key, idea=spec["hypothesis"][:400], spec=spec)
+    log(f"hypothesis {key}: {spec['hypothesis'][:140]} (metric {spec['metric']}, expected {spec.get('expected')})")
+    # the coder works in the copy; if it wrote to the live folder anyway, those files go back before the gate
+    snap = {p.name: p.read_bytes() for p in HERE.glob("*.py")}
+    said = agent(CODER.format(spec=json.dumps(spec, ensure_ascii=False, indent=1), allowed=", ".join(sorted(ALLOWED)),
+                              py=PY), work, f"Read,Edit,Write,Glob,Grep,Bash({PY} test_*)")
+    row["agent"] = said.splitlines()[-1][:300] if said else ""
     strayed = [n for n, b in snap.items() if (HERE / n).read_bytes() != b]
     for n in strayed:
         tmp = HERE / f".{n}.auto"
@@ -223,26 +297,28 @@ def build():
     changed, why = gate(work)
     if strayed:
         why = f"the agent wrote to the live folder ({strayed}); restored"
-    row = {"t": time.time(), "key": key, "idea": idea[:400], "agent": said, "secs": round(time.time() - t0),
-           "files": changed, "work": str(work)}
     if not why and os.environ.get("META_CODE_DRY") == "1":
         why = "dry run (META_CODE_DRY=1)"
+    row["files"], row["secs"] = changed, round(time.time() - t0)
     if why:
         row["result"] = f"not deployed: {why}"
         append(ATTEMPTS, row)
         log(row["result"])
         return
-    baseline = rates(time.time() - 3600, time.time())
+    baseline = metrics_r3.window(time.time() - 3600, time.time())
     deploy(changed, work)
     git("add", *changed)
-    what = said.split("CHANGED:", 1)[-1].strip() if "CHANGED:" in said else idea[:160]
-    c = git("commit", "-q", "-m", f"week-08: [auto] {what[:120]}\n\nThe meta-harness's code idea, built by its coding "
-            f"agent and passed by the gate (allowed files, no forbidden lines, all tests): {idea[:400]}")
+    what = row["agent"].split("CHANGED:", 1)[-1].strip() if "CHANGED:" in row["agent"] else spec["hypothesis"]
+    c = git("commit", "-q", "-m", f"week-08: [auto] {what[:120]}\n\nThe engineer's hypothesis ({spec.get('term')}): "
+            f"{spec['hypothesis'][:300]}\nWhy: {str(spec.get('why'))[:400]}\nMetric {spec['metric']}, expected "
+            f"{spec.get('expected')}; built by the coding agent, passed the gate (allowed files, no forbidden lines, "
+            f"all suites).")
     commit = git("rev-parse", "--short", "HEAD").stdout.strip() if c.returncode == 0 else "uncommitted"
     row["result"] = f"deployed {commit}"
     append(ATTEMPTS, row)
     append(CHANGES, {"t": time.time(), "commit": commit, "source": "meta (auto)", "change": what[:300],
-                     "evidence": idea[:300], "after": "", "files": changed, "baseline": baseline})
+                     "evidence": str(spec.get("why"))[:300], "after": "", "files": changed, "metric": spec["metric"],
+                     "expected": spec.get("expected"), "term": spec.get("term"), "baseline": baseline})
     log(f"deployed {commit}: {what[:120]} ({', '.join(changed)})")
 
 
@@ -251,7 +327,7 @@ def main():
     try:
         fd = os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
     except FileExistsError:
-        if time.time() - LOCK.stat().st_mtime < AGENT_TIMEOUT + 600:
+        if time.time() - LOCK.stat().st_mtime < 2 * AGENT_TIMEOUT + 600:
             return
         LOCK.unlink()          # a run that died long ago left it
         fd = os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)

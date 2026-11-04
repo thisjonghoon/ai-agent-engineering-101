@@ -44,7 +44,9 @@ raw evidence that the next decision reads.
 | Shop strategy (until 11/4 12:40, and as the fallback) | Claude haiku (`meta_r3.py`) | which retail playbook to lean on and which number to A/B test next; ask and floor as shares of list price, separately for food (with a freshness premium) and goods, minimum margin, concession step, food clearance, warranty hours, cash reserve, stock cap, which goods and food to stock, depth, price spread, best-seller depth; it sees settled sales, revenue and the market's settled prices by kind | bounds and a largest step per cycle for every number; floor ≥ cost + 2% for a fresh unit, lower only by named rules (food near its date down to cost × clear_frac; goods past goods_age_days down to cost + aged_margin; the last 24 h down to cost, the last final_hours down to cost × final_frac, since stock left at the end is lost); when fewer than 60% of a busy window's receipts settle and no warranty is offered, code tries a 2 h warranty on grade-A goods; an A/B test's winner is applied by code, not chosen by the model; an unusable answer keeps the current strategy |
 | Shop, each haggle turn | Claude haiku in a share of talks (`model_share`), the rule otherwise | accept or a counter, with a one-line reason; it sees the unit, every offer, our stock, demand, the going price and what the rule would do here | `seller_r3.py`: the floor is a hard limit; a counter sits between the offer and our last ask; busy (3 calls at once), slow (8 s) or unusable answers go to the rule. The model sold 24% of its talks at 2,128 a talk against the rule's 40% at 3,207 (11/4, after its prompt was reworked), so the meta-harness set its share to 0 |
 | Buyer, each order | Claude haiku (`buyer_r3.py` via `buyer.py`) | each offer in the haggle, with a one-line reason (the ReAct trace) | which shops the scouts ask and which quote the lead takes (surplus at the ask), bans (false grade claims, broken goods without warranty), the cap (min(budget, CAP × list), lower for grade C without a 6 h warranty), leaving before a deal when the shop's own words fail our payment policy, the accept policy for the kit |
-| Forum column | Claude haiku (`forum_r3.style`) | the voice of a post (`장보기 레이더`), from facts code built | every number in its text must be one of the facts' numbers, no link, no call for votes; else the plain facts go out |
+| Forum column | eight writers on Claude haiku (`forum_r3.style`), an editor on GPT (Hermes) | each writer gives its kind of post a voice (`장보기 레이더`) from facts code built; the editor publishes, revises or rejects each draft against those facts | every number in the writer's or the editor's text must be one of the facts' numbers, no link, no call for votes; else the plain facts go out |
+| Second opinion on the meta-harness | GPT through Hermes (`meta_team_r3.second_opinion`) | keep, trim or reject per specialist proposal, looking for short trials, cycles of unequal length, crossed evidence | the sonnet manager weighs it; it never sets a number |
+| Fallback for every call | GPT through Hermes (`harness.fallback`) | the same prompt, when every Claude try failed (a usage limit or an outage) | when GPT fails too, the buyer haggles on by code (a set share of the gap, within budget) instead of walking away; the watcher alerts on each fallback |
 | Ideas | Claude sonnet (`meta_explore.py`, from week 7) | proposals only | everything |
 
 All Claude calls go through `claude -p` with no tools, no settings, no session persistence, on the subscription.
@@ -209,6 +211,16 @@ own logs, and is kept in git with its numbers:
 - **Bugs the measurements found:** a malformed shop card raised `SystemExit` and ended 405 buyer runs with no other
   shop tried; the ledger cache stayed on a Round 2 position, so the buyer saw no Round 3 prices for its first hours; a
   leftover Round 2 kit loop took 11 orders at the round's start.
+- **Where the shop's money is.** The top shop by profit (57M) sold 284 units at an average 459,240, 99% furniture,
+  at 0.86 of list; we sold at 27,780 on average, none above 150,000, because the list-price cap topped out at 400,000.
+  The caps were raised (the user set max_list 600,000 at once), restock now buys dear goods first (`dear_first`,
+  since a 3-minute supply window fits about 18 lines), and the first mattress sold at 446,430 three minutes after it
+  arrived.
+- **A bug in kit v4's checkout, reported.** An unpaid checkout session never expires, so its unit was refused 16
+  times; the seller now leaves such a unit out, and the bug went to the course discussion (#378) with the lines.
+- **Speed and resilience.** An order took 36 s (scouts 9.5 s, haggle 21 s); scouts now wait 6 s, a fast member plans
+  its haggle in one model call, and buyer members are ranked by surplus per minute. Every model call fails over from
+  Claude to GPT, and the buyer haggles by code if both fail, so a usage limit does not stop the agents.
 - **Decisions misread, and caught.** The single prompt raised our stock depth for other shops' stock-outs and grew
   past its size guard; a team dry run read a 4-minute cycle against a 15-minute one. The fixes (role-split evidence,
   clearer names, per-hour results) are in the structure above.

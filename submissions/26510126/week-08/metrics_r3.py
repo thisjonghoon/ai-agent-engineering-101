@@ -21,7 +21,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 BOARD = HERE / "logs" / "board" / "board-round3.json"
-SHOP_TERMS = {"profit": 0.5, "revenue": 0.3, "stars": 0.2}
+# the rules of 11/5 03:49: the shop's first term is book (cash + what unsold units cost), no longer cash ("profit")
+SHOP_TERMS = {"book": 0.5, "revenue": 0.3, "stars": 0.2}
 BUYER_TERMS = {"surplus": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}
 METRICS = ("buyer_close_rate", "buyer_surplus_order", "buyer_paid_h", "shelf_refused_h", "shop_deals_h",
            "shop_margin_h", "forum_votes_post")

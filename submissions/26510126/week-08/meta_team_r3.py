@@ -39,7 +39,7 @@ ROLES = {
         "task": ("You set how the shop prices and haggles: ask and floor as shares of list (goods and food), the "
                  "least margin over cost, how fast it concedes, how many turns it haggles, clearance of food near its "
                  "date, warranty hours on grade-A goods, endgame floors, and how far the ask follows the market "
-                 "(market_ask). The shop's ALL weighs profit 0.5, revenue 0.3, "
+                 "(market_ask). The shop's ALL weighs book (cash + unsold stock at cost) 0.5, revenue 0.3, "
                  "stars 0.2 as percentiles among shops. You may propose one A/B test of a per-negotiation number and "
                  "a seller-team recruit style."),
         "data": ("minutes", "opens", "deals", "walks", "settled", "settle_refused", "revenue", "price_list", "margin",

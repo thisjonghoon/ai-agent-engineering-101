@@ -52,6 +52,25 @@ B_SHARE = 0.45       # grade B food has at least 45% of its shelf life left (age
 MAX_OFFERS = 8
 MAX_TRIES = 3        # shops tried per order when a negotiation ends without a deal
 RETRY_UNTIL = 150    # seconds into the order after which no new shop is tried (the kit stops the buyer at 300 s)
+MAX_RAISE = 0.4      # each offer moves at most this share of the gap to the shop's ask
+# The meta-harness tunes these numbers from how our buyer did (meta_r3.py BUYER_BOUNDS, the user on 11/4: the
+# harness should make such fixes, not a person); each run reads its plan, the defaults above when it has none.
+PLAN = Path(os.environ.get("BUYER_PLAN") or Path(__file__).resolve().parent / "buyer_plan_r3.json")
+PLAN_KEYS = ("CAP", "FOOD_MARGIN", "C_CAP", "C_WARRANTY", "MAX_TRIES", "MAX_RAISE", "FIRM_GAP")
+
+
+def load_plan():
+    try:
+        plan = json.loads(PLAN.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    for k, v in (plan if isinstance(plan, dict) else {}).items():
+        if k in PLAN_KEYS and isinstance(v, (int, float)) and not isinstance(v, bool):
+            if k == "FIRM_GAP":
+                buyer.FIRM_GAP = v
+            else:
+                globals()[k] = int(v) if k in ("MAX_TRIES", "C_WARRANTY") else v
+    return plan
 
 
 def load(path, default):
@@ -282,6 +301,7 @@ def review(result, name, lp, problem):
 
 
 async def main(args, shops, memory, remember):
+    load_plan()
     order = load(args.order, {})
     cat = catalog()
     demand_r3.record_order(order, cat, shops)            # a sample of the hidden demand (demand_r3.py)
@@ -329,7 +349,7 @@ async def attempt(order, cat, s, off, lp, note, remember):
             f"What the market paid lately (public ledger): "
             f"{prices_r3.line(MD, sku, (cat.get(sku) or {}).get('category'))}.\n")
     try:
-        result = await buyer.shop(s["url"], name, limit, memory=hint, max_raise=0.4, max_offers=MAX_OFFERS,
+        result = await buyer.shop(s["url"], name, limit, memory=hint, max_raise=MAX_RAISE, max_offers=MAX_OFFERS,
                                   opening=opening, screen=screen_for(order, lp))
     except Exception as e:
         log("ERROR", f"trade with {s['name']} failed: {e!r}")

@@ -142,6 +142,9 @@ def as_int(value):
         return None
 
 
+FIRM_GAP = 0.05      # take an ask the shop held twice when it is within this share of our offer (buyer_plan_r3.json)
+
+
 async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFFERS, opening=None, screen=None):
     """Negotiate one item. `memory` is what market_buyer.py remembers about this shop (empty in week 6).
     `max_raise` (market_buyer.py only): raise at most this share of the gap between our last offer and the ask.
@@ -182,7 +185,7 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
                 log("GUARD", f"ask {ask} is at or below our last offer {last_offer}, offering it")
                 offer = ask
             elif ask is not None and ask <= budget and last_offer is not None and (
-                    n == max_offers or (firm and ask - last_offer <= 0.05 * ask)):
+                    n == max_offers or (firm and ask - last_offer <= FIRM_GAP * ask)):
                 # 11/3: walked away 20 short of a shop that held 14492 three times, inching up by 0.1% a turn until the
                 # offers ran out; a firm ask within 3% of our offer, or our last chance, is taken if the budget allows
                 log("GUARD", f"ask {ask} {'held twice' if firm else 'on our last offer'} and within budget, taking it")

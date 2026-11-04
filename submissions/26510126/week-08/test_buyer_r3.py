@@ -310,6 +310,14 @@ def main():
          "C" in pol({"price": 60000}) and "C" not in pol({"price": 70000}) and "C" in pol({"price": 90000, "warranty_hours": 6})
          and "C" not in buyer_r3.accept_policy({"kind": "goods"})["grades"], str([pol({"price": 60000}), pol({"price": 70000})]))
 
+    # 12. the meta-harness's plan (buyer_plan_r3.json) sets the buyer's numbers; unknown keys are ignored
+    buyer_r3.PLAN = TMP / "buyer_plan_r3.json"
+    buyer_r3.PLAN.write_text(json.dumps({"C_CAP": 0.55, "MAX_TRIES": 4, "FIRM_GAP": 0.08, "bogus": 1}))
+    buyer_r3.load_plan()
+    case("the buyer reads its numbers from the meta-harness's plan", buyer_r3.C_CAP == 0.55 and buyer_r3.MAX_TRIES == 4
+         and market_buyer.buyer.FIRM_GAP == 0.08 if hasattr(market_buyer, "buyer") else buyer_r3.buyer.FIRM_GAP == 0.08,
+         str((buyer_r3.C_CAP, buyer_r3.MAX_TRIES)))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 

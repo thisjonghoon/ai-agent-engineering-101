@@ -510,6 +510,15 @@ async def cycle():
                             max_chars=60_000)
     new = (ans or {}).get("strategy") if isinstance((ans or {}).get("strategy"), dict) else None
     s = guard(new or {}, cur)
+    # the user chose (11/4) to try the reworked seller model: model_share stays at 0.25 or more until the model side
+    # has 30 talks since its prompt changed (the harness set it to 0 at 09:58 against the prompt's own rule)
+    try:
+        since_h = max(0.5, (time.time() - MODEL_PROMPT_SINCE) / 3600)
+        model_talks = (simulate_r3.model_vs_rule(since_h).get("model") or {}).get("talks", 0)
+    except Exception:
+        model_talks = 0
+    if model_talks < 30 and s.get("model_share", 0) < 0.25:
+        s["model_share"] = 0.25
     # receipts that never settle: the buyer's kit refused to pay (its accept policy: certificate, shelf life, grade,
     # warranty). We cannot see why from the shop, so when most of a busy window does not settle and we offer no
     # warranty, code tries a short one on grade-A goods; the harness sees the result next cycle and may undo it

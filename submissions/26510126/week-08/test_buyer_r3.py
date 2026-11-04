@@ -423,6 +423,19 @@ def main():
          and not buyer_r3.rejects_after_two("P", [rej] * 2) and not buyer_r3.rejects_after_two("Q", [rej] * 3),
          str((got.get("state"), got.get("offers"), got.get("asks"))))
 
+    # 20. a dear SKU gets a wider close_gap: an ask 12% over our offer is taken with 0.15 but not with the default 0.05
+    async def wide_harness(prompt, **kw):
+        ask = int(re.search(r"The shop now asks (\d+)", prompt).group(1))
+        return {"action": "offer", "price": int(ask * 0.8)}
+    base_w, _ = fake_shop("Wide", 0.9)
+    harness.ask = wide_harness
+    got = asyncio.run(buyer_r3.buyer.shop(base_w, "포기김치 5kg", 30000, opening="I want to buy 포기김치 5kg (F1)",
+                                         max_raise=0.4, close_gap=0.15))
+    harness.ask = scripted
+    case("an ask 12% over our offer and within budget is taken with a close_gap of 0.15",
+         got.get("state") == "TASK_STATE_COMPLETED" and got["offers"][-1] == got["asks"][-1] == 27075,
+         str((got.get("state"), got.get("offers"), got.get("asks"))))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 

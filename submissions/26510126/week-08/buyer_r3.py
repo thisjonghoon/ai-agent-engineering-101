@@ -33,6 +33,7 @@ import asyncio
 import httpx
 
 import buyer
+import code_ab_r3
 import demand_r3
 import forum_r3
 import prices_r3
@@ -525,11 +526,16 @@ async def attempt(order, cat, s, off, lp, note, remember, take_second=False):
             f"Our record with this shop: {note}.\n"
             f"What the market paid lately (public ledger): "
             f"{prices_r3.line(MD, sku, (cat.get(sku) or {}).get('category'))}.\n")
+    close_gap = None
+    # 11/4: of 78 talks on SKUs listed at 200k+ about 31 ended with no deal (line 1354: ask 1,777,577, our offer 1,769,104,
+    # shop rejected, ~470k surplus lost); one dear deal is worth ~25 ordinary ones (17k surplus), so close 15% apart, not 5%
+    if lp >= 200000 and code_ab_r3.on("a996d96f6081", order.get("order")):
+        close_gap = 0.15
     t0 = time.time()
     try:
         log("TEAM", f"{member or 'no team'} haggles this one {json.dumps(style)}")
         result = await buyer.shop(s["url"], name, limit, memory=hint, max_raise=style.get("MAX_RAISE", MAX_RAISE),
-                                  max_offers=MAX_OFFERS, plan=bool(style.get("PLAN")), take_second=take_second,
+                                  max_offers=MAX_OFFERS, plan=bool(style.get("PLAN")), take_second=take_second, close_gap=close_gap,
                                   opening=opening, screen=screen_for(order, lp))
     except Exception as e:
         log("ERROR", f"trade with {s['name']} failed: {e!r}")

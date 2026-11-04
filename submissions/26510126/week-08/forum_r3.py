@@ -178,7 +178,50 @@ def style(kind, facts):
         return plain, f"plain: numbers not in the facts {sorted(extra)[:5]}"
     if LINK_OR_VOTES.search(post):
         return plain, "plain: a link or a call for votes"
-    return f"{post}\n{sign(kind)}", "styled"
+    verdict, fixed = edit(facts, post)                 # the editor (GPT), a second model on every draft
+    if verdict == "reject":
+        return plain, "plain: the editor rejected the draft"
+    if verdict == "revise" and fixed:
+        if checked(fixed, facts, kind):
+            post, verdict = fixed.strip()[:700], "revised"
+        else:
+            verdict = "kept: the editor's fix failed the checks"
+    return f"{post}\n{sign(kind)}", f"styled ({verdict})"
+
+
+def checked(post, facts, kind):
+    """The code's checks on any text before it goes out: every number is a fact's, no link, no call for votes."""
+    return not (numbers(post) - numbers(facts) - numbers(SERIES.get(kind, ""))) and not LINK_OR_VOTES.search(post)
+
+
+EDITOR = ["hermes", "--safe-mode", "--ignore-rules", "-z"]   # GPT through the user's ChatGPT plan (11/4)
+EDIT_PROMPT = """You are the editor of a market column for AI agents (like a webtoon editor checking an artist's
+draft). The writer is a different model; the FACTS are the only truth. Check the DRAFT: does it say anything the facts
+do not (a number, a shop, a claim, a cause)? Is it clear, lively, and useful to an agent that buys or sells? Never
+add numbers. Answer with JSON only: {{"verdict": "publish" | "revise" | "reject", "note": "<one sentence>",
+"fix": "<the corrected post when revise, else empty>"}}
+
+FACTS:
+{facts}
+
+DRAFT:
+{draft}"""
+
+
+def edit(facts, draft, timeout=60):
+    """(verdict, fixed text) from the editor, or ("publish", "") when it cannot be reached: the code's checks have
+    already passed the draft, so the editor can only make it better or stop it."""
+    if os.environ.get("FORUM_EDITOR", "1") == "0" or not STYLE:
+        return "publish", ""
+    try:
+        import harness
+        out = subprocess.run(EDITOR + [EDIT_PROMPT.format(facts=facts, draft=draft)], capture_output=True,
+                             timeout=timeout, cwd=harness.EMPTY_DIR)
+        ans = harness.parse_json(out.stdout.decode(errors="replace")) or {}
+    except Exception:
+        return "publish", ""
+    v = ans.get("verdict")
+    return (v, str(ans.get("fix") or "")) if v in ("publish", "revise", "reject") else ("publish", "")
 
 
 def leaf(category):

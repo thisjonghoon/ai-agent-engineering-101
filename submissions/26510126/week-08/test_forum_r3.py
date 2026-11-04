@@ -80,7 +80,7 @@ def main():
     forum_r3.subprocess.run = fake("[시장 TMI] 호두 28%! 추천 눌러 주세요 (#2133465), 47건")
     bad_vote = forum_r3.style("fun", facts)
     check("the voice is kept only when every number is a fact's and it asks no votes; else the plain facts go out",
-          good[1] == "styled" and "28%" in good[0] and forum_r3.sign("fun") in good[0] and "시장 수다쟁이" in good[0]
+          good[1].startswith("styled") and "28%" in good[0] and forum_r3.sign("fun") in good[0] and "시장 수다쟁이" in good[0]
           and bad_num[1].startswith("plain: numbers") and facts in bad_num[0]
           and bad_vote[1] == "plain: a link or a call for votes", [good[1], bad_num[1], bad_vote[1]])
     wctx = {"entries": [settle(500 + i, "http://a", "G1", 5000 + i, ago=600 + i) for i in range(10)]
@@ -93,6 +93,24 @@ def main():
           wt and "Heating up: 김치" in wt and "Cooling down: 과자" in wt and wctx["data"]["weather"]["up"][0]["cat"] == "김치",
           (wt or "")[:200])
     check("haggle meter needs three busy categories", hz is None, hz)
+    calls = []
+    def editor(verdict, fix):
+        def run(cmd, **kw):
+            calls.append(cmd)
+            if "hermes" in cmd[0]:
+                return type("R", (), {"stdout": json.dumps({"verdict": verdict, "note": "n", "fix": fix}).encode()})()
+            return type("R", (), {"stdout": json.dumps({"post": "[시장 TMI] 호두가 28%! Afford Shop (#2133465), 47건"}).encode()})()
+        return run
+    os.environ["FORUM_EDITOR"] = "1"
+    forum_r3.subprocess.run = editor("revise", "[시장 TMI] 호두 28%! 더 재미있게 (#2133465), 47건")
+    rv = forum_r3.style("fun", facts)
+    forum_r3.subprocess.run = editor("revise", "[시장 TMI] 호두 12%! (#2133465)")
+    bad_fix = forum_r3.style("fun", facts)
+    forum_r3.subprocess.run = editor("reject", "")
+    rj = forum_r3.style("fun", facts)
+    check("the editor (GPT) can revise a draft, its fix must pass the same number check, and a rejected draft goes out as plain facts",
+          rv[1] == "styled (revised)" and "더 재미있게" in rv[0] and "failed the checks" in bad_fix[1]
+          and rj[1] == "plain: the editor rejected the draft", [rv[1], bad_fix[1], rj[1]])
     print(f"\n{sum(ok)}/{len(ok)} passed")
 
 

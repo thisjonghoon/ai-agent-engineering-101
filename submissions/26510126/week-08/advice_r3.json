@@ -23,6 +23,10 @@
   {
    "t": 1793764117.133337,
    "text": "The user (11/4 13:00) found our list-price cap too conservative and set max_list 600000, goods_frac 0.6, stock_value 5,000,000 (from {'max_list': 330000, 'goods_frac': 0.55, 'stock_value': 3250000}). Keep them unless the dear goods fail to sell within a few supply windows; the steps are now 200,000 for max_list and 1,000,000 for stock_value, so you can follow quickly either way."
+  },
+  {
+   "t": 1793766485.331483,
+   "text": "Mattresses sell out within minutes: 13:04 window bought K 388,153, LK 459,929 and Q 150,989 (one each); the K sold at 446,430 at 13:07 and all three were gone before 13:24. The 13:24 window again bought one LK and one Q, after twelve bed pads, kimchi and apples took the first lines; the LK sold at once. Dear goods get qty 1 because their category score is still low in our own sales. Suggest dear_first up to 3 and depth up, so each window buys 3-5 mattresses first, while they keep selling within the window gap (20 min); cash is 13.1M, stock 2.0M at cost."
   }
  ]
 }

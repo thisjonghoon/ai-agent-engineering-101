@@ -158,8 +158,9 @@ CLOSE_GAP = 0.05
 
 
 async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFFERS, opening=None, screen=None,
-               plan=False):
+               plan=False, take_second=False):
     """Negotiate one item. `memory` is what market_buyer.py remembers about this shop (empty in week 6).
+    `take_second` (Round 3): a shop that ended earlier talks in rejection after two asks; take its second ask if within budget.
     `max_raise` (market_buyer.py only): raise at most this share of the gap between our last offer and the ask.
     `opening` (Round 3): the first message, e.g. "I want to buy <name> (<sku>)"; default "I want to buy a <item>".
     `screen` (Round 3): a function of the shop's reply text that returns a reason to leave (the unit it names will not
@@ -199,10 +200,12 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
                 offer = ask
             elif ask is not None and ask <= budget and last_offer is not None and (
                     n == max_offers or (firm and ask - last_offer <= FIRM_GAP * ask)
-                    or ask - last_offer <= CLOSE_GAP * ask):
+                    or ask - last_offer <= CLOSE_GAP * ask or (take_second and n == 2)):
                 # 11/3: walked away 20 short of a shop that held 14492 three times, inching up by 0.1% a turn until the
                 # offers ran out; a firm ask within 3% of our offer, or our last chance, is taken if the budget allows
-                log("GUARD", f"ask {ask} {'held twice' if firm else 'on our last offer' if n == max_offers else 'close to our offer'} and within budget, taking it")
+                # 11/4: psyoung82 ended 92 of 109 talks after two asks and only 10 were deals, all closed at its second
+                # ask (list 18900: 17955 then 14175); countering lower ended the talk, at a median 0.78 of list
+                log("GUARD", f"ask {ask} {'held twice' if firm else 'on our last offer' if n == max_offers else 'close to our offer' if ask - last_offer <= CLOSE_GAP * ask else 'second ask of a shop that rejects after two'} and within budget, taking it")
                 offer = ask
             elif plan and ask is not None:
                 # plan mode (a fast team member, 11/4): one model call fixes the opening and the most we pay, code

@@ -406,6 +406,22 @@ def main():
     case("an ask 3% over our offer and within budget is taken", got.get("state") == "TASK_STATE_COMPLETED"
          and got["offers"] == [27600, 28500], str((got.get("state"), got.get("offers"), got.get("asks"))))
 
+    # 19. a shop that ended 3+ of our talks in rejection after two asks gets its second ask taken (11/4: psyoung82, 92 of
+    # 109 talks ended after two asks and only 10 were deals, all at its second ask)
+    async def low_harness(prompt, **kw):
+        ask = int(re.search(r"The shop now asks (\d+)", prompt).group(1))
+        return {"action": "offer", "price": int(ask * 0.7)}
+    rej = {"kind": "trade", "round": 3, "shop": "P", "end": "TASK_STATE_REJECTED", "asks": [30000, 28500]}
+    base_p, _ = fake_shop("P", 0.6)
+    harness.ask = low_harness
+    got = asyncio.run(buyer_r3.buyer.shop(base_p, "포기김치 5kg", 30000, opening="I want to buy 포기김치 5kg (F1)",
+                                         max_raise=0.4, take_second=buyer_r3.rejects_after_two("P", [rej] * 3)))
+    harness.ask = scripted
+    case("the second ask of a shop that rejects after two asks is taken, only once it has done so 3 times",
+         got.get("state") == "TASK_STATE_COMPLETED" and got["offers"] == [21000, 28500]
+         and not buyer_r3.rejects_after_two("P", [rej] * 2) and not buyer_r3.rejects_after_two("Q", [rej] * 3),
+         str((got.get("state"), got.get("offers"), got.get("asks"))))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 

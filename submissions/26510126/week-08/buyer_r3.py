@@ -402,7 +402,7 @@ async def main(args, shops, memory, remember):
             continue
         tried.add((s["name"], off["sku"]))
         skus[s["name"]] = skus.get(s["name"], 0) + 1
-        out = await attempt(order, cat, s, off, lp, note, remember)
+        out = await attempt(order, cat, s, off, lp, note, remember, rejects_after_two(s["name"], memory))
         quick = out.pop("_quick", False)
         if out["receipt"]:
             break
@@ -497,7 +497,14 @@ async def scout_wave(order, cat, picked, dropped, quoted):
         log("SCOUT", f"{c[1]['name']} {c[2]['sku']}: asks {ask} of list {c[3]} (surplus at the ask ~{value:.0f})")
 
 
-async def attempt(order, cat, s, off, lp, note, remember):
+def rejects_after_two(name, memory):
+    """True when at least 3 of this shop's Round 3 talks with us ended in rejection after exactly two asks."""
+    return sum(m.get("kind") == "trade" and m.get("round") == 3 and m.get("shop") == name
+               and m.get("end") == "TASK_STATE_REJECTED"
+               and len([a for a in m.get("asks") or [] if a is not None]) == 2 for m in memory) >= 3
+
+
+async def attempt(order, cat, s, off, lp, note, remember, take_second=False):
     """One negotiation with one shop over one SKU; returns the result line for the kit."""
     # the catalog's name first: the name in a shop's offer is the shop's own text and goes into our prompt
     name, sku = harness.clip((cat.get(off["sku"]) or {}).get("name") or off.get("name") or off["sku"], 80), off["sku"]
@@ -522,7 +529,7 @@ async def attempt(order, cat, s, off, lp, note, remember):
     try:
         log("TEAM", f"{member or 'no team'} haggles this one {json.dumps(style)}")
         result = await buyer.shop(s["url"], name, limit, memory=hint, max_raise=style.get("MAX_RAISE", MAX_RAISE),
-                                  max_offers=MAX_OFFERS, plan=bool(style.get("PLAN")),
+                                  max_offers=MAX_OFFERS, plan=bool(style.get("PLAN")), take_second=take_second,
                                   opening=opening, screen=screen_for(order, lp))
     except Exception as e:
         log("ERROR", f"trade with {s['name']} failed: {e!r}")

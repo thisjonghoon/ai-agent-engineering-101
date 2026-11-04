@@ -1,1 +1,8 @@
-{"notes": []}
+{
+ "notes": [
+  {
+   "t": 1793754308.9727292,
+   "text": "1) buyer.talks.none_in_stock counts OTHER shops answering our buyer 'none in stock'; it is not our shop's stock. Our sku_depth/window_depth do not change it; raise them only for our own stock-outs (our shop's lost asks in demand). 2) FOOD_MARGIN: the 57 shelf-life refusals were mostly before the buyer began reading the shop's stated hours and leaving before a deal (11/3 21:20); in our last 60 payments only 2 were refused for shelf life. Each step up asks shops for longer shelf life than the order needs, so fewer shops can serve it. 1.1-1.15 looks enough; raise it only if shelf-life refusals in payments rise again."
+  }
+ ]
+}

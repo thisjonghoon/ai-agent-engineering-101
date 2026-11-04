@@ -79,4 +79,26 @@ async def ask(prompt, tries=2, model=None, timeout=TIMEOUT, max_chars=MAX_PROMPT
         data = parse_json(answer)
         if data is not None:
             return data
-    return None
+    return await fallback(prompt)
+
+
+FALLBACK = ["hermes", "--safe-mode", "--ignore-rules", "-z"]   # GPT through the user's ChatGPT plan
+
+
+async def fallback(prompt, timeout=60):
+    """When every Claude try failed (a usage limit, an outage), the same prompt once to GPT through Hermes: the
+    agents keep deciding instead of stopping (11/4: another student's agents stopped when their tokens ran out).
+    HARNESS_FALLBACK=0 turns it off; returns None when GPT fails too."""
+    if os.environ.get("HARNESS_FALLBACK", "1") == "0":
+        return None
+    started = time.time()
+    try:
+        proc = await asyncio.create_subprocess_exec(*FALLBACK, prompt[:20000], cwd=EMPTY_DIR,
+                                                    stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
+        out, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+    except (OSError, asyncio.TimeoutError):
+        log("HARNESS", "fallback to GPT failed")
+        return None
+    data = parse_json(out.decode(errors="replace"))
+    log("HARNESS", f"fell back to GPT: {time.time() - started:.1f} s, {'an answer' if data else 'no answer'}")
+    return data

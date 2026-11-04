@@ -12,7 +12,7 @@ Code guards the budget:
   - an offer below the previous offer is raised to the previous offer
   - an offer above the seller's ask is lowered to the ask
   - when the seller's ask comes down to our last offer or below, it is offered at once
-  - no usable answer from the harness means walking away
+  - no usable answer from the harness (Claude, then GPT) means a code offer: a set share of the gap, within budget
 Every guard that fires is logged with "GUARD:".
 """
 import argparse
@@ -231,6 +231,12 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
                     log("OUT", f"harness walks away at ask {ask}")
                     await seller.cancel(task_id)
                     return {**result, "state": "walked"}
+                if not answer and ask is not None:
+                    # both models unavailable (a usage limit, an outage): keep haggling by code rather than walk
+                    base = last_offer if last_offer is not None else int(min(budget, ask) * 0.75)
+                    offer = min(budget, ask, base + max(1, int((max_raise or 0.4) * max(0, ask - base))))
+                    action = "offer"
+                    log("GUARD", f"no model answer: code offers {offer}")
                 if action != "offer" or offer is None:
                     log("GUARD", f"no usable answer from the harness ({answer!r}), walking away")
                     await seller.cancel(task_id)

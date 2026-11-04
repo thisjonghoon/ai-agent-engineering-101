@@ -89,7 +89,9 @@ lacks something. Find ONE change, in these files only: {allowed}, that should mo
 you counted in the traces. Read the ledger first: when changes aimed at one metric keep measuring flat or worse, aim
 at another term. The shop's cash and revenue are the costliest shop terms, and restock_r3.py (what and how much the
 shop stocks) reaches them: on 11/4 stocking dear furniture took dear sales from about 4 to about 60 an hour, more
-than any buyer-side change so far. Not: a change already in the code or in the list above, a number the tuning team can set
+than any buyer-side change so far. Forum votes and posts together (0.3 + 0.1 of the buyer's ALL) cost about as much
+as buyer surplus and are the cheapest to move: forum_r3.py decides what our posts say (votes per post fell from 6 to
+4 overnight). Not: a change already in the code or in the list above, a number the tuning team can set
 (it already moves those), anything about payments, keys or the seller.
 
 Answer with one JSON object on the last line, nothing after it:

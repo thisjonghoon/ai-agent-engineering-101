@@ -311,6 +311,17 @@ async def main(args, shops, memory, remember):
     cat = catalog()
     demand_r3.record_order(order, cat, shops)            # a sample of the hidden demand (demand_r3.py)
     sync_kit_files(memory, remember)
+    # an order we already paid for can come back when the kit's result post timed out (11/4 11:47: paid, the post
+    # timed out, the same order came again, a second shop agreed, the market refused the second payment): no new talk
+    try:
+        paid = any(json.loads(l).get("order") == order.get("order") and json.loads(l).get("paid")
+                   for l in (MD / "payments.jsonl").read_text(encoding="utf-8").splitlines()[-500:])
+    except (OSError, ValueError):
+        paid = False
+    if paid:
+        log("PICK", f"order {order.get('order')} is already paid: no new talk")
+        print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)
+        return
     cands = candidates(order, shops, cat, memory, ledger_claims(cat))
     if not cands:
         log("PICK", f"no listed shop has a SKU of {order.get('item')} we can buy")

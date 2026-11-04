@@ -199,8 +199,28 @@ def advice(hours=24, n=3):
     notes = read_json(ADVICE, {}).get("notes") or []
     cut = time.time() - hours * 3600
     notes = [x for x in notes if isinstance(x, dict) and x.get("t", 0) >= cut and isinstance(x.get("text"), str)][-n:]
-    return "\n".join(f"- {time.strftime('%m/%d %H:%M', time.localtime(x['t']))}: {x['text'][:600]}" for x in notes) \
+    text = "\n".join(f"- {time.strftime('%m/%d %H:%M', time.localtime(x['t']))}: {x['text'][:600]}" for x in notes) \
         or "(none)"
+    return text + code_changes()
+
+
+CODE_CHANGES = HERE / "logs" / "code_changes_r3.jsonl"
+
+
+def code_changes(n=4):
+    """The outer loop's last code changes (the supervisor builds the harness's code ideas and what the data shows no
+    number can fix, then measures them), so the team reads results it did not make itself and does not tune a number
+    to undo or to repeat a change already in the code."""
+    rows = []
+    try:
+        for line in CODE_CHANGES.read_text(encoding="utf-8").splitlines()[-n:]:
+            x = json.loads(line)
+            rows.append(f"- {time.strftime('%m/%d %H:%M', time.localtime(x.get('t', 0)))} [{x.get('source')}] "
+                        f"{str(x.get('change'))[:160]}; why: {str(x.get('evidence'))[:120]}; "
+                        f"after: {str(x.get('after') or 'not measured yet')[:120]}")
+    except (OSError, ValueError, AttributeError):
+        return ""
+    return ("\nCode changes to the harness itself (outer loop, newest last):\n" + "\n".join(rows)) if rows else ""
 
 
 def buyer_diag(hours=6):

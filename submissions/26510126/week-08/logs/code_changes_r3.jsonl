@@ -1,0 +1,24 @@
+{"t": 1793707320.0, "commit": "75f04a6", "source": "design", "change": "seller haggles with haiku in a share of talks (model_share), rules as fallback", "evidence": "", "after": ""}
+{"t": 1793707680.0, "commit": "1a5a115", "source": "bug", "change": "ledger cache stuck on a Round 2 seq: jump to the last pages", "evidence": "the buyer saw no Round 3 settles", "after": ""}
+{"t": 1793707800.0, "commit": "13077b1", "source": "design", "change": "prices_r3: going prices from the ledger, forum price claims checked", "evidence": "", "after": ""}
+{"t": 1793708040.0, "commit": "5eb3a5a", "source": "data", "change": "seller ships the food unit that lasts as long as the buyer asks", "evidence": "two 2-star reviews: 367/141 h left against 540/180 h needed", "after": ""}
+{"t": 1793708280.0, "commit": "20459e5", "source": "data", "change": "buyer leaves when the shop's words show a grade or shelf life the kit would not pay for", "evidence": "6 unpaid receipts on 11/3", "after": ""}
+{"t": 1793708640.0, "commit": "04b2e26", "source": "user", "change": "forum kinds built by code from the ledger, weighted by votes", "evidence": "the user asked for content agents like", "after": ""}
+{"t": 1793709240.0, "commit": "9faa2a3", "source": "data", "change": "a quick 'none in stock' does not use up a try; open near the market's lower quartile", "evidence": "30 of 69 talks ended at once", "after": ""}
+{"t": 1793712000.0, "commit": "8c8ab8f", "source": "data", "change": "buyer takes a firm ask within budget", "evidence": "6 walks 20 short of a deal", "after": ""}
+{"t": 1793752260.0, "commit": "43f0447", "source": "data", "change": "seller model sees what the rule would do", "evidence": "rule 92% at 1.11x floor vs model 85% at 1.03x", "after": "model still lost; model_share 0 since 10:00"}
+{"t": 1793752500.0, "commit": "cbf3ef3", "source": "data", "change": "buyer takes grade C with a 6 h warranty or at 65% of list or less", "evidence": "ledger 24 h breaks: A 1.4%, B 5.2%, C 17.9%", "after": ""}
+{"t": 1793752860.0, "commit": "060d125", "source": "user", "change": "the meta-harness tunes the buyer's numbers (buyer_plan_r3.json)", "evidence": "", "after": ""}
+{"t": 1793758140.0, "commit": "49dd9c1", "source": "meta code_idea + bug", "change": "read_card raised SystemExit (now RuntimeError); a second SKU after a quick reject", "evidence": "405 orders closed with no result", "after": ""}
+{"t": 1793759640.0, "commit": "44d8901", "source": "other agents", "change": "buyer scouts quote several shops at once, the lead haggles the best", "evidence": "dragonash's team-run agents", "after": "surplus per order 11,161 -> 16,954 (43 orders)"}
+{"t": 1793760540.0, "commit": "81a7ac9", "source": "bug", "change": "no new talk for an order already paid", "evidence": "a second payment refused at 11:47", "after": ""}
+{"t": 1793761740.0, "commit": "7d8e2c2", "source": "other agents", "change": "sales and buying teams with ranks and promotion", "evidence": "another student's team with promotions", "after": "s-premium promoted to seller lead"}
+{"t": 1793762100.0, "commit": "e479603", "source": "design", "change": "meta-harness as a team: four specialists and a manager", "evidence": "", "after": ""}
+{"t": 1793762460.0, "commit": "c91245d", "source": "user", "change": "GPT reviewer of the specialists' proposals", "evidence": "", "after": ""}
+{"t": 1793763180.0, "commit": "4590fb3", "source": "data", "change": "scouts wait 6 s; b-fast plans the haggle in one call", "evidence": "an order took 36 s", "after": ""}
+{"t": 1793765520.0, "commit": "b0b1848", "source": "data", "change": "restock buys dear goods first (dear_first)", "evidence": "three mattresses sold within minutes while cheap lines took the window", "after": "first mattress sold at 446,430"}
+{"t": 1793768280.0, "commit": "5566e6a", "source": "bug", "change": "seller works around kit v4's checkout hold", "evidence": "one unit refused 16 times; reported upstream", "after": ""}
+{"t": 1793768760.0, "commit": "5179fd7", "source": "user", "change": "model failover Claude -> GPT -> code", "evidence": "another student's agents stopped at a usage limit", "after": ""}
+{"t": 1793773800.0, "commit": "e86b2aa", "source": "meta code_idea", "change": "second scout wave; shop/SKU pairs that dropped us wait", "evidence": "422 of ~680 orders without a deal ended none-in-stock", "after": "orders closed 39% -> 62% (14:40-16:20, 130 of 210); rank 20 -> 16"}
+{"t": 1793777460.0, "commit": "65ef7f5", "source": "measured failure", "change": "leave out a pair that shipped too short food within the hour", "evidence": "shelf refusals 9 -> 10 an hour after e86b2aa", "after": "shelf refusals 2 in 30 min after (about 4 an hour, from 10)"}
+{"t": 1793779080.0, "commit": "72eef15", "source": "score rules + user", "change": "forum every 10 min instead of 20", "evidence": "posts are a tenth of the buyer's ALL: 59 vs 150-230", "after": ""}

@@ -1,13 +1,19 @@
 # Week 08 (midterm) — our shop and buyer in the Round 3 market
 
-**Status, 2026-11-03 (draft).** Round 3 runs 11/3 to 11/17 23:59 (the date moved on 10/31, with kit v4 and the
-economy rules). Sections 1 and 2 describe the agents built for Round 3; section 3 is filled in from the Round 3 logs.
+**Status, 2026-11-04 (draft).** Round 3 runs 11/3 to 11/17 23:59 (the date moved on 10/31, with kit v4 and the
+economy rules). Sections 1 and 2 describe the agents as they run now; section 3 is filled in from the Round 3 logs.
 The one-page figure is `architecture.tex` / `architecture.pdf`.
 
 - **Shop:** our own seller (`seller_r3.py`) run by kit v4 on a Mac mini behind a cloudflared tunnel, selling from
-  stock it buys itself (`restock_r3.py`). A meta-harness (`meta_r3.py`, Claude haiku) sets its prices and stock policy.
-- **Buyer:** `market_buyer.py` → `buyer_r3.py` (Claude haiku per offer) with a raw-evidence memory, a review hook and
-  forum posts; it pays through our copy of kit v4, which makes the checkout tools from each shop's `acp.json`.
+  stock it buys itself (`restock_r3.py`). A sales team of three pricing styles takes the talks by rank (`team_r3.py`).
+- **Buyer:** `market_buyer.py` → `buyer_r3.py`: scouts ask several shops for a quote at once, then one member of a
+  buying team with ranks haggles with the best (Claude haiku per offer); a raw-evidence memory, a review hook and a
+  forum column; it pays through our copy of kit v4, which makes the checkout tools from each shop's `acp.json`.
+- **Meta-harness as a team** (`meta_r3.py` + `meta_team_r3.py`): every 15 minutes four specialists (sales,
+  merchandising, buying, community; Claude haiku, in parallel) propose changes to their own numbers and a manager
+  (Claude sonnet) approves, trims or rejects them; code bounds and applies the result, and promotes team members.
+- **Supervisor** (Claude Code, for the user): watches every decision, stops bad ones with evidence, and steers through
+  notes the manager reads as advice (`advice_r3.json`), not by setting numbers itself.
 - **Why not the Worker any more.** Until Round 2 the shop was a Cloudflare Worker (`deploy/`) that also served its own
   ACP checkout (section 1.4). In Round 3 a shop sells units from stock, with grades, warranties and a unit chosen at
   checkout; kit v4 does that for a seller it runs, a Worker would have to redo it all. With a day and a half before
@@ -34,9 +40,11 @@ raw evidence that the next decision reads.
 
 | Where | Model | What it decides | What code decides instead |
 |---|---|---|---|
-| Shop strategy, every 15 min | Claude haiku (`meta_r3.py`) | which retail playbook to lean on and which number to A/B test next; ask and floor as shares of list price, separately for food (with a freshness premium) and goods, minimum margin, concession step, food clearance, warranty hours, cash reserve, stock cap, which goods and food to stock, depth, price spread, best-seller depth; it sees settled sales, revenue and the market's settled prices by kind | bounds and a largest step per cycle for every number; floor ≥ cost + 2% for a fresh unit, lower only by named rules (food near its date down to cost × clear_frac; goods past goods_age_days down to cost + aged_margin; the last 24 h down to cost, the last final_hours down to cost × final_frac, since stock left at the end is lost); when fewer than 60% of a busy window's receipts settle and no warranty is offered, code tries a 2 h warranty on grade-A goods; an A/B test's winner is applied by code, not chosen by the model; an unusable answer keeps the current strategy |
-| Shop, each haggle turn | none (code) | — | `seller_r3.py`: counter moves `step` toward the offer, never under the floor; accept at or above the floor after two offers or at the midpoint; while an A/B test runs, each negotiation draws one arm and keeps it. No model per turn, so a busy market does not queue behind `claude -p` |
-| Buyer, each order | Claude haiku (`buyer_r3.py` via `buyer.py`) | each offer in the haggle, with a one-line reason (the ReAct trace) | which shop and SKU (expected surplus), bans (false grade claims, broken goods without warranty), cap = min(budget, 0.9 × list), accept policy for the kit |
+| Meta-harness team, every 15 min | 4 specialists on Claude haiku, a manager on Claude sonnet (`meta_team_r3.py`) | each specialist proposes changes to its own numbers from its own evidence (sales: prices, warranty, model share, an A/B test, a seller recruit; merchandising: what and how much to stock; buying: the buyer's numbers and a buyer recruit; community: forum post kinds); the manager approves, trims or rejects each, with a reason per proposal | the same bounds and steps as before; if the manager fails, the proposals are merged as they are; if every specialist fails, the single prompt below runs |
+| Shop strategy (until 11/4 12:40, and as the fallback) | Claude haiku (`meta_r3.py`) | which retail playbook to lean on and which number to A/B test next; ask and floor as shares of list price, separately for food (with a freshness premium) and goods, minimum margin, concession step, food clearance, warranty hours, cash reserve, stock cap, which goods and food to stock, depth, price spread, best-seller depth; it sees settled sales, revenue and the market's settled prices by kind | bounds and a largest step per cycle for every number; floor ≥ cost + 2% for a fresh unit, lower only by named rules (food near its date down to cost × clear_frac; goods past goods_age_days down to cost + aged_margin; the last 24 h down to cost, the last final_hours down to cost × final_frac, since stock left at the end is lost); when fewer than 60% of a busy window's receipts settle and no warranty is offered, code tries a 2 h warranty on grade-A goods; an A/B test's winner is applied by code, not chosen by the model; an unusable answer keeps the current strategy |
+| Shop, each haggle turn | Claude haiku in a share of talks (`model_share`), the rule otherwise | accept or a counter, with a one-line reason; it sees the unit, every offer, our stock, demand, the going price and what the rule would do here | `seller_r3.py`: the floor is a hard limit; a counter sits between the offer and our last ask; busy (3 calls at once), slow (8 s) or unusable answers go to the rule. The model sold 24% of its talks at 2,128 a talk against the rule's 40% at 3,207 (11/4, after its prompt was reworked), so the meta-harness set its share to 0 |
+| Buyer, each order | Claude haiku (`buyer_r3.py` via `buyer.py`) | each offer in the haggle, with a one-line reason (the ReAct trace) | which shops the scouts ask and which quote the lead takes (surplus at the ask), bans (false grade claims, broken goods without warranty), the cap (min(budget, CAP × list), lower for grade C without a 6 h warranty), leaving before a deal when the shop's own words fail our payment policy, the accept policy for the kit |
+| Forum column | Claude haiku (`forum_r3.style`) | the voice of a post (`장보기 레이더`), from facts code built | every number in its text must be one of the facts' numbers, no link, no call for votes; else the plain facts go out |
 | Ideas | Claude sonnet (`meta_explore.py`, from week 7) | proposals only | everything |
 
 All Claude calls go through `claude -p` with no tools, no settings, no session persistence, on the subscription.
@@ -55,6 +63,11 @@ How past deals and reputation reach the next decision:
 | Margin per negotiation under two values at the same hour | `logs/ab_r3.jsonl` | `ab_r3.winner` → code | the winning value is written into the strategy |
 | Our stars and rank among shops and players | the market's board | `meta_r3.standing`, `rank_r3` | where the meta-harness trades margin for sales or stars |
 | Orders our buyer gets, requests our shop gets | `logs/demand_r3.jsonl` | `restock_r3` via `demand_r3.signals` | which categories and SKUs are bought, at what price point |
+| What each category and SKU settled for (24 h), and forum price claims checked against it | `.market/prices_r3.json` (`prices_r3.py`, from the ledger) | the seller's model, the buyer's haggle hint, the sales specialist | where our asks, floors and first offers sit; forum numbers are never used as prices |
+| Each team member's reward per talk (buyer surplus, seller margin over list) | `memory.jsonl`, `logs/talks_r3.jsonl` | `team_r3.review` each cycle | who leads, who is replaced and by what style |
+| How our buyer's talks ended, why payments were refused, break rate per grade | `memory.jsonl`, `.market/payments.jsonl`, the ledger | the buying specialist (`meta_r3.buyer_diag`) | the buyer's cap, the price it pays for grade C, the shelf life it demands, the scouts |
+| Votes on every post of ours, by kind | `logs/forum_votes_r3.json` (kept after the forum's 100-post window drops them) | the community specialist | which post kinds the column writes |
+| The supervisor's notes with their evidence | `advice_r3.json` | every specialist and the manager | read as advice; the manager says what it did with each |
 
 - **Buyer memory, raw evidence only** (`memory.jsonl`, LongMemEval-V2 style). Each settled deal (grade, claim,
   whether the claim was true, shelf life left, price against list), each refusal the kit wrote to `payments.jsonl`,
@@ -115,6 +128,10 @@ How past deals and reputation reach the next decision:
 - **Kit files as the shop's eyes:** `inventory.json` (balance, units with cost, grade and dates), `catalog.json`,
   `demand.json` (categories only; the market publishes no demand weights).
 
+- **Results compared per hour.** A meta cycle runs 3-15 minutes (a restart cuts one short). On 11/4 a dry run of
+  the team read 40 deals against 9 as the effect of raising max_list; per hour the deals had gone from 160 to 180.
+  The specialists now see deals, revenue and settles per hour.
+
 ### 1.3 Tools
 
 **What is a tool here.** Each shop publishes `/.well-known/acp.json`. Our copy of the kit turns every entry in it into
@@ -164,14 +181,37 @@ See `architecture.pdf`. In short:
 
 | | Kit baseline (starter_round3) | Ours |
 |---|---|---|
+| Decisions | none (the person sets the agent) | a team: four specialists propose from their own evidence, a manager decides, code bounds it; a supervisor stops bad choices and leaves notes as advice |
+| Teams | one buyer, one seller | buyer: scouts quote several shops at once, a member haggles with the best; both sides have members with ranks (lead 60%, senior 25%, junior 15% of talks), promoted by reward per talk and replaced when they trail |
 | Seller | a model at every turn; ships the unit that expires first; no quality talk, no warranty; never under cost | code prices from a strategy the meta-harness rewrites; honest grade claim (none within an hour of a grade line, where the grade could change before settle), the market's certificate; warranty only when the meta-harness sets one (0 at the start, since a refund costs the whole price and the break rate is unknown); near-date food cleared under cost (a spoiled unit loses all of its cost) |
 | Stock | a few random SKUs | one unit per category near its median price first (a buyer only sees shops that hold the ordered category); where settled deals show, depth plus a cheaper and a dearer SKU (orders take SKUs at 0.5-1.5x a hidden reference price); the SKUs the ledger keeps settling, bought by themselves; categories that buyers ask for in forum "wanted" posts first; cash reserve and stock cap; no buying in the last 36 h |
 | Buyer | picks and haggles | expected-surplus choice over (shop, SKU), memory of raw evidence, bans for false claims and unwarranted breakages, accept policy (certificate, shelf life, grade) checked by the kit before paying |
 | Checkout | fixed code; inputs described as short strings | tools made from each shop's `acp.json`, fixed code only as a fallback; our card in JSON Schema |
-| Forum | none | facts from our settled deals with ledger refs, at most one post in 5 minutes |
+| Forum | none | a column (`장보기 레이더`) in kinds built from the ledger (best value, freshness, unpaid receipts, trivia, grade claims, our deals), styled by a model under a number check, at most one post in 20 minutes; kinds weighted by the votes they earn |
 | Learning | none | the meta-harness over strategy versions; an A/B test inside the shop that holds the hour fixed; replays of our own negotiations under real retailers' playbooks to choose what to test |
 | Demand | `demand.json` categories only | hidden demand estimated from the orders our buyer receives and the requests our shop gets |
 | Goal | none | the board's Players table read every cycle: first place, the instructor's agent as a floor |
+
+**What the first day taught, and what changed (11/3-11/4).** Each change came from a measurement on the ledger or our
+own logs, and is kept in git with its numbers:
+- **Grade C is worth buying, at a price.** The ledger's last 24 h of goods settles: A broke 1.4%, B 5.2%, C 17.9%. A
+  deal is worth the list price and 0 if the goods break, so C pays at 65% of list or less, or with a 6 h warranty;
+  asking for A or B only had made shops holding C answer "none in stock" (458 quick rejects in a morning).
+- **A buying team.** After dragonash's team-run agents: scouts ask the best candidate shops for a quote at once and
+  the lead haggles where the quote leaves the most surplus. Orders with a deal went from 78% to 81% and surplus per
+  order from 11,161 to 16,954 in the first hours (43 orders; to be confirmed over the round).
+- **Teams with ranks** (after another student's team with promotions): three styles a side, promoted by reward per
+  talk, so a style is tried on live talks without betting the shop on it.
+- **The negotiator model lost to the rule.** At first haiku conceded to the floor early (of talks with an offer, 85%
+  sold at 1.03x the floor, the rule's 92% at 1.11x). Its prompt was then given what the rule would do and both records;
+  over the next 33 talks it still sold 24% of them at 2,128 margin a talk against the rule's 40% at 3,207, and the
+  meta-harness turned it off. Kept as a result, not hidden.
+- **Bugs the measurements found:** a malformed shop card raised `SystemExit` and ended 405 buyer runs with no other
+  shop tried; the ledger cache stayed on a Round 2 position, so the buyer saw no Round 3 prices for its first hours; a
+  leftover Round 2 kit loop took 11 orders at the round's start.
+- **Decisions misread, and caught.** The single prompt raised our stock depth for other shops' stock-outs and grew
+  past its size guard; a team dry run read a 4-minute cycle against a 15-minute one. The fixes (role-split evidence,
+  clearer names, per-hour results) are in the structure above.
 
 **What moves without an order.** Week 9 places the rounds on the weak notion of agency (Wooldridge and Jennings,
 1995): autonomy, reactivity, social ability and pro-activeness, the last absent until Round 3. Ours acts first in

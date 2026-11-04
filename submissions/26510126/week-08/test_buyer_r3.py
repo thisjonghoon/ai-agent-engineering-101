@@ -380,6 +380,19 @@ def main():
     got = [c[1]["name"] for c in buyer_r3.candidates(fo, food_shops, {"GS": {"list_price": 50000}}, [], {})]
     case("that short-shipping pair is left out for an order needing more hours", got == ["T"], str(got))
 
+    # 18. an ask within budget and within CLOSE_GAP of our last offer is taken, held or not (11/4: 86 talks lost to
+    # shops that ended the talk 4.6% above our offer while their ask was inside our limit)
+    async def close_harness(prompt, **kw):
+        ask = int(re.search(r"The shop now asks (\d+)", prompt).group(1))
+        return {"action": "offer", "price": int(ask * 0.92)}
+    base_c, _ = fake_shop("Closer", 0.9)
+    harness.ask, buyer_r3.buyer.CLOSE_GAP = close_harness, 0.05
+    got = asyncio.run(buyer_r3.buyer.shop(base_c, "포기김치 5kg", 30000, opening="I want to buy 포기김치 5kg (F1)",
+                                         max_raise=0.4))
+    harness.ask = scripted
+    case("an ask 3% over our offer and within budget is taken", got.get("state") == "TASK_STATE_COMPLETED"
+         and got["offers"] == [27600, 28500], str((got.get("state"), got.get("offers"), got.get("asks"))))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 

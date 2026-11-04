@@ -71,7 +71,7 @@ AVOID_SECS = 900
 SHORT_SECS = 3600
 SHELF_LEFT = re.compile(r"([\d.]+) h of shelf life left")
 PLAN = Path(os.environ.get("BUYER_PLAN") or Path(__file__).resolve().parent / "buyer_plan_r3.json")
-PLAN_KEYS = ("CAP", "FOOD_MARGIN", "C_CAP", "C_WARRANTY", "MAX_TRIES", "MAX_RAISE", "FIRM_GAP", "SCOUTS")
+PLAN_KEYS = ("CAP", "FOOD_MARGIN", "C_CAP", "C_WARRANTY", "MAX_TRIES", "MAX_RAISE", "FIRM_GAP", "SCOUTS", "CLOSE_GAP")
 
 
 def load_plan():
@@ -81,8 +81,8 @@ def load_plan():
         return {}
     for k, v in (plan if isinstance(plan, dict) else {}).items():
         if k in PLAN_KEYS and isinstance(v, (int, float)) and not isinstance(v, bool):
-            if k == "FIRM_GAP":
-                buyer.FIRM_GAP = v
+            if k in ("FIRM_GAP", "CLOSE_GAP"):
+                setattr(buyer, k, v)
             else:
                 globals()[k] = int(v) if k in ("MAX_TRIES", "C_WARRANTY", "SCOUTS") else v
     return plan

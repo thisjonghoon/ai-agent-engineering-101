@@ -185,9 +185,9 @@ Answer with JSON only: {{"strategy": {{...every key...}}, "playbook": "<the play
 # person, makes these fixes; code keeps every value inside its bounds.
 BUYER_BOUNDS = {"CAP": (0.75, 0.95, 0.05), "FOOD_MARGIN": (1.0, 1.3, 0.05), "C_CAP": (0.4, 0.8, 0.05),
                 "C_WARRANTY": (2, 6, 2), "MAX_TRIES": (2, 6, 1), "MAX_RAISE": (0.2, 0.7, 0.1), "FIRM_GAP": (0.0, 0.1, 0.02),
-                "SCOUTS": (1, 5, 1)}
+                "SCOUTS": (1, 5, 1), "CLOSE_GAP": (0.0, 0.12, 0.02)}
 BUYER_DEFAULTS = {"CAP": 0.9, "FOOD_MARGIN": 1.1, "C_CAP": 0.65, "C_WARRANTY": 6, "MAX_TRIES": 3, "MAX_RAISE": 0.4,
-                  "FIRM_GAP": 0.05, "SCOUTS": 3}
+                  "FIRM_GAP": 0.05, "SCOUTS": 3, "CLOSE_GAP": 0.05}
 BUYER_PLAN = HERE / "buyer_plan_r3.json"
 ADVICE = HERE / "advice_r3.json"     # notes from the supervisor (Claude, watching for the user): advice, not orders
 

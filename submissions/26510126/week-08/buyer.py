@@ -151,6 +151,10 @@ def as_int(value):
 
 
 FIRM_GAP = 0.05      # take an ask the shop held twice when it is within this share of our offer (buyer_plan_r3.json)
+# take an ask within budget that is within this share of our last offer, held or not (buyer_plan_r3.json). 11/4, 6 h:
+# 86 talks ended with the shop rejecting us while its ask was inside our limit, at a median 4.6% above our last offer
+# (0.79 of list, a 21% surplus left on the table for nothing); 0 turns it off
+CLOSE_GAP = 0.05
 
 
 async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFFERS, opening=None, screen=None,
@@ -194,10 +198,11 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
                 log("GUARD", f"ask {ask} is at or below our last offer {last_offer}, offering it")
                 offer = ask
             elif ask is not None and ask <= budget and last_offer is not None and (
-                    n == max_offers or (firm and ask - last_offer <= FIRM_GAP * ask)):
+                    n == max_offers or (firm and ask - last_offer <= FIRM_GAP * ask)
+                    or ask - last_offer <= CLOSE_GAP * ask):
                 # 11/3: walked away 20 short of a shop that held 14492 three times, inching up by 0.1% a turn until the
                 # offers ran out; a firm ask within 3% of our offer, or our last chance, is taken if the budget allows
-                log("GUARD", f"ask {ask} {'held twice' if firm else 'on our last offer'} and within budget, taking it")
+                log("GUARD", f"ask {ask} {'held twice' if firm else 'on our last offer' if n == max_offers else 'close to our offer'} and within budget, taking it")
                 offer = ask
             elif plan and ask is not None:
                 # plan mode (a fast team member, 11/4): one model call fixes the opening and the most we pay, code

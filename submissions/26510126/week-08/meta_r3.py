@@ -52,7 +52,7 @@ BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min
           "fresh_premium": (0.0, 0.2, 0.05), "spread_low": (0.5, 0.9, 0.1), "spread_high": (1.1, 1.5, 0.1),
           "sku_depth": (1, 6, 1), "goods_frac": (0.1, 0.8, 0.1), "food_first": (0.0, 1.0, 0.25),
           "goods_age_days": (2, 10, 1), "aged_margin": (0.0, 0.2, 0.03), "window_depth": (1.0, 4.0, 0.5), "order_weight": (0.0, 3.0, 0.5),
-          "model_share": (0.0, 1.0, 0.25)}
+          "model_share": (0.0, 1.0, 0.25), "market_ask": (0.9, 1.3, 0.05)}
 SETTLED = re.compile(r"\[acp\] settled .* at (\d+), ledger")         # our shop's sale the market settled
 SETTLE_REFUSED = re.compile(r"\[acp\] (settle refused|checkout refused: (?:no |unit ))")  # shop side only
 SELLER_LINE = re.compile(r"(OPEN|DEAL|WALK) \S+ (\S+)(?: at (\d+) \(cost (\d+), list (\d+))?")
@@ -299,7 +299,7 @@ def team_records():
 
 TEAM = os.environ.get("META_TEAM", "1") != "0"   # 0: the single prompt, as before 11/4 12:40
 MODEL_PROMPT_SINCE = 1793752281   # 11/4 09:31 KST: the seller model sees the rule's move and both sides' record (43f0447)
-AB_PARAMS = ("ask_frac", "floor_frac", "min_margin", "step", "max_turns", "ask_frac_food", "floor_frac_food",
+AB_PARAMS = ("market_ask", "ask_frac", "floor_frac", "min_margin", "step", "max_turns", "ask_frac_food", "floor_frac_food",
              "fresh_premium", "clear_hours", "clear_frac")      # read per negotiation by the seller; warranty is not
 # tested this way because the A/B reward cannot see refunds
 

@@ -132,6 +132,21 @@ async def main():
         check("goods past goods_age_days may go down to cost + 3%", seller_r3.prices(aged, s0)[1] == 61800
               and seller_r3.prices(fresh, s0)[1] == 78000, (seller_r3.prices(aged, s0), seller_r3.prices(fresh, s0)))
 
+        # the market line: an ask above what this SKU settled for lately (75th percentile) comes down to it, the
+        # floor too, but never under cost + min_margin (11/4: food opened at 0.92 of list against 0.70 settled)
+        (md / "prices_r3.json").write_text(json.dumps({"skus": {fresh["sku"]: {"n": 20, "median": 0.6, "p25": 0.55,
+                                                                             "p75": 0.65}}}))
+        seller_r3.prices_r3.CACHE["mtime"] = None
+        ask_m, floor_m = seller_r3.prices(fresh, s0)
+        cost_floor = int(round(fresh["cost"] * (1 + s0["min_margin"])))
+        check("the ask follows the market down to its 75th percentile, never under cost + min_margin",
+              ask_m <= max(int(fresh["list_price"] * 0.65) + 1, cost_floor) and floor_m >= cost_floor - 1,
+              (ask_m, floor_m, fresh["list_price"], fresh["cost"]))
+        check("market_ask 0 turns the market line off", seller_r3.prices(fresh, dict(s0, market_ask=0))[0] > ask_m,
+              seller_r3.prices(fresh, dict(s0, market_ask=0)))
+        (md / "prices_r3.json").write_text("{}")
+        seller_r3.prices_r3.CACHE["mtime"] = None
+
         asks = [json.loads(l) for l in (md / "demand_r3.jsonl").read_text().splitlines()]
         check("hidden demand: requests to our shop are logged, misses marked", any(a["have"] for a in asks)
               and any(not a["have"] for a in asks), [(a.get("sku"), a["have"]) for a in asks][:8])

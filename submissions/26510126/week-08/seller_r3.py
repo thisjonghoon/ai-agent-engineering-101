@@ -68,7 +68,7 @@ DEFAULTS = {"ask_frac": 0.95, "floor_frac": 0.78, "min_margin": 0.10, "step": 0.
             "clear_hours": 6, "clear_frac": 0.6, "warranty_hours": 0, "max_turns": 6,
             "endgame_hours": 24, "endgame_frac": 1.0, "final_hours": 6, "final_frac": 0.6,
             "ask_frac_food": 0.95, "floor_frac_food": 0.78, "fresh_premium": 0.10,
-            "goods_age_days": 5, "aged_margin": 0.03, "model_share": 0.5}
+            "goods_age_days": 5, "aged_margin": 0.03, "model_share": 0.5, "market_ask": 1.0}
 ROUND_END = 1794927540                                       # 2026-11-17 23:59 KST: stock left then is a loss
 OFFER = re.compile(r"(?<![A-Za-z0-9])\d[\d,]*(?![A-Za-z0-9])")   # a number on its own, not the digits of a SKU
 FOOD_CUTS = (0.80, 0.45)                                     # shelf life left: A at or above 80%, B at or above 45%
@@ -282,6 +282,25 @@ def storage_rate():
     return r if isinstance(r, (int, float)) and 0 < r < 1 else 0.01
 
 
+def market_cap(u, s):
+    """The highest opening ask the market bears for this unit: list x the 75th percentile of what this SKU settled for
+    lately (5 settles or more), else its category's (10 or more), times market_ask; None without enough data or with
+    market_ask 0. On 11/4 (6 h, 1,455 talks with market data) 92% of our food talks opened above that line and closed
+    37% of the time, those at or under it 65% (goods 56% against 60%); a forum post listed us as asking 33% above the
+    going price. The cost floor below still holds: the market line never takes a unit under cost + min_margin."""
+    k = s.get("market_ask", 1.0)
+    if not k:
+        return None
+    d = prices_r3.read(MARKET_DIR)
+    st = (d.get("skus") or {}).get(u.get("sku"))
+    if not st or st.get("n", 0) < 5:
+        c = (d.get("categories") or {}).get(prices_r3.leaf(u.get("category")))
+        st = (c.get("h6") or c.get("h24")) if c else None
+        if not st or st.get("n", 0) < 10:
+            return None
+    return u["list_price"] * st["p75"] * k
+
+
 def prices(u, s):
     """(ask, floor) for a unit under strategy s."""
     lp, cost = u["list_price"], u["cost"]
@@ -297,6 +316,9 @@ def prices(u, s):
         left = min(1.0, hours / shelf_hours(u["sku"]))
         ask_frac *= 1 + s["fresh_premium"] * (2 * left - 1)
     floor = max(cost * (1 + s["min_margin"]), lp * min(floor_frac, ask_frac))
+    cap = market_cap(u, s)
+    if cap:                                     # follow the market down, never under cost + min_margin
+        floor = max(cost * (1 + s["min_margin"]), min(floor, cap))
     # clear food by the hours it has left, not by grade: a grade-C unit can still have days (review, 11/2)
     if u.get("kind") == "food" and hours is not None and (hours < s["clear_hours"] or (grade == "C" and hours < 24)):
         floor = cost * s["clear_frac"]
@@ -311,7 +333,7 @@ def prices(u, s):
         floor = min(floor, cost * s["final_frac"])
     elif left < s["endgame_hours"]:
         floor = min(floor, cost * s["endgame_frac"])
-    ask = max(lp * min(ask_frac, 1.0), floor)
+    ask = max(min(lp * min(ask_frac, 1.0), cap or lp), floor)
     return int(round(ask)), int(round(min(floor, ask)))
 
 

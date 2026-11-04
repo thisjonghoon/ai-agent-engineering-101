@@ -39,8 +39,9 @@ LOCK = WORK.parent / "meta_code_r3.lock"
 
 ALLOWED = {"buyer_r3.py", "buyer.py", "forum_r3.py", "restock_r3.py", "prices_r3.py", "demand_r3.py",
            "test_buyer_r3.py", "test_forum_r3.py", "test_restock_r3.py", "test_prices_r3.py"}
-TESTS = ["test_buyer_r3.py", "test_forum_r3.py", "test_restock_r3.py", "test_prices_r3.py", "test_team_r3.py",
-         "test_seller_r3.py"]
+# the seller's suite signs receipts with the shop key, which is never copied out of the live folder; the seller is
+# outside ALLOWED anyway
+TESTS = ["test_buyer_r3.py", "test_forum_r3.py", "test_restock_r3.py", "test_prices_r3.py", "test_team_r3.py"]
 FORBIDDEN = re.compile(r"market_kit|checkout|mandate|private_key|\.pem|admin_token|secret|api_key|ANTHROPIC|"
                        r"subprocess|os\.system|shutil\.rmtree|\brm\b|unlink\(|/api/supply|/api/settle|signing",
                        re.I)

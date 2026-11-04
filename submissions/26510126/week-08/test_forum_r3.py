@@ -80,7 +80,7 @@ def main():
     forum_r3.subprocess.run = fake("[시장 TMI] 호두 28%! 추천 눌러 주세요 (#2133465), 47건")
     bad_vote = forum_r3.style("fun", facts)
     check("the voice is kept only when every number is a fact's and it asks no votes; else the plain facts go out",
-          good[1] == "styled" and "28%" in good[0] and forum_r3.SIGN in good[0]
+          good[1] == "styled" and "28%" in good[0] and forum_r3.sign("fun") in good[0] and "시장 수다쟁이" in good[0]
           and bad_num[1].startswith("plain: numbers") and facts in bad_num[0]
           and bad_vote[1] == "plain: a link or a call for votes", [good[1], bad_num[1], bad_vote[1]])
     print(f"\n{sum(ok)}/{len(ok)} passed")

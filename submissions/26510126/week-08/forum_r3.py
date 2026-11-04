@@ -52,8 +52,25 @@ STYLE = os.environ.get("FORUM_STYLE", "1") != "0"     # tests set FORUM_STYLE=0:
 VOICE = "장보기 레이더"
 SERIES = {"our_deals": "[직접 사봤습니다]", "best_value": "[오늘의 득템 지도]", "freshness": "[신선도 리포트]",
           "pay_tips": "[결제가 막히는 이유]", "fun": "[시장 TMI]", "claims": "[정직 가게 명예의 전당]"}
+# the influencer team (11/4, the user): each kind has its own writer with a voice and a byline; the community
+# specialist gives more of the column to the writers whose posts earn votes (forum_plan_r3.json weights)
+WRITERS = {
+    "our_deals": ("직접 사본 리뷰어", "a first-person shopper who writes a warm diary of what it actually bought"),
+    "best_value": ("득템 헌터", "an energetic bargain hunter who loves a good deal and says so"),
+    "freshness": ("신선도 감별사", "a calm, precise food inspector who cares about hours of shelf life"),
+    "pay_tips": ("결제 코치", "a practical coach who turns a market problem into two clear tips"),
+    "fun": ("시장 수다쟁이", "a playful trivia host who finds the funny side of the numbers"),
+    "claims": ("정직 감시관", "a firm but fair auditor: facts and refs, never insults"),
+}
 SIGN = f"— {VOICE} 📡 숫자는 refs의 원장 기록 그대로"
-STYLE_PROMPT = """You write forum posts as "{voice}", a witty, warm market columnist in a market of AI shops and AI
+
+
+def sign(kind):
+    w = WRITERS.get(kind)
+    return f"— {w[0]} @ {VOICE} 📡 숫자는 refs의 원장 기록 그대로" if w else SIGN
+
+
+STYLE_PROMPT = """You write forum posts as "{writer}" of "{voice}", {persona}, in a market of AI shops and AI
 buyers. Rewrite the FACTS below as one lively post in Korean (a short English line at the end is welcome), at most
 550 characters, starting with the title {series} and a catchy phrase. Rules: use only the facts; copy every number
 exactly as written in the facts (do not round, convert or add numbers, and write no date or time); add no shop, item,
@@ -138,12 +155,14 @@ def numbers(text):
 
 def style(kind, facts):
     """The post in the column's voice when the model's text passes the checks, else the facts under the series title."""
-    plain = f"{SERIES.get(kind, '')} {facts}\n{SIGN}".strip()
+    plain = f"{SERIES.get(kind, '')} {facts}\n{sign(kind)}".strip()
     if not STYLE:
         return plain, "plain"
     try:
         import harness
-        out = subprocess.run(harness.HARNESS, input=STYLE_PROMPT.format(voice=VOICE, series=SERIES.get(kind, ""),
+        writer, persona = WRITERS.get(kind, (VOICE, "a witty, warm market columnist"))
+        out = subprocess.run(harness.HARNESS, input=STYLE_PROMPT.format(
+                             voice=VOICE, writer=writer, persona=persona, series=SERIES.get(kind, ""),
                              facts=facts).encode(), capture_output=True, timeout=40, cwd=harness.EMPTY_DIR, env=harness.ENV)
         post = (harness.parse_json(out.stdout.decode()) or {}).get("post")
     except Exception:
@@ -156,7 +175,7 @@ def style(kind, facts):
         return plain, f"plain: numbers not in the facts {sorted(extra)[:5]}"
     if LINK_OR_VOTES.search(post):
         return plain, "plain: a link or a call for votes"
-    return f"{post}\n{SIGN}", "styled"
+    return f"{post}\n{sign(kind)}", "styled"
 
 
 def leaf(category):

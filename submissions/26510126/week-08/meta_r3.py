@@ -688,7 +688,20 @@ async def main():
             harness.log("META", f"cycle failed: {type(e).__name__}: {e}")
         if once:
             return
+        code_run()
         await asyncio.sleep(EVERY)
+
+
+def code_run():
+    """After a cycle, the harness's own code step in the background (meta_code_r3.py: verdicts on its automatic
+    changes, or one new code idea built, gated by tests and deployed); META_CODE=0 turns it off."""
+    if os.environ.get("META_CODE", "1") == "0":
+        return
+    import subprocess
+    import sys
+    with open(HERE / "logs" / "meta-code-r3.log", "a") as out:
+        subprocess.Popen([sys.executable, "-u", str(HERE / "meta_code_r3.py")], cwd=HERE, stdout=out,
+                         stderr=subprocess.STDOUT, start_new_session=True)
 
 
 if __name__ == "__main__":

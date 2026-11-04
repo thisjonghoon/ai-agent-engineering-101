@@ -318,6 +318,12 @@ def main():
          and market_buyer.buyer.FIRM_GAP == 0.08 if hasattr(market_buyer, "buyer") else buyer_r3.buyer.FIRM_GAP == 0.08,
          str((buyer_r3.C_CAP, buyer_r3.MAX_TRIES)))
 
+    # 13. a shop whose card has no JSON-RPC interface raises an error attempt() catches (it was SystemExit, which
+    # ended the whole run: 405 orders closed with no result, no other shop tried)
+    import inspect
+    case("a malformed shop card is an error the buyer catches, not an exit", "raise RuntimeError" in
+         inspect.getsource(buyer_r3.buyer.Shop.read_card) and "raise SystemExit" not in inspect.getsource(buyer_r3.buyer.Shop.read_card))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 

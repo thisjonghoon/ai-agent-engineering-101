@@ -64,7 +64,9 @@ class Shop:
         card = r.json()
         iface = next((i for i in card.get("supportedInterfaces", []) if i.get("protocolBinding") == "JSONRPC"), None)
         if iface is None:
-            raise SystemExit(f"{card.get('name')} has no JSON-RPC interface")
+            # an error the caller can catch, not SystemExit: that ended the whole buyer run, so the order closed with no
+            # result and no other shop tried (405 orders 11/3 21:00 - 11/4 10:30, all at one shop's malformed card)
+            raise RuntimeError(f"{card.get('name')} has no JSON-RPC interface")
         self.rpc_url = iface["url"]
         log("CARD", f"{card.get('name')!r} at {self.rpc_url}, protocol {iface.get('protocolVersion')}")
         return card

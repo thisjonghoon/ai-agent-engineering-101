@@ -317,15 +317,22 @@ async def main(args, shops, memory, remember):
     # a shop that answers "none in stock" or a broken reply at once costs no time and does not use up a try
     # (11/3 21:06-21:33: 30 of 69 talks ended that way, while three tries ended many orders)
     started, tried, talks, out = time.time(), set(), 0, None
+    skus, quick_shops = {}, set()
     for surplus, s, off, lp, note in cands:
-        if s["name"] in tried or talks >= MAX_TRIES or (tried and time.time() - started > RETRY_UNTIL):
+        # a shop that said "none in stock" for one SKU may still have another the order accepts: up to two SKUs a
+        # shop, the second only after a quick reject (the meta-harness's code idea, 11/4: 714 of ~1,000 talks ended so)
+        if (s["name"], off["sku"]) in tried or skus.get(s["name"], 0) >= (2 if s["name"] in quick_shops else 1) \
+                or talks >= MAX_TRIES or (tried and time.time() - started > RETRY_UNTIL):
             continue
-        tried.add(s["name"])
+        tried.add((s["name"], off["sku"]))
+        skus[s["name"]] = skus.get(s["name"], 0) + 1
         out = await attempt(order, cat, s, off, lp, note, remember)
         quick = out.pop("_quick", False)
         if out["receipt"]:
             break
         talks += not quick
+        if quick:
+            quick_shops.add(s["name"])
     forum_r3.maybe_post(memory)
     print(json.dumps(out, ensure_ascii=False), flush=True)
 

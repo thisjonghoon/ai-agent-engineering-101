@@ -400,7 +400,8 @@ class Seller(AgentExecutor):
                 except (OSError, ValueError, KeyError):
                     e, arm = None, None
                 if arm:
-                    s, ab = dict(s, **{e["param"]: e["arms"][arm]}), (e["id"], arm)
+                    v = e["arms"][arm]               # one number, or a whole retail playbook's numbers
+                    s, ab = dict(s, **(v if isinstance(v, dict) else {e["param"]: v})), (e["id"], arm)
             ask, floor = prices(u, s)
             normal = max(u["cost"] * (1 + s["min_margin"]), u["list_price"] * min(
                 s["floor_frac_food"] if u.get("kind") == "food" else s["floor_frac"], 1.0))

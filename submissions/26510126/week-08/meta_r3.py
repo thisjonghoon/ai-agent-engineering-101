@@ -174,7 +174,7 @@ Last versions, oldest first (each with how it did while it ran; older ones show 
 {history}
 
 Answer with JSON only: {{"strategy": {{...every key...}}, "playbook": "<the playbook this leans on, or none>",
-"ab": null or {{"param": "<one of {ab_params}>", "kind": "food" | "goods", "value": <the value to test against now>}},
+"ab": null or {{"param": "<one of {ab_params}>", "kind": "food" | "goods", "value": <the value to test against now>}} or {{"playbook": "<a playbook's name>", "kind": "food" | "goods"}} to test a whole playbook on live buyers,
 "forum_weights": {{"best_value": <0-3>, "freshness": <0-3>, "pay_tips": <0-3>, "fun": <0-3>, "claims": <0-3>}},
 "buyer_plan": {{"<key>": <value>, ...}} or {{}},
 "recruits": {{"buyer": {{...style...}} or null, "seller": {{...style...}} or null}},
@@ -554,7 +554,20 @@ def history_lines(hist, after, last=30):
 
 def start_ab(ask, s):
     """Start the A/B test the harness asked for, when it names a number the seller reads per negotiation, a kind,
-    and a value inside the bounds that differs from the strategy's: arm A is the strategy's value, arm B the new one."""
+    and a value inside the bounds that differs from the strategy's: arm A is the strategy's value, arm B the new one.
+    Or a whole retail playbook ({"playbook": "costco", "kind": ...}): arm B carries every number of the playbook the
+    seller reads per negotiation (clamped to the bounds), arm A the strategy's own, so a playbook is tried on live
+    buyers at the same hours instead of only being read about (11/4: 25 of 30 cycles leaned on no playbook)."""
+    if isinstance(ask, dict) and ask.get("playbook") in playbooks_r3.PLAYBOOKS and ask.get("kind") in ("food", "goods"):
+        b = {k: v for k, v in playbooks_r3.apply(ask["playbook"], s, BOUNDS).items()
+             if k in AB_PARAMS and k in playbooks_r3.PLAYBOOKS[ask["playbook"]]["knobs"]}
+        if not b or all(s.get(k) == v for k, v in b.items()):
+            return None
+        e = {"on": True, "id": f"playbook-{ask['playbook']}-{ask['kind']}-{time.strftime('%m%d%H%M')}",
+             "param": f"playbook:{ask['playbook']}", "kind": ask["kind"], "arms": {"A": {k: s[k] for k in b}, "B": b},
+             "min_n": 30, "p_win": 0.95, "started": time.time()}
+        ab_r3.EXPERIMENT.write_text(json.dumps(e, ensure_ascii=False, indent=1), encoding="utf-8")
+        return e
     if not isinstance(ask, dict) or ask.get("param") not in AB_PARAMS or ask.get("kind") not in ("food", "goods"):
         return None
     v = ask.get("value")
@@ -623,9 +636,15 @@ async def cycle():
         s["warranty_hours"], probe = 2, f"{now['settled']} of {now['deals']} receipts settled: trying a 2 h warranty"
     ab_done = None
     win = ab_r3.winner(exp) if exp else None
-    if win and exp["param"] in BOUNDS:
-        lo, hi, _ = BOUNDS[exp["param"]]
-        s[exp["param"]] = min(max(exp["arms"][win], lo), hi)     # the test's own evidence, not a step from now
+    if win == "tie":                                    # no winner in time: the strategy keeps its value
+        ab_done = dict(exp, on=False, result={"winner": "tie", "summary": now["ab"], "time": time.time()})
+        ab_r3.EXPERIMENT.write_text(json.dumps(ab_done, ensure_ascii=False, indent=1), encoding="utf-8")
+    elif win and (exp["param"] in BOUNDS or isinstance(exp["arms"][win], dict)):
+        v = exp["arms"][win]
+        for k, x in (v.items() if isinstance(v, dict) else [(exp["param"], v)]):
+            if k in BOUNDS:
+                lo, hi, _ = BOUNDS[k]
+                s[k] = min(max(x, lo), hi)                 # the test's own evidence, not a step from now
         ab_done = dict(exp, on=False, result={"winner": win, "summary": now["ab"], "time": time.time()})
         ab_r3.EXPERIMENT.write_text(json.dumps(ab_done, ensure_ascii=False, indent=1), encoding="utf-8")
     ab_new = None if exp else start_ab((ans or {}).get("ab"), s)

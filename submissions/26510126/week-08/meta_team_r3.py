@@ -45,7 +45,8 @@ ROLES = {
         "data": ("minutes", "opens", "deals", "walks", "settled", "settle_refused", "revenue", "price_list", "margin",
                  "profit", "standing", "market_food_price_list", "market_goods_price_list", "going_prices",
                  "our_reviews", "seller_model", "sim", "ab", "warranty_demand", "rules"),
-        "extra": ('"ab": null or {{"param": "<one of {ab_params}>", "kind": "food" | "goods", "value": <v>}}, '
+        "extra": ('"ab": null or {{"param": "<one of {ab_params}>", "kind": "food" | "goods", "value": <v>}} or '
+                  '{{"playbook": "<a playbook name>", "kind": "food" | "goods"}} (a whole playbook against the strategy, on live buyers), '
                   '"recruit": null or {{"ask_delta": <-0.1..0.1>, "floor_delta": <-0.08..0.08>, "step": <0.2..0.7>}}, '
                   '"playbook": "<the retail playbook this leans on, or none>", '),
     },
@@ -122,7 +123,7 @@ Proposals:
 
 Answer with JSON only: {{"strategy": {{"<shop key>": <value>, ...only approved changes}}, "buyer_plan": {{...}} or {{}},
 "forum_weights": {{...}} or {{}}, "recruits": {{"buyer": {{...}} or null, "seller": {{...}} or null}},
-"ab": null or {{"param": ..., "kind": ..., "value": ...}}, "playbook": "<or none>", "code_ideas": ["<up to 2>"],
+"ab": null or {{"param": ..., "kind": ..., "value": ...}} or {{"playbook": ..., "kind": ...}}, "playbook": "<or none>", "code_ideas": ["<up to 2>"],
 "forum_ideas": ["<up to 3>"], "reason": "<one short sentence per proposal: approved, trimmed or rejected, and why>"}}"""
 
 

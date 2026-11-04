@@ -29,6 +29,11 @@ AB_DIR = Path(os.environ.get("AB_DIR") or HERE)       # tests point it at a temp
 EXPERIMENT = AB_DIR / "experiment_r3.json"
 LOG = AB_DIR / "logs" / "ab_r3.jsonl"
 FIRST = 10              # negotiations each arm gets before the bandit leans
+# an experiment with no winner ends as a tie once both arms have MAX_N negotiations or it has run MAX_HOURS (11/4:
+# ask_frac_food 0.92 against 0.90 ran 20 h and 4,193 negotiations without a winner, and while it ran no other test
+# could start); a tie keeps the strategy's value
+MAX_N = 400
+MAX_HOURS = 6
 PRIOR = (0.10, 2)       # prior mean reward and its weight in negotiations (a 10% margin on list, weakly held)
 SD_MIN = 0.05
 
@@ -119,7 +124,10 @@ def winner(e=None):
     if min(s[a]["n"], s[b]["n"]) < e.get("min_n", 30):
         return None
     p = s[f"p_{b}_better"]
-    return b if p >= e.get("p_win", 0.95) else a if 1 - p >= e.get("p_win", 0.95) else None
+    win = b if p >= e.get("p_win", 0.95) else a if 1 - p >= e.get("p_win", 0.95) else None
+    if win is None and (min(s[a]["n"], s[b]["n"]) >= MAX_N or time.time() - e.get("started", time.time()) > MAX_HOURS * 3600):
+        return "tie"
+    return win
 
 
 if __name__ == "__main__":

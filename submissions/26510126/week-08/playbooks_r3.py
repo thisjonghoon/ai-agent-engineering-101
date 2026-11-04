@@ -36,6 +36,12 @@ PLAYBOOKS = {
                 "(service plans are a margin line of their own)",
         "knobs": {"ask_frac": 0.97, "floor_frac": 0.85, "min_margin": 0.30, "warranty_hours": 4, "goods_frac": 0.5},
     },
+    "ikea": {
+        "idea": "IKEA's democratic pricing: the price is set first and low, big furniture is the traffic driver at a thin "
+                "margin, sold fast with no haggling, and cheap small home goods around it carry the margin",
+        "knobs": {"ask_frac": 0.85, "floor_frac": 0.72, "step": 0.5, "max_turns": 3, "min_margin": 0.08,
+                  "goods_frac": 0.7, "dear_first": 2.0, "spread_low": 0.6, "spread_high": 1.4},
+    },
     "two_track": {
         "idea": "2026 K-shaped playbook: a cheap tier and a premium tier side by side in each category",
         "knobs": {"spread_low": 0.5, "spread_high": 1.5, "ask_frac": 0.9, "fresh_premium": 0.2},

@@ -19,6 +19,10 @@
   {
    "t": 1793764002.531369,
    "text": "Where the money is (24 h ledger): dae-yangkim made 57M profit from 284 settles, 99% goods (침대/매트리스 157, 침구 98, 소파 27), average ticket 459,240, paid 0.86 of list; dragonash 344 settles, average 248,424; we sold 511 at an average of 27,780 and none at 150,000 or more. A mattress at 0.86 of list leaves about 30% of list over cost, more than a hundred food sales. max_list may now go to 1,500,000 (100,000 a cycle) and goods_frac to 0.8; with 13M cash idle, suggest stepping max_list, goods_frac and stock_value up together each cycle while the dear goods sell within a few supply windows, and holding goods asks near the market's 0.75-0.86 rather than cutting them."
+  },
+  {
+   "t": 1793764117.133337,
+   "text": "The user (11/4 13:00) found our list-price cap too conservative and set max_list 600000, goods_frac 0.6, stock_value 5,000,000 (from {'max_list': 330000, 'goods_frac': 0.55, 'stock_value': 3250000}). Keep them unless the dear goods fail to sell within a few supply windows; the steps are now 200,000 for max_list and 1,000,000 for stock_value, so you can follow quickly either way."
   }
  ]
 }

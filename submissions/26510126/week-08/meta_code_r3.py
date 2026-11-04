@@ -32,6 +32,7 @@ import sys
 import time
 from pathlib import Path
 
+import code_ab_r3
 import metrics_r3
 
 HERE = Path(__file__).resolve().parent
@@ -100,6 +101,10 @@ Rules:
   delete files or call new network hosts. Honesty rules stay: never claim a grade, shelf life or price that is not
   true, never pay above the budget.
 - Match the code around it: same comment density, naming and style; a comment says why, with the engineer's numbers.
+- When the change acts per buyer order, put the new behaviour behind
+      if code_ab_r3.on("{key}", <the order id, e.g. order.get("order")>):
+  (import code_ab_r3): while it is on trial it runs on half the orders, so its verdict compares the same hours.
+  A change that is not per order (forum, restock) needs no flag.
 - Add one test case for the change to the matching test_*.py, in the style of the cases there.
 - Run that test file with: {py} <test file>   and fix until it passes.
 - If it cannot be done safely in these files, change nothing and say why in one line.
@@ -155,9 +160,16 @@ def check():
     for i, r in enumerate(rows):
         if r.get("source") != "meta (auto)" or r.get("verdict") or time.time() - r["t"] < CHECK_AFTER:
             continue
-        before = r["baseline"] if isinstance(r.get("baseline"), dict) else metrics_r3.window(r["t"] - 3600, r["t"])
-        after = metrics_r3.window(r["t"], r["t"] + CHECK_AFTER)
+        if r.get("ab_key"):                         # the same hour, orders without the change against orders with it
+            k = r["ab_key"]
+            before = metrics_r3.window(r["t"], r["t"] + CHECK_AFTER, keep=lambda o: code_ab_r3.arm(k, o) == "A")
+            after = metrics_r3.window(r["t"], r["t"] + CHECK_AFTER, keep=lambda o: code_ab_r3.arm(k, o) == "B")
+            code_ab_r3.stop()
+        else:
+            before = r["baseline"] if isinstance(r.get("baseline"), dict) else metrics_r3.window(r["t"] - 3600, r["t"])
+            after = metrics_r3.window(r["t"], r["t"] + CHECK_AFTER)
         text, why = judge(r, before, after)
+        text += " (A/B: same hours, half the orders each)" if r.get("ab_key") else " (the hour before against the hour after)"
         if why:
             prev = git("rev-parse", f"{r['commit']}^").stdout.strip()
             for f in r.get("files", []):
@@ -287,7 +299,7 @@ def build():
     # the coder works in the copy; if it wrote to the live folder anyway, those files go back before the gate
     snap = {p.name: p.read_bytes() for p in HERE.glob("*.py")}
     said = agent(CODER.format(spec=json.dumps(spec, ensure_ascii=False, indent=1), allowed=", ".join(sorted(ALLOWED)),
-                              py=PY), work, f"Read,Edit,Write,Glob,Grep,Bash({PY} test_*)")
+                              py=PY, key=key), work, f"Read,Edit,Write,Glob,Grep,Bash({PY} test_*)")
     row["agent"] = said.splitlines()[-1][:300] if said else ""
     strayed = [n for n, b in snap.items() if (HERE / n).read_bytes() != b]
     for n in strayed:
@@ -306,6 +318,9 @@ def build():
         log(row["result"])
         return
     baseline = metrics_r3.window(time.time() - 3600, time.time())
+    flagged = any(f'code_ab_r3.on("{key}"' in (work / f).read_text(encoding="utf-8") for f in changed)
+    if flagged:
+        code_ab_r3.start(key)                       # half the orders from now, judged arm against arm
     deploy(changed, work)
     git("add", *changed)
     what = row["agent"].split("CHANGED:", 1)[-1].strip() if "CHANGED:" in row["agent"] else spec["hypothesis"]
@@ -318,7 +333,8 @@ def build():
     append(ATTEMPTS, row)
     append(CHANGES, {"t": time.time(), "commit": commit, "source": "meta (auto)", "change": what[:300],
                      "evidence": str(spec.get("why"))[:300], "after": "", "files": changed, "metric": spec["metric"],
-                     "expected": spec.get("expected"), "term": spec.get("term"), "baseline": baseline})
+                     "expected": spec.get("expected"), "term": spec.get("term"), "baseline": baseline,
+                     "ab_key": key if flagged else None})
     log(f"deployed {commit}: {what[:120]} ({', '.join(changed)})")
 
 

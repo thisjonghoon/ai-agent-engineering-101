@@ -68,7 +68,19 @@ def main():
     case("the costliest term comes first (buyer surplus: weight 0.5, beaten by the other)",
          gap[0][:2] == ("buyer", "surplus") or gap[0][:2] == ("shop", "profit"), str(gap[:3]))
 
-    # 5. the build budget: one build every BUILD_EVERY
+    # 5. the code A/B: half the orders run the change while it is on trial, every order before and after
+    mc.code_ab_r3.TRIAL = tmp / "code_ab.json"
+    ids = [f"o-{i:04x}" for i in range(400)]
+    case("no trial: the change runs on every order", all(mc.code_ab_r3.on("k1", o) for o in ids[:20]))
+    mc.code_ab_r3.start("k1")
+    b = sum(mc.code_ab_r3.on("k1", o) for o in ids)
+    case("on trial: about half the orders run it, the same ones every time", 160 < b < 240
+         and [mc.code_ab_r3.on("k1", o) for o in ids] == [mc.code_ab_r3.on("k1", o) for o in ids], str(b))
+    case("another key is not on trial", all(mc.code_ab_r3.on("k2", o) for o in ids[:20]))
+    mc.code_ab_r3.stop()
+    case("after the verdict the change runs on every order", all(mc.code_ab_r3.on("k1", o) for o in ids[:20]))
+
+    # 6. the build budget: one build every BUILD_EVERY
     mc.append(mc.ATTEMPTS, {"t": time.time() - 60, "key": "x"})
     mc.WORK = tmp / "auto"
     mc.build()

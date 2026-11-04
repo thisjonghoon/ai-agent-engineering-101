@@ -78,11 +78,14 @@ def _ts(text):
         return None
 
 
-def window(t0, t1, base=HERE):
+def window(t0, t1, base=HERE, keep=None):
+    """`keep` (an order id -> bool, the code A/B's arm): the buyer's metrics over those orders only; per hour they
+    count the arm's half, so compare an arm with the other arm, not with a whole hour."""
     base = Path(base)
     hours = max((t1 - t0) / 3600, 0.25)
     orders = {d["order"] for d in jl(base / "logs" / "demand_r3.jsonl")
-              if d.get("event") == "order" and t0 <= d.get("t", 0) < t1 and d.get("order")}
+              if d.get("event") == "order" and t0 <= d.get("t", 0) < t1 and d.get("order")
+              and (keep is None or keep(d["order"]))}
     mem = jl(base / "memory.jsonl")
     lists = {m.get("order"): m.get("list_price") for m in mem if m.get("kind") == "trade" and m.get("list_price")}
     paid, refused = [], 0
@@ -90,7 +93,7 @@ def window(t0, t1, base=HERE):
         if m.get("kind") != "payment":
             continue
         t = _ts(m.get("time"))
-        if t is None or not t0 <= t < t1:
+        if t is None or not t0 <= t < t1 or (keep is not None and not keep(m.get("order"))):
             continue
         if m.get("paid"):
             paid.append(m)

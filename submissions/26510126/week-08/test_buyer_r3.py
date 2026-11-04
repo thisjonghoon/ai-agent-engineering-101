@@ -24,7 +24,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 TMP = Path(tempfile.mkdtemp(prefix="buyer-r3-"))
-for f in ("buyer.py", "buyer_r3.py", "forum_r3.py", "review_r3.py", "market_buyer.py", "harness.py", "market_intel.py", "demand_r3.py"):
+for f in ("buyer.py", "buyer_r3.py", "forum_r3.py", "review_r3.py", "market_buyer.py", "harness.py", "market_intel.py", "demand_r3.py",
+          "code_ab_r3.py", "prices_r3.py", "team_r3.py"):
     shutil.copy(HERE / f, TMP / f)
 MD = TMP / ".market"
 MD.mkdir()

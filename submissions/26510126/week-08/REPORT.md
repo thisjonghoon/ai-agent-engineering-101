@@ -15,8 +15,9 @@ The one-page figure is `architecture.tex` / `architecture.pdf`.
   promotes team members; an A/B test inside the shop tries one number or a whole retail playbook on live buyers. The
   *outer loop* (`meta_code_r3.py`) changes the harness's own code every 90 minutes: an engineer agent reads the code
   and the raw traces and writes one hypothesis aimed at the board term that costs the most points
-  (`metrics_r3.py`), a coder agent builds it with a test, a code gate puts it live, and an hour later code keeps or
-  reverts it by the metric it named. Expected and measured results go to one ledger
+  (`metrics_r3.py`), a coder agent builds it with a test, a code gate puts it live on half the buyer's orders, and an hour
+  later code keeps or reverts it by the metric it named, the two halves compared over the same hours (2f23dbf's rule
+  never fired, yet a before/after reading gave it -10%: the evening's traffic). Expected and measured results go to one ledger
   (`logs/code_changes_r3.jsonl`) that both loops read.
 - **Supervisor** (Claude Code, for the user): watches every decision, stops bad ones with evidence, and steers through
   notes the manager reads as advice (`advice_r3.json`), not by setting numbers itself.

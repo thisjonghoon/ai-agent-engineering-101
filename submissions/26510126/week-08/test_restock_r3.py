@@ -164,4 +164,17 @@ case("restock buys the ordered category first, at the reference price (not the 1
      res["buy"][0]["sku"] in ("SH1", "SH2") and sum(q.get(k, 0) for k in ("SH1", "SH2")) >= 3,
      {"first": res["buy"][0], "hot": {k: q.get(k) for k in ("SH0", "SH1", "SH2")}})
 case("order weights are not written into the decaying scores (no compounding)", "F>hot" not in st3.get("score", {}), st3.get("score"))
+# the market's surge (11/4 21:14): a SKU priced over surge_max x its plain cost is left out, the next one taken
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 4_000_000, "units": [],
+                                              "surge": [{"sku": "SH1", "units": 300, "factor": 1.47},
+                                                        {"sku": "SH2", "units": 60, "factor": 1.02}]}), encoding="utf-8")
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {}}),
+                                       encoding="utf-8")
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+res = json.loads(out.getvalue().splitlines()[-1])
+skus = [b["sku"] for b in res["buy"]]
+case("a SKU the market surged to 1.47x is not bought; one at 1.02x still is", "SH1" not in skus and "SH2" in skus
+     and "surge" in res["why"], {"buy": skus, "why": res["why"]})
 print(f"\n{sum(ok)}/{len(ok)} passed")

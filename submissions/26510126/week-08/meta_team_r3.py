@@ -22,7 +22,7 @@ GOAL = ("GOAL: first place on the board's Players table (our shop ALL + our buye
         "percentile there when the round ends (11/17 23:59). Stay honest: true grade claims, the market's certificate "
         "shown, no votes against others, no selling below cost except to clear stock that would be lost.")
 MERCH_KEYS = ("dear_first", "reserve_cash", "stock_value", "max_list", "min_shelf_hours", "depth", "spread_low", "spread_high",
-              "sku_depth", "goods_frac", "food_first", "window_depth", "order_weight")
+              "sku_depth", "goods_frac", "food_first", "window_depth", "order_weight", "surge_max")
 MANAGER_MODEL = "sonnet"
 REVIEWER = ["hermes", "--safe-mode", "--ignore-rules", "-z"]   # GPT through the user's ChatGPT plan (Hermes, 11/4)
 REVIEW = """You are a skeptical reviewer on a different model from the team (GPT), checking four specialists'

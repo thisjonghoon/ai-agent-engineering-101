@@ -47,7 +47,7 @@ STRATEGY = Path(os.environ.get("STRATEGY_FILE") or HERE / "strategy_r3.json")   
 DEFAULTS = {"dear_first": 1.0, "reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
             "goods_frac": 0.35, "food_first": 0.5,
             "depth": 3, "half_life_hours": 12, "stop_hours": 36, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540,
-            "window_depth": 2.0, "order_weight": 1.0}    # 2026-11-17 23:59 KST
+            "window_depth": 2.0, "order_weight": 1.0, "surge_max": 1.15}    # 2026-11-17 23:59 KST
 BANKRUPT_LINE = 500_000  # below this a shop may file, and the 5,000,000 it gets comes off profit
 CASH_FLOOR = 700_000     # code's own floor under any reserve_cash the meta-harness sets: the line plus a cushion
 CUSHION = CASH_FLOOR - BANKRUPT_LINE   # kept above inventory.json's bankrupt_line, which the market may change
@@ -190,6 +190,13 @@ def main():
         why = f"spend limit reached (balance {inv.get('balance')}, cash floor {floor}, stock at cost {stock})"
     else:
         live = [u for u in units if u.get("grade") != "expired"]
+        # the market's surge (rules of 11/4 21:14): past 50 units of a SKU in an hour each unit costs 0.2% more, up to
+        # +50%. At 21:14 the mattress everyone stocks cost 1.47x, two others 1.3x: a grade-A unit (55-75% of list) at
+        # 1.47x costs 81-110% of list, more than a buyer pays. SKUs above surge_max (the team's knob) are left out, so
+        # the plan takes the next SKU of the category instead, and the rest are priced at their surged cost
+        surge = {x["sku"]: x.get("factor", 1.0) for x in inv.get("surge") or [] if isinstance(x, dict) and x.get("sku")}
+        surged = {k for k, f in surge.items() if f > s.get("surge_max", 1.15)}
+        catalog = {k: v for k, v in catalog.items() if k not in surged}
         count, held = Counter(u["category"] for u in live), Counter(u["sku"] for u in live)
         by_cat = defaultdict(list)
         for sku, c in catalog.items():
@@ -238,7 +245,7 @@ def main():
         for prio, c, qty in ranked:
             if len(buy) >= 10:
                 break
-            cost = c["list_price"] * EST_COST * qty
+            cost = c["list_price"] * EST_COST * surge.get(c["sku"], 1.0) * qty
             if cost > spend or (c["kind"] == "goods" and cost > goods_room):
                 continue
             if c["kind"] == "goods":
@@ -246,6 +253,7 @@ def main():
             buy.append({"sku": c["sku"], "qty": int(qty)})
             spend -= cost
         why = (f"{len(ranked)} SKUs short, buying {len(buy)} lines" + (f" (runs {gap:.0f} s apart: depth x{scale:.1f})" if scale > 1 else "")
+               + (f"; {len(surged)} SKUs left out for the market's surge (over {s.get('surge_max', 1.15)}x)" if surged else "")
                + (f"; forum asks for {', '.join(k.split('>')[-1] for k in list(wanted)[:5])}" if wanted else ""))
     (md / "restock_state.json").write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
     try:

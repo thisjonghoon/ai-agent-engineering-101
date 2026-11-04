@@ -69,6 +69,10 @@ SCOUT_WAIT = 6       # seconds the scouts wait for quotes; a slower shop is left
 AVOID = MD / "avoid_r3.json"
 AVOID_SECS = 900
 SHORT_SECS = 3600
+# A talk that ended with every ask above our limit (11/4 since 15:00: 14 of 28 talks were no-deals, 8 of them three pairs
+# retried across orders with budgets at or below list, e.g. 25620027 G1d19ebee four times at limits of 206100 or less
+# against a 229000 list) leaves that lowest ask as the pair's floor for an hour: the next order expects at least that.
+FLOOR_SECS = 3600
 SHELF_LEFT = re.compile(r"([\d.]+) h of shelf life left")
 PLAN = Path(os.environ.get("BUYER_PLAN") or Path(__file__).resolve().parent / "buyer_plan_r3.json")
 PLAN_KEYS = ("CAP", "FOOD_MARGIN", "C_CAP", "C_WARRANTY", "MAX_TRIES", "MAX_RAISE", "FIRM_GAP", "SCOUTS", "CLOSE_GAP")
@@ -103,9 +107,11 @@ def avoid_load():
             if isinstance(v, dict) and v.get("until", 0) > now}
 
 
-def avoid_add(shop, sku, why, secs, hours=None):
+def avoid_add(shop, sku, why, secs, hours=None, floor=None):
     a = avoid_load()
-    a[f"{shop}|{sku}"] = {"until": time.time() + secs, "why": why, **({"hours": hours} if hours is not None else {})}
+    a[f"{shop}|{sku}" + ("|floor" if floor else "")] = {"until": time.time() + secs, "why": why,
+                                                       **({"hours": hours} if hours is not None else {}),
+                                                       **({"floor": floor} if floor else {})}
     try:
         tmp = AVOID.with_name(f"{AVOID.name}.{os.getpid()}.tmp")
         tmp.write_text(json.dumps(a), encoding="utf-8")
@@ -265,6 +271,7 @@ def candidates(order, shops, cat, memory, claims):
             # what we expect to pay there, and whether our limit reaches it: an expensive SKU whose shop floor sits
             # above our limit only looks like a big surplus (review, 11/2), so the chance of a deal weighs it
             expect = lp * (share or market_share or PRICE_GUESS)
+            expect = max(expect, (avoid.get(f"{s['name']}|{sku}|floor") or {}).get("floor", 0))
             limit = min(order["budget"], int(lp * CAP))
             p_deal = 1.0 if limit >= expect else (limit / expect) ** 4
             surplus = (lp - min(expect, limit)) * p_deal
@@ -530,6 +537,9 @@ async def attempt(order, cat, s, off, lp, note, remember):
     if problem:
         log("GUARD", f"receipt problem: {problem}")
     stars, text = review(result, name, lp, problem)
+    asked = [a for a in result.get("asks", []) if a is not None]
+    if not deal and asked and min(asked) > limit:
+        avoid_add(s["name"], sku, "no deal above our limit", FLOOR_SECS, floor=min(asked))
     remember({"time": time.strftime("%Y-%m-%d %H:%M:%S"), "kind": "trade", "round": 3, "order": order.get("order"),
               "shop": s["name"], "url": s["url"], "item": order.get("item"), "sku": sku, "name": name,
               "list_price": lp, "budget": order.get("budget"), "food_hours": order.get("use_within_hours"),

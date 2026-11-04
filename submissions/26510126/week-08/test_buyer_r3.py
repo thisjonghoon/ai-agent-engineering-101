@@ -367,6 +367,19 @@ def main():
     case("a dropped pair is tried last while it waits, and first again after the wait", first == ["E", "A"] and later == ["A", "E"],
          f"{first} then {later}")
 
+    # 16b. a negotiated no-deal leaves the shop's lowest ask as a floor: the same pair ranks behind a pair we can reach
+    buyer_r3.AVOID.write_text("{}")
+    shop_f = [{"name": "H", "url": "http://H", "offers": [{"sku": "GH", "qty": 1}]},
+              {"name": "J", "url": "http://J", "offers": [{"sku": "GJ", "qty": 1}]}]
+    cat_f = {"GH": {"list_price": 229000}, "GJ": {"list_price": 229000}}
+    of = {"kind": "goods", "budget": 185260, "acceptable": ["GH", "GJ"]}
+    before = [c[1]["name"] for c in buyer_r3.candidates(of, shop_f, cat_f, [], {})]
+    buyer_r3.avoid_add("H", "GH", "no deal above our limit", 3600, floor=215000)
+    after = [c[1]["name"] for c in buyer_r3.candidates(of, shop_f, cat_f, [], {})]
+    case("a pair whose last ask was above our limit ranks behind one we may reach, and the floor is not a drop",
+         before == ["H", "J"] and after == ["J", "H"] and buyer_r3.avoided(buyer_r3.avoid_load(), "H", "GH", of) is None,
+         f"{before} then {after}")
+
     # 17. a refused payment for short shelf life: that pair waits only for orders asking more hours than it shipped
     buyer_r3.avoid_add("S", "GS", "short shelf life", 3600, hours=200.0)
     av = buyer_r3.avoid_load()

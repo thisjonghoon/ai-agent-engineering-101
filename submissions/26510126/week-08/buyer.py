@@ -162,6 +162,11 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
             if state(task) != "TASK_STATE_INPUT_REQUIRED":
                 break
             why = screen(reply_text(task)) if screen else None
+            if isinstance(why, dict) and isinstance(why.get("cap"), int) and why["cap"] < budget:
+                log("GUARD", f"paying at most {why['cap']} from here: {why.get('why')}")   # e.g. a grade-C unit
+                budget, why = why["cap"], None
+            elif isinstance(why, dict):
+                why = None
             if why:
                 log("OUT", f"leaving before any deal: {why}")
                 await seller.cancel(task_id)

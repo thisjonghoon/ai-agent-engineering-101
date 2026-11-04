@@ -42,6 +42,12 @@ CAP = 0.9            # never pay more than this share of the SKU's list price
 PRICE_GUESS = 0.75   # expected price as a share of list price with a shop we never paid (cost is 25-75% of list)
 FOOD_MARGIN = 1.1    # food must have use_within_hours x this left at checkout (the kit's clock and the shop's differ)
 GOOD_GRADES = ["A", "B"]  # C is refurbished: the most likely to break after the sale
+# Grade C goods (11/4, the ledger's last 24 h: A broke 1.4%, B 5.2%, C 17.9% of settled units). A settled deal is
+# worth the list price, 0 if the goods break, and a warranty refunds the price, so C is worth buying with a warranty
+# covering the 6 h in which goods can break, or at C_CAP of list or less (0.82 - 0.65 = +0.17 of list expected).
+# Asking for A or B only made shops holding C answer "none in stock" (458 quick rejects 06:00-09:40).
+C_CAP = 0.65
+C_WARRANTY = 6
 B_SHARE = 0.45       # grade B food has at least 45% of its shelf life left (agent.md)
 MAX_OFFERS = 8
 MAX_TRIES = 3        # shops tried per order when a negotiation ends without a deal
@@ -205,18 +211,24 @@ def candidates(order, shops, cat, memory, claims):
     return sorted(out, key=lambda c: -c[0])
 
 
-def accept_policy(order):
-    """What the kit checks before paying (agent.md: cert, min_hours_left, grades, warranty_hours)."""
+def accept_policy(order, receipt=None, lp=None):
+    """What the kit checks before paying (agent.md: cert, min_hours_left, grades, warranty_hours). Goods: A or B, and
+    C when the receipt carries a warranty of C_WARRANTY hours or its price is at most C_CAP of list."""
     if order.get("kind") == "food":
         return {"cert": True, "min_hours_left": round((order.get("use_within_hours") or 0) * FOOD_MARGIN, 1)}
+    r = receipt if isinstance(receipt, dict) else {}
+    price = buyer.as_int(r.get("price"))
+    if (r.get("warranty_hours") or 0) >= C_WARRANTY or (lp and price is not None and price <= C_CAP * lp):
+        return {"cert": True, "grades": GOOD_GRADES + ["C"]}
     return {"cert": True, "grades": GOOD_GRADES}
 
 
 GRADE_SAID = re.compile(r"\bgrade\s*:?\s*([ABC])\b|등급\s*:?\s*([ABC])\b", re.I)
+WARRANTY_SAID = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h|hours?|시간)\s*(?:of\s+)?(?:warranty|보증)", re.I)
 HOURS_SAID = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h|hours?|시간)\s*(?:of\s+)?(?:shelf[ -]life|left|남)", re.I)
 
 
-def screen_for(order):
+def screen_for(order, lp=None):
     """A check of the shop's own words against our payment policy (accept_policy): a grade or shelf life the shop
     states that the kit would refuse to pay for ends the talk before a deal. On 11/3 six receipts went unpaid this way
     (shelf life 138-338 h against 198-594 h asked, one grade C against A/B), each a result with no settle."""
@@ -225,6 +237,11 @@ def screen_for(order):
     def screen(text):
         g = GRADE_SAID.search(text or "")
         grade = (g.group(1) or g.group(2)).upper() if g else None
+        if grade == "C" and pol.get("grades") and lp:
+            w = WARRANTY_SAID.search(text or "")
+            if w and float(w.group(1)) >= C_WARRANTY:
+                return None
+            return {"cap": int(C_CAP * lp), "why": f"the shop says grade C with no {C_WARRANTY} h warranty"}
         if grade and pol.get("grades") and grade not in pol["grades"]:
             return f"the shop says grade {grade}, we pay only for {'/'.join(pol['grades'])}"
         h = HOURS_SAID.search(text or "")
@@ -304,7 +321,8 @@ async def attempt(order, cat, s, off, lp, note, remember):
         opening += (f". I need it to last {order['use_within_hours']} hours: please ship a unit with at least "
                     f"{accept_policy(order)['min_hours_left']} hours of shelf life left, with the market's certificate.")
     else:
-        opening += ". Please ship a grade A or B unit with the market's certificate; a warranty is welcome."
+        opening += (". Please ship a grade A or B unit with the market's certificate; a grade C unit only with a "
+                    f"{C_WARRANTY} h warranty or at a refurbished price. A warranty is welcome.")
     hint = (f"The list price is {lp}. Shops buy stock at 25-75% of list price. Open below what the market paid lately "
             f"(its lower quartile, below, is a fair opening; far under it, shops walk away) and raise slowly. "
             f"Our record with this shop: {note}.\n"
@@ -312,7 +330,7 @@ async def attempt(order, cat, s, off, lp, note, remember):
             f"{prices_r3.line(MD, sku, (cat.get(sku) or {}).get('category'))}.\n")
     try:
         result = await buyer.shop(s["url"], name, limit, memory=hint, max_raise=0.4, max_offers=MAX_OFFERS,
-                                  opening=opening, screen=screen_for(order))
+                                  opening=opening, screen=screen_for(order, lp))
     except Exception as e:
         log("ERROR", f"trade with {s['name']} failed: {e!r}")
         result = {"state": "error", "asks": [], "offers": [], "error": type(e).__name__}
@@ -331,5 +349,5 @@ async def attempt(order, cat, s, off, lp, note, remember):
               "price": agreed, "asks": result.get("asks", []), "offers": result.get("offers", []),
               "receipt": receipt, "problem": problem, "stars": stars, "screened": result.get("screened")})
     return {"shop": s["url"], "receipt": receipt if deal and not problem else None, "stars": stars,
-            "review": text, "accept": accept_policy(order),
+            "review": text, "accept": accept_policy(order, receipt, lp),
             "_quick": not result.get("asks") and result.get("state") in ("TASK_STATE_REJECTED", "error")}

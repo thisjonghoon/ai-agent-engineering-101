@@ -299,6 +299,17 @@ def main():
          and f("grade A, 683 h of shelf life left") is None and "grade C" in (g("매트리스: grade C, certificate attached") or "")
          and g("Counteroffer: 21736.") is None, f("grade C, 286 h shelf life left"))
 
+    # 11. grade C goods (11/4): worth buying with a 6 h warranty or at 65% of list or less
+    g2 = buyer_r3.screen_for({"kind": "goods"}, 100000)
+    cap = g2("매트리스: grade C, market certificate attached. Asking 80000")
+    case("grade C without a warranty: keep talking but pay at most 65% of list; with a 6 h warranty: no cap",
+         cap == {"cap": 65000, "why": "the shop says grade C with no 6 h warranty"}
+         and g2("grade C, 6 h warranty, certificate attached") is None, str(cap))
+    pol = lambda r: buyer_r3.accept_policy({"kind": "goods"}, r, 100000)["grades"]
+    case("the kit pays for C only at 65% of list or less, or with a 6 h warranty",
+         "C" in pol({"price": 60000}) and "C" not in pol({"price": 70000}) and "C" in pol({"price": 90000, "warranty_hours": 6})
+         and "C" not in buyer_r3.accept_policy({"kind": "goods"})["grades"], str([pol({"price": 60000}), pol({"price": 70000})]))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 

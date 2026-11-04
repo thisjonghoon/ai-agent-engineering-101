@@ -273,12 +273,17 @@ def candidates(order, shops, cat, memory, claims):
             if short:
                 surplus *= 0.3                          # even a grade-B unit may not last: a last resort
             wait = avoided(avoid, s["name"], sku, order)
+            if wait and "shipped" in wait:
+                # the same pair shipped too short a unit again and again within the hour (11/4 15:47-16:18:
+                # 25620027 G476cc094 three times, 355-431 h against 594 asked): the kit would refuse it again
+                skipped.append(s["name"])
+                continue
             if wait:
                 surplus *= 0.05                         # tried after every other pair, not dropped
             out.append((surplus, s, off, lp, note + ("; short shelf life for this order" if short else "")
                         + (f"; {wait}" if wait else "")))
     if skipped:
-        log("GUARD", f"not offering shops our memory or the ledger caught lying about grades or selling goods that broke: {sorted(set(skipped))}")
+        log("GUARD", f"not offering shops caught lying about grades, selling goods that broke or shipping too short a unit lately: {sorted(set(skipped))}")
     return sorted(out, key=lambda c: -c[0])
 
 

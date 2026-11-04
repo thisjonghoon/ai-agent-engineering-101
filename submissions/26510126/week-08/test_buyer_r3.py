@@ -374,6 +374,11 @@ def main():
          buyer_r3.avoided(av, "S", "GS", {"kind": "food", "use_within_hours": 376}) is not None
          and buyer_r3.avoided(av, "S", "GS", {"kind": "food", "use_within_hours": 100}) is None,
          str(av.get("S|GS")))
+    food_shops = [{"name": "S", "url": "http://S", "offers": [{"sku": "GS", "qty": 1}]},
+                  {"name": "T", "url": "http://T", "offers": [{"sku": "GS", "qty": 1}]}]
+    fo = {"kind": "food", "budget": 200000, "acceptable": ["GS"], "use_within_hours": 376}
+    got = [c[1]["name"] for c in buyer_r3.candidates(fo, food_shops, {"GS": {"list_price": 50000}}, [], {})]
+    case("that short-shipping pair is left out for an order needing more hours", got == ["T"], str(got))
 
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)

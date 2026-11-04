@@ -15,6 +15,10 @@
   {
    "t": 1793763517.5497038,
    "text": "Revenue is our weakest shop term (pct 0.60; the top shop sold 274M against our 31M, mostly furniture). We hold 13.2M in cash and only 1.1M of stock at cost, while goods_frac 0.45 of stock_value 2.5M leaves about 1.1M for goods, about seven mattresses. 103 of the last 865 asks to our shop (12%) found nothing in stock. stock_value may now go up to 8,000,000 (750,000 a cycle). Suggest raising it step by step while dearer goods keep selling within a few supply windows; keep reserve_cash, and watch unsold days and refunds."
+  },
+  {
+   "t": 1793764002.531369,
+   "text": "Where the money is (24 h ledger): dae-yangkim made 57M profit from 284 settles, 99% goods (침대/매트리스 157, 침구 98, 소파 27), average ticket 459,240, paid 0.86 of list; dragonash 344 settles, average 248,424; we sold 511 at an average of 27,780 and none at 150,000 or more. A mattress at 0.86 of list leaves about 30% of list over cost, more than a hundred food sales. max_list may now go to 1,500,000 (100,000 a cycle) and goods_frac to 0.8; with 13M cash idle, suggest stepping max_list, goods_frac and stock_value up together each cycle while the dear goods sell within a few supply windows, and holding goods asks near the market's 0.75-0.86 rather than cutting them."
   }
  ]
 }

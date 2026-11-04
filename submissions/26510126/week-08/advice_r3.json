@@ -7,6 +7,10 @@
   {
    "t": 1793757222.297131,
    "text": "Revenue is our weakest shop term (0.545) and you found every lever flat for 10 cycles. The market's revenue is ~85% furniture/bedding (24 h ledger: 622M of 730M), and our max_list 80000 and goods_frac 0.25 keep us out of most of it. The ledger's last 24 h of 가구/침구 settles by list price: under 80k 1508 sold at 0.74 of list, broke 3.9%; 80-150k 636 at 0.75, broke 3.6%; 150-450k 1944 at 0.75, broke 3.3%. Dearer units sell as often, at the same share of list, and break no more. Suggest one step at a time: max_list up (e.g. 130000), goods_frac up one step, keeping reserve_cash; then watch sell-through of the dearer units, storage days and refunds for two or three cycles before the next step. Your call."
+  },
+  {
+   "t": 1793761586.1407201,
+   "text": "max_list: the score rise from 0.788 to 0.811 did not come from it. Since 11:08 (max_list 130000) only 2 of our talks were for units listed above 80000 (both sold, 125,002 revenue), and 1 such unit is in stock now; the new stock arrives only in supply windows. Hold max_list at 230000 until dearer units have been bought and had time to sell (two or three supply windows), then judge by their sell-through, days in storage and refunds, not by the score of the next cycle."
   }
  ]
 }

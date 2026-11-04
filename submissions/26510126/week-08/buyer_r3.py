@@ -62,6 +62,14 @@ SCOUTS = 3           # buyer team: shops asked for a first quote at once before 
 SCOUT_WAIT = 6       # seconds the scouts wait for quotes; a slower shop is left out of this order
 # The meta-harness tunes these numbers from how our buyer did (meta_r3.py BUYER_BOUNDS, the user on 11/4: the
 # harness should make such fixes, not a person); each run reads its plan, the defaults above when it has none.
+# shop/SKU pairs that just failed us (the meta-harness's code idea, 11/4: 422 of ~680 orders without a deal ended in
+# "none in stock", the same shops dropping the same SKU again and again, and 15 of 100 payments were refused for a
+# unit with too little shelf life). A pair that dropped us waits until the next supply window; one that shipped too
+# short a unit waits an hour for orders asking more hours than it shipped. Waiting pairs move to the back, not out.
+AVOID = MD / "avoid_r3.json"
+AVOID_SECS = 900
+SHORT_SECS = 3600
+SHELF_LEFT = re.compile(r"([\d.]+) h of shelf life left")
 PLAN = Path(os.environ.get("BUYER_PLAN") or Path(__file__).resolve().parent / "buyer_plan_r3.json")
 PLAN_KEYS = ("CAP", "FOOD_MARGIN", "C_CAP", "C_WARRANTY", "MAX_TRIES", "MAX_RAISE", "FIRM_GAP", "SCOUTS")
 
@@ -86,6 +94,35 @@ def load(path, default):
             return json.load(f)
     except (OSError, ValueError):
         return default
+
+
+def avoid_load():
+    now = time.time()
+    a = load(AVOID, {})
+    return {k: v for k, v in (a if isinstance(a, dict) else {}).items()
+            if isinstance(v, dict) and v.get("until", 0) > now}
+
+
+def avoid_add(shop, sku, why, secs, hours=None):
+    a = avoid_load()
+    a[f"{shop}|{sku}"] = {"until": time.time() + secs, "why": why, **({"hours": hours} if hours is not None else {})}
+    try:
+        tmp = AVOID.with_name(f"{AVOID.name}.{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(a), encoding="utf-8")
+        os.replace(tmp, AVOID)
+    except OSError:
+        pass
+
+
+def avoided(avoid, shop, sku, order):
+    """Why this pair waits for this order, or None."""
+    v = avoid.get(f"{shop}|{sku}")
+    if not v:
+        return None
+    if "hours" in v:
+        need = accept_policy(order).get("min_hours_left")
+        return f"shipped a unit with {v['hours']:.0f} h left lately" if need and need > v["hours"] else None
+    return f"dropped us lately ({v.get('why')})"
 
 
 def lines(path):
@@ -118,6 +155,9 @@ def sync_kit_files(memory, remember):
                  "ledger": p.get("ledger"), "reason": p.get("reason")}
         remember(entry)
         memory.append(entry)
+        h = SHELF_LEFT.search(p.get("reason") or "")
+        if h and not p.get("paid") and shop and p.get("item"):
+            avoid_add(shop, p["item"], "short shelf life", SHORT_SECS, hours=float(h.group(1)))
     seen_broken = {(m.get("name"), m.get("broke_at")) for m in memory if m.get("kind") == "broken"}
     for b in lines(MD / "broken.jsonl"):
         key = (b.get("name"), b.get("broke_at"))
@@ -206,6 +246,7 @@ def candidates(order, shops, cat, memory, claims):
     acceptable = set(order.get("acceptable") or [])
     need = order.get("use_within_hours")
     out, skipped = [], []
+    avoid = avoid_load()
     for s in shops:
         note, banned, share = shop_record(s["name"], memory)
         n, bad, market_share = (tuple(claims.get(s["name"], ())) + (0, 0, None))[:3]
@@ -231,7 +272,11 @@ def candidates(order, shops, cat, memory, claims):
                 info["shelf_hours"] * B_SHARE < need * FOOD_MARGIN
             if short:
                 surplus *= 0.3                          # even a grade-B unit may not last: a last resort
-            out.append((surplus, s, off, lp, note + ("; short shelf life for this order" if short else "")))
+            wait = avoided(avoid, s["name"], sku, order)
+            if wait:
+                surplus *= 0.05                         # tried after every other pair, not dropped
+            out.append((surplus, s, off, lp, note + ("; short shelf life for this order" if short else "")
+                        + (f"; {wait}" if wait else "")))
     if skipped:
         log("GUARD", f"not offering shops our memory or the ledger caught lying about grades or selling goods that broke: {sorted(set(skipped))}")
     return sorted(out, key=lambda c: -c[0])
@@ -352,6 +397,7 @@ async def main(args, shops, memory, remember):
         talks += not quick
         if quick:
             quick_shops.add(s["name"])
+            avoid_add(s["name"], off["sku"], "quick reject", AVOID_SECS)
     forum_r3.maybe_post(memory)
     print(json.dumps(out, ensure_ascii=False), flush=True)
 
@@ -391,13 +437,31 @@ async def team(order, cat, cands):
     negotiation at a time follows, so we never agree with two shops for one order."""
     if SCOUTS < 2 or len(cands) < 2:
         return cands
-    picked, seen = [], set()
-    for c in cands:
-        if c[1]["name"] not in seen:
-            picked.append(c)
-            seen.add(c[1]["name"])
-        if len(picked) >= SCOUTS:
+    # a second wave of scouts at other shops when every shop of the first wave dropped out (11/4: most orders without
+    # a deal ended with the first shops out of stock while shops further down the list were never asked)
+    picked, dropped, quoted = [], set(), []
+    for wave in range(2):
+        batch, seen = [], {c[1]["name"] for c in picked}
+        for c in cands:
+            if c[1]["name"] not in seen:
+                batch.append(c)
+                seen.add(c[1]["name"])
+            if len(batch) >= SCOUTS:
+                break
+        if not batch:
             break
+        if wave:
+            log("SCOUT", f"no quote from the first wave: asking {len(batch)} more shops")
+        picked += batch
+        await scout_wave(order, cat, batch, dropped, quoted)
+        if quoted:
+            break
+    lead = [c for _, c in sorted(quoted, key=lambda x: -x[0])]
+    rest = [c for c in cands if c not in picked and (c[1]["name"], c[2]["sku"]) not in dropped]
+    return lead + rest
+
+
+async def scout_wave(order, cat, picked, dropped, quoted):
     # wait at most SCOUT_WAIT seconds: the slowest shop set the pace (9.5 s median, one took 27 s)
     tasks = [asyncio.create_task(scout(order, cat, c[1], c[2], c[3])) for c in picked]
     done, _ = await asyncio.wait(tasks, timeout=SCOUT_WAIT)
@@ -405,12 +469,13 @@ async def team(order, cat, cands):
     for t in tasks:
         if t not in done:
             t.cancel()
-    dropped, quoted = set(), []
     for c, q in zip(picked, quotes):
         why = screen_for(order, c[3])(q.get("text") or "") if q["state"] == "TASK_STATE_INPUT_REQUIRED" else None
         if q["state"] != "TASK_STATE_INPUT_REQUIRED" or isinstance(why, str):
             dropped.add((c[1]["name"], c[2]["sku"]))
             log("SCOUT", f"{c[1]['name']} {c[2]['sku']}: dropped ({why or q['state']})")
+            if q["state"] != "slow":
+                avoid_add(c[1]["name"], c[2]["sku"], why or q["state"], AVOID_SECS)
             continue
         cap = why["cap"] if isinstance(why, dict) else min(order["budget"], int(c[3] * CAP))
         ask = q.get("ask")
@@ -418,9 +483,6 @@ async def team(order, cat, cands):
         value = (c[3] - min(ask, cap)) * min(1.0, cap / ask) ** 4 if isinstance(ask, (int, float)) and ask > 0 else c[0]
         quoted.append((value, c))
         log("SCOUT", f"{c[1]['name']} {c[2]['sku']}: asks {ask} of list {c[3]} (surplus at the ask ~{value:.0f})")
-    lead = [c for _, c in sorted(quoted, key=lambda x: -x[0])]
-    rest = [c for c in cands if c not in picked and (c[1]["name"], c[2]["sku"]) not in dropped]
-    return lead + rest
 
 
 async def attempt(order, cat, s, off, lp, note, remember):

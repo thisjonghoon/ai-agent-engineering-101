@@ -343,6 +343,38 @@ def main():
     case("buyer team: out-of-stock shop dropped, cheapest quote negotiated first, unscouted shops kept after",
          [c[1]["name"] for c in got] == ["C", "B", "D"], str([c[1]["name"] for c in got]))
 
+    # 15. a second wave of scouts when every shop of the first wave dropped out (11/4: most orders without a deal)
+    async def empty_scout(order, cat, s, off, lp):
+        return {"state": "TASK_STATE_INPUT_REQUIRED", "ask": 70000, "text": "grade A. Asking 70000"} \
+            if s["name"] in ("E", "F") else {"state": "TASK_STATE_REJECTED", "text": "Sorry, none in stock."}
+    buyer_r3.scout, buyer_r3.SCOUTS = empty_scout, 2
+    got = asyncio.run(buyer_r3.team(order_t, {}, [mk("A", 50000), mk("D", 40000), mk("E", 30000), mk("F", 20000)]))
+    buyer_r3.scout, buyer_r3.SCOUTS = real, 3
+    case("buyer team: a second wave asks the next shops when the first wave is all out of stock",
+         [c[1]["name"] for c in got] == ["E", "F"], str([c[1]["name"] for c in got]))
+
+    # 16. a pair that dropped us waits at the back of the list until the next supply window, then comes back
+    av = buyer_r3.avoid_load()
+    case("a shop that said none in stock is remembered for this SKU", "A|GA" in av and "D|GD" in av and "E|GE" not in av,
+         str(sorted(av)))
+    shop_list = [{"name": "A", "url": "http://A", "offers": [{"sku": "GA", "qty": 1}]},
+                 {"name": "E", "url": "http://E", "offers": [{"sku": "GE", "qty": 1}]}]
+    cat_t = {"GA": {"list_price": 100000}, "GE": {"list_price": 90000}}
+    o = {"kind": "goods", "budget": 200000, "acceptable": ["GA", "GE"]}
+    first = [c[1]["name"] for c in buyer_r3.candidates(o, shop_list, cat_t, [], {})]
+    buyer_r3.AVOID.write_text(json.dumps({k: dict(v, until=time.time() - 1) for k, v in av.items()}))
+    later = [c[1]["name"] for c in buyer_r3.candidates(o, shop_list, cat_t, [], {})]
+    case("a dropped pair is tried last while it waits, and first again after the wait", first == ["E", "A"] and later == ["A", "E"],
+         f"{first} then {later}")
+
+    # 17. a refused payment for short shelf life: that pair waits only for orders asking more hours than it shipped
+    buyer_r3.avoid_add("S", "GS", "short shelf life", 3600, hours=200.0)
+    av = buyer_r3.avoid_load()
+    case("a shop that shipped 200 h waits for an order needing 414 h, not for one needing 110 h",
+         buyer_r3.avoided(av, "S", "GS", {"kind": "food", "use_within_hours": 376}) is not None
+         and buyer_r3.avoided(av, "S", "GS", {"kind": "food", "use_within_hours": 100}) is None,
+         str(av.get("S|GS")))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 

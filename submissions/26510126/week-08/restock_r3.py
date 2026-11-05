@@ -248,10 +248,7 @@ def main():
         # none of, the rest keep their order
         empty = [p for p in ranked if count[p[1]["category"]] == 0][:int(s.get("breadth_lines", 6))]
         ranked = empty + [p for p in ranked if p not in empty]
-        # goods_frac counts only the slow goods (under 300k): 300k+ sold 8.0 an hour at a 85,090 margin and turn over in
-        # about 4.4 h, so their holding cost is negligible, while 35 of them (13.5M) had eaten the 2-5M of room left
-        goods_room = s["goods_frac"] * s["stock_value"] - sum(
-            u["cost"] for u in live if u.get("kind") == "goods" and (catalog.get(u["sku"]) or {}).get("list_price", 0) < 300_000)
+        goods_room = s["goods_frac"] * s["stock_value"] - sum(u["cost"] for u in live if u.get("kind") == "goods")
         # 11/4 22:30, the last 6 h of settles: the top shops sold 470-575 units listed at 150,000 or more each (sofas,
         # beds, bedding; average ticket 600-820k) and 0.2-0.7 billion of revenue; we sold 25 (21M), buying at most
         # 10 lines a window and one unit of a dear SKU a line, with 21M of cash idle. A window takes about 18 lines,
@@ -270,15 +267,9 @@ def main():
                 continue
             qty = min(int(qty), 20)    # the market takes 1-20 units a line: 24 was refused (400) 18 times on 11/4
             cost = c["list_price"] * EST_COST * surge.get(c["sku"], 1.0) * qty
-            if c["kind"] == "goods" and c["list_price"] >= 300_000:
-                # a 300k+ line that does not fit is trimmed to what `spend` affords, not dropped (1.4-3M a line, cash idle)
-                qty = min(qty, int(spend // (cost / qty)))
-                if qty <= 0:
-                    continue
-                cost = c["list_price"] * EST_COST * surge.get(c["sku"], 1.0) * qty
-            elif cost > spend or (c["kind"] == "goods" and cost > goods_room):
+            if cost > spend or (c["kind"] == "goods" and cost > goods_room):
                 continue
-            if c["kind"] == "goods" and c["list_price"] < 300_000:
+            if c["kind"] == "goods":
                 goods_room -= cost
             buy.append({"sku": c["sku"], "qty": qty})
             spend -= cost

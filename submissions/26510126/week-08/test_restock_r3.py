@@ -198,19 +198,6 @@ res = json.loads(out.getvalue().splitlines()[-1])
 q = {b["sku"]: b["qty"] for b in res["buy"]}
 case("a 200,000 SKU is held at 2 units, a 400,000 one gets dear_depth", q.get("SM", 0) <= 2 and q.get("SX", 0) >= 3, q)
 restock_r3.strategy = real
-# a 300k+ line that does not fit is trimmed to `spend` and skips the goods_frac room test (11/5: 300k+ sold 8.0 an hour)
-restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=40_000_000, goods_frac=0.0, max_list=500_000)
-(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 1_400_000, "units": []}), encoding="utf-8")
-(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {}}),
-                                       encoding="utf-8")
-out = io.StringIO()
-with contextlib.redirect_stdout(out):
-    restock_r3.main()
-restock_r3.strategy = real
-res = json.loads(out.getvalue().splitlines()[-1])
-q = {b["sku"]: b["qty"] for b in res["buy"]}
-case("a 400,000 SKU with no goods room is trimmed to what 700,000 affords (2 units of 240,000), not dropped",
-     q.get("SX") == 2 and "SM" not in q, q)
 # a goods category whose reference is above max_list but within 2x (sofa/chair ~1.4M-2M at max_list 1.4M) is stocked
 cat4 = dict(cat3, SD0={"category": "G>dear", "kind": "goods", "list_price": 120000, "name": "dear"})
 (md / "catalog.json").write_text(json.dumps(cat4), encoding="utf-8")

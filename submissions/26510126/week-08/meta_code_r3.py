@@ -4,7 +4,7 @@ the harness more room to act on its own ideas; the supervisor keeps watching).
 The inner loop (meta_r3, every 15 min) moves numbers inside bounds. This loop changes what no number can: one
 hypothesis at a time, from the grade back to the code.
 
-    goal      metrics_r3.score_gap(): the points each board term (shop profit/revenue/stars, buyer surplus/votes/
+    goal      metrics_r3.score_gap(): the points each board term (shop book/revenue/stars, buyer saved/votes/
               deals/posts) costs us, from the live board, by the midterm's own weights
     engineer  a coding agent that reads the code, the raw traces (talks, payments, scouts, orders) and the ledger of
               past hypotheses with their results, and writes ONE hypothesis for the costliest term it can move: the
@@ -102,6 +102,12 @@ Counted by code from the same traces (you cannot run scripts, so start from thes
 traces); the areas are ranked by the board points they lose, discounted by what the loop already tried this day.
 Look at the top area first, but take the change the numbers back best in any area:
 {digest}
+
+The market's rules of 11/6 06:02 score the buyer by saved: the sum over deals of (list - price) / list, divided by
+deals + 100, a deal whose goods broke or whose food did not last counting -1 (0 if refunded). A snack and a sofa at 30%
+off score the same, so the buyer gains by a deeper discount on every order and by never buying a unit likely to break
+or spoil, not by dear orders (buyer_saved_deal is that per deal). Forum votes now count one stance per voting account
+per author, from voters with 50 settled deals.
 
 The tuning team moves the numbers in strategy_r3.json; the code around them is yours. In the stock area that is how
 restock_r3.py ranks SKUs and categories, which lines a window buys and in what order, what demand_r3.py and

@@ -240,19 +240,20 @@ def buyer_trial_verdict():
     b = metrics_r3.window(t0, t1, keep=lambda o: code_ab_r3.arm(t["key"], o) == "B")
     if min(a.get("orders") or 0, b.get("orders") or 0) < 150 and t1 - t0 < 3 * 3600:
         return {}                                   # too few orders an arm: a few dear orders would decide it
-    gain, close = metrics_r3.change("buyer_surplus_order", a, b), metrics_r3.change("buyer_close_rate", a, b)
+    # 11/6 06:02 rules: the board scores the buyer's saved rate (surplus / list per deal), no longer surplus in won
+    gain, close = metrics_r3.change("buyer_saved_deal", a, b), metrics_r3.change("buyer_close_rate", a, b)
     win = t["B"] if gain is not None and gain > 0.03 and (close is None or close > -BUYER_GUARD) else t["A"]
     plan = dict(BUYER_DEFAULTS, **{k: v for k, v in read_json(BUYER_PLAN, {}).items() if k in BUYER_BOUNDS})
     plan[t["param"]] = win
     BUYER_PLAN.write_text(json.dumps(dict(plan, t=time.time()), indent=1), encoding="utf-8")
     BUYER_TRIAL.write_text("{}", encoding="utf-8")
-    verdict = (f"{'kept' if win == t['B'] else 'not taken'}; surplus/order {a.get('buyer_surplus_order')} -> "
-               f"{b.get('buyer_surplus_order')}, close rate {a.get('buyer_close_rate')} -> {b.get('buyer_close_rate')} "
+    verdict = (f"{'kept' if win == t['B'] else 'not taken'}; saved/deal {a.get('buyer_saved_deal')} -> "
+               f"{b.get('buyer_saved_deal')}, close rate {a.get('buyer_close_rate')} -> {b.get('buyer_close_rate')} "
                f"({a.get('orders')} vs {b.get('orders')} orders, same hours)")
     with CODE_CHANGES.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"t": t0, "commit": "-", "source": "inner loop (buyer A/B)",
                             "change": f"buyer {t['param']} {t['A']} -> {t['B']} on half the orders",
-                            "evidence": "the buying specialist's proposal", "metric": "buyer_surplus_order",
+                            "evidence": "the buying specialist's proposal", "metric": "buyer_saved_deal",
                             "after": verdict, "verdict": verdict}, ensure_ascii=False) + "\n")
     return {t["param"]: (t["A"], win)}
 

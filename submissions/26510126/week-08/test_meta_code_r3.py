@@ -62,11 +62,11 @@ def main():
     # 4. what the midterm grades: points lost per board term, by its weights
     board = {"shops": [{"name": "thisjonghoon", "deals": 1, "profit": 5, "revenue": 1, "stars": 4.0},
                        {"name": "x", "deals": 1, "profit": 9, "revenue": 9, "stars": 4.9}],
-             "buyers": [{"name": "thisjonghoon", "deals": 3, "surplus": 1, "forum": 0.5, "posts": 9},
-                        {"name": "x", "deals": 5, "surplus": 9, "forum": 0.6, "posts": 1}]}
+             "buyers": [{"name": "thisjonghoon", "deals": 3, "saved": 0.1, "forum": 0.5, "posts": 9},
+                        {"name": "x", "deals": 5, "saved": 0.3, "forum": 0.6, "posts": 1}]}
     gap = mc.metrics_r3.score_gap(board)
-    case("the costliest term comes first (buyer surplus: weight 0.5, beaten by the other)",
-         gap[0][:2] == ("buyer", "surplus") or gap[0][:2] == ("shop", "profit"), str(gap[:3]))
+    case("the costliest term comes first (buyer saved: weight 0.5, beaten by the other)",
+         gap[0][:2] == ("buyer", "saved") or gap[0][:2] == ("shop", "profit"), str(gap[:3]))
 
     # 5. the code A/B: half the orders run the change while it is on trial, every order before and after
     mc.code_ab_r3.TRIAL = tmp / "code_ab.json"

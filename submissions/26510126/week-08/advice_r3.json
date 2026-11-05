@@ -115,6 +115,10 @@
   {
    "t": 1793892737.916219,
    "text": "Undid clear_hours to 20. 00:31 sales set clear_hours 20 -> 24 because '24 -> 20 preceded the profit drop (48.1M to about 44M)'. Two misreadings: the 23:28 change was 16 -> 20, not 24 -> 20, and the 'profit' it read was cash, which falls whenever restock buys stock (stock at cost went 24.9M -> 29.6M in that hour while book stayed about 79M). The board ranks book. Back to 20 so the 23:28 change gets its 2 h verdict; the snapshot's profit is now book-based (cash + stock at cost - start), so values from 00:35 on are not comparable with the cash-based ones before."
+  },
+  {
+   "t": 1793912610.260778,
+   "text": "RULES CHANGED 11/6 06:02 (agent.md). Buyer ALL now uses saved, not surplus: the sum over deals of (list - price) / list, a deal that served nothing (goods broke, food did not last) counting -1 (0 if refunded), divided by deals + 100. A snack and a sofa at 30% off score the same. Board at 06:0x: we are 9th of the Players (1.496); our saved 0.281 against a median 0.230 and max 0.364, buyer ALL 0.84; forum 0.887. What this means for the buyer: a deeper discount on every order counts, cheap orders count as much as dear ones, and a unit that breaks or spoils costs a whole deal's worth (C-grade goods broke 15.4% a day, A 1.5%), so C_CAP, grade and shelf-life rules now matter more than closing dear orders. Buyer trials are now judged on buyer_saved_deal (mean (list - price) / list per paid deal). Forum: votes count from voters with 50 settled deals, one stance per account per author; dislikes past 3 an hour cost the voter from 12:00. The shop side (book, revenue, stars) is unchanged and is now our weaker half (shop ALL 0.656)."
   }
  ]
 }

@@ -25,7 +25,7 @@ import metrics_r3
 
 HERE = Path(__file__).resolve().parent
 AREAS = {
-    "buyer": {"files": {"buyer_r3.py", "buyer.py"}, "terms": {("buyer", "surplus"), ("buyer", "deals")},
+    "buyer": {"files": {"buyer_r3.py", "buyer.py"}, "terms": {("buyer", "saved"), ("buyer", "surplus"), ("buyer", "deals")},
               "words": ("buyer", "order", "haggl", "offer", "walk")},
     "forum": {"files": {"forum_r3.py"}, "terms": {("buyer", "forum"), ("buyer", "posts")}, "words": ("forum", "post")},
     "stock": {"files": {"restock_r3.py", "demand_r3.py", "prices_r3.py"},
@@ -94,14 +94,19 @@ def buyer_digest(base=HERE, hours=12, now=None):
               if d.get("event") == "order" and now - d.get("t", 0) < hours * 3600 and d.get("order")}
     mem = jl(base / "memory.jsonl")
     settled = {m["order"]: m for m in mem if m.get("kind") == "settled" and m.get("order") in orders}
-    lines = [f"Orders, last {hours} h, by reference price: orders, share closed, surplus (list - price) of the closed"]
-    total = sum(m["list_price"] - m["price"] for m in settled.values() if m.get("list_price")) or 1
+    # the board scores saved = sum of (list - price) / list over deals / (deals + 100), -1 for goods that broke or food
+    # that did not last (11/6 06:02 rules): every deal counts the same whatever its price
+    lines = [f"Orders, last {hours} h, by reference price: orders, share closed, mean saved rate (list - price) / list "
+             "of the closed (the board's buyer term)"]
     for lo, hi, name in BANDS:
         os_ = [o for o, d in orders.items() if lo <= (d.get("ref") or 0) < hi]
-        got = [settled[o] for o in os_ if o in settled]
-        s = sum(m["list_price"] - m["price"] for m in got if m.get("list_price"))
-        lines.append(f"  {name}: {len(os_)} orders, closed {len(got) / max(len(os_), 1):.0%}, surplus {s:,} "
-                     f"({s / total:.0%} of all)")
+        got = [settled[o] for o in os_ if o in settled and settled[o].get("list_price")]
+        r = [(m["list_price"] - m["price"]) / m["list_price"] for m in got]
+        lines.append(f"  {name}: {len(os_)} orders, closed {len(got) / max(len(os_), 1):.0%}, "
+                     f"saved {sum(r) / len(r) if r else 0:.3f}")
+    broken = jl(base / ".market" / "broken.jsonl")
+    lines.append(f"Goods that broke after we bought them (each counts -1 on the board): {len(broken)} in all, "
+                 f"{sum(1 for x in broken if now - (x.get('broke_at') or 0) < hours * 3600)} in the last {hours} h")
     # the talks: market-kit.log, from each CHOOSE (its 'paying at most' is our cap) to the talk's OUT line
     try:
         path = base / "logs" / "market-kit.log"

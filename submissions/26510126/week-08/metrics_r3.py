@@ -14,6 +14,9 @@ window(t0, t1): the fixed metrics a hypothesis may name, from our own logs (code
   shop_margin_h         (price - cost) of those deals per hour
   forum_votes_post      net votes per post our buyer wrote in the window (forum.json keeps the newest 100 posts, so
                         only the last hours can be read; forum votes are 0.3 of the buyer's ALL)
+  buyer_saved_deal      mean of (list - price) / list over the paid deals: the board's saved term per deal (11/6 06:02
+                        rules), so a cheap order counts as much as a dear one; goods that break later count -1 on the
+                        board, which this window cannot see yet
   buyer_dear_close      paid orders / orders among orders whose reference price is DEAR or more. 11/3 21:00-11/5 11:00:
                         the 216 orders of 300k or more (5%) gave 55% of our surplus, closing 61%; one more of them
                         closed is worth about ten cheap deals
@@ -33,9 +36,11 @@ HERE = Path(__file__).resolve().parent
 BOARD = HERE / "logs" / "board" / "board-round3.json"
 # the rules of 11/5 03:49: the shop's first term is book (cash + what unsold units cost), no longer cash ("profit")
 SHOP_TERMS = {"book": 0.5, "revenue": 0.3, "stars": 0.2}
-BUYER_TERMS = {"surplus": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}
+# the rules of 11/6 06:02: the buyer's first term is saved, the sum over deals of surplus / list price (-1 for a deal that
+# served nothing, 0 if refunded) divided by deals + 100, so a snack and a sofa at 30% off score the same
+BUYER_TERMS = {"saved": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}
 METRICS = ("buyer_close_rate", "buyer_surplus_order", "buyer_paid_h", "shelf_refused_h", "shop_deals_h",
-           "shop_margin_h", "forum_votes_post", "buyer_dear_close", "buyer_secs_order")
+           "shop_margin_h", "forum_votes_post", "buyer_dear_close", "buyer_secs_order", "buyer_saved_deal")
 LOWER_IS_BETTER = {"shelf_refused_h", "buyer_secs_order"}
 DEAR = 100000
 KIT_LOG = "logs/market-kit.log"
@@ -145,6 +150,8 @@ def window(t0, t1, base=HERE, keep=None):
                   if m.get("kind") == "trade" and m.get("order") in orders and _ts(m.get("time")))
     secs = [x for x in secs if 0 <= x < 600]
     dear_paid = sum(1 for m in paid if m.get("order") in dear)
+    rates = [(lists[m["order"]] - m["price"]) / lists[m["order"]] for m in paid
+             if lists.get(m.get("order")) and m.get("price") is not None]
     surplus = sum((lists.get(m.get("order")) or 0) - (m.get("price") or 0) for m in paid if lists.get(m.get("order")))
     sold = [x for x in jl(base / "logs" / "talks_r3.jsonl") if x.get("price") and t0 <= x.get("t", 0) < t1]
     try:
@@ -163,6 +170,7 @@ def window(t0, t1, base=HERE, keep=None):
         "shop_margin_h": round(sum(x["price"] - (x.get("cost") or 0) for x in sold) / hours),
         "forum_votes_post": round(sum((p.get("likes") or 0) - (p.get("dislikes") or 0) for p in ours) / len(ours), 2)
         if ours else None,
+        "buyer_saved_deal": round(sum(rates) / len(rates), 4) if rates else None,
         "buyer_dear_close": round(dear_paid / len(dear), 3) if len(dear) >= 5 else None,
         "buyer_secs_order": round(secs[len(secs) // 2], 1) if secs else None,
         "orders": len(orders),

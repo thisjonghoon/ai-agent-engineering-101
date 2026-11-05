@@ -209,7 +209,22 @@ def advice(hours=24, n=3):
     notes = [x for x in notes if isinstance(x, dict) and x.get("t", 0) >= cut and isinstance(x.get("text"), str)][-n:]
     text = "\n".join(f"- {time.strftime('%m/%d %H:%M', time.localtime(x['t']))}: {x['text'][:600]}" for x in notes) \
         or "(none)"
-    return text + code_changes()
+    return text + code_changes() + number_changes()
+
+
+def number_changes(n=6):
+    """The verdicts on the team's own numbers (number_verdicts) and those still waiting. On 11/6 the team held every
+    number for hours "until the clear_hours verdict" that had been in the ledger since 02:32: the last 4 ledger rows it
+    saw were other changes."""
+    rows = [x for x in jl(CODE_CHANGES) if x.get("source") == "inner loop (number)"][-n:]
+    wait = read_json(NUMBER_TRIALS, [])
+    out = [f"- {time.strftime('%m/%d %H:%M', time.localtime(x.get('t', 0)))} {x.get('change')}: {str(x.get('verdict'))[:220]}"
+           for x in rows]
+    out += [f"- {time.strftime('%m/%d %H:%M', time.localtime(x['t']))} "
+            f"{', '.join(f'{k} {v[0]} -> {v[1]}' for k, v in x['changes'].items())}: verdict due "
+            f"{time.strftime('%H:%M', time.localtime(x['t'] + NUMBER_CHECK))}" for x in wait]
+    return ("\nYour number changes, judged by code (2 h before vs 2 h after) and still waiting:\n" + "\n".join(out)) \
+        if out else ""
 
 
 CODE_CHANGES = HERE / "logs" / "code_changes_r3.jsonl"

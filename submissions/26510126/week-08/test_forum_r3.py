@@ -111,10 +111,6 @@ def main():
     check("the editor (GPT) can revise a draft, its fix must pass the same number check, and a rejected draft goes out as plain facts",
           rv[1] == "styled (revised)" and "더 재미있게" in rv[0] and "failed the checks" in bad_fix[1]
           and rj[1] == "plain: the editor rejected the draft", [rv[1], bad_fix[1], rj[1]])
-    sm = lambda shop, n: {"round": 3, "kind": "settled", "shop": shop, "ledger": n, "price": 5000, "list_price": 10000}
-    nt, nrefs = forum_r3.note([sm("A", 1), sm("A", 2), sm("A", 3), sm("B", 4), sm("B", 5), sm("C", 6)])
-    check("our deals note lists only shops with 2+ settles and cites the last 2 refs of each",
-          nt and "A: 3 settled" in nt and "B: 2 settled" in nt and "C:" not in nt and nrefs == [2, 3, 4, 5], (nt, nrefs))
     print(f"\n{sum(ok)}/{len(ok)} passed")
 
 

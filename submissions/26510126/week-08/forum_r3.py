@@ -100,10 +100,7 @@ def note(memory):
     for m in settled:
         by[m.get("shop") or "?"].append(m)
     parts, refs = [], []
-    ranked = sorted(by.items(), key=lambda kv: -len(kv[1]))
-    # 11/5 09:09: 9 shops over 17 settles, 5 with one settle, and only the last MAX_REFS=10 refs, so about 7 of 17 settles
-    # had a ref; show the top 4 shops with 2+ settles (the top one if none) and the last 2 refs of each
-    for shop, ms in ([kv for kv in ranked if len(kv[1]) >= 2][:4] or ranked[:1]):
+    for shop, ms in sorted(by.items(), key=lambda kv: -len(kv[1])):
         shares = [m["price"] / m["list_price"] for m in ms if m.get("price") and m.get("list_price")]
         claims = [m for m in ms if m.get("claim")]
         honest = sum(m.get("claim_honest") is True for m in claims)
@@ -116,7 +113,7 @@ def note(memory):
         if lies:
             line += "; " + ", ".join(f"claimed {m['claim']} shipped {m.get('grade')} (#{m.get('ledger')})" for m in lies[:2])
         parts.append(line)
-        refs += [m["ledger"] for m in ms if m.get("ledger")][-2:]
+        refs += [m["ledger"] for m in ms if m.get("ledger")]
     for m in new:
         if m["kind"] == "broken" and m.get("shop") and not m.get("ambiguous"):   # never blame a shop we cannot tell
             parts.append(f"{m['name'][:40]} from {m['shop']} broke after the sale"

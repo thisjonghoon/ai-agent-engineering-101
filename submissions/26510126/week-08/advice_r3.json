@@ -87,6 +87,10 @@
   {
    "t": 1793849724.806004,
    "text": "Undid market_ask 1.05 -> 1.0. 12:34 market_ask 1.0 -> 1.05 came 30 min after stock_value 18M -> 30M (12:03), whose 2-3 cycle check the merchandiser asked for at 12:19; a price step now confounds it. Our dear sales already sit at 0.763 of list (366 in 12 h) against a market median near 0.75 (buzllightyear's forum post, beds 3 h), and 15.7M of dear stock just arrived. A higher cap risks the sell-through that the stock change is judged by. Hold prices until the stock change is judged (dear units held vs sold, about 13:30). If you still want a higher ask, run it as the A/B arm (market_ask 1.05 vs 1.0) so the same hours compare, not as a whole-shop step."
+  },
+  {
+   "t": 1793851695.132807,
+   "text": "stock_value 30M measured (12:03-13:08 vs 09:03-12:03): deals 124 -> 172 an hour, dear (150k+) sales 13 -> 28.6 an hour, revenue 8.0M -> 16.6M an hour, margin 2.18M -> 3.76M an hour; 14 units of 500k+ sold (0 before). Stock refills each window (23.0M now, 57 dear units), cash 39.9M. Dear stock sells, so the next step up (34-38M) is yours to take at 13:30, with the same check after."
   }
  ]
 }

@@ -93,9 +93,13 @@ lacks something. Find ONE change, in these files only: {allowed}, that should mo
 you counted in the traces. Read the ledger first: when changes aimed at one metric keep measuring flat or worse, aim
 at another term. The shop's cash and revenue are the costliest shop terms, and restock_r3.py (what and how much the
 shop stocks) reaches them: on 11/4 stocking dear furniture took dear sales from about 4 to about 60 an hour, more
-than any buyer-side change so far. Forum votes and posts together (0.3 + 0.1 of the buyer's ALL) cost about as much
-as buyer surplus and are the cheapest to move: forum_r3.py decides what our posts say (votes per post fell from 6 to
-4 overnight). Not: a change already in the code or in the list above, a number the tuning team can set
+than any buyer-side change so far. Buyer surplus (0.5) is the costliest buyer term, and two things in buyer_r3.py and
+buyer.py reach it (11/5 11:00, 4,662 orders): orders with a reference price of 300k or more are 5% of orders but 55%
+of our surplus and close 61%, 100-300k orders close 51%, so effort per order should grow with the price (metric
+buyer_dear_close); and the market sends the next order no sooner than 20 s after our answer, while 31% of orders took
+longer (no-deal ones 23 s at the median, 66 s at p90), so leaving a cheap order that is going nowhere sooner gains
+orders (metric buyer_secs_order). The forum already posts at the cadence the user capped and its posts get about 6
+likes to 1 dislike; two engineers in a row found no forum change the traces back. Not: a change already in the code or in the list above, a number the tuning team can set
 (it already moves those), anything about payments, keys or the seller.
 
 Answer with one JSON object on the last line, nothing after it:

@@ -33,6 +33,7 @@ import time
 from pathlib import Path
 
 import code_ab_r3
+import digest_r3
 import metrics_r3
 
 HERE = Path(__file__).resolve().parent
@@ -91,15 +92,14 @@ shop had; memory.jsonl: our buyer's trades and payments; payments.jsonl; demand_
 market-kit.log: the buyer's and kit's lines with SCOUT, CAND, GUARD, ASK, OUT). Read the code before you claim it
 lacks something. Find ONE change, in these files only: {allowed}, that should move a costly term, backed by numbers
 you counted in the traces. Read the ledger first: when changes aimed at one metric keep measuring flat or worse, aim
-at another term. The shop's cash and revenue are the costliest shop terms, and restock_r3.py (what and how much the
-shop stocks) reaches them: on 11/4 stocking dear furniture took dear sales from about 4 to about 60 an hour, more
-than any buyer-side change so far. Buyer surplus (0.5) is the costliest buyer term, and two things in buyer_r3.py and
-buyer.py reach it (11/5 11:00, 4,662 orders): orders with a reference price of 300k or more are 5% of orders but 55%
-of our surplus and close 61%, 100-300k orders close 51%, so effort per order should grow with the price (metric
-buyer_dear_close); and the market sends the next order no sooner than 20 s after our answer, while 31% of orders took
-longer (no-deal ones 23 s at the median, 66 s at p90), so leaving a cheap order that is going nowhere sooner gains
-orders (metric buyer_secs_order). The forum already posts at the cadence the user capped and its posts get about 6
-likes to 1 dislike; two engineers in a row found no forum change the traces back. Not: a change already in the code or in the list above, a number the tuning team can set
+at another term.
+
+Counted by code from the same traces (you cannot run scripts, so start from these numbers and check them in the
+traces); the areas are ranked by the board points they lose, discounted by what the loop already tried this day.
+Look at the top area first, but take the change the numbers back best in any area:
+{digest}
+
+Not: a change already in the code or in the list above, a number the tuning team can set
 (it already moves those), anything about payments, keys or the seller.
 
 Answer with one JSON object on the last line, nothing after it:
@@ -283,6 +283,15 @@ def copy_folder(work):
         (work / "traces" / Path(rel).name).write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def area_digest():
+    # 11/5: the prompt named one area (the forum, then buyer surplus) and the engineer read only that; it also had no
+    # counts of its own. digest_r3 counts every area and ranks them by the points they lose
+    try:
+        return digest_r3.for_prompt(HERE)
+    except Exception as e:
+        return f"(the digest failed: {type(e).__name__})"
+
+
 def engineer_prompt():
     now = time.time()
     windows = "\n".join(f"- {time.strftime('%H:%M', time.localtime(now - h * 3600))}-"
@@ -301,7 +310,7 @@ def engineer_prompt():
     return ENGINEER.format(gap=metrics_r3.gap_text(), metrics=", ".join(metrics_r3.METRICS), windows=windows,
                            ledger=ledger, ideas="\n".join(f"- {i[:300]}" for i in ideas[-6:]) or "(none)",
                            advice="\n".join(f"- {n.get('text', '')[:900]}" for n in advice[-3:]) or "(none)",
-                           allowed=", ".join(sorted(ALLOWED)))
+                           allowed=", ".join(sorted(ALLOWED)), digest=area_digest())
 
 
 def build():

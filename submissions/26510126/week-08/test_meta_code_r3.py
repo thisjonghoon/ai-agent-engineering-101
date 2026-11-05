@@ -95,6 +95,20 @@ def main():
     mc.build()
     case("no build within BUILD_EVERY of the last one", not mc.WORK.exists())
 
+    # 8. the engineer's areas: ranked by points lost, discounted by tries in the last day
+    d = mc.digest_r3
+    case("an attempt is placed by the files it changed", d.area_of({"spec": {"files": ["forum_r3.py"]}}) == "forum")
+    case("a skip is placed by its words", d.area_of({"result": "no hypothesis: the buyer's offers"}) == "buyer")
+    case("a verdict that measured +12% counts as a gain", d.gained({"verdict": "kept; x: expected +3%, measured +12%"})
+         and not d.gained({"verdict": "kept; x: expected +5%, measured -10%"}))
+    base = tmp / "digest"
+    (base / "logs").mkdir(parents=True)
+    now = time.time()
+    (base / "logs" / "code_attempts_r3.jsonl").write_text("".join(
+        json.dumps({"t": now - 60 * i, "spec": {"files": ["forum_r3.py"]}}) + "\n" for i in range(4)))
+    rows = d.focus(base, board, now)
+    case("an area tried four times without a gain falls below one not tried", rows[-1][0] == "forum", str(rows))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(tmp, ignore_errors=True)
 

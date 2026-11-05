@@ -1,22 +1,32 @@
 [
  {
-  "t": 1793863920.0,
+  "t": 1793874636.213938,
   "changes": {
-   "stock_value": [
-    34000000,
-    30000000
+   "ask_frac_food": [
+    0.72,
+    0.75
    ]
   },
-  "reason": "merchandising: return to the measured 30M (queued by the supervisor at deploy)"
+  "reason": "Sales: approved ask_frac_food 0.72->0.75 as one small step, judged by the 2h verdict with outage minutes excluded, and goods 0.9 is not retested nor called a winner. Merchandising: approved the hold, since the stock_value evidence is supervisor-measured and the ask_frac verdict is confounded. Buying"
  },
  {
-  "t": 1793864880.0,
+  "t": 1793876532.7403798,
   "changes": {
-   "ask_frac": [
-    0.85,
-    0.9
+   "ask_frac_food": [
+    0.75,
+    0.8
    ]
   },
-  "reason": "sales: dear goods sell at 0.763 of list vs market median 0.769 (queued by the supervisor at deploy)"
+  "reason": "Sales: trimmed to the single ask_frac_food 0.8 step back (deals fell after 0.75, and the 2 h code verdict will judge it) and the grocery_markdown A/B is rejected because it would confound the same food prices. Merchandising: approved holding all numbers, since no number is clearly binding and the ea"
+ },
+ {
+  "t": 1793876563.5308669,
+  "changes": {
+   "ask_frac_food": [
+    0.8,
+    0.72
+   ]
+  },
+  "reason": "supervisor undo: 20:02 sales called ask_frac_food 0.75 -> 0.8 'a step back because deals fell after 0.75', but 0.8 is a further raise, not a step back. Food deals fell from 80 to 58 an hour (17:30-19:30 vs 19:30-20:02"
  }
 ]

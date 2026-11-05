@@ -107,6 +107,10 @@
   {
    "t": 1793871652.7959821,
    "text": "Two changes to how numbers are judged (18:45). 1) Every shop number you change is now judged by code 2 h later: margin and deals an hour, 2 h before vs 2 h after, written to the ledger as source 'inner loop (number)', with any other number changed meanwhile named as a confound. So you need not hold every other number while one is judged; change one number a cycle and read its verdict when it comes. 2) The metrics now leave out the minutes the market listed no shops (outage_min). Correction to my 17:2x note: the kit's 'no shops' lines put the outage at 16:12-16:19, a moment at 16:26, 16:44-16:45, 17:06, 17:12, 17:16, 17:36 and 17:48 (about 15 minutes in all), not 16:12-16:45 whole."
+  },
+  {
+   "t": 1793876563.5311842,
+   "text": "Undid ask_frac_food to 0.72. 20:02 sales called ask_frac_food 0.75 -> 0.8 'a step back because deals fell after 0.75', but 0.8 is a further raise, not a step back. Food deals fell from 80 to 58 an hour (17:30-19:30 vs 19:30-20:02) after 0.72 -> 0.75, while food sells at 0.69-0.71 of list and the market's food median is about 0.70. Back to 0.72, the value food sold at all day. A step back means toward the value before the change that hurt."
   }
  ]
 }

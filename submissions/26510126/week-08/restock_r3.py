@@ -262,7 +262,10 @@ def main():
                 depth = int(s.get("dear_depth", 4)) if c["list_price"] >= 300_000 else min(2, int(s.get("dear_depth", 4)))
                 qty = max(qty, depth - held[c["sku"]])
             else:                     # a cheap SKU no deeper than sku_cap: 22-24 of one blanket sat in stock on 11/5
-                qty = min(qty, int(s.get("sku_cap", 8)) - held[c["sku"]])
+                # 6 h: the 100-300k band sold 1.0 an hour with 46 units held (46 h of stock) while 300k+ sold 6.0 an hour
+                # at 95,294 a unit: goods listed 100-150k stay at 2 too, so room and cash go to 300k+
+                cap = 2 if c.get("kind") == "goods" and c["list_price"] >= 100_000 else int(s.get("sku_cap", 8))
+                qty = min(qty, min(cap, int(s.get("sku_cap", 8))) - held[c["sku"]])
             if qty <= 0:
                 continue
             qty = min(int(qty), 20)    # the market takes 1-20 units a line: 24 was refused (400) 18 times on 11/4

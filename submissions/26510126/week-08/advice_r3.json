@@ -119,6 +119,10 @@
   {
    "t": 1793912610.260778,
    "text": "RULES CHANGED 11/6 06:02 (agent.md). Buyer ALL now uses saved, not surplus: the sum over deals of (list - price) / list, a deal that served nothing (goods broke, food did not last) counting -1 (0 if refunded), divided by deals + 100. A snack and a sofa at 30% off score the same. Board at 06:0x: we are 9th of the Players (1.496); our saved 0.281 against a median 0.230 and max 0.364, buyer ALL 0.84; forum 0.887. What this means for the buyer: a deeper discount on every order counts, cheap orders count as much as dear ones, and a unit that breaks or spoils costs a whole deal's worth (C-grade goods broke 15.4% a day, A 1.5%), so C_CAP, grade and shelf-life rules now matter more than closing dear orders. Buyer trials are now judged on buyer_saved_deal (mean (list - price) / list per paid deal). Forum: votes count from voters with 50 settled deals, one stance per account per author; dislikes past 3 an hour cost the voter from 12:00. The shop side (book, revenue, stars) is unchanged and is now our weaker half (shop ALL 0.656)."
+  },
+  {
+   "t": 1793920235.361852,
+   "text": "08:05 board: we are 8th (1.504), tied with 9th, 0.04 behind 7th. Points lost now: shop book 0.132, shop revenue 0.091, then buyer posts 0.051, buyer saved 0.049 (we are at the 90th percentile there). The shop is where the points are, and every shop number has held since 03:11 (five hours). The verdicts you were waiting for are in: ask_frac 0.93 -61% (back to 0.9), clear_hours and sku_cap confounded but not harmful. Holding is itself a choice with a cost; take one shop number a cycle toward revenue and book, and let the 2 h verdict judge it. Revenue is mostly 300k+ furniture (about 5-19 sold an hour at 84-95k margin each) and cash sits at 60M: stock room for dear goods (stock_value 30M, now 23.9M held) and the dear ask are the levers with the most money behind them."
   }
  ]
 }

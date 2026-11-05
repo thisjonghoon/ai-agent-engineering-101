@@ -448,6 +448,15 @@ def main():
          got.get("state") == "TASK_STATE_COMPLETED" and got["offers"][-1] == got["asks"][-1] == 27075,
          str((got.get("state"), got.get("offers"), got.get("asks"))))
 
+    # 20b. a 300k+ SKU gets a tighter close_gap: the same ask 12% over our offer is not taken at once with 0.06
+    harness.ask = wide_harness
+    got = asyncio.run(buyer_r3.buyer.shop(base_w, "포기김치 5kg", 30000, opening="I want to buy 포기김치 5kg (F1)",
+                                         max_raise=0.4, close_gap=0.06))
+    harness.ask = scripted
+    case("an ask 12% over our offer is not taken at once with a close_gap of 0.06",
+         len(got["offers"]) > 3 and got["asks"][2] == 27075 and got["offers"][2] != 27075,
+         str((got.get("state"), got.get("offers"), got.get("asks"))))
+
     # 21. a pair with 2+ earlier quick rejects waits an hour (11/4: Gc01583a5 at 25512088, 5 quick rejects at other budgets)
     qr = {"kind": "trade", "round": 3, "shop": "Q", "sku": "GQ", "outcome": "no_deal", "end": "TASK_STATE_REJECTED", "asks": []}
     priced = dict(qr, asks=[30000, 28500])

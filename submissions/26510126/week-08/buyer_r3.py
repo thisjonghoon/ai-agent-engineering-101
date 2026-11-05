@@ -561,6 +561,10 @@ async def attempt(order, cat, s, off, lp, note, remember, take_second=False):
     # shop rejected, ~470k surplus lost); one dear deal is worth ~25 ordinary ones (17k surplus), so close 15% apart, not 5%
     if lp >= 200000 and code_ab_r3.on("a996d96f6081", order.get("order")):
         close_gap = 0.15
+    # 11/6: the 300k+ band is 64% of buyer surplus (15.5M of 24.3M, 59 orders); the 423,810 mattress closed at 0.80 of list
+    # because a counter within 12% of our 0.70 offer was taken at once, the market median is ~0.74, so close 6% apart there
+    if lp >= 300000 and code_ab_r3.on("7f20fce51f03", order.get("order")):
+        close_gap = 0.06
     t0 = time.time()
     try:
         log("TEAM", f"{member or 'no team'} haggles this one {json.dumps(style)}")

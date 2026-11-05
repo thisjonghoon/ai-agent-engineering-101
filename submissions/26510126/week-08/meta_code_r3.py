@@ -13,7 +13,8 @@ hypothesis at a time, from the grade back to the code.
     coder     a second agent that makes the change and a test in a copy of the folder outside the repository
     gate      code: only ALLOWED files, no line touching payments, keys or processes, at most MAX_LINES added, every
               suite passing in the copy; then the files go live (write, rename) and are committed
-    verdict   an hour later code compares the named metric with the hour before (metrics_r3.window): kept, or
+    verdict   code compares the named metric between the two halves of the orders (a per-order change, at least an
+              hour) or SPAN before against SPAN after (restock, forum) (metrics_r3.window): kept, or
               reverted in a new commit when it moved the wrong way by more than WORSE, or when the guard metrics
               (buyer paid deals, shop deals per hour) fell by more than DROP. Expected and measured go into the
               ledger (logs/code_changes_r3.jsonl), which both loops and the next engineer read.
@@ -64,6 +65,9 @@ CHECK_AFTER = 60 * 60
 # was in fact lower, 40% against 50%); a few dear orders swing a small arm
 MIN_ORDERS = 150
 CHECK_MAX = 3 * 3600
+# a change that cannot be split by order (restock, forum) is judged on SPAN before against SPAN after: one hour each
+# read e6ff70b +107%, c6e5c61 -53% (reverted) and 15b2ee4 +354% on 11/5-6, a few dear sales either way
+SPAN = 3 * 3600
 DROP = 0.4          # a guard metric falling this much reverts any change
 WORSE = 0.15        # the hypothesis' own metric moving this much the wrong way reverts it
 AGENT_TIMEOUT = 15 * 60
@@ -179,10 +183,11 @@ def judge(r, before, after):
 
 
 def check():
-    """Verdict on the automatic change that is an hour old; True when one was judged."""
+    """Verdict on the automatic change once its trial has run; True when one was judged."""
     rows = jl(CHANGES)
     for i, r in enumerate(rows):
-        if r.get("source") != "meta (auto)" or r.get("verdict") or time.time() - r["t"] < CHECK_AFTER:
+        if r.get("source") != "meta (auto)" or r.get("verdict") or \
+                time.time() - r["t"] < (CHECK_AFTER if r.get("ab_key") else SPAN):
             continue
         if r.get("ab_key"):                         # the same hours, orders without the change against orders with it
             # a trial cut short (trial_end: another trial took the slot) is judged on the hours it ran split
@@ -194,11 +199,11 @@ def check():
                 continue                            # too few orders an arm yet: the trial runs on
             code_ab_r3.stop()
         else:
-            before = r["baseline"] if isinstance(r.get("baseline"), dict) else metrics_r3.window(r["t"] - 3600, r["t"])
-            after = metrics_r3.window(r["t"], r["t"] + CHECK_AFTER)
+            before = metrics_r3.window(r["t"] - SPAN, r["t"])
+            after = metrics_r3.window(r["t"], r["t"] + SPAN)
         text, why = judge(r, before, after)
         text += (f" (A/B: same hours, {before.get('orders')} and {after.get('orders')} orders)" if r.get("ab_key")
-                 else " (the hour before against the hour after)")
+                 else f" ({SPAN // 3600} h before against {SPAN // 3600} h after)")
         if why:
             prev = git("rev-parse", f"{r['commit']}^").stdout.strip()
             for f in r.get("files", []):

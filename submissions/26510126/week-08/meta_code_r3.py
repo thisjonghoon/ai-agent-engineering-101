@@ -99,6 +99,12 @@ traces); the areas are ranked by the board points they lose, discounted by what 
 Look at the top area first, but take the change the numbers back best in any area:
 {digest}
 
+The tuning team moves the numbers in strategy_r3.json; the code around them is yours. In the stock area that is how
+restock_r3.py ranks SKUs and categories, which lines a window buys and in what order, what demand_r3.py and
+prices_r3.py count: changing what the code does with a number is a code change, setting the number is not. Before
+you skip, read the top area's files and say which of the counts above you checked and why none points to a code
+change (on 11/5 20:18 an engineer skipped the top area, stock, in 22 s without reading restock_r3.py).
+
 Not: a change already in the code or in the list above, a number the tuning team can set
 (it already moves those), anything about payments, keys or the seller.
 

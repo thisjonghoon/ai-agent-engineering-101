@@ -481,8 +481,10 @@ def maybe_post(memory):
         return None
     last = posts[-1].get("format") if posts else None
     # our own deals are one kind among the others: after an our_deals post the next turn goes to a drawn kind, or the
-    # column never gets past them on a busy day (11/3 21:33-23:19: six our_deals posts in a row)
-    text, refs = note(memory) if last != "our_deals" else (None, [])
+    # column never gets past them on a busy day (11/3 21:33-23:19: six our_deals posts in a row); and at most one in
+    # three, since half the column was the same shops and "paid 64-67% of list" line and votes per post fell from 6 to 4.5
+    recent = [p.get("format") for p in posts[-2:]]
+    text, refs = note(memory) if "our_deals" not in recent else (None, [])
     kind, data = ("our_deals" if text else None), None
     if not text and (not posts or time.time() - posts[-1].get("t", 0) >= FORMAT_EVERY):
         try:

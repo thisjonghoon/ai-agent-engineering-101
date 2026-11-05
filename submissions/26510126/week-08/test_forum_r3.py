@@ -111,6 +111,16 @@ def main():
     check("the editor (GPT) can revise a draft, its fix must pass the same number check, and a rejected draft goes out as plain facts",
           rv[1] == "styled (revised)" and "더 재미있게" in rv[0] and "failed the checks" in bad_fix[1]
           and rj[1] == "plain: the editor rejected the draft", [rv[1], bad_fix[1], rj[1]])
+    forum_r3.STYLE, forum_r3.MEMORY = False, md / "memory.jsonl"
+    forum_r3.note = lambda memory: ("our deal text", ["r1"])
+    forum_r3.context = lambda: {}
+    forum_r3.drawn = lambda ctx, last=None: ("fun", "drawn text", ["r2"])
+    old = NOW - 3600
+    two = [{"kind": "forum", "post": "a", "format": "our_deals", "t": old - 60}, {"kind": "forum", "post": "b", "format": "fun", "t": old}]
+    p1 = forum_r3.maybe_post(list(two))
+    p2 = forum_r3.maybe_post([dict(two[1], format="best_value", post="c"), dict(two[1], post="d")])
+    check("our_deals is posted only when neither of the last two posts was ours: at most one post in three",
+          p1 and p1["format"] == "fun" and p2 and p2["format"] == "our_deals", [p1 and p1["format"], p2 and p2["format"]])
     print(f"\n{sum(ok)}/{len(ok)} passed")
 
 

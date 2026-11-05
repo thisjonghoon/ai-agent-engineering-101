@@ -191,6 +191,12 @@ BUYER_PLAN = HERE / "buyer_plan_r3.json"
 BUYER_TRIAL = HERE / "buyer_ab_r3.json"
 BUYER_TRIAL_SECS = 3600
 BUYER_GUARD = 0.2
+# a shop number changed outside an A/B was judged by no one: on 11/5 the supervisor counted stock_value 30M (+72% margin
+# an hour) and 34M (-24%) by hand, and the team held every other number for cycles "until the stock change is judged".
+# Now each change waits NUMBER_CHECK, then the hours after it are compared with as many hours before, outages left out,
+# and the verdict goes into the ledger the team reads; a change made inside that time is named as a confound
+NUMBER_TRIALS = HERE / "logs" / "number_trials_r3.json"
+NUMBER_CHECK = 2 * 3600
 ADVICE = HERE / "advice_r3.json"     # notes from the supervisor (Claude, watching for the user): advice, not orders
 
 
@@ -234,6 +240,44 @@ def buyer_trial_verdict():
                             "evidence": "the buying specialist's proposal", "metric": "buyer_surplus_order",
                             "after": verdict, "verdict": verdict}, ensure_ascii=False) + "\n")
     return {t["param"]: (t["A"], win)}
+
+
+def number_record(changed, reason):
+    """Queue the shop numbers this cycle changed for a verdict NUMBER_CHECK later."""
+    rows = read_json(NUMBER_TRIALS, [])
+    rows.append({"t": time.time(), "changes": {k: list(v) for k, v in changed.items()}, "reason": str(reason or "")[:300]})
+    NUMBER_TRIALS.write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+def number_verdicts(now=None):
+    """Judge the queued number changes that have run NUMBER_CHECK: shop margin and deals an hour, the same span before
+    and after, and write each verdict into the ledger. Returns the verdict lines."""
+    now = now or time.time()
+    rows = read_json(NUMBER_TRIALS, [])
+    due = [r for r in rows if now - r["t"] >= NUMBER_CHECK]
+    if not due:
+        return []
+    out = []
+    for r in due:
+        t = r["t"]
+        a = metrics_r3.window(t - NUMBER_CHECK, t)
+        b = metrics_r3.window(t, t + NUMBER_CHECK)
+        others = [f"{k} {v[0]}->{v[1]}" for x in rows if x is not r and t < x["t"] < t + NUMBER_CHECK
+                  for k, v in x["changes"].items()]
+        margin, deals = metrics_r3.change("shop_margin_h", a, b), metrics_r3.change("shop_deals_h", a, b)
+        what = ", ".join(f"{k} {v[0]} -> {v[1]}" for k, v in r["changes"].items())
+        verdict = (f"margin/h {a.get('shop_margin_h')} -> {b.get('shop_margin_h')} ({margin:+.0%})" if margin is not None
+                   else "margin/h not measurable") + \
+                  (f", deals/h {a.get('shop_deals_h')} -> {b.get('shop_deals_h')} ({deals:+.0%})" if deals is not None else "") + \
+                  f", {NUMBER_CHECK // 3600} h before vs after, outage {a.get('outage_min')}/{b.get('outage_min')} min" + \
+                  (f"; confounded by {', '.join(others)}" if others else "; no other shop number changed meanwhile")
+        with CODE_CHANGES.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"t": t, "commit": "-", "source": "inner loop (number)", "change": what,
+                                "evidence": r.get("reason"), "metric": "shop_margin_h", "measured": margin,
+                                "after": verdict, "verdict": verdict}, ensure_ascii=False) + "\n")
+        out.append(f"{what}: {verdict}")
+    NUMBER_TRIALS.write_text(json.dumps([r for r in rows if r not in due], ensure_ascii=False, indent=1), encoding="utf-8")
+    return out
 
 
 def code_changes(n=4):
@@ -672,6 +716,7 @@ async def cycle():
         team_changes = [f"review failed: {type(e).__name__}"]
     bp = (ans or {}).get("buyer_plan")
     buyer_changed = buyer_trial_verdict()
+    judged = number_verdicts()
     if isinstance(bp, dict):                            # the buyer's numbers, clamped to bounds and one step a cycle
         old = dict(BUYER_DEFAULTS, **{k: v for k, v in read_json(BUYER_PLAN, {}).items() if k in BUYER_BOUNDS})
         new = dict(old)
@@ -695,6 +740,8 @@ async def cycle():
             forum_r3.PLAN.write_text(json.dumps({"weights": dict(forum_r3.plan(), **w), "t": time.time()}), encoding="utf-8")
     changed = {k: (cur[k], s[k]) for k in s if s[k] != cur[k]}
     STRATEGY.write_text(json.dumps(s, indent=1), encoding="utf-8")
+    if changed:
+        number_record(changed, (ans or {}).get("reason"))
     HISTORY.parent.mkdir(exist_ok=True)
     with HISTORY.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"time": time.time(), "strategy": s, "before": now, "reason": (ans or {}).get("reason"),
@@ -710,7 +757,8 @@ async def cycle():
     harness.log("META", f"{'kept' if not changed else 'changed ' + json.dumps(changed)}: {(ans or {}).get('reason')}"
                 + ((f"; A/B {exp['id']} ended in a tie, the strategy keeps its value" if win == "tie" else
                     f"; A/B {exp['id']} won by {win} ({exp['param']} = {exp['arms'][win]})") if ab_done else "")
-                + (f"; A/B {ab_new['id']} started: {ab_new['param']} {ab_new['arms']}" if ab_new else ""))
+                + (f"; A/B {ab_new['id']} started: {ab_new['param']} {ab_new['arms']}" if ab_new else "")
+                + "".join(f"; judged {j}" for j in judged))
 
 
 async def main():

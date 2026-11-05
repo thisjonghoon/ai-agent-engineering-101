@@ -21,6 +21,9 @@ window(t0, t1): the fixed metrics a hypothesis may name, from our own logs (code
                         next order no sooner than 20 s after the last, so time past 20 s is orders lost: 31% of orders
                         took longer, no-deal ones 23 s at the median and 66 s at p90, and we got 139 orders an hour
                         where 20 s each would give about 170
+  outage_min            minutes of the window the market listed no shops (the kit logs 'no shops in the market yet'
+                        about every 30 s; 11/5 16:12-16:45 and 17:16-17:23). The per-hour metrics count only the
+                        minutes the market was up, so an outage does not read as a price or stock effect
 """
 import json
 import time
@@ -35,6 +38,9 @@ METRICS = ("buyer_close_rate", "buyer_surplus_order", "buyer_paid_h", "shelf_ref
            "shop_margin_h", "forum_votes_post", "buyer_dear_close", "buyer_secs_order")
 LOWER_IS_BETTER = {"shelf_refused_h", "buyer_secs_order"}
 DEAR = 100000
+KIT_LOG = "logs/market-kit.log"
+OUTAGE_LINE = "no shops in the market yet"
+TAIL = 16_000_000                  # the kit log grows about 1 MB an hour; 16 MB covers more than the windows judged
 ME = "thisjonghoon"
 
 
@@ -89,11 +95,35 @@ def _ts(text):
         return None
 
 
+def outage_secs(t0, t1, base=HERE):
+    """Seconds of [t0, t1) the market listed no shops: each 'no shops' line of the kit log stands for the 30 s the kit
+    waits before it asks again. The log's lines carry only a clock time, read on the day of t1."""
+    path = Path(base) / KIT_LOG
+    try:
+        with path.open("rb") as f:
+            f.seek(max(path.stat().st_size - TAIL, 0))
+            text = f.read().decode("utf-8", "ignore")
+    except OSError:
+        return 0
+    day = time.strftime("%Y-%m-%d ", time.localtime(t1))
+    seen = set()
+    for line in text.splitlines():
+        if OUTAGE_LINE not in line:
+            continue
+        t = _ts(day + line[:8])
+        if t is not None and t > t1 + 60:
+            t -= 86400                                # a line from the day before
+        if t is not None and t0 <= t < t1:
+            seen.add(t)
+    return min(len(seen) * 30, t1 - t0)
+
+
 def window(t0, t1, base=HERE, keep=None):
     """`keep` (an order id -> bool, the code A/B's arm): the buyer's metrics over those orders only; per hour they
     count the arm's half, so compare an arm with the other arm, not with a whole hour."""
     base = Path(base)
-    hours = max((t1 - t0) / 3600, 0.25)
+    down = outage_secs(t0, t1, base)
+    hours = max((t1 - t0 - down) / 3600, 0.25)
     orders = {d["order"]: d for d in jl(base / "logs" / "demand_r3.jsonl")
               if d.get("event") == "order" and t0 <= d.get("t", 0) < t1 and d.get("order")
               and (keep is None or keep(d["order"]))}
@@ -136,6 +166,7 @@ def window(t0, t1, base=HERE, keep=None):
         "buyer_dear_close": round(dear_paid / len(dear), 3) if len(dear) >= 5 else None,
         "buyer_secs_order": round(secs[len(secs) // 2], 1) if secs else None,
         "orders": len(orders),
+        "outage_min": round(down / 60),
     }
 
 

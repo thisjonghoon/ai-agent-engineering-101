@@ -242,6 +242,13 @@ def buyer_trial_verdict():
     return {t["param"]: (t["A"], win)}
 
 
+def jl(path):
+    try:
+        return [json.loads(x) for x in Path(path).read_text(encoding="utf-8").splitlines() if x.strip()]
+    except (OSError, ValueError):
+        return []
+
+
 def number_record(changed, reason):
     """Queue the shop numbers this cycle changed for a verdict NUMBER_CHECK later."""
     rows = read_json(NUMBER_TRIALS, [])
@@ -262,8 +269,12 @@ def number_verdicts(now=None):
         t = r["t"]
         a = metrics_r3.window(t - NUMBER_CHECK, t)
         b = metrics_r3.window(t, t + NUMBER_CHECK)
-        others = [f"{k} {v[0]}->{v[1]}" for x in rows if x is not r and t < x["t"] < t + NUMBER_CHECK
-                  for k, v in x["changes"].items()]
+        # a change on either side spoils the comparison: 18:57 judged ask_frac (16:48) against hours that held the
+        # 16:32 stock_value change
+        judged = [x for x in jl(CODE_CHANGES) if x.get("source") == "inner loop (number)"]
+        others = [f"{k} {v[0]}->{v[1]}" for x in rows if x is not r and abs(x["t"] - t) < NUMBER_CHECK
+                  for k, v in x["changes"].items()] + \
+                 [x["change"] for x in judged if abs(x.get("t", 0) - t) < NUMBER_CHECK]
         margin, deals = metrics_r3.change("shop_margin_h", a, b), metrics_r3.change("shop_deals_h", a, b)
         what = ", ".join(f"{k} {v[0]} -> {v[1]}" for k, v in r["changes"].items())
         verdict = (f"margin/h {a.get('shop_margin_h')} -> {b.get('shop_margin_h')} ({margin:+.0%})" if margin is not None

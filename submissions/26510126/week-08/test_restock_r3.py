@@ -180,6 +180,24 @@ case("a SKU the market surged to 1.47x is not bought; one at 1.02x still is", "S
 # a dear SKU (list 150,000 or more) is bought dear_depth units deep (11/4: the top shops sold 470-575 such units in 6 h)
 assert "dear_depth" in restock_r3.DEFAULTS
 case("dear goods get dear_depth units a line", restock_r3.DEFAULTS["dear_depth"] >= 2 and restock_r3.DEFAULTS["lines"] >= 14)
+# dear depth only for 300k+ (11/5: 300k+ sold 10.3 an hour, the 150-300k band 1.3): a 200,000 SKU is bought 2 deep, a 400,000 one 4
+cat5 = {"SM": {"category": "G>mid", "kind": "goods", "list_price": 200000, "name": "mid"},
+        "SX": {"category": "G>top", "kind": "goods", "list_price": 400000, "name": "top"}}
+(md / "catalog.json").write_text(json.dumps(cat5), encoding="utf-8")
+(md / "demand.json").write_text(json.dumps([{"item": "mid", "category": "G>mid", "kind": "goods", "median_price": 200000},
+                                           {"item": "top", "category": "G>top", "kind": "goods", "median_price": 400000}]),
+                                encoding="utf-8")
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": []}), encoding="utf-8")
+restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=40_000_000, goods_frac=1.0, max_list=500_000)
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {}}),
+                                       encoding="utf-8")
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+res = json.loads(out.getvalue().splitlines()[-1])
+q = {b["sku"]: b["qty"] for b in res["buy"]}
+case("a 200,000 SKU is held at 2 units, a 400,000 one gets dear_depth", q.get("SM", 0) <= 2 and q.get("SX", 0) >= 3, q)
+restock_r3.strategy = real
 # a goods category whose reference is above max_list but within 2x (sofa/chair ~1.4M-2M at max_list 1.4M) is stocked
 cat4 = dict(cat3, SD0={"category": "G>dear", "kind": "goods", "list_price": 120000, "name": "dear"})
 (md / "catalog.json").write_text(json.dumps(cat4), encoding="utf-8")

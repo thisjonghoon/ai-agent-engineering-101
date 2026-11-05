@@ -257,8 +257,11 @@ def main():
             if len(buy) >= s.get("lines", 18):
                 break
             if c.get("kind") == "goods" and c["list_price"] >= 150_000:
-                qty = max(qty, int(s.get("dear_depth", 4)) - held[c["sku"]])
-            else:                      # a cheap SKU no deeper than sku_cap: 22-24 of one blanket sat in stock on 11/5
+                # 6 h: 300k+ sold 10.3 an hour (36 held, 3.5 h of stock), the 150-300k band 1.3 an hour (49 held, 37 h):
+                # the full depth only for 300k+, the band below stays at 2 so its money buys 300k+ units
+                depth = int(s.get("dear_depth", 4)) if c["list_price"] >= 300_000 else min(2, int(s.get("dear_depth", 4)))
+                qty = max(qty, depth - held[c["sku"]])
+            else:                     # a cheap SKU no deeper than sku_cap: 22-24 of one blanket sat in stock on 11/5
                 qty = min(qty, int(s.get("sku_cap", 8)) - held[c["sku"]])
             if qty <= 0:
                 continue

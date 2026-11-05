@@ -522,7 +522,10 @@ def standing():
     ours = next((r for r in rows if r.get("name") == "thisjonghoon"), None)
     if not ours or len(rows) < 2:
         return {}
-    pct = {k: percentile(ours.get(k), [r.get(k) for r in rows]) for k in ("profit", "revenue", "stars")}
+    # the rules of 11/5 03:49 rank shops by book (cash + unsold stock at cost), no longer by profit (cash)
+    first = "book" if "book" in ours else "profit"
+    pct = {k: percentile(ours.get(k2), [r.get(k2) for r in rows])
+           for k, k2 in (("profit", first), ("revenue", "revenue"), ("stars", "stars"))}
     if None in pct.values():
         return {"standing_parts": pct}
     stars = sorted(r["stars"] for r in rows if isinstance(r.get("stars"), (int, float)) and r.get("reviews"))
@@ -542,9 +545,12 @@ def snapshot(since):
     inv = read_json(MD / "inventory.json", {})
     units = inv.get("units", [])
     now = time.time()
-    snap = {"round": inv.get("round"), "balance": inv.get("balance"),
-            "profit": (inv.get("balance") or 0) - (inv.get("start") or 0) - (inv.get("injected") or 0),
-            "stock_at_cost": sum(u["cost"] for u in units), "units": len(units),
+    stock = sum(u["cost"] for u in units)
+    # "profit" is book (cash + stock at cost) less the start: on 11/6 00:31 the team read cash spent on stock as a
+    # profit drop (48.1M to 44M) and blamed clear_hours for it, while book had not fallen
+    snap = {"round": inv.get("round"), "balance": inv.get("balance"), "book": (inv.get("balance") or 0) + stock,
+            "profit": (inv.get("balance") or 0) + stock - (inv.get("start") or 0) - (inv.get("injected") or 0),
+            "stock_at_cost": stock, "units": len(units),
             "food_units": sum(u["kind"] == "food" for u in units),
             "older_than_24h": sum(now - u["supplied_at"] > 86400 for u in units),
             "expired": sum(u["grade"] == "expired" for u in units),

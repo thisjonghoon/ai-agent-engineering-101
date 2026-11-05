@@ -1,32 +1,32 @@
 [
  {
-  "t": 1793874636.213938,
+  "t": 1793888885.606868,
   "changes": {
-   "ask_frac_food": [
-    0.72,
-    0.75
+   "clear_hours": [
+    16,
+    20
    ]
   },
-  "reason": "Sales: approved ask_frac_food 0.72->0.75 as one small step, judged by the 2h verdict with outage minutes excluded, and goods 0.9 is not retested nor called a winner. Merchandising: approved the hold, since the stock_value evidence is supervisor-measured and the ask_frac verdict is confounded. Buying"
+  "reason": "Sales: approved clear_hours 16->20 as the single changed number, judged by the 2h code verdict, with ask_frac_food held at 0.72 (the reviewer's trim concern is acknowledged, but it is one number, low-risk and isolated). Merchandising: rejected stock_value because the 25.5M stock sits under the 30M c"
  },
  {
-  "t": 1793876532.7403798,
+  "t": 1793892699.9523242,
   "changes": {
-   "ask_frac_food": [
-    0.75,
-    0.8
+   "clear_hours": [
+    20,
+    24
    ]
   },
-  "reason": "Sales: trimmed to the single ask_frac_food 0.8 step back (deals fell after 0.75, and the 2 h code verdict will judge it) and the grocery_markdown A/B is rejected because it would confound the same food prices. Merchandising: approved holding all numbers, since no number is clearly binding and the ea"
+  "reason": "Sales: trimmed to clear_hours 24, because 24\u219220 preceded the profit drop (48.1M to about 44M) and 16 would push further the same way, so restoring the earlier value is the real step back. Merchandising: rejected, because cutting stock_value is a hunch while the restock bypass is unverified, and it c"
  },
  {
-  "t": 1793876563.5308669,
+  "t": 1793892737.915918,
   "changes": {
-   "ask_frac_food": [
-    0.8,
-    0.72
+   "clear_hours": [
+    24,
+    20
    ]
   },
-  "reason": "supervisor undo: 20:02 sales called ask_frac_food 0.75 -> 0.8 'a step back because deals fell after 0.75', but 0.8 is a further raise, not a step back. Food deals fell from 80 to 58 an hour (17:30-19:30 vs 19:30-20:02"
+  "reason": "supervisor undo"
  }
 ]

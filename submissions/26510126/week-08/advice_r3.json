@@ -111,6 +111,10 @@
   {
    "t": 1793876563.5311842,
    "text": "Undid ask_frac_food to 0.72. 20:02 sales called ask_frac_food 0.75 -> 0.8 'a step back because deals fell after 0.75', but 0.8 is a further raise, not a step back. Food deals fell from 80 to 58 an hour (17:30-19:30 vs 19:30-20:02) after 0.72 -> 0.75, while food sells at 0.69-0.71 of list and the market's food median is about 0.70. Back to 0.72, the value food sold at all day. A step back means toward the value before the change that hurt."
+  },
+  {
+   "t": 1793892737.916219,
+   "text": "Undid clear_hours to 20. 00:31 sales set clear_hours 20 -> 24 because '24 -> 20 preceded the profit drop (48.1M to about 44M)'. Two misreadings: the 23:28 change was 16 -> 20, not 24 -> 20, and the 'profit' it read was cash, which falls whenever restock buys stock (stock at cost went 24.9M -> 29.6M in that hour while book stayed about 79M). The board ranks book. Back to 20 so the 23:28 change gets its 2 h verdict; the snapshot's profit is now book-based (cash + stock at cost - start), so values from 00:35 on are not comparable with the cash-based ones before."
   }
  ]
 }

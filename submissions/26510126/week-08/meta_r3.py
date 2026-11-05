@@ -757,7 +757,12 @@ async def cycle():
             if isinstance(v, (int, float)) and not isinstance(v, bool):
                 v = min(max(v, old[k] - step, lo), old[k] + step, hi)
                 new[k] = int(round(v)) if isinstance(lo, int) and isinstance(hi, int) else round(v, 3)
-        wanted = {k: (old[k], new[k]) for k in new if new[k] != old[k]}
+        # a trial that lost in the last day is not run again: C_CAP 0.6 -> 0.55 was put on trial three times on 11/5-6
+        # and lost twice, each time holding the one buyer trial for 1-3 h
+        lost = {x.get("change") for x in jl(CODE_CHANGES) if x.get("source") == "inner loop (buyer A/B)"
+                and time.time() - x.get("t", 0) < 86400 and str(x.get("verdict", "")).startswith("not taken")}
+        wanted = {k: (old[k], new[k]) for k in new if new[k] != old[k]
+                  and f"buyer {k} {old[k]} -> {new[k]} on half the orders" not in lost}
         if wanted and not read_json(BUYER_TRIAL, {}).get("param"):
             k, (a, b) = next(iter(wanted.items()))       # the first change goes on trial; the rest wait their turn
             BUYER_TRIAL.write_text(json.dumps({"key": f"{k}-{time.strftime('%m%d%H%M')}", "param": k, "A": a, "B": b,

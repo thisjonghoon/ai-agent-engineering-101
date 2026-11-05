@@ -265,7 +265,12 @@ def main():
                 # 6 h: the 100-300k band sold 1.0 an hour with 46 units held (46 h of stock) while 300k+ sold 6.0 an hour
                 # at 95,294 a unit: goods listed 100-150k stay at 2 too, so room and cash go to 300k+
                 cap = 2 if c.get("kind") == "goods" and c["list_price"] >= 100_000 else int(s.get("sku_cap", 8))
-                qty = min(qty, min(cap, int(s.get("sku_cap", 8))) - held[c["sku"]])
+                # goods under 100k sold 77.5 + 21.5 units an hour (439k of 1.3M margin) on 234 + 151 held, about 3 h of stock,
+                # while 60M of cash sat idle: a cheap SKU that keeps selling (sku_score 6 or more) may hold twice sku_cap
+                hot = c.get("kind") == "goods" and c["list_price"] < 100_000 and sku_score.get(c["sku"], 0) >= 6
+                if hot:
+                    qty = held[c["sku"]] + 2 * qty      # twice the planned depth, held units included
+                qty = min(qty, min(cap, int(s.get("sku_cap", 8))) * (2 if hot else 1) - held[c["sku"]])
             if qty <= 0:
                 continue
             qty = min(int(qty), 20)    # the market takes 1-20 units a line: 24 was refused (400) 18 times on 11/4

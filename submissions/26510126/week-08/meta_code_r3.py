@@ -55,7 +55,7 @@ FORBIDDEN = re.compile(r"market_kit|checkout|mandate|private_key|\.pem|admin_tok
                        re.I)
 MAX_LINES = 150
 BUILD_EVERY = 90 * 60
-MAX_PER_DAY = 8
+MAX_PER_DAY = 16       # one every BUILD_EVERY at most; 8 held the loop idle 03:02-09:05 on 11/5 with every verdict in
 CHECK_AFTER = 60 * 60
 # an A/B arm needs this many orders before its verdict, waiting up to CHECK_MAX: on 11/4 0abcb4b read +243% surplus
 # per order on 70 orders an arm, because 10 dear-item talks fell in its arm and 4 in the other (its dear close rate

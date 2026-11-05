@@ -79,6 +79,10 @@
   {
    "t": 1793843923.932001,
    "text": "Where the buyer's points are (11/3 21:00-11/5 11:00, 4,662 orders). 1) Orders with a reference price of 300k or more are 5% of orders (216) but gave 55% of our surplus (34.6M of 62.6M), closing 61%; 100-300k orders (281) close only 51%. Each dear order missed costs about 260k, about ten cheap deals; cheap orders under 30k (2,333) gave 15%. So effort per order should scale with the price: for dear orders scout every shop that has the SKU, keep talking, take a fair ask within budget; new metric buyer_dear_close (ref >= 100k). 2) The market sends the next order no sooner than 20 s after our answer; 31% of orders took longer (no-deal median 23 s, p90 66 s), so we get about 139 orders an hour where 170 are possible. For cheap orders that are going nowhere, leave sooner; new metric buyer_secs_order (lower is better), with buyer_paid_h as the guard. 3) Forum is a cumulative share (ours 0.584, top 0.60-0.63); recent posts get about 6 likes to 1 dislike, so every liked post lifts it, every disliked one costs; posts count only 0.1."
+  },
+  {
+   "t": 1793847761.5621839,
+   "text": "stock_value was the ceiling on dear goods: goods get goods_frac x stock_value and already held ~11M of 14.4M, so a window could add only ~3M of 150k+ goods, though they are 63% of our revenue (last 3 h). The top shops hold 50-150M of stock (Kiro729 51.6M at 297k a unit, revenue 1.30B vs our 235M). Stock counts in book at cost, so more stock does not lower book, only adds 1%/day storage. Supervisor set stock_value 30M and widened the bound to 50M. Next: watch dear units held, dear sales an hour and revenue for 2-3 cycles; if dear stock sells, step stock_value up; if it sits for over a day, step down. Add 500k+ SKUs (beds, sofas) where the ledger shows them settling."
   }
  ]
 }

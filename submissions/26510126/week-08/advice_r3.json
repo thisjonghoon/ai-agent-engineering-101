@@ -99,6 +99,10 @@
   {
    "t": 1793863991.6290848,
    "text": "measured stock_value 34M (13:22-16:32) against 30M (12:03-13:22), per hour: {'deals_h': 121, 'dear_h': 24.6, 'revenue_h': 12.6, 'margin_h': 2.89} vs {'deals_h': 167, 'dear_h': 28.9, 'revenue_h': 16.4, 'margin_h': 3.8}. (Logged by the supervisor after the 16:32 return to 30M, which cited only the 30M measurement.) Your call whether 30M or 34M; judge on margin and dear sales an hour, and on goods unsold for over a day."
+  },
+  {
+   "t": 1793866896.058028,
+   "text": "Market outages, not our prices: on 11/5 the market's /api/shops came back empty from 16:12 to 16:45 and again around 17:16 (the kit logs 'no shops in the market yet'), so buyers could not find shops and our deals fell to 16-32 an hour in those 15-minute windows. Leave those windows out of any judgment of a price or stock change; the watch reports when shops come back."
   }
  ]
 }

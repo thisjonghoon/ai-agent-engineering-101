@@ -27,6 +27,58 @@
   {
    "t": 1793766485.331483,
    "text": "Mattresses sell out within minutes: 13:04 window bought K 388,153, LK 459,929 and Q 150,989 (one each); the K sold at 446,430 at 13:07 and all three were gone before 13:24. The 13:24 window again bought one LK and one Q, after twelve bed pads, kimchi and apples took the first lines; the LK sold at once. Dear goods get qty 1 because their category score is still low in our own sales. Suggest dear_first up to 3 and depth up, so each window buys 3-5 mattresses first, while they keep selling within the window gap (20 min); cash is 13.1M, stock 2.0M at cost."
+  },
+  {
+   "t": 1793770059.988161,
+   "text": "Board 14:40: rank 20/51, total 1.234 = shop 0.725 + buyer 0.509. The buyer side is the gap: top-6 buyers score 0.76-0.91. We close 771 deals of 1980 orders (39%); they close 50-65% (inextro 1523/2610, kimauve 1324/2030) and their surplus is 31-80M against our 11.1M. Their paid ratio is not lower than ours on average (0.50-0.69 vs our 0.583), so they win by closing more orders, including dear ones, not by squeezing harder. In the last 400 buyer lines many orders end dropped/rejected by the same shops (G476cc094 at shaun0927, yeonsong2, jiseokkk). Please look at why orders go unserved (too-low opens, MAX_TRIES, CAP, shops we keep retrying) and lift the deal rate; a closed deal at modest surplus beats a dropped one."
+  },
+  {
+   "t": 1793773834.654173,
+   "text": "FOOD_MARGIN went 1.15 -> 1.2 at 15:27. A higher margin cannot cut the shelf-life refusals: the units shops shipped had 114-375 h left against 207-621 h asked, short even at margin 1.0; each raise only makes the kit refuse units that would last and shrinks the food we can buy. From 15:29 the buyer remembers a shop/SKU that shipped a short unit and tries it last for an hour on orders needing more hours (avoid_r3.json), and pairs that answered none-in-stock wait 15 min; a second scout wave asks new shops when the first wave is all out. Suggest FOOD_MARGIN back to 1.1 and judging the refusal count after an hour of the new memory."
+  },
+  {
+   "t": 1793779015.361387,
+   "text": "Goal: top 10 (now 17th, 1.272; 10th is 1.44). Buyer ALL = surplus 0.5, forum votes 0.3, deals 0.1, posts 0.1; surplus = list price - price paid. In the ledger window, top buyers settle a SKU listed at 200k or more on 20-46% of their orders (inextro 426 of 935, mjforge 234 of 733); we do on 4% (25 of 622). They pay 0.69-0.76 of list, more than our 0.67, on far dearer SKUs: our surplus per deal is 19k against 41-162k. An order's acceptable SKUs are priced 0.5-1.5x a reference and the budget is about 1.15x it, so the dearest acceptable SKU that a shop sells at about 0.75 of list still fits the budget; our talks pick SKUs listed at a median 0.85 of the budget. Please find why the buyer does not reach for the dearest acceptable SKU that fits (candidate scoring, the scouts' value at the shop's opening ask, CAP) and propose the fix as a code idea; a 300k-list deal at 0.75 is worth ten of our usual ones."
+  },
+  {
+   "t": 1793785604.838756,
+   "text": "warranty_hours went 4 -> 6 at 18:30 and back to 6 -> 4 at 18:46 on one cycle's profit and rank. A 15-minute profit dip is mostly restock buying (cash into stock), and rank moves with everyone else; neither can see a warranty that covers grade-A goods only (1.4% break, so 6 h costs about 1.4% of those prices). By the board's weights stars cost us the fewest shop points (0.06; profit 0.13, revenue 0.11). Please hold a warranty change at least an hour and judge it on settles and refunds, not on one cycle; flipping a number back and forth teaches nothing."
+  },
+  {
+   "t": 1793794639.8319921,
+   "text": "Supervisor set CAP back 0.80 -> 0.85 at 21:20. In the last 6 h, 29 of our 538 deals were paid at 0.80-0.85 of list and brought 720,612 of surplus (6% of the 12.07M total); CAP 0.80 makes all of those no-deals, which earn 0, unless shops start conceding below 0.80, which nothing in the traces shows. Surplus is summed over deals: losing affordable deals lowers it. The user (11/4): our buyer and seller are both too strict. A lower CAP needs an A/B or evidence that shops concede, not one step on thin evidence."
+  },
+  {
+   "t": 1793798158.468766,
+   "text": "The shop's money is in dear furniture and we barely sell it. Last 6 h of settles: inextro 730M from 575 units listed at 150k+ (386 sofas), dae-yangkim 543M, gom31 428M; we sold 25 such units, 21M of revenue, average ticket 41k, with 21M cash idle and 2.6M of stock at cost. From 22:40 restock buys up to 18 lines a window and 4 units of each dear SKU (dear_depth, lines: merchandising's knobs), and stock_value is 12M (bound now 20M). Please keep stock flowing into sofas, beds and bedding that are not surged; judge on shop margin and revenue per hour over two hours, not one cycle; raise stock_value further while dear units keep selling within the window gap."
+  },
+  {
+   "t": 1793801093.266549,
+   "text": "Two corrections about the shop's A/B test. 1) The 150-order minimum is for the buyer's and the code's trials (orders split by hash), not for the shop's A/B, which counts negotiations and ends at p_win, or as a tie after 250 talks an arm or 2 h. Its arm B had only 18 talks against 208 because the draw leaned after 10; from 23:05 both arms get min_n (30) first. 2) A running A/B does not freeze the shop: changing a number that is NOT on test applies to both arms alike and does not confound the result. Keep moving the other numbers (stock, ask/floor for the other kind, warranty) on their own evidence while a test runs."
+  },
+  {
+   "t": 1793803919.39167,
+   "text": "Dear stock works: since the 22:44 restock (20 mattresses, 4 bed frames) we sold 59 units listed at 100k+ in one hour, against about 4 an hour before; cash went 8.6M -> 13.1M while stock is 10.9M at cost (book 24M, +5M). Stock was at the 12M cap, so the supervisor set stock_value 16M at 23:55. Merchandising: keep raising it a step at a time while dear units keep selling within the window gap, and lower it the cycle they stop."
+  },
+  {
+   "t": 1793818207.30688,
+   "text": "Market rules changed 11/5 03:49: the shop's first ALL term (weight 0.5) is now BOOK = cash + what unsold units cost, not cash. Buying stock no longer lowers our score until it sells; what costs us is stock that never sells: food past its date leaves the book at its cost, and goods pay storage while they wait. So: keep stocking dear goods that sell (furniture, bedding), keep food to what sells before its date, and judge stock_value by sell-through and spoilage, not by the cash dip after a restock."
+  },
+  {
+   "t": 1793819243.361687,
+   "text": "clear_hours went 12 -> 16 at 03:51 and back 16 -> 12 at 04:07, the second flip-flop of the night (warranty 4 -> 6 -> 4 at 18:30/18:46). A number changed and undone 16 minutes later was never measured. Hold a change at least an hour (or put it on the A/B), then judge it on what it is about: for clear_hours, food units that expire unsold and the margin of clearance sales."
+  },
+  {
+   "t": 1793832439.7620008,
+   "text": "Playbook A/Bs keep being turned down for lack of a 'clean baseline'. An A/B does not need one: both arms run at the same hours under every other setting alike, so earlier flips, warranty or clear_hours changes affect both arms equally and cannot bias the comparison. The only real limit is the single slot. When the running test ends, put a goods playbook on it (IKEA or Costco: our goods are now most of the revenue), since a whole playbook is the biggest step the A/B can test and none has run yet."
+  },
+  {
+   "t": 1793840931.714419,
+   "text": "Why deals fell after 08:00 (shop deals 190 -> 120 an hour while the market's settles rose 2,600 -> 2,850): not price but breadth. Our 291 units sat in 8 of 140 categories (four blankets 22-24 deep, one mattress 24 deep), and buyers only visit shops that hold the ordered category: talks with us fell from 350 to 250 an hour. From 10:10 restock gives its first breadth_lines (6) lines to categories we hold none of, and caps a cheap SKU at sku_cap (8) units; both are merchandising's knobs. Cutting the food ask treats a symptom; watch talks per hour and categories held."
+  },
+  {
+   "t": 1793843923.932001,
+   "text": "Where the buyer's points are (11/3 21:00-11/5 11:00, 4,662 orders). 1) Orders with a reference price of 300k or more are 5% of orders (216) but gave 55% of our surplus (34.6M of 62.6M), closing 61%; 100-300k orders (281) close only 51%. Each dear order missed costs about 260k, about ten cheap deals; cheap orders under 30k (2,333) gave 15%. So effort per order should scale with the price: for dear orders scout every shop that has the SKU, keep talking, take a fair ask within budget; new metric buyer_dear_close (ref >= 100k). 2) The market sends the next order no sooner than 20 s after our answer; 31% of orders took longer (no-deal median 23 s, p90 66 s), so we get about 139 orders an hour where 170 are possible. For cheap orders that are going nowhere, leave sooner; new metric buyer_secs_order (lower is better), with buyer_paid_h as the guard. 3) Forum is a cumulative share (ours 0.584, top 0.60-0.63); recent posts get about 6 likes to 1 dislike, so every liked post lifts it, every disliked one costs; posts count only 0.1."
   }
  ]
 }

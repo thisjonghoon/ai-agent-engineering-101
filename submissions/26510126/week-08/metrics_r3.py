@@ -14,6 +14,13 @@ window(t0, t1): the fixed metrics a hypothesis may name, from our own logs (code
   shop_margin_h         (price - cost) of those deals per hour
   forum_votes_post      net votes per post our buyer wrote in the window (forum.json keeps the newest 100 posts, so
                         only the last hours can be read; forum votes are 0.3 of the buyer's ALL)
+  buyer_dear_close      paid orders / orders among orders whose reference price is DEAR or more. 11/3 21:00-11/5 11:00:
+                        the 216 orders of 300k or more (5%) gave 55% of our surplus, closing 61%; one more of them
+                        closed is worth about ten cheap deals
+  buyer_secs_order      median seconds from an order to our buyer's answer (lower is better). The market sends the
+                        next order no sooner than 20 s after the last, so time past 20 s is orders lost: 31% of orders
+                        took longer, no-deal ones 23 s at the median and 66 s at p90, and we got 139 orders an hour
+                        where 20 s each would give about 170
 """
 import json
 import time
@@ -25,8 +32,9 @@ BOARD = HERE / "logs" / "board" / "board-round3.json"
 SHOP_TERMS = {"book": 0.5, "revenue": 0.3, "stars": 0.2}
 BUYER_TERMS = {"surplus": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}
 METRICS = ("buyer_close_rate", "buyer_surplus_order", "buyer_paid_h", "shelf_refused_h", "shop_deals_h",
-           "shop_margin_h", "forum_votes_post")
-LOWER_IS_BETTER = {"shelf_refused_h"}
+           "shop_margin_h", "forum_votes_post", "buyer_dear_close", "buyer_secs_order")
+LOWER_IS_BETTER = {"shelf_refused_h", "buyer_secs_order"}
+DEAR = 100000
 ME = "thisjonghoon"
 
 
@@ -86,9 +94,10 @@ def window(t0, t1, base=HERE, keep=None):
     count the arm's half, so compare an arm with the other arm, not with a whole hour."""
     base = Path(base)
     hours = max((t1 - t0) / 3600, 0.25)
-    orders = {d["order"] for d in jl(base / "logs" / "demand_r3.jsonl")
+    orders = {d["order"]: d for d in jl(base / "logs" / "demand_r3.jsonl")
               if d.get("event") == "order" and t0 <= d.get("t", 0) < t1 and d.get("order")
               and (keep is None or keep(d["order"]))}
+    dear = {o for o, d in orders.items() if (d.get("ref") or 0) >= DEAR}
     mem = jl(base / "memory.jsonl")
     lists = {m.get("order"): m.get("list_price") for m in mem if m.get("kind") == "trade" and m.get("list_price")}
     paid, refused = [], 0
@@ -102,6 +111,10 @@ def window(t0, t1, base=HERE, keep=None):
             paid.append(m)
         elif "shelf life" in (m.get("reason") or ""):
             refused += 1
+    secs = sorted(_ts(m.get("time")) - orders[m["order"]]["t"] for m in mem
+                  if m.get("kind") == "trade" and m.get("order") in orders and _ts(m.get("time")))
+    secs = [x for x in secs if 0 <= x < 600]
+    dear_paid = sum(1 for m in paid if m.get("order") in dear)
     surplus = sum((lists.get(m.get("order")) or 0) - (m.get("price") or 0) for m in paid if lists.get(m.get("order")))
     sold = [x for x in jl(base / "logs" / "talks_r3.jsonl") if x.get("price") and t0 <= x.get("t", 0) < t1]
     try:
@@ -120,6 +133,8 @@ def window(t0, t1, base=HERE, keep=None):
         "shop_margin_h": round(sum(x["price"] - (x.get("cost") or 0) for x in sold) / hours),
         "forum_votes_post": round(sum((p.get("likes") or 0) - (p.get("dislikes") or 0) for p in ours) / len(ours), 2)
         if ours else None,
+        "buyer_dear_close": round(dear_paid / len(dear), 3) if len(dear) >= 5 else None,
+        "buyer_secs_order": round(secs[len(secs) // 2], 1) if secs else None,
         "orders": len(orders),
     }
 

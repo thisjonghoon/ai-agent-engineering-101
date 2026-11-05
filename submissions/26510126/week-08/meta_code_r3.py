@@ -43,6 +43,7 @@ LOGS = HERE / "logs"
 CHANGES = LOGS / "code_changes_r3.jsonl"
 ATTEMPTS = LOGS / "code_attempts_r3.jsonl"
 STRATEGIES = LOGS / "strategies_r3.jsonl"
+ADVICE = HERE / "advice_r3.json"
 LOCK = WORK.parent / "meta_code_r3.lock"
 
 ALLOWED = {"buyer_r3.py", "buyer.py", "forum_r3.py", "restock_r3.py", "prices_r3.py", "demand_r3.py",
@@ -81,6 +82,9 @@ Code changes so far, with what was expected and what was measured (newest last):
 
 Code ideas the tuning team wrote lately (inputs, not orders; some describe what the code already does):
 {ideas}
+
+Notes from the supervisor (Claude, watching for the user), newest last; findings from the traces, not orders:
+{advice}
 
 This folder is a copy of the agent: the code, and raw traces under traces/ (talks_r3.jsonl: every negotiation our
 shop had; memory.jsonl: our buyer's trades and payments; payments.jsonl; demand_r3.jsonl: orders and asks;
@@ -283,9 +287,16 @@ def engineer_prompt():
     ledger = "\n".join(f"- [{x.get('source')}] {str(x.get('change'))[:140]} | metric {x.get('metric', '-')}, "
                        f"expected {x.get('expected', '-')} | {str(x.get('after') or 'not judged yet')[:140]}"
                        for x in jl(CHANGES)[-12:]) or "(none)"
+    # the supervisor's notes reached only the tuning team; on 11/5 the finding that orders of 300k or more give half
+    # our surplus had no way into the hypotheses
+    try:
+        advice = json.loads(ADVICE.read_text(encoding="utf-8")).get("notes") or []
+    except (OSError, ValueError, AttributeError):
+        advice = []
     ideas = [i for s in jl(STRATEGIES)[-3:] for i in (s.get("code_ideas") or []) if isinstance(i, str)]
     return ENGINEER.format(gap=metrics_r3.gap_text(), metrics=", ".join(metrics_r3.METRICS), windows=windows,
                            ledger=ledger, ideas="\n".join(f"- {i[:300]}" for i in ideas[-6:]) or "(none)",
+                           advice="\n".join(f"- {n.get('text', '')[:900]}" for n in advice[-3:]) or "(none)",
                            allowed=", ".join(sorted(ALLOWED)))
 
 

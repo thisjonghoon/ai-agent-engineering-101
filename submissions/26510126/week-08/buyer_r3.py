@@ -566,7 +566,7 @@ async def attempt(order, cat, s, off, lp, note, remember, take_second=False):
         log("TEAM", f"{member or 'no team'} haggles this one {json.dumps(style)}")
         result = await buyer.shop(s["url"], name, limit, memory=hint, max_raise=style.get("MAX_RAISE", MAX_RAISE),
                                   max_offers=MAX_OFFERS, plan=bool(style.get("PLAN")), take_second=take_second, close_gap=close_gap,
-                                  opening=opening, screen=screen_for(order, lp))
+                                  order_id=order.get("order"), opening=opening, screen=screen_for(order, lp))
     except Exception as e:
         log("ERROR", f"trade with {s['name']} failed: {e!r}")
         result = {"state": "error", "asks": [], "offers": [], "error": type(e).__name__}

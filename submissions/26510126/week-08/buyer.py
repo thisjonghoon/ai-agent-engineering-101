@@ -24,6 +24,7 @@ import uuid
 
 import httpx
 
+import code_ab_r3
 import harness
 from harness import log
 
@@ -158,10 +159,11 @@ CLOSE_GAP = 0.05
 
 
 async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFFERS, opening=None, screen=None,
-               plan=False, take_second=False, close_gap=None):
+               plan=False, take_second=False, close_gap=None, order_id=None):
     """Negotiate one item. `memory` is what market_buyer.py remembers about this shop (empty in week 6).
     `take_second` (Round 3): a shop that ended earlier talks in rejection after two asks; take its second ask if within budget.
     `close_gap` (Round 3): CLOSE_GAP for this talk, wider for dear SKUs; default CLOSE_GAP.
+    `order_id` (Round 3): the buyer order, for the walk-away trial below.
     `max_raise` (market_buyer.py only): raise at most this share of the gap between our last offer and the ask.
     `opening` (Round 3): the first message, e.g. "I want to buy <name> (<sku>)"; default "I want to buy a <item>".
     `screen` (Round 3): a function of the shop's reply text that returns a reason to leave (the unit it names will not
@@ -197,6 +199,13 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
 
             asks = result["asks"]
             firm = ask is not None and len(asks) >= 2 and asks[-1] == asks[-2]   # many shops end the talk after two holds
+            # 11/5, 1,708 talks: 171 where the shop's first two counters were the same ask above our cap closed once (0.6%)
+            # and cost ~0.98 h of 4-7 s model calls; 3 repeats 0 of 89 closed; a first ask over 1.5x cap 0 of 34
+            if ask is not None and ask > budget and ((len(asks) == 3 and asks[1] == asks[2]) or (n == 1 and ask > 1.5 * budget)) \
+                    and code_ab_r3.on("9ce88c6b4ccb", order_id):
+                log("OUT", f"ask {ask} above our cap {budget} and {'held' if n > 1 else 'over 1.5x cap'}, walking away")
+                await seller.cancel(task_id)
+                return {**result, "state": "walked"}
             if ask is not None and last_offer is not None and ask <= last_offer:
                 log("GUARD", f"ask {ask} is at or below our last offer {last_offer}, offering it")
                 offer = ask

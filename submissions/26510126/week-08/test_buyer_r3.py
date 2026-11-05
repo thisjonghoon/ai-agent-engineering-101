@@ -456,6 +456,19 @@ def main():
          and not buyer_r3.dead_pair("Q", "GQ", [qr, priced, priced]) and not buyer_r3.dead_pair("Q", "GX", [qr] * 2),
          str(buyer_r3.dead_pair("Q", "GQ", [qr] * 2)))
 
+    # 22. a shop that repeats an ask above our cap on its first two counters is left without a model call (11/5: 171 talks, 1 closed)
+    calls = []
+    async def count_harness(prompt, **kw):
+        calls.append(1)
+        return {"action": "offer", "price": 15000}
+    base_h, _ = fake_shop("Holder", 1.0)
+    harness.ask = count_harness
+    got = asyncio.run(buyer_r3.buyer.shop(base_h, "포기김치 5kg", 20000, opening="I want to buy 포기김치 5kg (F1)",
+                                         max_raise=0.4, order_id="o-hold"))
+    harness.ask = scripted
+    case("a shop holding an ask above our cap through its first two counters is walked away from after two model calls",
+         got.get("state") == "walked" and len(calls) == 2 and len(got["asks"]) == 3, str((got.get("state"), len(calls), got.get("asks"))))
+
     # 19. a buyer number on trial: the orders whose hash falls in arm B run its new value, the rest the plan's
     buyer_r3.PLAN.write_text(json.dumps({"CAP": 0.85}))
     trial = buyer_r3.PLAN.with_name("buyer_ab_r3.json")

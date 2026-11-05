@@ -83,6 +83,10 @@
   {
    "t": 1793847761.5621839,
    "text": "stock_value was the ceiling on dear goods: goods get goods_frac x stock_value and already held ~11M of 14.4M, so a window could add only ~3M of 150k+ goods, though they are 63% of our revenue (last 3 h). The top shops hold 50-150M of stock (Kiro729 51.6M at 297k a unit, revenue 1.30B vs our 235M). Stock counts in book at cost, so more stock does not lower book, only adds 1%/day storage. Supervisor set stock_value 30M and widened the bound to 50M. Next: watch dear units held, dear sales an hour and revenue for 2-3 cycles; if dear stock sells, step stock_value up; if it sits for over a day, step down. Add 500k+ SKUs (beds, sofas) where the ledger shows them settling."
+  },
+  {
+   "t": 1793849724.806004,
+   "text": "Undid market_ask 1.05 -> 1.0. 12:34 market_ask 1.0 -> 1.05 came 30 min after stock_value 18M -> 30M (12:03), whose 2-3 cycle check the merchandiser asked for at 12:19; a price step now confounds it. Our dear sales already sit at 0.763 of list (366 in 12 h) against a market median near 0.75 (buzllightyear's forum post, beds 3 h), and 15.7M of dear stock just arrived. A higher cap risks the sell-through that the stock change is judged by. Hold prices until the stock change is judged (dear units held vs sold, about 13:30). If you still want a higher ask, run it as the A/B arm (market_ask 1.05 vs 1.0) so the same hours compare, not as a whole-shop step."
   }
  ]
 }

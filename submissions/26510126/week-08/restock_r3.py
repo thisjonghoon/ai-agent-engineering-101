@@ -48,7 +48,7 @@ DEFAULTS = {"dear_first": 1.0, "reserve_cash": 1_500_000, "stock_value": 2_000_0
             "goods_frac": 0.35, "food_first": 0.5,
             "depth": 3, "half_life_hours": 12, "stop_hours": 36, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540,
             "window_depth": 2.0, "order_weight": 1.0, "surge_max": 1.15,
-            "dear_depth": 4, "lines": 18}    # 2026-11-17 23:59 KST
+            "dear_depth": 4, "lines": 18, "breadth_lines": 6, "sku_cap": 8}    # 2026-11-17 23:59 KST
 BANKRUPT_LINE = 500_000  # below this a shop may file, and the 5,000,000 it gets comes off profit
 CASH_FLOOR = 700_000     # code's own floor under any reserve_cash the meta-harness sets: the line plus a cushion
 CUSHION = CASH_FLOOR - BANKRUPT_LINE   # kept above inventory.json's bankrupt_line, which the market may change
@@ -242,6 +242,12 @@ def main():
         # top shop made 57M from furniture at 459,240 a sale, while pillows, kimchi and water took the early lines)
         dear = lambda c: s.get("dear_first", 1.0) * min(3.0, c["list_price"] / 150_000) if c.get("kind") == "goods" else 0
         ranked = sorted(plans.values(), key=lambda p: (-(p[0] + dear(p[1])), -p[1]["list_price"]))
+        # breadth first (11/5 10:00): buyers only visit shops that hold the ordered category, and the depth and dear-first
+        # weights had crowded it out: 291 units in 8 of 140 categories, four blankets 22-24 deep, talks with us down from
+        # 350 to 250 an hour while the market's settles rose. The first `breadth_lines` lines go to categories we hold
+        # none of, the rest keep their order
+        empty = [p for p in ranked if count[p[1]["category"]] == 0][:int(s.get("breadth_lines", 6))]
+        ranked = empty + [p for p in ranked if p not in empty]
         goods_room = s["goods_frac"] * s["stock_value"] - sum(u["cost"] for u in live if u.get("kind") == "goods")
         # 11/4 22:30, the last 6 h of settles: the top shops sold 470-575 units listed at 150,000 or more each (sofas,
         # beds, bedding; average ticket 600-820k) and 0.2-0.7 billion of revenue; we sold 25 (21M), buying at most
@@ -252,8 +258,10 @@ def main():
                 break
             if c.get("kind") == "goods" and c["list_price"] >= 150_000:
                 qty = max(qty, int(s.get("dear_depth", 4)) - held[c["sku"]])
-                if qty <= 0:
-                    continue
+            else:                      # a cheap SKU no deeper than sku_cap: 22-24 of one blanket sat in stock on 11/5
+                qty = min(qty, int(s.get("sku_cap", 8)) - held[c["sku"]])
+            if qty <= 0:
+                continue
             qty = min(int(qty), 20)    # the market takes 1-20 units a line: 24 was refused (400) 18 times on 11/4
             cost = c["list_price"] * EST_COST * surge.get(c["sku"], 1.0) * qty
             if cost > spend or (c["kind"] == "goods" and cost > goods_room):

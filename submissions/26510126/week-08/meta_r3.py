@@ -57,7 +57,8 @@ BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min
           # the seller's haiku negotiator lost to the rule (11/4 10:00, 33 talks: 2,128 margin a talk against 3,207)
           # and its share kept drawing proposals; it stays off, a measured result rather than a live knob
           "model_share": (0.0, 0.0, 0.0), "market_ask": (0.9, 1.3, 0.05),
-          "surge_max": (1.0, 1.5, 0.05), "dear_depth": (1, 8, 1), "lines": (8, 20, 2)}
+          "surge_max": (1.0, 1.5, 0.05), "dear_depth": (1, 8, 1), "lines": (8, 20, 2),
+          "breadth_lines": (0, 12, 2), "sku_cap": (3, 20, 2)}
 SETTLED = re.compile(r"\[acp\] settled .* at (\d+), ledger")         # our shop's sale the market settled
 SETTLE_REFUSED = re.compile(r"\[acp\] (settle refused|checkout refused: (?:no |unit ))")  # shop side only
 SELLER_LINE = re.compile(r"(OPEN|DEAL|WALK) \S+ (\S+)(?: at (\d+) \(cost (\d+), list (\d+))?")

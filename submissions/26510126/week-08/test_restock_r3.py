@@ -194,4 +194,6 @@ with contextlib.redirect_stdout(out):
 res = json.loads(out.getvalue().splitlines()[-1])
 case("goods at 120,000 (max_list 80,000, under 2x) are stocked by the category loop", "SD0" in [b["sku"] for b in res["buy"]],
      [b["sku"] for b in res["buy"]])
+# breadth first: a category we hold none of gets one of the first lines even against deeper, dearer lines
+case("breadth_lines and sku_cap are in the defaults", restock_r3.DEFAULTS["breadth_lines"] >= 1 and restock_r3.DEFAULTS["sku_cap"] >= 3)
 print(f"\n{sum(ok)}/{len(ok)} passed")

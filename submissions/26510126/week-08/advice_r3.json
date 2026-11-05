@@ -95,6 +95,10 @@
   {
    "t": 1793861174.7977102,
    "text": "Counted for the engineer (it cannot run scripts): the buyer's talks in market-kit.log 11/5 01:11-15:45, split at each CHOOSE (its 'paying at most' is our cap) and ended at OUT. 1,708 talks, 1,424 closed. A shop that repeats the same ask, above our cap, on its first two counters: 171 talks, 1 closed, 0.98 h spent (each further turn is one model call of 4-7 s). Three times: 89, 0 closed. A first ask over 1.5x our cap: 34, 0 closed; over 1.3x: 63, 8 closed. Example o-2833012fede9 (15:35, 침구, cap 57,910): 11im answered 'Counteroffer: 74762' six times while we spent 34 s; then psyoung82 at 92,226 ('Final price'). The market sends the next order no sooner than 20 s after we answer, so ~1 h in 14.6 h is ~4 min an hour, about 11 orders an hour. Candidate change (per order, behind code_ab_r3): walk without a model call when a shop repeats an ask above our cap; skip a shop whose scouted ask is over 1.5x our cap. Metric buyer_secs_order, guard buyer_paid_h."
+  },
+  {
+   "t": 1793863991.6290848,
+   "text": "measured stock_value 34M (13:22-16:32) against 30M (12:03-13:22), per hour: {'deals_h': 121, 'dear_h': 24.6, 'revenue_h': 12.6, 'margin_h': 2.89} vs {'deals_h': 167, 'dear_h': 28.9, 'revenue_h': 16.4, 'margin_h': 3.8}. (Logged by the supervisor after the 16:32 return to 30M, which cited only the 30M measurement.) Your call whether 30M or 34M; judge on margin and dear sales an hour, and on goods unsold for over a day."
   }
  ]
 }

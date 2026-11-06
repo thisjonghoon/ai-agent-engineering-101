@@ -131,6 +131,10 @@
   {
    "t": 1793936779.5272489,
    "text": "Market ledger 06:40-12:40: 4,379 units of 300k+ settled (4.31B won) across 54 shops; we sold 6. We held none of the 12 best sellers (지누스 그린티 매트리스 429 sold, 자코모 소파 447, 에이스침대 337, 시몬스 299...) and 24 units of a SKU that sold 11. Two causes in restock_r3.py: (1) priorities had grown to the thousands once settles fed sku_score, so dear_first's bonus (at most +9) changed nothing and cheap lines took the window; (2) a best seller planned 20 units (2.5-28M at cost), more than the goods room, and was skipped. Fixed: dear priority is a factor (1 + dear), dear lines are bought at their depth trimmed to the room. And the room itself: goods held 23.3M of 25.6M (goods_frac 0.8 x 32M) with 60M cash idle, so stock_value 32M -> 40M (book counts stock at cost). Watch 300k+ units bought per window and sold an hour; if the best sellers sell, keep stock_value up; the old slow dear stock (Gf918c335 x24) can clear through the aged-goods rule."
+  },
+  {
+   "t": 1793939251.247264,
+   "text": "13:24 window bought 1 unit of the market's best seller (지누스 매트리스, 416 sold in 6 h) because goods held 31.7M of 32.0M (goods_frac 0.8 x 40M); food is only 2.8M of stock. 13.9M of it is goods older than 12 h (133 units: 20 x a 195k SKU, 15 x a 499k one) that the aged rule clears only after 5 days. goods_frac 0.8 -> 0.9 (bound up to 0.95), goods_age_days 5 -> 2 so slow goods sell down and free room."
   }
  ]
 }

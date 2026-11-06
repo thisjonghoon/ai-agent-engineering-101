@@ -18,5 +18,19 @@
    ]
   },
   "reason": "supervisor, with the restock fix"
+ },
+ {
+  "t": 1793939251.2468438,
+  "changes": {
+   "goods_frac": [
+    0.8,
+    0.9
+   ],
+   "goods_age_days": [
+    5,
+    2
+   ]
+  },
+  "reason": "supervisor"
  }
 ]

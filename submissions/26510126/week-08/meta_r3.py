@@ -774,8 +774,17 @@ async def cycle():
         import forum_r3
         w = {k: round(min(max(float(fw[k]), 0.0), 3.0), 2) for k in forum_r3.FORMATS
              if isinstance(fw.get(k), (int, float)) and not isinstance(fw.get(k), bool)}
-        if w and any(w.values()):
-            forum_r3.PLAN.write_text(json.dumps({"weights": dict(forum_r3.plan(), **w), "t": time.time()}), encoding="utf-8")
+        # the cadence too (11/6: the user left it to the team and the supervisor): seconds between posts, at most 120 s
+        # a cycle from now, within forum_r3's EVERY_MIN..EVERY_MAX
+        ev = fw.get("every")
+        now_every = forum_r3.every()
+        if isinstance(ev, (int, float)) and not isinstance(ev, bool):
+            ev = int(min(max(ev, now_every - 120, forum_r3.EVERY_MIN), now_every + 120, forum_r3.EVERY_MAX))
+        else:
+            ev = now_every
+        if (w and any(w.values())) or ev != now_every:
+            forum_r3.PLAN.write_text(json.dumps({"weights": dict(forum_r3.plan(), **w), "every": ev, "t": time.time()}),
+                                     encoding="utf-8")
     changed = {k: (cur[k], s[k]) for k in s if s[k] != cur[k]}
     STRATEGY.write_text(json.dumps(s, indent=1), encoding="utf-8")
     if changed:

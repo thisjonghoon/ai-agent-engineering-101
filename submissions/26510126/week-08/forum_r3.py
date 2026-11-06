@@ -50,6 +50,8 @@ MIN_CLAIMS = 10
 MAX_REFS = 10
 FORMAT_EVERY = 360   # seconds before a drawn kind may follow when our own deals give nothing new
 PLAN = HERE / "forum_plan_r3.json"
+EVERY_MIN, EVERY_MAX = 310, 1800   # the market allows a post per 5 minutes (+10 s for the kit's send loop); the user
+                                   # (11/6) left the cadence to the meta-harness and the supervisor within this
 VOTES = Path(os.environ.get("FORUM_VOTES") or HERE / "logs" / "forum_votes_r3.json")   # votes per post, kept after forum.json (the last 100 posts) drops them
 STYLE = os.environ.get("FORUM_STYLE", "1") != "0"     # tests set FORUM_STYLE=0: no model call
 VOICE = "장보기 레이더"
@@ -405,6 +407,16 @@ FORMATS = {"best_value": best_value, "freshness": freshness, "pay_tips": pay_tip
            "weather": weather, "haggle": haggle}
 
 
+def every():
+    """Seconds between our posts: the meta-harness's `every` in forum_plan_r3.json, within EVERY_MIN..EVERY_MAX, else
+    EVERY."""
+    try:
+        v = json.loads(PLAN.read_text(encoding="utf-8")).get("every")
+    except (OSError, ValueError, AttributeError):
+        v = None
+    return min(max(int(v), EVERY_MIN), EVERY_MAX) if isinstance(v, (int, float)) and not isinstance(v, bool) else EVERY
+
+
 def plan():
     """Kind -> weight from forum_plan_r3.json (the meta-harness's), equal weights by default."""
     try:
@@ -479,7 +491,7 @@ def maybe_post(memory):
         track(json.loads((MD / "forum.json").read_text(encoding="utf-8")), memory)
     except (OSError, ValueError):
         pass
-    if posts and time.time() - posts[-1].get("t", 0) < EVERY:
+    if posts and time.time() - posts[-1].get("t", 0) < every():
         return None
     last = posts[-1].get("format") if posts else None
     # our own deals are one kind among the others: after an our_deals post the next turn goes to a drawn kind, or the
@@ -488,7 +500,7 @@ def maybe_post(memory):
     recent = [p.get("format") for p in posts[-2:]]
     text, refs = note(memory) if "our_deals" not in recent else (None, [])
     kind, data = ("our_deals" if text else None), None
-    if not text and (not posts or time.time() - posts[-1].get("t", 0) >= FORMAT_EVERY):
+    if not text and (not posts or time.time() - posts[-1].get("t", 0) >= max(FORMAT_EVERY, every())):
         try:
             ctx = context()
             kind, text, refs = drawn(ctx, last=last)

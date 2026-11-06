@@ -184,7 +184,9 @@ async def specialist(role, now, cur, plan, hist, after, advice, bounds, buyer_bo
     keys = role_keys(role, bounds, buyer_bounds)
     vals = plan if role == "buying" else cur
     btxt = "\n".join(f"  {k}: [{lo}, {hi}] ({st}), now {vals.get(k)}" for k, (lo, hi, st) in keys.items()) or \
-        "  forum_weights: kinds best_value, freshness, pay_tips, fun, claims (our_deals posts whenever there are new deals), 0-3 each"
+        ("  forum_weights: kinds best_value, freshness, pay_tips, fun, claims (our_deals posts whenever there are new deals), 0-3 each;"
+         " and every: seconds between our posts (310-1800, at most 120 s a cycle; posts are 0.1 of the buyer's ALL, the votes"
+         " on them 0.3: shorter while votes hold, longer if they fall)")
     data = {k: now.get(k) for k in r["data"] if k in now}
     data.update(extra_data.get(role, {}))
     prompt = SPECIALIST.format(goal=GOAL, title=r["title"], task=r["task"], bounds=btxt,

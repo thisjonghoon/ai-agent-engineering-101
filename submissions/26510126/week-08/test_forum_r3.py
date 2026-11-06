@@ -121,6 +121,16 @@ def main():
     p2 = forum_r3.maybe_post([dict(two[1], format="best_value", post="c"), dict(two[1], post="d")])
     check("our_deals is posted only when neither of the last two posts was ours: at most one post in three",
           p1 and p1["format"] == "fun" and p2 and p2["format"] == "our_deals", [p1 and p1["format"], p2 and p2["format"]])
+    # the cadence is the meta-harness's (11/6), held within the market's limit and half an hour
+    real_plan = forum_r3.PLAN
+    forum_r3.PLAN = md / "plan.json"
+    got = [forum_r3.every()]
+    for v in (200, 600, 99999, "x"):
+        forum_r3.PLAN.write_text(json.dumps({"every": v}), encoding="utf-8")
+        got.append(forum_r3.every())
+    check("every() is the plan's cadence within EVERY_MIN..EVERY_MAX, EVERY when absent or not a number",
+          got == [forum_r3.EVERY, forum_r3.EVERY_MIN, 600, forum_r3.EVERY_MAX, forum_r3.EVERY], got)
+    forum_r3.PLAN = real_plan
     print(f"\n{sum(ok)}/{len(ok)} passed")
 
 

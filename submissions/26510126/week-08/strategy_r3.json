@@ -9,7 +9,7 @@
  "max_turns": 4,
  "reserve_cash": 1500000,
  "stock_value": 30000000,
- "max_list": 1400000,
+ "max_list": 1500000,
  "dear_first": 3.0,
  "min_shelf_hours": 480,
  "depth": 6,
@@ -35,5 +35,5 @@
  "dear_depth": 8,
  "lines": 20,
  "breadth_lines": 6,
- "sku_cap": 10
+ "sku_cap": 12
 }

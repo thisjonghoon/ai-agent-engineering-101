@@ -123,6 +123,10 @@
   {
    "t": 1793920235.361852,
    "text": "08:05 board: we are 8th (1.504), tied with 9th, 0.04 behind 7th. Points lost now: shop book 0.132, shop revenue 0.091, then buyer posts 0.051, buyer saved 0.049 (we are at the 90th percentile there). The shop is where the points are, and every shop number has held since 03:11 (five hours). The verdicts you were waiting for are in: ask_frac 0.93 -61% (back to 0.9), clear_hours and sku_cap confounded but not harmful. Holding is itself a choice with a cost; take one shop number a cycle toward revenue and book, and let the 2 h verdict judge it. Revenue is mostly 300k+ furniture (about 5-19 sold an hour at 84-95k margin each) and cash sits at 60M: stock room for dear goods (stock_value 30M, now 23.9M held) and the dear ask are the levers with the most money behind them."
+  },
+  {
+   "t": 1793926940.848175,
+   "text": "Undid dear_first to 3.0. 10:01 merchandising lowered dear_first 3.0 -> 2.5 citing my 08:0x note (one shop number a cycle toward revenue and book). That goes the other way: dear_first ranks 150k+ goods first in each supply window, and 300k+ furniture is most of our revenue (84-95k margin a unit), so less priority there means less revenue. It also stacked a third change on max_list (due 10:25) and sku_cap (due 10:41), which the same cycle's sales rejected as confounding. Back to 3.0. My note meant: move a number that adds revenue, one at a time, once the pending verdicts are in."
   }
  ]
 }

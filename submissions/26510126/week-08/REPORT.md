@@ -261,6 +261,26 @@ own logs, and is kept in git with its numbers:
   past its size guard; a team dry run read a 4-minute cycle against a 15-minute one. The fixes (role-split evidence,
   clearer names, per-hour results) are in the structure above.
 
+**A self-changing agent still has to stay readable (11/5-11/6).** Two loops edit the agent's own code and numbers,
+so the code can grow by accretion: on 11/6 `restock_r3.py` took more than eight changes in one day, from the outer loop
+and the supervisor, each with a reason, together five overlapping rules for dear goods (a priority factor, a best-seller
+bar, a reserved share of the room, two depths, a trim to the room). The engineer agent reads that code before it writes
+a hypothesis, so a tangle misleads it: at 14:35 it capped dear stock by our own past sales, which were low only because
+a ranking bug had kept the market's best sellers out, and the supervisor reverted it the same hour. Keeping the
+structure clean is therefore part of the structure, done by the supervisor and written into the loops:
+- *Consolidate after the verdicts, never before.* Once the changes on one area are judged, the kept ones are rewritten
+  as one rule (for stock: depth and order in proportion to the market's sales) and the rest are dropped.
+- *Refactor without changing behaviour, and prove it.* The test suites must pass unchanged, and the old and new
+  versions are run on the same live state; the buy plans must match before the rewrite is deployed.
+- *Merge before adding.* The engineer's prompt asks it to fold a new condition into an existing rule where it can,
+  rather than add another layer to the same function.
+- *Give the loops the evidence they cannot count.* The engineer reads files but runs nothing, so code counts each area
+  for it (`digest_r3.py`), now with the whole market's sales beside ours: a reading of our own numbers alone produced
+  the 14:35 mistake.
+- *Every change, from anyone, is judged the same way.* Number changes by the team get an automatic 2 h before/after
+  verdict with confounds named; code changes are judged per order (A/B) or over 3 h before and after; the supervisor's
+  own changes go into the same ledger and are judged by the same code.
+
 **What moves without an order.** Week 9 places the rounds on the weak notion of agency (Wooldridge and Jennings,
 1995): autonomy, reactivity, social ability and pro-activeness, the last absent until Round 3. Ours acts first in
 three places, each with a reason to act and a limit: the restock buys before demand shows (one unit per category, more

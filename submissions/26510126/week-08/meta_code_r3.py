@@ -135,6 +135,8 @@ Rules:
   delete files or call new network hosts. Honesty rules stay: never claim a grade, shelf life or price that is not
   true, never pay above the budget.
 - Match the code around it: same comment density, naming and style; a comment says why, with the engineer's numbers.
+- Merge before adding: if the function already has a rule on the same thing (a depth, a bar, a share of the room),
+  change that rule rather than add another layer beside it, so the next engineer reads one rule, not five.
 - When the change acts per buyer order, put the new behaviour behind
       if code_ab_r3.on("{key}", <the order id, e.g. order.get("order")>):
   (import code_ab_r3): while it is on trial it runs on half the orders, so its verdict compares the same hours.

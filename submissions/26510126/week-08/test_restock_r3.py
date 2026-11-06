@@ -274,4 +274,25 @@ case("goods at 120,000 (max_list 80,000, under 2x) are stocked by the category l
      [b["sku"] for b in res["buy"]])
 # breadth first: a category we hold none of gets one of the first lines even against deeper, dearer lines
 case("breadth_lines and sku_cap are in the defaults", restock_r3.DEFAULTS["breadth_lines"] >= 1 and restock_r3.DEFAULTS["sku_cap"] >= 3)
+# 11/6 13:44: breadth lines bought 2 gaming PCs ahead of the best seller; now a best-selling 300k+ SKU goes first and
+# a breadth line takes no slow 150k+ goods
+cat6 = {"SB": {"category": "G>bed", "kind": "goods", "list_price": 400000, "name": "best"},
+        "SP": {"category": "G>pc", "kind": "goods", "list_price": 1200000, "name": "pc"}}
+(md / "catalog.json").write_text(json.dumps(cat6), encoding="utf-8")
+(md / "demand.json").write_text(json.dumps([{"item": "pc", "category": "G>pc", "kind": "goods", "median_price": 1200000},
+                                           {"item": "bed", "category": "G>bed", "kind": "goods", "median_price": 400000}]),
+                                encoding="utf-8")
+bed = [{"unit": f"b{i}", "sku": "SB", "category": "G>bed", "kind": "goods", "grade": "A", "cost": 240000,
+        "supplied_at": NOW, "expires_at": None} for i in range(2)]
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": bed}), encoding="utf-8")
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SB": 1500, "SP": 10}}),
+                                       encoding="utf-8")
+restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=2_500_000, goods_frac=1.0, max_list=1_500_000, dear_depth=8)
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
+case("the best-selling 300k+ SKU comes before an empty category's slow 1.2M goods (room 2.5M - 0.48M held)",
+     q.get("SB") == 6 and "SP" not in q, q)
+restock_r3.strategy = real
 print(f"\n{sum(ok)}/{len(ok)} passed")

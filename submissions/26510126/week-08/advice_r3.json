@@ -135,6 +135,10 @@
   {
    "t": 1793939251.247264,
    "text": "13:24 window bought 1 unit of the market's best seller (지누스 매트리스, 416 sold in 6 h) because goods held 31.7M of 32.0M (goods_frac 0.8 x 40M); food is only 2.8M of stock. 13.9M of it is goods older than 12 h (133 units: 20 x a 195k SKU, 15 x a 499k one) that the aged rule clears only after 5 days. goods_frac 0.8 -> 0.9 (bound up to 0.95), goods_age_days 5 -> 2 so slow goods sell down and free room."
+  },
+  {
+   "t": 1793940503.445367,
+   "text": "13:44 window: breadth lines bought 2 gaming PCs and an air purifier (3.2M) before the market's best seller, which got 1 unit. Fixed in restock_r3.py: best-selling 300k+ SKUs (sku_score >= DEAR_HOT 200) go first, breadth lines take no other 150k+ goods. After that the binding limit is stock_value: stock 37.9M of 40M (2.1M of spend) with 49M cash idle, while the market's 15 best-selling 300k+ SKUs sold 100-450 units each in 6 h. stock_value 40M -> 50M (the bound); goods_age_days 2 clears slow goods into cash. If the best sellers do not sell within a day, bring stock_value back down."
   }
  ]
 }

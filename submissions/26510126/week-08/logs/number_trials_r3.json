@@ -1,15 +1,5 @@
 [
  {
-  "t": 1793931728.777017,
-  "changes": {
-   "stock_value": [
-    30000000,
-    32000000
-   ]
-  },
-  "reason": "Sales market_ask 1.05: rejected, since raising ask_frac already cut margin/h 61% and the max_list, sku_cap and restock verdicts are still pending, so another price move would confound them. Merchandising stock_value: trimmed from 34M to 32M, because the stock cap is only 88% used and not clearly bin"
- },
- {
   "t": 1793936779.5265641,
   "changes": {
    "stock_value": [
@@ -29,6 +19,16 @@
    "goods_age_days": [
     5,
     2
+   ]
+  },
+  "reason": "supervisor"
+ },
+ {
+  "t": 1793940503.444834,
+  "changes": {
+   "stock_value": [
+    40000000,
+    50000000
    ]
   },
   "reason": "supervisor"

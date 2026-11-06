@@ -250,8 +250,15 @@ def main():
         # weights had crowded it out: 291 units in 8 of 140 categories, four blankets 22-24 deep, talks with us down from
         # 350 to 250 an hour while the market's settles rose. The first `breadth_lines` lines go to categories we hold
         # none of, the rest keep their order
-        empty = [p for p in ranked if count[p[1]["category"]] == 0][:int(s.get("breadth_lines", 6))]
-        ranked = empty + [p for p in ranked if p not in empty]
+        # 11/6 13:44: the empty-category lines took 2 gaming PCs and an air purifier (3.2M) ahead of the market's best
+        # seller, which got 1 unit of the room left. Best-selling 300k+ goods (sku_score DEAR_HOT or more) go first;
+        # breadth lines take no other 150k+ goods, so a category is covered cheaply, not with stock that may not sell
+        is_dear = lambda c: c.get("kind") == "goods" and c["list_price"] >= 150_000
+        best = [p for p in ranked if is_dear(p[1]) and p[1]["list_price"] >= 300_000
+                and sku_score.get(p[1]["sku"], 0) >= DEAR_HOT]
+        empty = [p for p in ranked if count[p[1]["category"]] == 0 and p not in best
+                 and not is_dear(p[1])][:int(s.get("breadth_lines", 6))]
+        ranked = best + empty + [p for p in ranked if p not in best and p not in empty]
         goods_room = s["goods_frac"] * s["stock_value"] - sum(u["cost"] for u in live if u.get("kind") == "goods")
         # 11/4 22:30, the last 6 h of settles: the top shops sold 470-575 units listed at 150,000 or more each (sofas,
         # beds, bedding; average ticket 600-820k) and 0.2-0.7 billion of revenue; we sold 25 (21M), buying at most

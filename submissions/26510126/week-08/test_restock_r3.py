@@ -285,7 +285,8 @@ cat6 = {"SB": {"category": "G>bed", "kind": "goods", "list_price": 400000, "name
 bed = [{"unit": f"b{i}", "sku": "SB", "category": "G>bed", "kind": "goods", "grade": "A", "cost": 240000,
         "supplied_at": NOW, "expires_at": None} for i in range(2)]
 (md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": bed}), encoding="utf-8")
-(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SB": 1500, "SP": 10}}),
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SB": 1500, "SP": 10},
+                                                   "dear_sold": 40}),
                                        encoding="utf-8")
 restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=2_500_000, goods_frac=1.0, max_list=1_500_000, dear_depth=8)
 out = io.StringIO()
@@ -294,5 +295,20 @@ with contextlib.redirect_stdout(out):
 q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
 case("the best-selling 300k+ SKU comes before an empty category's slow 1.2M goods (room 2.5M - 0.48M held)",
      q.get("SB") == 6 and "SP" not in q, q)
+restock_r3.strategy = real
+# 11/6: 68 units of 300k+ held (30 h of stock) against 2.2 sold an hour: with 10 held and no sales of ours the cap is
+# the floor, so a best seller (sku_score 1,500) holding 1 gets 1 more, not dear_depth
+bed = [{"unit": f"c{i}", "sku": "SB", "category": "G>bed", "kind": "goods", "grade": "A", "cost": 240000,
+        "supplied_at": NOW, "expires_at": None} for i in range(10)]
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": bed[:1] + [dict(u, sku="SP", category="G>pc")
+                                                                                                   for u in bed[1:10]]}), encoding="utf-8")
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SB": 1500}}),
+                                       encoding="utf-8")
+restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=40_000_000, goods_frac=1.0, max_list=1_500_000, dear_depth=8)
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
+case("300k+ stock over DEAR_HOURS of our own sales: a best seller is topped up to the floor only", q.get("SB") == 1, q)
 restock_r3.strategy = real
 print(f"\n{sum(ok)}/{len(ok)} passed")

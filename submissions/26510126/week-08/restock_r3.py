@@ -55,7 +55,9 @@ CUSHION = CASH_FLOOR - BANKRUPT_LINE   # kept above inventory.json's bankrupt_li
 BASE_GAP = 60            # seconds between restock runs the depths are tuned for (agent.md, 11/3: every 60 s)
 WARRANTY_CUSHION = 300_000  # more while goods are sold with a warranty: a break refunds the whole price
 DEAR_HOT = 200            # sku_score (settles, half-life 12 h) of a 300k+ SKU held dear_depth deep: about 60 sold in 6 h
-EST_COST = 0.6          # expected cost as a share of list price before the grade is drawn (A 55-75, B 40-60, C 25-45)
+DEAR_HOURS = 4            # hours of our own 300k+ sell-through the 300k+ stock may cover (11/6: 68 held, 2.2 sold an hour: 30 h)
+DEAR_FLOOR = 2            # a best seller still gets this many units once the cap is reached
+EST_COST = 0.6         # expected cost as a share of list price before the grade is drawn (A 55-75, B 40-60, C 25-45)
 
 
 def read_json(path, default):
@@ -161,11 +163,14 @@ def main():
     have = {u["unit"]: u for u in units}
     sold = [u for u in st.get("seen", []) if u["unit"] not in have and u.get("grade") != "expired"
             and (u.get("expires_at") or now + 1) > now]
+    dear_sold = st.get("dear_sold", 0.0) * decay            # 300k+ units we sold, decayed like the scores
     for u in sold:                                          # our own sale counts double: it is our buyers
+        if ((catalog.get(u.get("sku")) or {}).get("list_price") or 0) >= 300_000:
+            dear_sold += 1
         score[u["category"]] += 2
         if u.get("sku"):
             sku_score[u["sku"]] += 2
-    st.update(score={k: v for k, v in score.items() if v > 0.05}, sku_score={k: v for k, v in sku_score.items() if v > 0.05},
+    st.update(dear_sold=dear_sold, score={k: v for k, v in score.items() if v > 0.05}, sku_score={k: v for k, v in sku_score.items() if v > 0.05},
               seen=[{k: u.get(k) for k in ("unit", "sku", "category", "grade", "expires_at")} for u in units], t=now)
     # the hidden demand as it reaches us (demand_r3.py): orders our buyer got and requests to our shop, decayed over
     # two days; added for this run only (the log keeps them), so they do not compound with the settle scores
@@ -198,6 +203,8 @@ def main():
         # the plan takes the next SKU of the category instead, and the rest are priced at their surged cost
         surge = {x["sku"]: x.get("factor", 1.0) for x in inv.get("surge") or [] if isinstance(x, dict) and x.get("sku")}
         surged = {k for k, f in surge.items() if f > s.get("surge_max", 1.15)}
+        dear_held = sum(1 for u in live if u.get("kind") == "goods"
+                        and ((catalog.get(u["sku"]) or {}).get("list_price") or 0) >= 300_000)
         catalog = {k: v for k, v in catalog.items() if k not in surged}
         count, held = Counter(u["category"] for u in live), Counter(u["sku"] for u in live)
         by_cat = defaultdict(list)
@@ -264,6 +271,10 @@ def main():
         # beds, bedding; average ticket 600-820k) and 0.2-0.7 billion of revenue; we sold 25 (21M), buying at most
         # 10 lines a window and one unit of a dear SKU a line, with 21M of cash idle. A window takes about 18 lines,
         # so up to `lines` of them, and a dear SKU (list 150,000 or more) gets `dear_depth` units: they sell in minutes
+        # 11/6: 300k+ sold 2.2 an hour for us (about 170k an hour of margin) with 68 units (32.7M at cost, 30 h of stock) held,
+        # while <30k sold 103 an hour (370k) and 30-100k 18.5 (142k): 300k+ stock stops at DEAR_HOURS of our own
+        # sell-through (decayed 300k+ sales per hour), so room and cash go to the cheap goods that sell for us
+        dear_cap = max(DEAR_FLOOR, DEAR_HOURS * dear_sold * math.log(2) / s["half_life_hours"])
         for prio, c, qty in ranked:
             if len(buy) >= s.get("lines", 18):
                 break
@@ -280,6 +291,8 @@ def main():
                 # units a line, 2.5-28M at cost, more than the goods room left, so each was skipped and cheap lines took
                 # the window; 4,379 units of 300k+ settled market-wide in 6 h, we held none of the top 12 and sold 6
                 qty = depth - held[c["sku"]]
+                if c["list_price"] >= 300_000 and dear_held >= dear_cap:
+                    qty = min(qty, DEAR_FLOOR - held[c["sku"]])
             else:                     # a cheap SKU no deeper than sku_cap: 22-24 of one blanket sat in stock on 11/5
                 # 6 h: the 100-300k band sold 1.0 an hour with 46 units held (46 h of stock) while 300k+ sold 6.0 an hour
                 # at 95,294 a unit: goods listed 100-150k stay at 2 too, so room and cash go to 300k+
@@ -303,6 +316,8 @@ def main():
                 continue
             if c["kind"] == "goods":
                 goods_room -= cost
+                if c["list_price"] >= 300_000:
+                    dear_held += qty
             buy.append({"sku": c["sku"], "qty": qty})
             spend -= cost
         why = (f"{len(ranked)} SKUs short, buying {len(buy)} lines" + (f" (runs {gap:.0f} s apart: depth x{scale:.1f})" if scale > 1 else "")

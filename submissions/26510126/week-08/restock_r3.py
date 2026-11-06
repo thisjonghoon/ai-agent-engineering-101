@@ -259,7 +259,10 @@ def main():
             if c.get("kind") == "goods" and c["list_price"] >= 150_000:
                 # 6 h: 300k+ sold 10.3 an hour (36 held, 3.5 h of stock), the 150-300k band 1.3 an hour (49 held, 37 h):
                 # the full depth only for 300k+, the band below stays at 2 so its money buys 300k+ units
-                depth = int(s.get("dear_depth", 4)) if c["list_price"] >= 300_000 else min(2, int(s.get("dear_depth", 4)))
+                # 6 h: 300k+ sold 2.2 an hour with 35 units (11.5M, about 16 h of stock) held, while <30k sold 81 an hour:
+                # full depth only for a 300k+ SKU that keeps selling (sku_score 6 or more, the cheap-goods hot bar), else 2
+                full = c["list_price"] >= 300_000 and sku_score.get(c["sku"], 0) >= 6
+                depth = int(s.get("dear_depth", 4)) if full else min(2, int(s.get("dear_depth", 4)))
                 qty = max(qty, depth - held[c["sku"]])
             else:                     # a cheap SKU no deeper than sku_cap: 22-24 of one blanket sat in stock on 11/5
                 # 6 h: the 100-300k band sold 1.0 an hour with 46 units held (46 h of stock) while 300k+ sold 6.0 an hour

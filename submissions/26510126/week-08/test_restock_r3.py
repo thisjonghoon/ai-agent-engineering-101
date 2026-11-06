@@ -189,7 +189,7 @@ cat5 = {"SM": {"category": "G>mid", "kind": "goods", "list_price": 200000, "name
                                 encoding="utf-8")
 (md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": []}), encoding="utf-8")
 restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=40_000_000, goods_frac=1.0, max_list=500_000)
-(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {}}),
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SX": 20}}),
                                        encoding="utf-8")
 out = io.StringIO()
 with contextlib.redirect_stdout(out):
@@ -197,6 +197,20 @@ with contextlib.redirect_stdout(out):
 res = json.loads(out.getvalue().splitlines()[-1])
 q = {b["sku"]: b["qty"] for b in res["buy"]}
 case("a 200,000 SKU is held at 2 units, a 400,000 one gets dear_depth", q.get("SM", 0) <= 2 and q.get("SX", 0) >= 3, q)
+# 6 h: 300k+ sold 2.2 an hour on 35 held units: a 400,000 SKU with no sales score is held at 2 like the band below
+cat5["SC"] = {"category": "G>cold", "kind": "goods", "list_price": 400000, "name": "cold"}
+(md / "catalog.json").write_text(json.dumps(cat5), encoding="utf-8")
+(md / "demand.json").write_text(json.dumps([{"item": "top", "category": "G>top", "kind": "goods", "median_price": 400000},
+                                           {"item": "cold", "category": "G>cold", "kind": "goods", "median_price": 400000}]),
+                                encoding="utf-8")
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SX": 20}}),
+                                       encoding="utf-8")
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+res = json.loads(out.getvalue().splitlines()[-1])
+q = {b["sku"]: b["qty"] for b in res["buy"]}
+case("a 400,000 SKU with sku_score under 6 is held at 2 units, a selling one gets dear_depth", q.get("SC", 0) <= 2 and q.get("SX", 0) >= 3, q)
 restock_r3.strategy = real
 # goods listed 100-150k are held at 2 units like the 150-300k band (6 h: 100-300k sold 1.0 an hour, 46 h of stock)
 cat6 = {"SL": {"category": "G>low", "kind": "goods", "list_price": 120000, "name": "low"}}

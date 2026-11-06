@@ -286,7 +286,9 @@ def main():
                 cap = 2 if c.get("kind") == "goods" and c["list_price"] >= 100_000 else int(s.get("sku_cap", 8))
                 # goods under 100k sold 77.5 + 21.5 units an hour (439k of 1.3M margin) on 234 + 151 held, about 3 h of stock,
                 # while 60M of cash sat idle: a cheap SKU that keeps selling (sku_score 6 or more) may hold twice sku_cap
-                hot = c.get("kind") == "goods" and c["list_price"] < 100_000 and sku_score.get(c["sku"], 0) >= 6
+                # the same bar as DEAR_HOT: at 6 every SKU passed once settles fed sku_score, and on 11/6 goods at 30-100k
+                # grew from 138 to 320 units (10.5M, 20 h of stock at 15.7 sold an hour) while the stock cap was full
+                hot = c.get("kind") == "goods" and c["list_price"] < 100_000 and sku_score.get(c["sku"], 0) >= DEAR_HOT
                 if hot:
                     qty = held[c["sku"]] + 2 * qty      # twice the planned depth, held units included
                 qty = min(qty, min(cap, int(s.get("sku_cap", 8))) * (2 if hot else 1) - held[c["sku"]])

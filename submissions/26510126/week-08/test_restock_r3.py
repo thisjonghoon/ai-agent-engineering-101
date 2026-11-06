@@ -249,14 +249,15 @@ cat7 = {"SH": {"category": "G>hot", "kind": "goods", "list_price": 50000, "name"
 (md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": []}), encoding="utf-8")
 restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=40_000_000, goods_frac=1.0, max_list=500_000)
 (md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {},
-                                                   "sku_score": {"SH": 40.0, "SS": 2.0}}), encoding="utf-8")
+                                                   "sku_score": {"SH": 400.0, "SS": 40.0}}), encoding="utf-8")
 out = io.StringIO()
 with contextlib.redirect_stdout(out):
     restock_r3.main()
 res = json.loads(out.getvalue().splitlines()[-1])
 q = {b["sku"]: b["qty"] for b in res["buy"]}
-case("a cheap SKU with a high sku_score is bought deeper than a slow one, within 2x sku_cap",
-     q.get("SH", 0) > q.get("SS", 0) and q.get("SH", 0) <= 2 * restock_r3.DEFAULTS["sku_cap"], q)
+case("a cheap SKU over DEAR_HOT (400) is bought up to 2x sku_cap, one under it (40) only to sku_cap",
+     q.get("SH", 0) > q.get("SS", 0) and q.get("SH", 0) <= 2 * restock_r3.DEFAULTS["sku_cap"]
+     and q.get("SS", 0) <= restock_r3.DEFAULTS["sku_cap"], q)
 restock_r3.strategy = real
 # a goods category whose reference is above max_list but within 2x (sofa/chair ~1.4M-2M at max_list 1.4M) is stocked
 cat4 = dict(cat3, SD0={"category": "G>dear", "kind": "goods", "list_price": 120000, "name": "dear"})

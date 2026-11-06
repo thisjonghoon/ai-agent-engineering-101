@@ -169,6 +169,20 @@ def stock_digest(base=HERE, hours=6, now=None):
             lines.append(f"  {name}: {len(g) / hours:.1f}/h, price {statistics.median(x['price'] / x['list_price'] for x in g):.2f}"
                          f", cost {statistics.median(x['cost'] / x['list_price'] for x in g):.2f}, "
                          f"margin {statistics.median(x['price'] - x['cost'] for x in g):,.0f}")
+    # the market's own sales beside ours: on 11/6 our 300k+ sales were low because restock never bought the market's
+    # best sellers, and an engineer read our 2.2 an hour as the demand and capped dear stock by it (349ada8, reverted)
+    try:
+        ledger = json.loads((base / ".market" / "ledger-recent.json").read_text(encoding="utf-8"))
+        catalog = json.loads((base / ".market" / "catalog.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        ledger, catalog = [], {}
+    settles = [e["data"] for e in ledger if isinstance(e, dict) and e.get("kind") == "settle" and now - e.get("ts", 0) < hours * 3600]
+    if settles:
+        lines.append(f"The whole market's settles, same {hours} h, by list price: units an hour (our share)")
+        ours = Counter(band(x.get("list_price")) for x in sold)
+        mk = Counter(band((catalog.get(d.get("sku")) or {}).get("list_price")) for d in settles)
+        lines += [f"  {name}: {mk[name] / hours:.0f}/h ({ours[name] / max(mk[name], 1):.1%})" for _, _, name in BANDS if mk[name]]
+        top = Counter(d.get("sku") for d in settles if ((catalog.get(d.get("sku")) or {}).get("list_price") or 0) >= 300_000)
     try:
         inv = json.loads((base / ".market" / "inventory.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -186,6 +200,10 @@ def stock_digest(base=HERE, hours=6, now=None):
                      f"{len(cats)} categories; cash {inv.get('balance', 0):,}; " +
                      ", ".join(f"{k} {v[0]} units ({v[1]:,})" for k, v in sorted(by.items())))
         lines.append(f"  goods unsold for over a day: {len(old)} units, cost {sum(u.get('cost') or 0 for u in old):,}")
+        if settles:
+            have = Counter(u.get("sku") for u in units)
+            lines.append("  the market's 8 best-selling 300k+ SKUs, sold in the window / we hold: " + ", ".join(
+                f"{(catalog.get(k) or {}).get('name', k)[:14]} {n}/{have[k]}" for k, n in top.most_common(8)))
         surge = inv.get("surge") or []
         if surge:
             lines.append(f"  SKUs under the market's supply surge now: {len(surge)} (top: " + ", ".join(

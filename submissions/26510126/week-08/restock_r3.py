@@ -54,6 +54,7 @@ CASH_FLOOR = 700_000     # code's own floor under any reserve_cash the meta-harn
 CUSHION = CASH_FLOOR - BANKRUPT_LINE   # kept above inventory.json's bankrupt_line, which the market may change
 BASE_GAP = 60            # seconds between restock runs the depths are tuned for (agent.md, 11/3: every 60 s)
 WARRANTY_CUSHION = 300_000  # more while goods are sold with a warranty: a break refunds the whole price
+DEAR_HOT = 200            # sku_score (settles, half-life 12 h) of a 300k+ SKU held dear_depth deep: about 60 sold in 6 h
 EST_COST = 0.6          # expected cost as a share of list price before the grade is drawn (A 55-75, B 40-60, C 25-45)
 
 
@@ -264,7 +265,9 @@ def main():
                 # the full depth only for 300k+, the band below stays at 2 so its money buys 300k+ units
                 # 6 h: 300k+ sold 2.2 an hour with 35 units (11.5M, about 16 h of stock) held, while <30k sold 81 an hour:
                 # full depth only for a 300k+ SKU that keeps selling (sku_score 6 or more, the cheap-goods hot bar), else 2
-                full = c["list_price"] >= 300_000 and sku_score.get(c["sku"], 0) >= 6
+                # the bar is DEAR_HOT, not 6: once settles fed sku_score every SKU passed 6, and at 13:04 on 11/6 an
+                # empty-category line bought 8 sofas (7.2M, 19 sold market-wide in 6 h) before the best seller (416) got 1
+                full = c["list_price"] >= 300_000 and sku_score.get(c["sku"], 0) >= DEAR_HOT
                 depth = int(s.get("dear_depth", 4)) if full else min(2, int(s.get("dear_depth", 4)))
                 # the depth, not the SKU plan's qty: on 11/6 the market's best sellers (sku_score 600-1,500) planned 20
                 # units a line, 2.5-28M at cost, more than the goods room left, so each was skipped and cheap lines took

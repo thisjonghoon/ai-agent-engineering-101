@@ -263,7 +263,11 @@ def find_unit(text, taken=()):
         item = next((k for k in RESERVE if k in want), None)
         return item and {"sku": item, "name": item, "list_price": int(RESERVE[item] * 1.3), "cost": RESERVE[item],
                          "unit": None, "expires_at": None, "supplied_at": 0, "kind": "goods", "grade": None}
-    units = [u for u in inv.get("units", []) if u["grade"] != "expired" and u["unit"] not in taken]
+    # the kit marks a unit "expired" only on its next refresh, so a unit that ran out since was still offered and its
+    # settle refused ("not_expired", 11/7 00:21); a minute's margin covers the talk and the payment
+    soon = time.time() + 60
+    units = [u for u in inv.get("units", []) if u["grade"] != "expired" and u["unit"] not in taken
+             and not (u.get("expires_at") and u["expires_at"] <= soon)]
     named = [u for u in units if u["sku"].lower() in want]
     if named:
         return pick(named, need)

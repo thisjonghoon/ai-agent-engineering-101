@@ -132,6 +132,14 @@ async def main():
         check("an abandoned negotiation frees its unit", "u-x" not in held and "u-y" in held, sorted(held))
         os.environ["MARKET_DIR"] = str(md)
         seller_r3.MARKET_DIR = md
+        md2 = md / "dying"
+        md2.mkdir(exist_ok=True)
+        dying = dict(UNITS[3], unit="u-dying", expires_at=time.time() + 30)
+        (md2 / "inventory.json").write_text(json.dumps({"round": 3, "units": [dying]}), encoding="utf-8")
+        seller_r3.MARKET_DIR = md2
+        check("a unit within a minute of expiring is not offered (its settle would be refused)",
+              seller_r3.find_unit("I want Old Kimchi (F2)") is None, dying["expires_at"] - time.time())
+        seller_r3.MARKET_DIR = md
         near = dict(UNITS[2], expires_at=time.time() + (0.80 * 168 + 0.5) * 3600)   # half an hour above the A line
         check("no grade claim within an hour of a line", seller_r3.grade_now(near)[2] is None, seller_r3.grade_now(near))
 

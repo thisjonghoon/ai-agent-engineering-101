@@ -211,6 +211,8 @@ with contextlib.redirect_stdout(out):
 res = json.loads(out.getvalue().splitlines()[-1])
 q = {b["sku"]: b["qty"] for b in res["buy"]}
 case("a 400,000 SKU under DEAR_HOT (sku_score 53) is held at 2 units, a best seller (2,000) gets dear_depth", q.get("SC", 0) <= 2 and q.get("SX", 0) >= 3, q)
+# stock at its cap (69.5M of 70M) with 53.2M in 300k+ units, 65 of them non-hot: a non-hot 400,000 SKU is held at 1
+case("a 400,000 SKU under DEAR_HOT (sku_score 53) is held at 1 unit", q.get("SC", 0) == 1, q)
 # 11/6: a best seller (sku_score 1,500) planned 20 units (4.8M at cost) against 2.3M of goods room and was skipped every
 # window; now it is bought at its depth, trimmed to what the room affords
 restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=1_000_000, goods_frac=1.0, max_list=500_000, dear_depth=8)

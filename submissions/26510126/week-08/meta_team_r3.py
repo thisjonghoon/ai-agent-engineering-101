@@ -29,7 +29,9 @@ REVIEW = """You are a skeptical reviewer on a different model from the team (GPT
 proposals for an online shop and buyer agent in a market of AI agents, before their manager decides. For each
 proposal, say keep, trim or reject, and why, in one short sentence: look for changes judged on too little time or
 too few talks, results compared across cycles of different length, one team's evidence used for another's numbers,
-and changes that fight each other. The proposals:
+and changes that fight each other. A verdict pending on a different number is not by itself a reason to reject; the
+team is told to move boldly (we are outside the top 10), so trim rather than reject unless the change risks bankruptcy
+or breaks a market rule. The proposals:
 {proposals}
 Answer with JSON only: {{"sales": "...", "merch": "...", "buying": "...", "community": "...", "overall": "..."}}"""
 RESULT_KEYS = ("deals", "revenue", "profit", "settled", "margin")
@@ -107,8 +109,12 @@ Answer with JSON only: {{"proposal": {{"<key>": <value>, ...only the numbers you
 MANAGER = """{goal}
 
 You manage a team of four specialists who each proposed changes to their own numbers this cycle. Approve, trim or
-reject each proposal: keep the changes few so each can be judged a few cycles later, prefer evidence over hunches,
-and resolve conflicts between them (for example, sales cutting prices while merchandising buys dearer stock). Our
+reject each proposal. Be bold (the user, 11/6 18:2x: "more aggressive"): we sit outside the top 10 with 11 days left,
+so approve changes in different areas in the same cycle; code judges each number 2 h before vs after and names the
+others as confounds, so a verdict pending in one area is no reason to hold another, only to leave that one number
+alone. Lean hardest where the most points are lost (the standing below). Bankruptcy and the market's rules are the
+only hard limits, and the supervisor watches those. Resolve conflicts between proposals (for example, sales cutting
+prices while merchandising buys dearer stock). Our
 standing now (each part a percentile among shops or buyers):
 {standing}
 

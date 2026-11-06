@@ -44,13 +44,14 @@ HISTORY = HERE / "logs" / "strategies_r3.jsonl"
 KIT_LOG = HERE / "logs" / "market-kit.log"
 EVERY = 15 * 60
 # key: (low, high, largest change per cycle)
+# 11/6 18:2x user: 'more aggressive' -> stock_value step 10M, max_list up to 3M (step 300k)
 # 11/6 18:1x stock_value 50M -> 90M: the team called the 50M cap binding (17:05) while 40M sat in cash; Book counts stock
 # at cost, so stock only costs score when it ages or breaks, and the top shops turn 1.5B of revenue to our 0.38B
 BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min_margin": (0.02, 0.40, 0.04),
           "step": (0.2, 0.7, 0.1), "clear_hours": (2, 24, 4), "clear_frac": (0.3, 1.0, 0.1),
           "warranty_hours": (0, 6, 2), "max_turns": (3, 8, 1),
-          "reserve_cash": (700_000, 3_000_000, 250_000), "stock_value": (500_000, 90_000_000, 4_000_000),
-          "max_list": (30_000, 1_500_000, 200_000), "dear_first": (0.0, 3.0, 0.5), "min_shelf_hours": (24, 720, 48), "depth": (1, 6, 1),
+          "reserve_cash": (700_000, 3_000_000, 250_000), "stock_value": (500_000, 90_000_000, 10_000_000),
+          "max_list": (30_000, 3_000_000, 300_000), "dear_first": (0.0, 3.0, 0.5), "min_shelf_hours": (24, 720, 48), "depth": (1, 6, 1),
           "endgame_hours": (12, 24, 6), "endgame_frac": (1.0, 1.2, 0.1), "final_hours": (2, 12, 2),
           "final_frac": (0.3, 1.0, 0.1), "ask_frac_food": (0.70, 1.00, 0.05), "floor_frac_food": (0.45, 0.95, 0.05),
           "fresh_premium": (0.0, 0.2, 0.05), "spread_low": (0.5, 0.9, 0.1), "spread_high": (1.1, 1.5, 0.1),

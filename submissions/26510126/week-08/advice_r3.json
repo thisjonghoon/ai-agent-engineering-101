@@ -139,6 +139,10 @@
   {
    "t": 1793940503.445367,
    "text": "13:44 window: breadth lines bought 2 gaming PCs and an air purifier (3.2M) before the market's best seller, which got 1 unit. Fixed in restock_r3.py: best-selling 300k+ SKUs (sku_score >= DEAR_HOT 200) go first, breadth lines take no other 150k+ goods. After that the binding limit is stock_value: stock 37.9M of 40M (2.1M of spend) with 49M cash idle, while the market's 15 best-selling 300k+ SKUs sold 100-450 units each in 6 h. stock_value 40M -> 50M (the bound); goods_age_days 2 clears slow goods into cash. If the best sellers do not sell within a day, bring stock_value back down."
+  },
+  {
+   "t": 1793943349.083859,
+   "text": "Reverted 349ada8 (300k+ stock capped by our own past sales): reverted by the supervisor at 14:4x: it caps 300k+ stock at 4 h of OUR OWN 300k+ sales (2.2 an hour), but those were low because until 12:46 restock never bought the market's best sellers (a ranking and room bug, fixed 12:46-13:48); the market sold 4,379 units of 300k+ in 6 h, and the first window with the fix (14:02) sold 3 of them within 30 min. Judge dear stock by the market's settles, not by our past sales made under the bug."
   }
  ]
 }

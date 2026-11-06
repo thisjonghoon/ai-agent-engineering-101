@@ -222,6 +222,18 @@ with contextlib.redirect_stdout(out):
 q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
 case("a best-selling 400,000 SKU too dear for a full line is bought trimmed to the room (1M / 240k = 4), not skipped",
      q.get("SX") == 4, q)
+# 6 h: the market sold 334-341 units of each top 300k+ SKU while we held 5-8: depth is dear_depth x sku_score/DEAR_HOT, 1-3x
+restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=50_000_000, goods_frac=1.0, max_list=500_000, dear_depth=4)
+qs = {}
+for sc in (300, 600):                    # scores decay a little between runs, so the depth is checked as a range
+    (md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SX": sc}}),
+                                           encoding="utf-8")
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        restock_r3.main()
+    qs[sc] = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}.get("SX", 0)
+case("a 400,000 SKU at sku_score 300 is held about 6 deep, one at 600 about 12 (dear_depth 4 x score/DEAR_HOT)",
+     5 <= qs[300] <= 6 and 11 <= qs[600] <= 12, qs)
 restock_r3.strategy = real
 # goods listed 100-150k are held at 2 units like the 150-300k band (6 h: 100-300k sold 1.0 an hour, 46 h of stock)
 cat6 = {"SL": {"category": "G>low", "kind": "goods", "list_price": 120000, "name": "low"}}
@@ -294,6 +306,6 @@ with contextlib.redirect_stdout(out):
     restock_r3.main()
 q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
 case("the best-selling 300k+ SKU comes before an empty category's slow 1.2M goods (room 2.5M - 0.48M held)",
-     q.get("SB") == 6 and "SP" not in q, q)
+     q.get("SB") == 8 and "SP" not in q, q)    # depth 8 x 3 at score 1,500: the room (2.02M / 240k) binds
 restock_r3.strategy = real
 print(f"\n{sum(ok)}/{len(ok)} passed")

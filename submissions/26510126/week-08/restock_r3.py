@@ -55,7 +55,8 @@ CUSHION = CASH_FLOOR - BANKRUPT_LINE   # kept above inventory.json's bankrupt_li
 BASE_GAP = 60            # seconds between restock runs the depths are tuned for (agent.md, 11/3: every 60 s)
 WARRANTY_CUSHION = 300_000  # more while goods are sold with a warranty: a break refunds the whole price
 DEAR_HOT = 200            # sku_score (settles, half-life 12 h) of a 300k+ SKU held dear_depth deep: about 60 sold in 6 h
-EST_COST = 0.6          # expected cost as a share of list price before the grade is drawn (A 55-75, B 40-60, C 25-45)
+HOT_RESERVE = 0.08        # share of stock_value kept free in goods_room for hot 300k+ SKUs (see the cost check below)
+EST_COST = 0.6         # expected cost as a share of list price before the grade is drawn (A 55-75, B 40-60, C 25-45)
 
 
 def read_json(path, default):
@@ -258,7 +259,8 @@ def main():
                 and sku_score.get(p[1]["sku"], 0) >= DEAR_HOT]
         empty = [p for p in ranked if count[p[1]["category"]] == 0 and p not in best
                  and not is_dear(p[1])][:int(s.get("breadth_lines", 6))]
-        ranked = best + empty + [p for p in ranked if p not in best and p not in empty]
+        empty_skus = {p[1]["sku"] for p in empty}
+        ranked = best + empty +[p for p in ranked if p not in best and p not in empty]
         goods_room = s["goods_frac"] * s["stock_value"] - sum(u["cost"] for u in live if u.get("kind") == "goods")
         # 11/4 22:30, the last 6 h of settles: the top shops sold 470-575 units listed at 150,000 or more each (sofas,
         # beds, bedding; average ticket 600-820k) and 0.2-0.7 billion of revenue; we sold 25 (21M), buying at most
@@ -308,6 +310,12 @@ def main():
                     continue
             cost = unit * qty
             if cost > spend or (c["kind"] == "goods" and cost > goods_room):
+                continue
+            # stock at 78.95M of 80M, 62.8M of it 120 units of 300k+: non-hot 300k+ lines and empty-category breadth lines
+            # used the goods room first, and we held 0 of five top 300k+ SKUs (219, 196, 159, 159, 139 sold). They leave
+            # HOT_RESERVE of stock_value free; the hot lines (in `best`, first in order) are not held to it
+            if c["kind"] == "goods" and (c["sku"] in empty_skus or (c["list_price"] >= 300_000 and sku_score.get(c["sku"], 0) < DEAR_HOT)) \
+                    and goods_room - cost < HOT_RESERVE * s["stock_value"]:
                 continue
             if c["kind"] == "goods":
                 goods_room -= cost

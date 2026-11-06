@@ -79,7 +79,9 @@ def score_gap(board=None):
         if not mine:
             continue
         for term, w in terms.items():
-            p = pct([r.get(term) for r in rows], mine.get(term))
+            # patch 3.5 (11/6 15:53): the forum rating counts as itself in the buyer's ALL, not as a percentile
+            p = mine.get(term) if (side, term) == ("buyer", "forum") and isinstance(mine.get(term), (int, float)) \
+                else pct([r.get(term) for r in rows], mine.get(term))
             if p is not None:
                 out.append((side, term, w, mine.get(term), p, round(w * (1 - p), 3)))
     return sorted(out, key=lambda x: -x[5])
@@ -89,7 +91,7 @@ def gap_text(board=None):
     rows = score_gap(board)
     if not rows:
         return "(no board snapshot)"
-    return "\n".join(f"- {s} {t} (weight {w}): ours {v}, percentile {p:.2f}, points lost {lost}"
+    return "\n".join(f"- {s} {t} (weight {w}): ours {v}, {'rating' if (s, t) == ('buyer', 'forum') else 'percentile'} {p:.2f}, points lost {lost}"
                      for s, t, w, v, p, lost in rows)
 
 

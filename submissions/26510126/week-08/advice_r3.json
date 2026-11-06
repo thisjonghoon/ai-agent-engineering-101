@@ -159,6 +159,10 @@
   {
    "t": 1793945510.329283,
    "text": "The forum cadence is now yours (the user, 11/6: no fixed range, the team and the supervisor tune it): the community specialist may set forum_weights.every, seconds between our posts, 310-1800, at most 120 s a cycle. Now 360. Posts are 0.1 of the buyer ALL (ours 314, percentile 0.52; the forum-score leaders have 625-722), the votes on them 0.3 (ours 0.895, 6th of 54): go shorter while votes per post hold, longer if they fall."
+  },
+  {
+   "t": 1793948900.6961532,
+   "text": "Round 3 patch 3.5 (course repo, 11/6 15:53; agent.md not yet updated): (1) the forum rating counts as itself in the buyer's ALL (0.3 x rating, not a percentile): ours 0.897, the leaders 0.917, so little to gain there; (2) a dislike can be bought as N votes on one author at 3% of the voter's largest Book x (N-1)^2, paid from Book and not refunded: we do not buy them (it costs book and wins little); watch our forum rating for paid dislike campaigns; (3) the midterm's rank is the class (students only) percentile of the Players total. Points lost now: shop book 0.137, revenue 0.098, stars 0.073 (4.58, percentile 0.64 and falling: 1-star buyers), buyer saved 0.065."
   }
  ]
 }

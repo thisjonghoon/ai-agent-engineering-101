@@ -40,15 +40,15 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 MD = Path(os.environ.get("MARKET_DIR") or HERE / ".market")
 MEMORY = HERE / "memory.jsonl"
-EVERY = 310          # seconds between any two posts of ours: the market allows one per 5 minutes, but the user
+EVERY = 360          # seconds between any two posts of ours: the market allows one per 5 minutes, but the user
                      # (11/3 21:35) said no flooding; others post every 3-5 minutes. 11/4 17:05: 1200 -> 600 with the
                      # user's approval, since posts count is a tenth of the buyer's ALL (59 posts against 150-230 at the top).
-                     # 11/6 15:0x: 600 -> 310, the market's limit plus 10 s for the kit's send loop, with the user's
-                     # approval (314 posts, percentile 0.52, against 350-450 at the top)
+                     # 11/6 15:0x: 600 -> 360 (six minutes) with the user's approval (314 posts, percentile 0.52,
+                     # against 350-450 at the top); shorter toward the market's 5 minutes if posts still fall short
 DIGEST_EVERY = 3600  # a ledger claim check when our own deals give nothing new for an hour
 MIN_CLAIMS = 10
 MAX_REFS = 10
-FORMAT_EVERY = 310   # seconds before a drawn kind may follow when our own deals give nothing new
+FORMAT_EVERY = 360   # seconds before a drawn kind may follow when our own deals give nothing new
 PLAN = HERE / "forum_plan_r3.json"
 VOTES = Path(os.environ.get("FORUM_VOTES") or HERE / "logs" / "forum_votes_r3.json")   # votes per post, kept after forum.json (the last 100 posts) drops them
 STYLE = os.environ.get("FORUM_STYLE", "1") != "0"     # tests set FORUM_STYLE=0: no model call

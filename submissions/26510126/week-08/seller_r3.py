@@ -366,6 +366,22 @@ class Seller(AgentExecutor):
         # 30 minutes and was refused at checkout again each time
         self.held, self.stuck_once = set(), set()
 
+    def agreed(self, unit, now=None):
+        """Record a receipt signed for `unit`; returns a STUCK log line when the unit is set aside. A unit set aside
+        once is held for good on its next agreement: its refusals came 40-80 min apart, so two within STUCK_SECS never
+        added up again and it was refused 4 more times (u-3f62d60535ba, 11/6 18:36-21:22); if that agreement does
+        settle, the unit leaves the stock and holding it costs nothing."""
+        now = now or time.time()
+        self.sold[unit] = now
+        self.dealt.setdefault(unit, []).append(now)
+        if unit in self.stuck_once and unit not in self.held:
+            self.held.add(unit)
+            return f"STUCK {unit} stuck again: left out until a restart"
+        if len(self.dealt[unit]) == STUCK_AFTER and unit not in self.stuck_once:
+            self.stuck_once.add(unit)
+            return f"STUCK {unit} agreed {STUCK_AFTER} times and still offered: left out for {STUCK_SECS // 60} min"
+        return None
+
     def taken(self):
         now = time.time()
         self.sold = {k: t for k, t in self.sold.items() if now - t < RECENT_SOLD}
@@ -454,15 +470,9 @@ class Seller(AgentExecutor):
             await up.add_artifact(parts=[new_data_part(receipt)], name="receipt")
             await up.complete(say(f"Deal: {u['name']} at {price}."))
             if u.get("unit"):
-                self.sold[u["unit"]] = time.time()
-                self.dealt.setdefault(u["unit"], []).append(time.time())
-                if len(self.dealt[u["unit"]]) == STUCK_AFTER:
-                    if u["unit"] in self.stuck_once:
-                        self.held.add(u["unit"])
-                        log(f"STUCK {u['unit']} stuck again: left out until a restart")
-                    else:
-                        self.stuck_once.add(u["unit"])
-                        log(f"STUCK {u['unit']} agreed {STUCK_AFTER} times and still offered: left out for {STUCK_SECS // 60} min")
+                note = self.agreed(u["unit"])
+                if note:
+                    log(note)
             ab_end(task.id, deal, "deal", (price - u["cost"]) / u["list_price"] if u.get("list_price") else 0.0, price)
             log(f"DEAL {task.id[:8]} {u['sku']} at {price} (cost {u['cost']}, list {u['list_price']}, turns {deal['turns']})")
             del self.open[task.id]

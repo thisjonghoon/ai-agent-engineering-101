@@ -122,6 +122,13 @@ async def main():
         sel2.sold["u-recent"] = time.time() - 300
         check("a unit agreed on twice in 30 min and still in stock, or sold in the last 10 minutes, is not offered; after 30 min it is again",
               {"u-stuck", "u-recent", "u-twice"} <= sel2.taken() and "u-old" not in sel2.taken(), sorted(sel2.taken()))
+        sel3, t0 = seller_r3.Seller(), time.time() - 7200
+        first = [sel3.agreed("u-s", t0), sel3.agreed("u-s", t0 + 60)]
+        sel3.dealt["u-s"] = []                          # its 30 minutes ran out, as they do
+        again = sel3.agreed("u-s", t0 + 4000)
+        check("a unit set aside once is held for good on its next single agreement",
+              first[0] is None and "30 min" in (first[1] or "") and "until a restart" in (again or "") and "u-s" in sel3.taken(),
+              (first, again, sorted(sel3.taken())))
         check("an abandoned negotiation frees its unit", "u-x" not in held and "u-y" in held, sorted(held))
         os.environ["MARKET_DIR"] = str(md)
         seller_r3.MARKET_DIR = md

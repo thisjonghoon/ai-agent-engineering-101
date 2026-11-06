@@ -417,7 +417,7 @@ def main():
                                          max_raise=0.4))
     harness.ask = scripted
     case("an ask 3% over our offer and within budget is taken", got.get("state") == "TASK_STATE_COMPLETED"
-         and got["offers"] == [27600, 28500], str((got.get("state"), got.get("offers"), got.get("asks"))))
+         and got["offers"][-1] == got["asks"][-1] == 27075, str((got.get("state"), got.get("offers"), got.get("asks"))))
 
     # 19. a shop that ended 3+ of our talks in rejection after two asks gets its second ask taken (11/4: psyoung82, 92 of
     # 109 talks ended after two asks and only 10 were deals, all at its second ask)
@@ -477,6 +477,18 @@ def main():
     harness.ask = scripted
     case("a shop holding an ask above our cap through its first two counters is walked away from after two model calls",
          got.get("state") == "walked" and len(calls) == 2 and len(got["asks"]) == 3, str((got.get("state"), len(calls), got.get("asks"))))
+
+    # 23. a first offer above 0.88 of a first ask within our cap is cut to 0.88 (first 25 deals: opened 0.93-0.95, closed 0.97-0.99)
+    async def high_open(prompt, **kw):
+        ask = int(re.search(r"The shop now asks (\d+)", prompt).group(1))
+        return {"action": "offer", "price": int(ask * 0.95)}
+    base_o, _ = fake_shop("Opener", 0.5)
+    harness.ask = high_open
+    got = asyncio.run(buyer_r3.buyer.shop(base_o, "포기김치 5kg", 40000, opening="I want to buy 포기김치 5kg (F1)",
+                                         max_raise=0.4, order_id="o-open"))
+    harness.ask = scripted
+    case("a first offer of 0.95 of a first ask within our cap is cut to 0.88",
+         got["offers"][0] == 26400, str((got.get("state"), got.get("offers"), got.get("asks"))))
 
     # 19. a buyer number on trial: the orders whose hash falls in arm B run its new value, the rest the plan's
     buyer_r3.PLAN.write_text(json.dumps({"CAP": 0.85}))

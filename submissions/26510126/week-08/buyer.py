@@ -156,6 +156,7 @@ FIRM_GAP = 0.05      # take an ask the shop held twice when it is within this sh
 # 86 talks ended with the shop rejecting us while its ask was inside our limit, at a median 4.6% above our last offer
 # (0.79 of list, a 21% surplus left on the table for nothing); 0 turns it off
 CLOSE_GAP = 0.05
+FIRST_OFFER_MAX = 0.88   # the most our first offer is of a first ask that is within our cap
 
 
 async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFFERS, opening=None, screen=None,
@@ -276,6 +277,13 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
                     if offer > cap:
                         log("GUARD", f"offer {offer} jumps more than {max_raise:.0%} of the gap {last_offer}-{ask}, offering {cap}")
                         offer = cap
+
+            # first 25 deals in memory: opened at 0.93-0.95 of the first ask closed at 0.97-0.99 of it, opened at 0.6-0.75
+            # closed at 0.76-0.85; so a first offer is held to 0.88 of a first ask that is already within our cap
+            if last_offer is None and ask is not None and ask <= budget and offer > int(FIRST_OFFER_MAX * ask) \
+                    and code_ab_r3.on("9e881220c416", order_id):
+                log("GUARD", f"first offer {offer} above {FIRST_OFFER_MAX:.0%} of the ask {ask}, offering {int(FIRST_OFFER_MAX * ask)}")
+                offer = int(FIRST_OFFER_MAX * ask)
 
             history.append(f"You offered {offer}.")
             last_offer = offer

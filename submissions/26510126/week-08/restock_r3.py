@@ -55,8 +55,7 @@ CUSHION = CASH_FLOOR - BANKRUPT_LINE   # kept above inventory.json's bankrupt_li
 BASE_GAP = 60            # seconds between restock runs the depths are tuned for (agent.md, 11/3: every 60 s)
 WARRANTY_CUSHION = 300_000  # more while goods are sold with a warranty: a break refunds the whole price
 DEAR_HOT = 200            # sku_score (settles, half-life 12 h) of a 300k+ SKU held dear_depth deep: about 60 sold in 6 h
-GOODS_RESERVE = 0.2      # share of stock_value of goods room only the best-selling 300k+ lines (DEAR_HOT) may spend
-EST_COST = 0.6         # expected cost as a share of list price before the grade is drawn (A 55-75, B 40-60, C 25-45)
+EST_COST = 0.6          # expected cost as a share of list price before the grade is drawn (A 55-75, B 40-60, C 25-45)
 
 
 def read_json(path, default):
@@ -297,17 +296,12 @@ def main():
                 continue
             qty = min(int(qty), 20)    # the market takes 1-20 units a line: 24 was refused (400) 18 times on 11/4
             unit = c["list_price"] * EST_COST * surge.get(c["sku"], 1.0)
-            # 11/6: goods held 48.1M of a 50M cap and the room was nearly empty, so the best sellers (0 of 5 held, 0.6% share
-            # of 650 an hour of 300k+) got 1 unit while 30-100k lines (319 units, 20 h of stock) refilled; the last
-            # GOODS_RESERVE of the room is left for the best-selling 300k+ lines, so freed room builds up for them
-            room = goods_room - (0 if c.get("kind") == "goods" and c["list_price"] >= 300_000
-                                 and sku_score.get(c["sku"], 0) >= DEAR_HOT else GOODS_RESERVE * s["stock_value"])
             if c.get("kind") == "goods" and c["list_price"] >= 150_000:
-                qty = min(qty, int(min(spend, room) // unit))     # what the room affords, not nothing
+                qty = min(qty, int(min(spend, goods_room) // unit))     # what the room affords, not nothing
                 if qty <= 0:
                     continue
             cost = unit * qty
-            if cost > spend or (c["kind"] == "goods" and cost > room):
+            if cost > spend or (c["kind"] == "goods" and cost > goods_room):
                 continue
             if c["kind"] == "goods":
                 goods_room -= cost

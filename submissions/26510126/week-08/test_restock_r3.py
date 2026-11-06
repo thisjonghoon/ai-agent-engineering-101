@@ -211,6 +211,17 @@ with contextlib.redirect_stdout(out):
 res = json.loads(out.getvalue().splitlines()[-1])
 q = {b["sku"]: b["qty"] for b in res["buy"]}
 case("a 400,000 SKU with sku_score under 6 is held at 2 units, a selling one gets dear_depth", q.get("SC", 0) <= 2 and q.get("SX", 0) >= 3, q)
+# 11/6: a best seller (sku_score 1,500) planned 20 units (4.8M at cost) against 2.3M of goods room and was skipped every
+# window; now it is bought at its depth, trimmed to what the room affords
+restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=1_000_000, goods_frac=1.0, max_list=500_000, dear_depth=8)
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SX": 1500}}),
+                                       encoding="utf-8")
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
+case("a best-selling 400,000 SKU too dear for a full line is bought trimmed to the room (1M / 240k = 4), not skipped",
+     q.get("SX") == 4, q)
 restock_r3.strategy = real
 # goods listed 100-150k are held at 2 units like the 150-300k band (6 h: 100-300k sold 1.0 an hour, 46 h of stock)
 cat6 = {"SL": {"category": "G>low", "kind": "goods", "list_price": 120000, "name": "low"}}

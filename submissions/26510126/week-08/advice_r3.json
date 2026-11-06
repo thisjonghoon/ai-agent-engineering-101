@@ -127,6 +127,10 @@
   {
    "t": 1793926940.848175,
    "text": "Undid dear_first to 3.0. 10:01 merchandising lowered dear_first 3.0 -> 2.5 citing my 08:0x note (one shop number a cycle toward revenue and book). That goes the other way: dear_first ranks 150k+ goods first in each supply window, and 300k+ furniture is most of our revenue (84-95k margin a unit), so less priority there means less revenue. It also stacked a third change on max_list (due 10:25) and sku_cap (due 10:41), which the same cycle's sales rejected as confounding. Back to 3.0. My note meant: move a number that adds revenue, one at a time, once the pending verdicts are in."
+  },
+  {
+   "t": 1793936779.5272489,
+   "text": "Market ledger 06:40-12:40: 4,379 units of 300k+ settled (4.31B won) across 54 shops; we sold 6. We held none of the 12 best sellers (지누스 그린티 매트리스 429 sold, 자코모 소파 447, 에이스침대 337, 시몬스 299...) and 24 units of a SKU that sold 11. Two causes in restock_r3.py: (1) priorities had grown to the thousands once settles fed sku_score, so dear_first's bonus (at most +9) changed nothing and cheap lines took the window; (2) a best seller planned 20 units (2.5-28M at cost), more than the goods room, and was skipped. Fixed: dear priority is a factor (1 + dear), dear lines are bought at their depth trimmed to the room. And the room itself: goods held 23.3M of 25.6M (goods_frac 0.8 x 32M) with 60M cash idle, so stock_value 32M -> 40M (book counts stock at cost). Watch 300k+ units bought per window and sold an hour; if the best sellers sell, keep stock_value up; the old slow dear stock (Gf918c335 x24) can clear through the aged-goods rule."
   }
  ]
 }

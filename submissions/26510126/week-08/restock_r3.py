@@ -241,7 +241,10 @@ def main():
         # what gets bought: dear goods first (11/4 13:04: three mattresses bought one each sold within minutes, the
         # top shop made 57M from furniture at 459,240 a sale, while pillows, kimchi and water took the early lines)
         dear = lambda c: s.get("dear_first", 1.0) * min(3.0, c["list_price"] / 150_000) if c.get("kind") == "goods" else 0
-        ranked = sorted(plans.values(), key=lambda p: (-(p[0] + dear(p[1])), -p[1]["list_price"]))
+        # a factor, not a bonus: once the market's settles fed sku_score (11/6: kimchi 2,400, water 1,300, the top mattress
+        # 1,500) the priorities ran into the thousands and a bonus of at most 9 changed nothing, so cheap lines took every
+        # window while 4,379 units of 300k+ settled in 6 h and we held none of the 12 best sellers
+        ranked = sorted(plans.values(), key=lambda p: (-(p[0] * (1 + dear(p[1]))), -p[1]["list_price"]))
         # breadth first (11/5 10:00): buyers only visit shops that hold the ordered category, and the depth and dear-first
         # weights had crowded it out: 291 units in 8 of 140 categories, four blankets 22-24 deep, talks with us down from
         # 350 to 250 an hour while the market's settles rose. The first `breadth_lines` lines go to categories we hold
@@ -263,7 +266,10 @@ def main():
                 # full depth only for a 300k+ SKU that keeps selling (sku_score 6 or more, the cheap-goods hot bar), else 2
                 full = c["list_price"] >= 300_000 and sku_score.get(c["sku"], 0) >= 6
                 depth = int(s.get("dear_depth", 4)) if full else min(2, int(s.get("dear_depth", 4)))
-                qty = max(qty, depth - held[c["sku"]])
+                # the depth, not the SKU plan's qty: on 11/6 the market's best sellers (sku_score 600-1,500) planned 20
+                # units a line, 2.5-28M at cost, more than the goods room left, so each was skipped and cheap lines took
+                # the window; 4,379 units of 300k+ settled market-wide in 6 h, we held none of the top 12 and sold 6
+                qty = depth - held[c["sku"]]
             else:                     # a cheap SKU no deeper than sku_cap: 22-24 of one blanket sat in stock on 11/5
                 # 6 h: the 100-300k band sold 1.0 an hour with 46 units held (46 h of stock) while 300k+ sold 6.0 an hour
                 # at 95,294 a unit: goods listed 100-150k stay at 2 too, so room and cash go to 300k+
@@ -277,7 +283,12 @@ def main():
             if qty <= 0:
                 continue
             qty = min(int(qty), 20)    # the market takes 1-20 units a line: 24 was refused (400) 18 times on 11/4
-            cost = c["list_price"] * EST_COST * surge.get(c["sku"], 1.0) * qty
+            unit = c["list_price"] * EST_COST * surge.get(c["sku"], 1.0)
+            if c.get("kind") == "goods" and c["list_price"] >= 150_000:
+                qty = min(qty, int(min(spend, goods_room) // unit))     # what the room affords, not nothing
+                if qty <= 0:
+                    continue
+            cost = unit * qty
             if cost > spend or (c["kind"] == "goods" and cost > goods_room):
                 continue
             if c["kind"] == "goods":

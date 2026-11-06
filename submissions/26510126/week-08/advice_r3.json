@@ -147,6 +147,10 @@
   {
    "t": 1793944750.244483,
    "text": "Stars (0.2 of the shop's ALL): ours 4.60, percentile 0.69 at 14:56 (0.85 earlier), 0.062 points lost. In the ledger's last 6 h, 557 paid deals with us were rated: 305 five-star, 113 four, 119 one-star. The one-stars come from a few buyers who give 1 star on every deal: shaun0927-labbuyer 82 deals all 1 star, totato2203-r3 30, cheapest-in-town 15 (no stars), shaun0927 5, q00 2. Their reviews read 'grade B settled at ledger #...', not complaints. Ideas for the seller (code, behind an A/B): ask such buyers a higher price or a shorter talk, since their deals add revenue but cost stars; weigh the revenue term (0.3) against stars (0.2) before refusing anyone."
+  },
+  {
+   "t": 1793944910.2079391,
+   "text": "Forum cadence: the user approved one post every 5 minutes (EVERY 600 -> 310 s, 11/6 15:0x; posts 314, percentile 0.52, the top has 350-450), and said that if the votes on our posts get worse, 6-8 minutes (360-480 s) is fine. So: watch forum_votes_post and the board's forum term (0.895 now); if they fall clearly after the change, step EVERY to 360, then 480."
   }
  ]
 }

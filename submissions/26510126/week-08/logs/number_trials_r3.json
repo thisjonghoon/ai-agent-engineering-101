@@ -1,36 +1,12 @@
 [
  {
-  "t": 1793936779.5265641,
+  "t": 1793949357.285706,
   "changes": {
-   "stock_value": [
-    32000000,
-    40000000
+   "ask_frac": [
+    0.9,
+    0.85
    ]
   },
-  "reason": "supervisor, with the restock fix"
- },
- {
-  "t": 1793939251.2468438,
-  "changes": {
-   "goods_frac": [
-    0.8,
-    0.9
-   ],
-   "goods_age_days": [
-    5,
-    2
-   ]
-  },
-  "reason": "supervisor"
- },
- {
-  "t": 1793940503.444834,
-  "changes": {
-   "stock_value": [
-    40000000,
-    50000000
-   ]
-  },
-  "reason": "supervisor"
+  "reason": "Sales: trimmed to the goods ask_frac 0.85 test, and clear_hours is rejected so one change can be judged cleanly, with min_margin still protecting cost. Merchandising: rejected, because the stock_value rises to 40M and 50M coincided with margin per hour up 40% to 167%, so cutting back is a hunch agai"
  }
 ]

@@ -151,6 +151,10 @@
   {
    "t": 1793944910.2079391,
    "text": "Forum cadence: the user approved one post every 5 minutes (EVERY 600 -> 310 s, 11/6 15:0x; posts 314, percentile 0.52, the top has 350-450), and said that if the votes on our posts get worse, 6-8 minutes (360-480 s) is fine. So: watch forum_votes_post and the board's forum term (0.895 now); if they fall clearly after the change, step EVERY to 360, then 480."
+  },
+  {
+   "t": 1793945178.671402,
+   "text": "Forum cadence correction: the user chose six minutes (EVERY 360 s), and shorter toward the market limit of 5 minutes if posts still fall short (the top posters have 600-720 posts against our 314)."
   }
  ]
 }

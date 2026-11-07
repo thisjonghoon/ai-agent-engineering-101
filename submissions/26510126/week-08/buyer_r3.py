@@ -318,12 +318,15 @@ def candidates(order, shops, cat, memory, claims):
 
 def accept_policy(order, receipt=None, lp=None):
     """What the kit checks before paying (agent.md: cert, min_hours_left, grades, warranty_hours). Goods: A or B, and
-    C when the receipt carries a warranty of C_WARRANTY hours or its price is at most C_CAP of list."""
+    C when the receipt carries a warranty of C_WARRANTY hours (or, off trial, its price is at most C_CAP of list)."""
     if order.get("kind") == "food":
         return {"cert": True, "min_hours_left": round((order.get("use_within_hours") or 0) * FOOD_MARGIN, 1)}
     r = receipt if isinstance(receipt, dict) else {}
     price = buyer.as_int(r.get("price"))
-    if (r.get("warranty_hours") or 0) >= C_WARRANTY or (lp and price is not None and price <= C_CAP * lp):
+    # 11/7: C broke 15.7% of units (A 1.5%); a C at 0.65 of list is worth ~0.14 per deal, half the 0.279 mean, so only a warranty
+    warrantied = (r.get("warranty_hours") or 0) >= C_WARRANTY
+    cheap = lp and price is not None and price <= C_CAP * lp
+    if warrantied or (cheap and not code_ab_r3.on("ba9fd31c6b7c", order.get("order"))):
         return {"cert": True, "grades": GOOD_GRADES + ["C"]}
     return {"cert": True, "grades": GOOD_GRADES}
 
@@ -346,6 +349,8 @@ def screen_for(order, lp=None):
             w = WARRANTY_SAID.search(text or "")
             if w and float(w.group(1)) >= C_WARRANTY:
                 return None
+            if code_ab_r3.on("ba9fd31c6b7c", order.get("order")):
+                return f"the shop says grade C with no {C_WARRANTY} h warranty, we pay only for A/B"
             return {"cap": int(C_CAP * lp), "why": f"the shop says grade C with no {C_WARRANTY} h warranty"}
         if grade and pol.get("grades") and grade not in pol["grades"]:
             return f"the shop says grade {grade}, we pay only for {'/'.join(pol['grades'])}"

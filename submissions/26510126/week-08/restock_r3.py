@@ -299,9 +299,12 @@ def main():
                 # the same bar as DEAR_HOT: at 6 every SKU passed once settles fed sku_score, and on 11/6 goods at 30-100k
                 # grew from 138 to 320 units (10.5M, 20 h of stock at 15.7 sold an hour) while the stock cap was full
                 hot = c.get("kind") == "goods" and c["list_price"] < 100_000 and sku_score.get(c["sku"], 0) >= DEAR_HOT
+                # 1h: <30k settled 1586 and 30-100k 631 an hour, we held 4.3% and 2.3% (7.5 h and 11 h of stock) with 26M idle:
+                # the multiplier grows with sku_score from 2x to 3x, as 300k+ depth does
+                mult = min(3.0, max(2.0, sku_score.get(c["sku"], 0) / DEAR_HOT)) if hot else 1
                 if hot:
-                    qty = held[c["sku"]] + 2 * qty      # twice the planned depth, held units included
-                qty = min(qty, min(cap, int(s.get("sku_cap", 8))) * (2 if hot else 1) - held[c["sku"]])
+                    qty = held[c["sku"]] + int(mult * qty)      # the planned depth times mult, held units included
+                qty = min(qty, int(min(cap, int(s.get("sku_cap", 8))) * mult) - held[c["sku"]])
             if qty <= 0:
                 continue
             qty = min(int(qty), 20)    # the market takes 1-20 units a line: 24 was refused (400) 18 times on 11/4

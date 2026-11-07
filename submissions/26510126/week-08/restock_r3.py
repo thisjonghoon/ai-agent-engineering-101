@@ -32,6 +32,7 @@ import json
 import math
 import os
 import re
+import statistics
 import sys
 import time
 from collections import Counter, defaultdict
@@ -47,7 +48,7 @@ STRATEGY = Path(os.environ.get("STRATEGY_FILE") or HERE / "strategy_r3.json")   
 DEFAULTS = {"dear_first": 1.0, "reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
             "goods_frac": 0.35, "food_first": 0.5,
             "depth": 3, "half_life_hours": 12, "stop_hours": 36, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540,
-            "window_depth": 2.0, "order_weight": 1.0, "surge_max": 1.15,
+            "window_depth": 2.0, "order_weight": 1.0, "surge_max": 1.15, "surge_margin": 0.05,
             "dear_depth": 4, "lines": 18, "breadth_lines": 6, "sku_cap": 8}    # 2026-11-17 23:59 KST
 BANKRUPT_LINE = 500_000  # below this a shop may file, and the 5,000,000 it gets comes off profit
 CASH_FLOOR = 700_000     # code's own floor under any reserve_cash the meta-harness sets: the line plus a cushion
@@ -55,7 +56,8 @@ CUSHION = CASH_FLOOR - BANKRUPT_LINE   # kept above inventory.json's bankrupt_li
 BASE_GAP = 60            # seconds between restock runs the depths are tuned for (agent.md, 11/3: every 60 s)
 WARRANTY_CUSHION = 300_000  # more while goods are sold with a warranty: a break refunds the whole price
 DEAR_HOT = 200            # sku_score (settles, half-life 12 h) of a 300k+ SKU held dear_depth deep: about 60 sold in 6 h
-EST_COST = 0.6          # expected cost as a share of list price before the grade is drawn (A 55-75, B 40-60, C 25-45)
+PAID_KEEP, PAID_MIN = 25, 5   # settles per 300k+ SKU kept for its median paid share of list, and the least that count
+EST_COST = 0.6         # expected cost as a share of list price before the grade is drawn (A 55-75, B 40-60, C 25-45)
 
 
 def read_json(path, default):
@@ -157,6 +159,11 @@ def main():
         if cat:
             score[cat] += 1
             sku_score[sku] += 1
+            lp = catalog[sku].get("list_price")
+            if lp and lp >= 300_000 and isinstance(e["data"].get("amount"), (int, float)):
+                paid = st.setdefault("paid", {}).setdefault(sku, [])
+                paid.append(round(e["data"]["amount"] / lp, 3))
+                del paid[:-PAID_KEEP]
     units = inv.get("units", [])
     have = {u["unit"]: u for u in units}
     sold = [u for u in st.get("seen", []) if u["unit"] not in have and u.get("grade") != "expired"
@@ -197,7 +204,12 @@ def main():
         # 1.47x costs 81-110% of list, more than a buyer pays. SKUs above surge_max (the team's knob) are left out, so
         # the plan takes the next SKU of the category instead, and the rest are priced at their surged cost
         surge = {x["sku"]: x.get("factor", 1.0) for x in inv.get("surge") or [] if isinstance(x, dict) and x.get("sku")}
-        surged = {k for k, f in surge.items() if f > s.get("surge_max", 1.15)}
+        # a 300k+ SKU with PAID_MIN settles is also left out once its surged cost passes the median paid share minus
+        # surge_margin: 51.7M of 62.4M stock was 300k+ sold at 0.75 of list against 0.68 cost, 18 SKUs were surged, and a
+        # flat 1.15 x 0.6 cost about what the 0.70-0.75 median paid, so dear stock goes to SKUs that settle with a margin
+        paid = {k: statistics.median(v) for k, v in st.get("paid", {}).items() if len(v) >= PAID_MIN}
+        surged = {k for k, f in surge.items() if f > s.get("surge_max", 1.15)
+                  or (f > 1 and k in paid and EST_COST * f > paid[k] - s["surge_margin"])}
         catalog = {k: v for k, v in catalog.items() if k not in surged}
         count, held = Counter(u["category"] for u in live), Counter(u["sku"] for u in live)
         by_cat = defaultdict(list)

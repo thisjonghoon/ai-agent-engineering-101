@@ -221,13 +221,15 @@ def number_changes(n=6):
     saw were other changes."""
     rows = [x for x in jl(CODE_CHANGES) if x.get("source") == "inner loop (number)"][-n:]
     wait = read_json(NUMBER_TRIALS, [])
-    out = [f"- {time.strftime('%m/%d %H:%M', time.localtime(x.get('t', 0)))} {x.get('change')}: {str(x.get('verdict'))[:220]}"
-           for x in rows]
-    out += [f"- {time.strftime('%m/%d %H:%M', time.localtime(x['t']))} "
+    # 11/7 the team still called judged numbers "pending" for hours (ask_frac judged 15:49, "pending" at 16:50): a judged
+    # row whose verdict names confounds is a verdict all the same, so each row now says which it is
+    out = [f"- JUDGED (decide now; confounds do not make it pending) {time.strftime('%m/%d %H:%M', time.localtime(x.get('t', 0)))} "
+           f"{x.get('change')}: {str(x.get('verdict'))[:220]}" for x in rows]
+    out += [f"- PENDING {time.strftime('%m/%d %H:%M', time.localtime(x['t']))} "
             f"{', '.join(f'{k} {v[0]} -> {v[1]}' for k, v in x['changes'].items())}: verdict due "
             f"{time.strftime('%H:%M', time.localtime(x['t'] + NUMBER_CHECK))}" for x in wait]
-    return ("\nYour number changes, judged by code (2 h before vs 2 h after) and still waiting:\n" + "\n".join(out)) \
-        if out else ""
+    return ("\nYour number changes, judged by code (2 h before vs 2 h after); only the PENDING rows still wait:\n"
+            + "\n".join(out)) if out else ""
 
 
 CODE_CHANGES = HERE / "logs" / "code_changes_r3.jsonl"

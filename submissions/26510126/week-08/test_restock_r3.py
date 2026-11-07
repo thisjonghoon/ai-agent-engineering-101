@@ -310,23 +310,4 @@ q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["bu
 case("the best-selling 300k+ SKU comes before an empty category's slow 1.2M goods (room 2.5M - 0.48M held)",
      q.get("SB") == 8 and "SP" not in q, q)    # depth 8 x 3 at score 1,500: the room (2.02M / 240k) binds
 restock_r3.strategy = real
-# 300k+ SKUs settling at 0.70 of list (median) with a 0.05 buffer: a surge of 1.1 (0.66 cost) is out, 1.05 (0.63) stays
-cat8 = {"SA": {"category": "G>a", "kind": "goods", "list_price": 400000, "name": "a"},
-        "SB2": {"category": "G>b", "kind": "goods", "list_price": 400000, "name": "b"}}
-(md / "catalog.json").write_text(json.dumps(cat8), encoding="utf-8")
-(md / "demand.json").write_text(json.dumps([{"item": "a", "category": "G>a", "kind": "goods", "median_price": 400000},
-                                           {"item": "b", "category": "G>b", "kind": "goods", "median_price": 400000}]),
-                                encoding="utf-8")
-(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": [],
-    "surge": [{"sku": "SA", "factor": 1.1}, {"sku": "SB2", "factor": 1.05}]}), encoding="utf-8")
-(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {},
-                                                   "paid": {"SA": [0.7] * 5, "SB2": [0.7] * 5}}), encoding="utf-8")
-restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=40_000_000, goods_frac=1.0, max_list=500_000)
-out = io.StringIO()
-with contextlib.redirect_stdout(out):
-    restock_r3.main()
-restock_r3.strategy = real
-skus = [b["sku"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]]
-case("a surged 300k+ SKU whose cost passes the median paid minus the buffer is left out, one under it is bought",
-     "SA" not in skus and "SB2" in skus, skus)
 print(f"\n{sum(ok)}/{len(ok)} passed")

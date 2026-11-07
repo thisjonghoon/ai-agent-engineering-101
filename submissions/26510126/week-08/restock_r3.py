@@ -204,6 +204,7 @@ def main():
         surged = {k for k, f in surge.items() if f > s.get("surge_max", 1.15)}
         catalog = {k: v for k, v in catalog.items() if k not in surged}
         count, held = Counter(u["category"] for u in live), Counter(u["sku"] for u in live)
+        slow_held = sum(1 for u in live if slow_dead(u))
         by_cat = defaultdict(list)
         for sku, c in catalog.items():
             by_cat[c["category"]].append(dict(c, sku=sku))
@@ -284,7 +285,9 @@ def main():
                 heat = min(3.0, max(1.0, sku_score.get(c["sku"], 0) / DEAR_HOT))
                 # stock sat at its cap (69.5M of 70M) with 53.2M in 107 units of 300k+, about 65 of them non-hot SKUs bought at
                 # 2 while 8 best sellers sold 148-359 units each: a non-hot 300k+ SKU gets 1, the room goes to the hot ones
-                slow = 1 if c["list_price"] >= 300_000 else 2
+                # and none once we hold 40 slow 300k+ units: 131 units of 300k+ (62.5M) sold 5.2 an hour, 1.0% of the market's
+                # 532, and 323 units sat unsold over a day, while the lines went to a fresh slow SKU instead of the hot ones
+                slow = (0 if slow_held >= 40 else 1) if c["list_price"] >= 300_000 else 2
                 depth = int(int(s.get("dear_depth", 4)) * heat) if full else min(slow, int(s.get("dear_depth", 4)))
                 # the depth, not the SKU plan's qty: on 11/6 the market's best sellers (sku_score 600-1,500) planned 20
                 # units a line, 2.5-28M at cost, more than the goods room left, so each was skipped and cheap lines took

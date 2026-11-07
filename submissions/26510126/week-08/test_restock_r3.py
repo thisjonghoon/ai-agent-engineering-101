@@ -342,4 +342,21 @@ q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["bu
 case("10 slow 400,000 units (2.4M) held against a 2.5M cap do not block the best seller: bought 10 (2.5M / 240k)",
      q.get("SB") == 10 and "SC" not in q, q)
 restock_r3.strategy = real
+# 131 units of 300k+ held, 5.2 sold an hour: with 40 slow 300k+ units held, a slow SKU we hold none of gets no line
+cat9 = dict(cat8, SD={"category": "G>dull", "kind": "goods", "list_price": 400000, "name": "dull"})
+(md / "catalog.json").write_text(json.dumps(cat9), encoding="utf-8")
+(md / "demand.json").write_text(json.dumps([{"item": "bed", "category": "G>bed", "kind": "goods", "median_price": 400000},
+                                           {"item": "dull", "category": "G>dull", "kind": "goods", "median_price": 400000}]),
+                                encoding="utf-8")
+cold40 = [dict(u, unit=f"c{i}") for i, u in enumerate(cold * 4)]                      # 40 slow 300k+ units held
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": cold40}), encoding="utf-8")
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SB": 1500, "SD": 10}}),
+                                       encoding="utf-8")
+restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=50_000_000, goods_frac=1.0, max_list=1_500_000, dear_depth=8)
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
+case("with 40 slow 300k+ units held, a slow 400,000 SKU we hold none of is not bought, the best seller is", q.get("SB", 0) > 0 and "SD" not in q, q)
+restock_r3.strategy = real
 print(f"\n{sum(ok)}/{len(ok)} passed")

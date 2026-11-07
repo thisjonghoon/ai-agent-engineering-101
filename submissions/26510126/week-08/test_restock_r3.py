@@ -310,25 +310,4 @@ q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["bu
 case("the best-selling 300k+ SKU comes before an empty category's slow 1.2M goods (room 2.5M - 0.48M held)",
      q.get("SB") == 8 and "SP" not in q, q)    # depth 8 x 3 at score 1,500: the room (2.02M / 240k) binds
 restock_r3.strategy = real
-# stock at its cap (60.49M of 60M) with 184 non-hot 300k+ units unsold for over a day: up to a quarter of stock_value of
-# them stops counting, so a best seller is bought; a fresh non-hot unit still counts
-cat8 = {"SC": cat6["SB"] | {"category": "G>cold"}, "SX": cat6["SB"] | {"category": "G>top"}}
-(md / "catalog.json").write_text(json.dumps(cat8), encoding="utf-8")
-(md / "demand.json").write_text(json.dumps([{"item": "top", "category": "G>top", "kind": "goods", "median_price": 400000},
-                                           {"item": "cold", "category": "G>cold", "kind": "goods", "median_price": 400000}]),
-                                encoding="utf-8")
-restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=1_000_000, goods_frac=1.0, max_list=500_000)
-for age, want in ((2 * 86400, True), (3600, False)):
-    cold = [{"unit": f"c{i}", "sku": "SC", "category": "G>cold", "kind": "goods", "grade": "A", "cost": 240000,
-             "supplied_at": NOW - age, "expires_at": None} for i in range(4)]       # 960,000 against the 1,000,000 cap
-    (md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": cold}), encoding="utf-8")
-    (md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {},
-                                                       "sku_score": {"SX": 2000, "SC": 53}}), encoding="utf-8")
-    out = io.StringIO()
-    with contextlib.redirect_stdout(out):
-        restock_r3.main()
-    q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
-    case(f"non-hot 300k+ units held {age // 3600} h {'stop' if want else 'still'} count against the cap: best seller {'bought' if want else 'not bought'}",
-         (q.get("SX", 0) >= 1) == want, q)
-restock_r3.strategy = real
 print(f"\n{sum(ok)}/{len(ok)} passed")

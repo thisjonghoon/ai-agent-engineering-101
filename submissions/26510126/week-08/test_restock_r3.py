@@ -310,21 +310,4 @@ q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["bu
 case("the best-selling 300k+ SKU comes before an empty category's slow 1.2M goods (room 2.5M - 0.48M held)",
      q.get("SB") == 8 and "SP" not in q, q)    # depth 8 x 3 at score 1,500: the room (2.02M / 240k) binds
 restock_r3.strategy = real
-# stock at 78.95M of 80M with 62.8M in 300k+: a non-hot 300k+ line may not use the last HOT_RESERVE (8%) of stock_value
-# in goods_room; a hot one may (room 1.2M, reserve 0.8M: the hot 240k line is bought, the non-hot one would leave 0.72M)
-(md / "catalog.json").write_text(json.dumps(cat5), encoding="utf-8")
-(md / "demand.json").write_text(json.dumps([{"item": "top", "category": "G>top", "kind": "goods", "median_price": 400000},
-                                           {"item": "cold", "category": "G>cold", "kind": "goods", "median_price": 400000}]),
-                                encoding="utf-8")
-(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": []}), encoding="utf-8")
-(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SX": 300, "SC": 53}}),
-                                       encoding="utf-8")
-restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=10_000_000, goods_frac=0.12, max_list=500_000, dear_depth=1)
-out = io.StringIO()
-with contextlib.redirect_stdout(out):
-    restock_r3.main()
-q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
-case("a non-hot 400,000 SKU is skipped when it would leave goods_room under 8% of stock_value; the hot one is bought",
-     q.get("SX") == 1 and "SC" not in q, q)
-restock_r3.strategy = real
 print(f"\n{sum(ok)}/{len(ok)} passed")

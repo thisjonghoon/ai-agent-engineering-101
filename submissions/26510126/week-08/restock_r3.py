@@ -178,7 +178,15 @@ def main():
     for cat, n in wanted.items():
         score[cat] += 2 * n
 
-    stock = sum(u["cost"] for u in units)
+    # stock sat at 60.49M of a 60M cap, so spend was 0 and nothing was bought, with 45.9M of cash idle: 184 units (23.7M) of
+    # 300k+ goods of non-hot SKUs had been unsold for over a day while the market's best sellers sold 142-371 units in 6 h
+    # and we held none. Those units stay on the shelf for the seller to clear but no longer count against stock_value and
+    # goods_frac, up to a quarter of stock_value, so the room goes to the DEAR_HOT best sellers
+    stale = sum(u["cost"] for u in units if u.get("kind") == "goods" and u.get("grade") != "expired"
+                and (catalog.get(u.get("sku")) or {}).get("list_price", 0) >= 300_000 and sku_score.get(u.get("sku"), 0) < DEAR_HOT
+                and now - (u.get("supplied_at") or now) > 86400)
+    stale = min(stale, 0.25 * s["stock_value"])
+    stock = sum(u["cost"] for u in units) - stale
     warranty = (read_json(STRATEGY, {}).get("warranty_hours") or 0) > 0
     floor = max(s["reserve_cash"], line + CUSHION + (WARRANTY_CUSHION if warranty else 0))
     spend = min(inv.get("balance", 0) - floor, s["stock_value"] - stock)
@@ -259,7 +267,7 @@ def main():
         empty = [p for p in ranked if count[p[1]["category"]] == 0 and p not in best
                  and not is_dear(p[1])][:int(s.get("breadth_lines", 6))]
         ranked = best + empty + [p for p in ranked if p not in best and p not in empty]
-        goods_room = s["goods_frac"] * s["stock_value"] - sum(u["cost"] for u in live if u.get("kind") == "goods")
+        goods_room = s["goods_frac"] * s["stock_value"] - sum(u["cost"] for u in live if u.get("kind") == "goods") + stale
         # 11/4 22:30, the last 6 h of settles: the top shops sold 470-575 units listed at 150,000 or more each (sofas,
         # beds, bedding; average ticket 600-820k) and 0.2-0.7 billion of revenue; we sold 25 (21M), buying at most
         # 10 lines a window and one unit of a dear SKU a line, with 21M of cash idle. A window takes about 18 lines,

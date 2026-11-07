@@ -177,22 +177,6 @@ res = json.loads(out.getvalue().splitlines()[-1])
 skus = [b["sku"] for b in res["buy"]]
 case("a SKU the market surged to 1.47x is not bought; one at 1.02x still is", "SH1" not in skus and "SH2" in skus
      and "surge" in res["why"], {"buy": skus, "why": res["why"]})
-# 300k+ goods get the tighter dear_surge_max (1.05): a 400,000 SKU at 1.10x is left out, a 15,000 one at 1.10x is kept
-(md / "catalog.json").write_text(json.dumps({"SH1": {"category": "F>hot", "kind": "food", "list_price": 15000, "name": "h1"},
-                                            "SX": {"category": "G>top", "kind": "goods", "list_price": 400000, "name": "top"}}),
-                                 encoding="utf-8")
-(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 4_000_000, "units": [],
-                                              "surge": [{"sku": "SH1", "units": 80, "factor": 1.10},
-                                                        {"sku": "SX", "units": 80, "factor": 1.10}]}), encoding="utf-8")
-(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {}}),
-                                       encoding="utf-8")
-out = io.StringIO()
-with contextlib.redirect_stdout(out):
-    restock_r3.main()
-res = json.loads(out.getvalue().splitlines()[-1])
-skus = [b["sku"] for b in res["buy"]]
-case("a 300k+ SKU at 1.10x surge is left out (dear_surge_max 1.05); a cheap one at 1.10x is still bought",
-     "SX" not in skus and "SH1" in skus, {"buy": skus, "why": res["why"]})
 # a dear SKU (list 150,000 or more) is bought dear_depth units deep (11/4: the top shops sold 470-575 such units in 6 h)
 assert "dear_depth" in restock_r3.DEFAULTS
 case("dear goods get dear_depth units a line", restock_r3.DEFAULTS["dear_depth"] >= 2 and restock_r3.DEFAULTS["lines"] >= 14)

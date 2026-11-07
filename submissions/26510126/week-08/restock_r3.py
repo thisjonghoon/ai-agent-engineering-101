@@ -47,7 +47,7 @@ STRATEGY = Path(os.environ.get("STRATEGY_FILE") or HERE / "strategy_r3.json")   
 DEFAULTS = {"dear_first": 1.0, "reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
             "goods_frac": 0.35, "food_first": 0.5,
             "depth": 3, "half_life_hours": 12, "stop_hours": 36, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540,
-            "window_depth": 2.0, "order_weight": 1.0, "surge_max": 1.15, "dear_surge_max": 1.05,
+            "window_depth": 2.0, "order_weight": 1.0, "surge_max": 1.15,
             "dear_depth": 4, "lines": 18, "breadth_lines": 6, "sku_cap": 8}    # 2026-11-17 23:59 KST
 BANKRUPT_LINE = 500_000  # below this a shop may file, and the 5,000,000 it gets comes off profit
 CASH_FLOOR = 700_000     # code's own floor under any reserve_cash the meta-harness sets: the line plus a cushion
@@ -199,13 +199,9 @@ def main():
         # the market's surge (rules of 11/4 21:14): past 50 units of a SKU in an hour each unit costs 0.2% more, up to
         # +50%. At 21:14 the mattress everyone stocks cost 1.47x, two others 1.3x: a grade-A unit (55-75% of list) at
         # 1.47x costs 81-110% of list, more than a buyer pays. SKUs above surge_max (the team's knob) are left out, so
-        # the plan takes the next SKU of the category instead, and the rest are priced at their surged cost. 300k+ goods
-        # get the tighter dear_surge_max: they sell at 0.68 of list on a 0.59 cost share (84.8k a unit), buyers stop 1-5%
-        # under a floor that surged cost has pushed to 0.76-0.81, and 139 units (68M) sit unsold
+        # the plan takes the next SKU of the category instead, and the rest are priced at their surged cost
         surge = {x["sku"]: x.get("factor", 1.0) for x in inv.get("surge") or [] if isinstance(x, dict) and x.get("sku")}
-        dear_max = min(s.get("surge_max", 1.15), s.get("dear_surge_max", 1.05))
-        surged = {k for k, f in surge.items()
-                  if f > (dear_max if (catalog.get(k) or {}).get("list_price", 0) >= 300_000 else s.get("surge_max", 1.15))}
+        surged = {k for k, f in surge.items() if f > s.get("surge_max", 1.15)}
         catalog = {k: v for k, v in catalog.items() if k not in surged}
         count, held = Counter(u["category"] for u in live), Counter(u["sku"] for u in live)
         by_cat = defaultdict(list)

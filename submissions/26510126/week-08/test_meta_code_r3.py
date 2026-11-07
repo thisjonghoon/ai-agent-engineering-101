@@ -109,6 +109,22 @@ def main():
     rows = d.focus(base, board, now)
     case("an area tried four times without a gain falls below one not tried", rows[-1][0] == "forum", str(rows))
 
+    base = tmp / "sales"
+    (base / ".market").mkdir(parents=True)
+    (base / "logs").mkdir()
+    url = "https://ours.example"
+    led = [{"kind": "join", "ts": 0, "data": {"name": "thisjonghoon", "role": "shop", "url": url}},
+           {"kind": "supply", "ts": now - 900, "data": {"shop": "thisjonghoon", "units": ["u-a", "u-b"], "total": 200000}},
+           {"kind": "settle", "ts": now - 600, "data": {"shop": url + "/", "unit": "u-a", "amount": 150000}},
+           {"kind": "settle", "ts": now - 500, "data": {"shop": url, "unit": "u-z", "amount": 30000}},
+           {"kind": "settle", "ts": now - 400, "data": {"shop": "https://other.example", "unit": "u-b", "amount": 99}}]
+    (base / ".market" / "ledger-recent.json").write_text(json.dumps(led))
+    (base / "logs" / "talks_r3.jsonl").write_text("".join(json.dumps(x) + "\n" for x in (
+        {"t": now - 520, "price": 30000, "cost": 20000}, {"t": now - 300, "price": 900000, "cost": 600000})))
+    sold = mc.metrics_r3.settled_sales(now - 3600, now, base)
+    case("shop metrics count sales paid on the ledger, not receipts signed (a 900k agreement never paid is left out)",
+         [(x["price"], x["cost"]) for x in sold] == [(150000, 100000), (30000, 20000)], str(sold))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(tmp, ignore_errors=True)
 

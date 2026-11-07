@@ -10,7 +10,7 @@ window(t0, t1): the fixed metrics a hypothesis may name, from our own logs (code
   buyer_surplus_order   (list - price) of paid deals / orders
   buyer_paid_h          paid deals per hour
   shelf_refused_h       payments the kit refused for too little shelf life, per hour
-  shop_deals_h          deals our shop closed per hour
+  shop_deals_h          our sales paid on the ledger per hour (not receipts signed: buyers pay one of several shops)
   shop_margin_h         (price - cost) of those deals per hour
   forum_votes_post      net votes per post our buyer wrote in the window (forum.json keeps the newest 100 posts, so
                         only the last hours can be read; forum votes are 0.3 of the buyer's ALL)
@@ -125,6 +125,38 @@ def outage_secs(t0, t1, base=HERE):
     return min(len(seen) * 30, t1 - t0)
 
 
+def settled_sales(t0, t1, base=HERE):
+    """Our shop's paid sales in [t0, t1): {"t", "price", "cost"} per settle on the market's ledger (the small cache
+    market_intel keeps, .market/ledger-recent.json, the last 6 h). Until 11/7 these metrics counted every receipt the
+    seller signed (talks_r3.jsonl), but a buyer haggles with several shops and pays one: from 06:52 to 09:35 on 11/7,
+    17 of our 300k+ agreements (18M) were paid once, so margin/h read 2-4M against Book growing 0.7-0.9M an hour.
+    A unit's cost is its supply entry's total / qty; one not found there is matched to the talk agreed at that price."""
+    base = Path(base)
+    try:
+        entries = json.loads((base / ".market" / "ledger-recent.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    urls = {(e["data"].get("url") or "").rstrip("/") for e in entries
+            if e.get("kind") == "join" and e["data"].get("name") == ME and e["data"].get("role") == "shop"}
+    cost = {}
+    for e in entries:
+        d = e.get("data") or {}
+        if e.get("kind") == "supply" and d.get("shop") == ME and d.get("units"):
+            for u in d["units"]:
+                cost[u] = (d.get("total") or 0) / len(d["units"])
+    talks = [x for x in jl(base / "logs" / "talks_r3.jsonl") if x.get("price") and t0 - 900 <= x.get("t", 0) < t1]
+    out = []
+    for e in entries:
+        d = e.get("data") or {}
+        if e.get("kind") != "settle" or not t0 <= e.get("ts", 0) < t1 or str(d.get("shop") or "").rstrip("/") not in urls:
+            continue
+        c = cost.get(d.get("unit"))
+        if c is None:
+            c = next((x.get("cost") for x in reversed(talks) if x["price"] == d.get("amount") and x["t"] <= e["ts"]), 0)
+        out.append({"t": e["ts"], "price": d.get("amount") or 0, "cost": c or 0})
+    return out
+
+
 def window(t0, t1, base=HERE, keep=None):
     """`keep` (an order id -> bool, the code A/B's arm): the buyer's metrics over those orders only; per hour they
     count the arm's half, so compare an arm with the other arm, not with a whole hour."""
@@ -155,7 +187,7 @@ def window(t0, t1, base=HERE, keep=None):
     rates = [(lists[m["order"]] - m["price"]) / lists[m["order"]] for m in paid
              if lists.get(m.get("order")) and m.get("price") is not None]
     surplus = sum((lists.get(m.get("order")) or 0) - (m.get("price") or 0) for m in paid if lists.get(m.get("order")))
-    sold = [x for x in jl(base / "logs" / "talks_r3.jsonl") if x.get("price") and t0 <= x.get("t", 0) < t1]
+    sold = settled_sales(t0, t1, base)
     try:
         posts = json.loads((base / ".market" / "forum.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):

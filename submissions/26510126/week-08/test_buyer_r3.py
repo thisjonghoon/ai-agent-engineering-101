@@ -392,6 +392,14 @@ def main():
     case("a shop that is refused 4 of 6 payments ranks behind a cheaper-quoted-by-share one that is always paid",
          got == ["L", "K"], str(got))
 
+    # 16d. the board's saved term is a rate per deal: a 30k SKU at 0.5 of list ranks above a 600k SKU at 0.8, though its surplus is smaller
+    shop_r = [{"name": "M", "url": "http://M", "offers": [{"sku": "DEAR", "qty": 1}]},
+              {"name": "N", "url": "http://N", "offers": [{"sku": "CHEAP", "qty": 1}]}]
+    cat_r = {"DEAR": {"list_price": 600000}, "CHEAP": {"list_price": 30000}}
+    orr = {"kind": "goods", "budget": 700000, "acceptable": ["DEAR", "CHEAP"]}
+    got = [c[2]["sku"] for c in buyer_r3.candidates(orr, shop_r, cat_r, [], {"M": (0, 0, 0.8), "N": (0, 0, 0.5)})]
+    case("a cheap SKU saving 50% of list ranks above a dear one saving 20%", got == ["CHEAP", "DEAR"], str(got))
+
     # 17. a refused payment for short shelf life: that pair waits only for orders asking more hours than it shipped
     buyer_r3.avoid_add("S", "GS", "short shelf life", 3600, hours=200.0)
     av = buyer_r3.avoid_load()

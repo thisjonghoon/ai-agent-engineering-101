@@ -313,6 +313,11 @@ def candidates(order, shops, cat, memory, claims):
                         + (f"; {wait}" if wait else "")))
     if skipped:
         log("GUARD", f"not offering shops caught lying about grades, selling goods that broke or shipping too short a unit lately: {sorted(set(skipped))}")
+    if code_ab_r3.on("0ceb91bf4389", order.get("order")):
+        # the board's buyer saved term is the mean of (list - price) / list per deal, so rank by the saved rate, still
+        # weighted by the chance of a deal: surplus~205579 for a 600k SKU against ~529 for a 30.9k SKU ranked the dear
+        # one first, and the 100-300k band saved 0.260 against 0.326 under 30k (12 h counts)
+        return sorted(out, key=lambda c: -c[0] / c[3])
     return sorted(out, key=lambda c: -c[0])
 
 

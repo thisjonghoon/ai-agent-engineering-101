@@ -297,6 +297,14 @@ def candidates(order, shops, cat, memory, claims):
                 if len(pays) >= 5:
                     paid = sum(1 for m in pays if m.get("paid"))
                     surplus *= (paid + 1) / (len(pays) + 1)
+            if order.get("kind") != "food" and code_ab_r3.on("2916c18a1971", order.get("order")):
+                # 169 goods broke against 8,931 deals (saved counts a broken unit as -1, ours 0.2834 against 0.31 per deal),
+                # yet a shop is banned only after 2 uncovered breaks: weigh a shop whose units keep breaking by its break rate
+                mine = [m for m in memory if m.get("round") == 3 and m.get("shop") == s["name"]]
+                settled = sum(1 for m in mine if m.get("kind") == "settled")
+                if settled >= 5:
+                    broken = sum(1 for m in mine if m.get("kind") == "broken")
+                    surplus *= max(0.0, 1 - broken / settled)
             short =order.get("kind") == "food" and need and info.get("shelf_hours") and \
                 info["shelf_hours"] * B_SHARE < need * FOOD_MARGIN
             if short:

@@ -241,9 +241,7 @@ def main():
         # the SKUs the market keeps buying, by themselves (the market says some products sell much more than others)
         for sku, sc in sorted(sku_score.items(), key=lambda kv: -kv[1]):
             c = catalog.get(sku)
-            # the 2x bound skips the rest, not a best seller: [자코모]메이트 멀티 4인 (218 sold, we held 0) and [다우닝] 플라나 4인
-            # (136 sold, 0 held) list near 2.2M, over 1.8M; dear_depth, goods_room and spend still cap what is bought
-            if sc < 2 or not c or (c["kind"] == "goods" and c["list_price"] > s["max_list"] * 2 and sc < DEAR_HOT):
+            if sc < 2 or not c or (c["kind"] == "goods" and c["list_price"] > s["max_list"] * 2):
                 continue
             if c["kind"] == "food" and (c.get("shelf_hours") or 0) < 48:
                 continue

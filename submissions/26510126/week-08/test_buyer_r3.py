@@ -400,6 +400,15 @@ def main():
     got = [c[2]["sku"] for c in buyer_r3.candidates(orr, shop_r, cat_r, [], {"M": (0, 0, 0.8), "N": (0, 0, 0.5)})]
     case("a cheap SKU saving 50% of list ranks above a dear one saving 20%", got == ["CHEAP", "DEAR"], str(got))
 
+    # 16e. a grade B offer at 0.88 of list saves 0.12 less 0.065 for breaking, a grade A at 0.90 saves 0.10 less 0.0195: A ranks first
+    shop_g = [{"name": "GA", "url": "http://GA", "offers": [{"sku": "S1", "qty": 1, "grade": "A"}]},
+              {"name": "GB", "url": "http://GB", "offers": [{"sku": "S1", "qty": 1, "grade": "B"}]}]
+    cat_g = {"S1": {"list_price": 100000}}
+    og = {"kind": "goods", "budget": 200000, "acceptable": ["S1"]}
+    got = [c[1]["name"] for c in buyer_r3.candidates(og, shop_g, cat_g, [], {"GA": (0, 0, 0.9), "GB": (0, 0, 0.88)})]
+    case("at 0.90 and 0.88 of list a grade A offer outranks a grade B one, its saved rate less the break rate",
+         got == ["GA", "GB"], str(got))
+
     # 17. a refused payment for short shelf life: that pair waits only for orders asking more hours than it shipped
     buyer_r3.avoid_add("S", "GS", "short shelf life", 3600, hours=200.0)
     av = buyer_r3.avoid_load()

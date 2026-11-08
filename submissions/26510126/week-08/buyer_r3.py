@@ -54,7 +54,8 @@ GOOD_GRADES = ["A", "B"]  # C is refurbished: the most likely to break after the
 # Asking for A or B only made shops holding C answer "none in stock" (458 quick rejects 06:00-09:40).
 C_CAP = 0.65
 C_WARRANTY = 6
-B_SHARE = 0.45       # grade B food has at least 45% of its shelf life left (agent.md)
+BREAK_RATE = {"A": 0.015, "B": 0.05}   # share of goods units that broke, by grade (11/7: C 15.7%)
+B_SHARE = 0.45      # grade B food has at least 45% of its shelf life left (agent.md)
 MAX_OFFERS = 8
 MAX_TRIES = 3        # shops tried per order when a negotiation ends without a deal
 RETRY_UNTIL = 150    # seconds into the order after which no new shop is tried (the kit stops the buyer at 300 s)
@@ -317,6 +318,10 @@ def candidates(order, shops, cat, memory, claims):
         # the board's buyer saved term is the mean of (list - price) / list per deal, so rank by the saved rate, still
         # weighted by the chance of a deal: surplus~205579 for a 600k SKU against ~529 for a 30.9k SKU ranked the dear
         # one first, and the 100-300k band saved 0.260 against 0.326 under 30k (12 h counts)
+        if code_ab_r3.on("93769561dd1c", order.get("order")):
+            # a broken unit scores -1 on the board, so the saved rate pays for the grade's break rate: 175 goods broke
+            # (15 in 12 h); A breaks ~1.5% of units, B ~5%, weighed 1.3 times for the refund and the lost sale
+            return sorted(out, key=lambda c: -(c[0] / c[3] - 1.3 * BREAK_RATE.get(str(c[2].get("grade") or "").upper(), 0)))
         return sorted(out, key=lambda c: -c[0] / c[3])
     return sorted(out, key=lambda c: -c[0])
 

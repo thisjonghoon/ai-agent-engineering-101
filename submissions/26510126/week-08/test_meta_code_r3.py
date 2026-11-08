@@ -125,6 +125,12 @@ def main():
     case("shop metrics count sales paid on the ledger, not receipts signed (a 900k agreement never paid is left out)",
          [(x["price"], x["cost"]) for x in sold] == [(150000, 100000), (30000, 20000)], str(sold))
 
+    r6 = {"metric": "buyer_saved_deal", "expected": 0.03}
+    _, ab_why = mc.judge(dict(r6, ab_key="k"), {"buyer_saved_deal": 0.30}, {"buyer_saved_deal": 0.282})
+    _, span_why = mc.judge(r6, {"buyer_saved_deal": 0.30}, {"buyer_saved_deal": 0.282})
+    case("an A/B that measured -6% is reverted, the same move over noisy hours is kept", bool(ab_why) and not span_why,
+         str((ab_why, span_why)))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(tmp, ignore_errors=True)
 

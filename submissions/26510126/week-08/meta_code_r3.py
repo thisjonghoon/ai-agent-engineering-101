@@ -70,6 +70,9 @@ CHECK_MAX = 3 * 3600
 SPAN = 3 * 3600
 DROP = 0.4          # a guard metric falling this much reverts any change
 WORSE = 0.15        # the hypothesis' own metric moving this much the wrong way reverts it
+# an A/B compares the same hours, so its noise is far smaller (saved/deal over ~150 orders a side: about 3%); 11/8 three buyer
+# changes measured -2%, -2% and -6% and were all kept at the 15% bar, code paths that did not help left in the buyer
+WORSE_AB = 0.03
 AGENT_TIMEOUT = 15 * 60
 TRACES = {"logs/talks_r3.jsonl": 3000, "memory.jsonl": 3000, ".market/payments.jsonl": 500,
           "logs/demand_r3.jsonl": 3000, "logs/market-kit.log": 6000, "logs/strategies_r3.jsonl": 6}
@@ -178,7 +181,7 @@ def judge(r, before, after):
     """(verdict text, reasons to revert) for one change: its own metric, then the guards."""
     why = []
     own = metrics_r3.change(r.get("metric"), before, after) if r.get("metric") else None
-    if own is not None and own < -WORSE:
+    if own is not None and own < -(WORSE_AB if r.get("ab_key") else WORSE):
         why.append(f"{r['metric']} {own:+.0%}")
     for g in ("buyer_paid_h", "shop_deals_h"):
         b, a = before.get(g), after.get(g)

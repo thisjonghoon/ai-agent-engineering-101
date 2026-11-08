@@ -220,7 +220,10 @@ def main():
             cat, med = d["category"], ref.get(d["category"]) or d["median_price"]
             if d["kind"] == "goods" and med > s["max_list"] * 2:     # the same 2x bound as the SKU loop below: 14 of 127 goods orders point at 1.4M+
                 continue
-            ok_food = lambda c: d["kind"] != "food" or score[cat] >= 3 or (c.get("shelf_hours") or 0) >= s["min_shelf_hours"]
+            # a selling category relaxes the bar to 48 h, not to none: scores run into the hundreds, so a free pass picked by price
+            # alone stocked food with 4.7 h left against the 12 h buyers ask (shelf_refused_h 3-6 an hour, 2-star reviews)
+            bar = min(s["min_shelf_hours"], 48) if score[cat] >= 3 else s["min_shelf_hours"]
+            ok_food = lambda c: d["kind"] != "food" or (c.get("shelf_hours") or 0) >= bar
             skus = [c for c in by_cat.get(cat, []) if c["list_price"] <= max(s["max_list"], med) and ok_food(c)]
             if not skus:
                 continue                                     # e.g. only short-lived food where nothing sells yet

@@ -359,4 +359,19 @@ with contextlib.redirect_stdout(out):
 q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
 case("with 40 slow 300k+ units held, a slow 400,000 SKU we hold none of is not bought, the best seller is", q.get("SB", 0) > 0 and "SD" not in q, q)
 restock_r3.strategy = real
+# shelf_refused_h ran 3-6 an hour: a selling food category (score 8) no longer skips the shelf bar, it keeps 48 h
+cat10 = {"FSHORT": {"category": "F>sold", "kind": "food", "list_price": 10000, "shelf_hours": 5, "name": "short"},
+         "FLONG": {"category": "F>sold", "kind": "food", "list_price": 12000, "shelf_hours": 200, "name": "long"}}
+(md / "catalog.json").write_text(json.dumps(cat10), encoding="utf-8")
+(md / "demand.json").write_text(json.dumps([{"item": "sold", "category": "F>sold", "kind": "food", "median_price": 10000}]),
+                                encoding="utf-8")
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 4_000_000, "units": []}), encoding="utf-8")
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {"F>sold": 8.0}, "sku_score": {}}),
+                                       encoding="utf-8")
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
+case("a selling food category (score 8) still skips a 5 h SKU at the median price and takes the 200 h one",
+     "FSHORT" not in q and q.get("FLONG", 0) > 0, q)
 print(f"\n{sum(ok)}/{len(ok)} passed")

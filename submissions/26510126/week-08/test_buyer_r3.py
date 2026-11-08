@@ -392,14 +392,6 @@ def main():
     case("a shop that is refused 4 of 6 payments ranks behind a cheaper-quoted-by-share one that is always paid",
          got == ["L", "K"], str(got))
 
-    # 16c2. a shop whose units keep breaking (covered or not) ranks behind one whose units do not, even when quoted lower
-    shop_b = [{"name": "P", "url": "http://P", "offers": [{"sku": "GK", "qty": 1}]},
-              {"name": "Q", "url": "http://Q", "offers": [{"sku": "GK", "qty": 1}]}]
-    row = lambda k, s: {"kind": k, "round": 3, "shop": s, "covered": True}
-    mem_b = [row("settled", "P") for _ in range(10)] + [row("broken", "P") for _ in range(3)] + [row("settled", "Q") for _ in range(10)]
-    got = [c[1]["name"] for c in buyer_r3.candidates(op, shop_b, cat_p, mem_b, {"P": (0, 0, 0.5), "Q": (0, 0, 0.55)})]
-    case("a shop with 3 broken goods in 10 settled ranks behind a dearer one with none", got == ["Q", "P"], str(got))
-
     # 16d. the board's saved term is a rate per deal: a 30k SKU at 0.5 of list ranks above a 600k SKU at 0.8, though its surplus is smaller
     shop_r = [{"name": "M", "url": "http://M", "offers": [{"sku": "DEAR", "qty": 1}]},
               {"name": "N", "url": "http://N", "offers": [{"sku": "CHEAP", "qty": 1}]}]

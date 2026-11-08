@@ -80,6 +80,12 @@ RECENT_SOLD = 600   # seconds a unit we signed a receipt for is not offered agai
 # grade-C food that buyers agree on and their kits then refuse to pay for, a sellable unit left to spoil.
 STUCK_AFTER = 2
 STUCK_SECS = 1800
+# the kit's checkout logs "checkout refused: unit u-... is not in stock" for a unit an abandoned session still holds; the
+# seller cannot see refusals, only its own agreements, so a unit refused 33-44 min apart was offered and refused 4 times
+# (u-e8b84402c1ee, 11/8 12:27-14:19). A unit named in such a line is left out for REFUSED_SECS (sold units leave anyway)
+KIT_LOG = HERE / "logs" / "market-kit.log"
+REFUSED = re.compile(r"checkout refused: unit (u-[0-9a-f]+) is not in stock")
+REFUSED_SECS = 7200
 OPEN_HOLD = 120     # seconds a negotiation keeps its unit before another buyer may be offered it
 MODEL_SLOTS = asyncio.Semaphore(3)    # model calls at once; a turn that finds them all busy is decided by the rules
 MODEL_TIMEOUT = 8                     # seconds (haiku answered in 3.7 s at the median, 5.3 s at p90, over 160k calls)
@@ -369,6 +375,7 @@ class Seller(AgentExecutor):
         # a unit set aside once that gets stuck again is held for good: 11/5 03:16-04:19 one unit came back after each
         # 30 minutes and was refused at checkout again each time
         self.held, self.stuck_once = set(), set()
+        self.refused, self.log_pos, self.log_read = {}, None, 0.0
 
     def agreed(self, unit, now=None):
         """Record a receipt signed for `unit`; returns a STUCK log line when the unit is set aside. A unit set aside
@@ -386,12 +393,33 @@ class Seller(AgentExecutor):
             return f"STUCK {unit} agreed {STUCK_AFTER} times and still offered: left out for {STUCK_SECS // 60} min"
         return None
 
+    def read_refusals(self, now, path=None):
+        """Units the kit's checkout refused since the last read (at most once a minute; starts at the log's end)."""
+        path = path or KIT_LOG
+        if now - self.log_read < 60:
+            return
+        self.log_read = now
+        try:
+            size = path.stat().st_size
+            if self.log_pos is None or size < self.log_pos:
+                self.log_pos = size if self.log_pos is None else 0
+            with path.open("rb") as f:
+                f.seek(self.log_pos)
+                text = f.read().decode("utf-8", "ignore")
+                self.log_pos = f.tell()
+        except OSError:
+            return
+        for u in REFUSED.findall(text):
+            self.refused[u] = now
+
     def taken(self):
         now = time.time()
+        self.read_refusals(now)
+        self.refused = {k: t for k, t in self.refused.items() if now - t < REFUSED_SECS}
         self.sold = {k: t for k, t in self.sold.items() if now - t < RECENT_SOLD}
         self.dealt = {k: [x for x in ts if now - x < STUCK_SECS] for k, ts in self.dealt.items()}
         self.dealt = {k: ts for k, ts in self.dealt.items() if ts}
-        stuck = {k for k, ts in self.dealt.items() if len(ts) >= STUCK_AFTER} | self.held
+        stuck = {k for k, ts in self.dealt.items() if len(ts) >= STUCK_AFTER} | self.held | set(self.refused)
         # a buyer that leaves without cancelling must not hold the unit forever (review, 11/2)
         for k in [k for k, d in self.open.items() if now - d.get("t", now) > OPEN_HOLD]:
             ab_end(k, self.open.pop(k, None), "gone")

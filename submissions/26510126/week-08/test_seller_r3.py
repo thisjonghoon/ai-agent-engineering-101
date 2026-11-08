@@ -129,6 +129,17 @@ async def main():
         check("a unit set aside once is held for good on its next single agreement",
               first[0] is None and "30 min" in (first[1] or "") and "until a restart" in (again or "") and "u-s" in sel3.taken(),
               (first, again, sorted(sel3.taken())))
+        sel4 = seller_r3.Seller()
+        log = md / "kit.log"
+        log.write_text("old line: checkout refused: unit u-0d1d is not in stock for this order\n")
+        sel4.read_refusals(1000.0, log)                  # the first read starts at the log's end
+        with log.open("a") as f:
+            f.write("12:00:00 [acp] checkout refused: unit u-e8b8440 is not in stock for this order\n")
+        sel4.read_refusals(1030.0, log)                  # within a minute: not read yet
+        early = dict(sel4.refused)
+        sel4.read_refusals(1061.0, log)
+        check("a unit the kit's checkout refused is left out; old log lines and reads within a minute are skipped",
+              early == {} and set(sel4.refused) == {"u-e8b8440"}, (early, sel4.refused))
         check("an abandoned negotiation frees its unit", "u-x" not in held and "u-y" in held, sorted(held))
         os.environ["MARKET_DIR"] = str(md)
         seller_r3.MARKET_DIR = md

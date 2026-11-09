@@ -365,7 +365,7 @@ def prices(u, s):
     # ~6% of cost lost once frees the capital for faster lines
     if u.get("kind") != "food" and cap and cap < floor and u.get("supplied_at") and \
             (time.time() - u["supplied_at"]) / 3600 > s.get("stuck_hours", 6):
-        floor = max(cost * s.get("stuck_frac", 0.95), cap)
+        floor = min(floor, max(cost * s.get("stuck_frac", 0.95), cap))   # only ever lowers (endgame/final ran above)
     ask = max(min(lp * min(ask_frac, 1.0), cap or lp), floor)
     return int(round(ask)), int(round(min(floor, ask)))
 

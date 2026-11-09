@@ -255,7 +255,9 @@ def number_changes(n=6):
     out += [f"- PENDING {time.strftime('%m/%d %H:%M', time.localtime(x['t']))} "
             f"{', '.join(f'{k} {v[0]} -> {v[1]}' for k, v in x['changes'].items())}: verdict due "
             f"{time.strftime('%H:%M', time.localtime(x['t'] + NUMBER_CHECK))}" for x in wait]
-    return ("\nYour number changes, judged by code (2 h before vs 2 h after); only the PENDING rows still wait:\n"
+    return ("\nYour number changes, judged by code on our share of the market's paid sales (2 h before vs 2 h after, "
+            "so the hour of day cancels out; margin/h and board points/h are context); only the PENDING rows still "
+            "wait:\n"
             + "\n".join(out)) if out else ""
 
 
@@ -304,6 +306,27 @@ def number_record(changed, reason):
     NUMBER_TRIALS.write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
 
 
+def one_per_area(s, cur, order):
+    """At most one shop number changed per area (sales, merchandising) a cycle: the manager's first in `order` stays,
+    the others go back to their value now. 11/9: bundles of 3-4 numbers in one area (the 06:43 costco bundle,
+    max_list + sku_depth + dear_first + food_first) left a 2 h verdict that could not say which number did it, and the
+    team kept or undid all of them together. Returns (s, {key: (wanted, kept)} for the numbers held back)."""
+    import meta_team_r3
+    area = lambda k: "merch" if k in meta_team_r3.MERCH_KEYS else "sales"
+    keys = [k for k in order if k in s and s[k] != cur.get(k)] + \
+           [k for k in s if k not in order and s[k] != cur.get(k)]
+    taken, held = set(), {}
+    for k in keys:
+        if area(k) in taken:
+            held[k] = (s[k], cur[k])
+            s[k] = cur[k]
+        else:
+            taken.add(area(k))
+    if s.get("floor_frac", 0) > s.get("ask_frac", 1):    # guard's rule again: a held-back ask must not sit under the floor
+        s["floor_frac"] = s["ask_frac"]
+    return s, held
+
+
 def number_verdicts(now=None):
     """Judge the queued number changes that have run NUMBER_CHECK: shop margin and deals an hour, the same span before
     and after, and write each verdict into the ledger. Returns the verdict lines."""
@@ -326,7 +349,17 @@ def number_verdicts(now=None):
         margin, deals = metrics_r3.change("shop_margin_h", a, b), metrics_r3.change("shop_deals_h", a, b)
         what = ", ".join(f"{k} {v[0]} -> {v[1]}" for k, v in r["changes"].items())
         pts = metrics_r3.change("board_pts_h", a, b)
-        verdict = (f"board points/h {a.get('board_pts_h')} -> {b.get('board_pts_h')} ({pts:+.0%}), " if pts is not None
+        # the headline is our share of the market's paid sales (value, then count) over the same hours: raw margin/h
+        # before vs after read the clock (11/9), the market's own sales divide it out; the rest stays as context
+        ma, mb = metrics_r3.market_share(t - NUMBER_CHECK, t), metrics_r3.market_share(t, t + NUMBER_CHECK)
+        share = metrics_r3.change("share_value", ma, mb)
+        share_n = metrics_r3.change("share_n", ma, mb)
+        verdict = (f"share of the market's paid value {ma['share_value']:.2%} -> {mb['share_value']:.2%} ({share:+.0%})"
+                   + (f", of its paid sales {ma['share_n']:.2%} -> {mb['share_n']:.2%} ({share_n:+.0%})"
+                      if share_n is not None else "")
+                   + f" ({ma['ours']}/{ma['market']} -> {mb['ours']}/{mb['market']} sales); context: "
+                   if share is not None else "share of the market not measurable; ") + \
+                  (f"board points/h {a.get('board_pts_h')} -> {b.get('board_pts_h')} ({pts:+.0%}), " if pts is not None
                    else "") + \
                   (f"margin/h {a.get('shop_margin_h')} -> {b.get('shop_margin_h')} ({margin:+.0%})" if margin is not None
                    else "margin/h not measurable") + \
@@ -335,7 +368,7 @@ def number_verdicts(now=None):
                   (f"; confounded by {', '.join(others)}" if others else "; no other shop number changed meanwhile")
         with CODE_CHANGES.open("a", encoding="utf-8") as f:
             f.write(json.dumps({"t": t, "commit": "-", "source": "inner loop (number)", "change": what,
-                                "evidence": r.get("reason"), "metric": "shop_margin_h", "measured": margin,
+                                "evidence": r.get("reason"), "metric": "share_value", "share": share,
                                 "after": verdict, "verdict": verdict}, ensure_ascii=False) + "\n")
         out.append(f"{what}: {verdict}")
     NUMBER_TRIALS.write_text(json.dumps([r for r in rows if r not in due], ensure_ascii=False, indent=1), encoding="utf-8")
@@ -800,6 +833,7 @@ async def cycle():
                                 max_chars=60_000)
     new = (ans or {}).get("strategy") if isinstance((ans or {}).get("strategy"), dict) else None
     s = guard(new or {}, cur)
+    s, held = one_per_area(s, cur, list((new or {}).keys()))
     # receipts that never settle: the buyer's kit refused to pay (its accept policy: certificate, shelf life, grade,
     # warranty). We cannot see why from the shop, so when most of a busy window does not settle and we offer no
     # warranty, code tries a short one on grade-A goods; the harness sees the result next cycle and may undo it
@@ -887,7 +921,8 @@ async def cycle():
                 + ((f"; A/B {exp['id']} ended in a tie, the strategy keeps its value" if win == "tie" else
                     f"; A/B {exp['id']} won by {win} ({exp['param']} = {exp['arms'][win]})") if ab_done else "")
                 + (f"; A/B {ab_new['id']} started: {ab_new['param']} {ab_new['arms']}" if ab_new else "")
-                + "".join(f"; judged {j}" for j in judged))
+                + "".join(f"; judged {j}" for j in judged)
+                + (f"; held back (one number per area a cycle): {json.dumps(held)}" if held else ""))
 
 
 async def main():

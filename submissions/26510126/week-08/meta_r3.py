@@ -143,8 +143,8 @@ warranty refunds the price), so surplus = list - price on every deal that holds.
 screened: that shop's own words failed our payment policy; shop_ended_talk; we_walked), the
 median gap to the ask in talks we lost, why the kit refused to pay, the market's goods break rate per grade, and the
 buyer's numbers now (plan). Set buyer_plan (any of {buyer_keys}) to win more deals that hold: CAP is the most we pay
-as a share of list; FOOD_MARGIN the shelf life we demand beyond use_within_hours; C_CAP the most we pay for grade C
-goods without a C_WARRANTY-hour warranty (worth it while (1 - C's break rate) is well above C_CAP); MAX_TRIES the
+as a share of list; FOOD_MARGIN the shelf life we demand beyond use_within_hours; grade C goods are bought only with a C_WARRANTY-hour
+warranty; MAX_TRIES the
 shops tried per order; MAX_RAISE how far one offer moves toward the ask; FIRM_GAP how close to an ask held twice we
 take it; SCOUTS how many shops the buyer team asks for a quote at once before the lead negotiates with the best
 (1 turns the team off). Bounds and steps: {buyer_bounds}. If the buyer needs something no number can do, say it in code_ideas.
@@ -182,10 +182,12 @@ Answer with JSON only: {{"strategy": {{...every key...}}, "playbook": "<the play
 "reason": "<one sentence>"}}"""
 # our buyer's numbers (buyer_r3.py PLAN_KEYS): lo, hi, largest step per cycle. The user (11/4): the harness, not a
 # person, makes these fixes; code keeps every value inside its bounds.
-BUYER_BOUNDS = {"CAP": (0.6, 0.95, 0.05), "FOOD_MARGIN": (1.0, 1.3, 0.05), "C_CAP": (0.4, 0.8, 0.05),
+# C_CAP is gone (11/9 audit): code_ab_r3.on("ba9fd31c6b7c") is True with no trial on, so buyer_r3 never reaches its
+# C_CAP branch and a C without a warranty is always refused; a C_CAP trial held the only buyer trial slot on noise
+BUYER_BOUNDS = {"CAP": (0.75, 0.95, 0.05), "FOOD_MARGIN": (1.0, 1.3, 0.05),
                 "C_WARRANTY": (2, 6, 2), "MAX_TRIES": (2, 6, 1), "MAX_RAISE": (0.2, 0.7, 0.1), "FIRM_GAP": (0.0, 0.1, 0.02),
                 "SCOUTS": (1, 5, 1), "CLOSE_GAP": (0.0, 0.12, 0.02)}
-BUYER_DEFAULTS = {"CAP": 0.9, "FOOD_MARGIN": 1.1, "C_CAP": 0.65, "C_WARRANTY": 6, "MAX_TRIES": 3, "MAX_RAISE": 0.4,
+BUYER_DEFAULTS = {"CAP": 0.9, "FOOD_MARGIN": 1.1, "C_WARRANTY": 6, "MAX_TRIES": 3, "MAX_RAISE": 0.4,
                   "FIRM_GAP": 0.05, "SCOUTS": 3, "CLOSE_GAP": 0.05}
 BUYER_PLAN = HERE / "buyer_plan_r3.json"
 # one buyer number on trial at a time: half the orders (by the order id's hash, as for a code trial) run its new value,
@@ -212,7 +214,9 @@ def advice(hours=24, n=3):
     says so here with its evidence. The harness weighs a note like any other evidence and may decline it."""
     notes = read_json(ADVICE, {}).get("notes") or []
     cut = time.time() - hours * 3600
-    notes = [x for x in notes if isinstance(x, dict) and x.get("t", 0) >= cut and isinstance(x.get("text"), str)][-n:]
+    # a note marked superseded is left out (11/9 audit: the 15:57 "CAP 0.70" note was still shown after its 16:14 undo)
+    notes = [x for x in notes if isinstance(x, dict) and x.get("t", 0) >= cut and isinstance(x.get("text"), str)
+             and not x.get("superseded")][-n:]
     # each note with its age: on 11/9 a note's "CAP 0.7" was hours stale (CAP 0.75, bounds from 0.75) and the team read
     # it as advice for now
     text = "\n".join(f"- {time.strftime('%m/%d %H:%M', time.localtime(x['t']))} ({(time.time() - x['t']) / 3600:.1f} h "
@@ -289,6 +293,26 @@ def number_changes(n=6):
 
 
 CODE_CHANGES = HERE / "logs" / "code_changes_r3.jsonl"
+
+
+def knob_reach(hours=6):
+    """Which rule set the opening ask of our goods and food talks in the last `hours` (11/9 audit: 63% of talks opened at
+    the floor, where step, max_turns and floor_frac change nothing; ask_frac set 11 of 90 goods asks in an A/B the team
+    read as a win). A number matters only in the talks it decides."""
+    s = dict(read_json(STRATEGY, {}))
+    out = {}
+    for kind in ("goods", "food"):
+        rows = [r for r in metrics_r3.jl(HERE / "logs" / "talks_r3.jsonl")
+                if r.get("kind") == kind and time.time() - (r.get("t") or 0) < hours * 3600 and r.get("ask0")]
+        if not rows:
+            continue
+        frac = s.get("ask_frac" if kind == "goods" else "ask_frac_food", 0)
+        at_floor = sum(1 for r in rows if r["ask0"] <= (r.get("floor") or 0))
+        at_frac = sum(1 for r in rows if abs(r["ask0"] - r["list_price"] * frac) <= max(2, 0.002 * r["list_price"]))
+        out[kind] = {"talks": len(rows), "opened_at_floor": round(at_floor / len(rows), 2),
+                     "opened_at_list_x_ask_frac": round(at_frac / len(rows), 2),
+                     "opened_on_market_line_or_other": round(1 - (at_floor + at_frac) / len(rows), 2)}
+    return out
 
 
 def buyer_trial_verdict():
@@ -742,7 +766,7 @@ def standing():
     first = "book" if "book" in ours else "profit"
     rows = [r for r in rows if r.get("deals")] or rows   # the board ranks shops with deals (57, not all 84)
     pct = {k: percentile(ours.get(k2), [r.get(k2) for r in rows])
-           for k, k2 in (("profit", first), ("revenue", "revenue"), ("stars", "stars"))}
+           for k, k2 in (("profit", first), ("revenue", "revenue"), ("stars", "stars_rank"))}   # the board ranks stars_rank
     if None in pct.values():
         return {"standing_parts": pct}
     stars = sorted(r["stars"] for r in rows if isinstance(r.get("stars"), (int, float)) and r.get("reviews"))
@@ -793,6 +817,7 @@ def snapshot(since):
         snap["forum_weights"] = forum_r3.plan()
     except Exception as e:
         snap["forum_ours"] = {"error": type(e).__name__}
+    snap["knob_reach"] = knob_reach()
     try:                                    # each area's board terms and their trend (board_terms_r3, 11/9 16:4x)
         import board_terms_r3
         board_terms_r3.append()

@@ -254,11 +254,13 @@
   },
   {
    "t": 1794207104.68,
-   "text": "Aim: top 10 of 45 students (now #20, 1.249 vs 1.556). The gap is the shop: book 137M vs ~415M, revenue 0.74B vs 2.8B; margin per sale is fine, volume is not. User's limits: no bankruptcy, no rule violations; using the market's rules to our advantage is allowed. In the ask_frac A/B only 11 of 90 goods asks were list x ask_frac (47 on the warranty floor, ~32 on list x p75 x market_ask), so the goods A/B now tests market_ask 1.05 vs 0.95. Propose levers that set price and volume."
+   "text": "Aim: top 10 of 45 students (now #20, 1.249 vs 1.556). The gap is the shop: book 137M vs ~415M, revenue 0.74B vs 2.8B; margin per sale is fine, volume is not. User's limits: no bankruptcy, no rule violations; using the market's rules to our advantage is allowed. In the ask_frac A/B only 11 of 90 goods asks were list x ask_frac (47 on the warranty floor, ~32 on list x p75 x market_ask), so the goods A/B now tests market_ask 1.05 vs 0.95. Propose levers that set price and volume.",
+   "superseded": true
   },
   {
    "t": 1794207448.68342,
-   "text": "Underdog plan (user: aim for #1, top 10 first). Rivals hold 3-7x our capital, so win where capital does not count: buyer saved (half of buyer ALL; we pay 0.67 of list, 21% of paid buys at 0.725+), stars (0.2 of shop; 4.29 vs 4.42+), and capital turns, not volume: 50 grade-A 450k+ units (41.7M) sit because the market's p75 is under our floor. Supervisor set buyer CAP 0.75 -> 0.70 (bounds now 0.6-0.95) for saved; judge it on buyer saved and paid buys, undo if paid buys halve."
+   "text": "Underdog plan (user: aim for #1, top 10 first). Rivals hold 3-7x our capital, so win where capital does not count: buyer saved (half of buyer ALL; we pay 0.67 of list, 21% of paid buys at 0.725+), stars (0.2 of shop; 4.29 vs 4.42+), and capital turns, not volume: 50 grade-A 450k+ units (41.7M) sit because the market's p75 is under our floor. Supervisor set buyer CAP 0.75 -> 0.70 (bounds now 0.6-0.95) for saved; judge it on buyer saved and paid buys, undo if paid buys halve.",
+   "superseded": true
   },
   {
    "t": 1794207864.451759,

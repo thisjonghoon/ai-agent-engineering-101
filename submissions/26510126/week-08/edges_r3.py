@@ -17,7 +17,7 @@ import re
 from pathlib import Path
 
 import metrics_r3
-from metrics_r3 import ME, SHOP_TERMS, BUYER_TERMS
+from metrics_r3 import ME, SHOP_TERMS, BUYER_TERMS, FIELD
 
 HERE = Path(__file__).resolve().parent
 RULES = Path.home() / "Developer" / "agent-market" / "rules"
@@ -37,8 +37,9 @@ def levers(board, steps=(1, 3, 5)):
         for term, w in terms.items():
             if (side, term) == ("buyer", "forum"):        # counts as the raw rating since patch 3.5
                 continue
-            ours = mine.get(term)
-            others = sorted(v for r in rows if r is not mine and isinstance(v := r.get(term), (int, float)))
+            f = FIELD.get(term, term) if side == "shop" else term   # stars: the board ranks stars_rank
+            ours = mine.get(f)
+            others = sorted(v for r in rows if r is not mine and isinstance(v := r.get(f), (int, float)))
             if not isinstance(ours, (int, float)) or not others:
                 continue
             above = [v for v in others if v > ours]
@@ -52,7 +53,11 @@ def rule_lines(limit=24):
     snaps = sorted(RULES.glob("agent-md-*.md"))
     if not snaps:
         return []
-    lines = [x.strip() for x in snaps[-1].read_text(encoding="utf-8").splitlines() if KEYS.search(x)]
+    all_lines = snaps[-1].read_text(encoding="utf-8").splitlines()
+    # from the scoring rules on (11/9 audit: the first 24 matches cut the saved rule mid-sentence, left out the forum
+    # stance rules and kept a Round 2 line)
+    start = next((i for i, x in enumerate(all_lines) if x.lstrip("- ").startswith("Rankings")), 0)
+    lines = [x.strip() for x in all_lines[start:] if KEYS.search(x)]
     return lines[:limit]
 
 

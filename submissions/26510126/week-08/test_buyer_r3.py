@@ -307,6 +307,11 @@ def main():
     # 11. grade C goods (11/7): C broke 15.7% of units, so it is bought only with a 6 h warranty, at any price
     g2 = buyer_r3.screen_for({"kind": "goods"}, 100000)
     cut = g2("매트리스: grade C, market certificate attached. Asking 80000")
+    case("grade B without a warranty ends the talk too (breaks 9-18% within 6 h, -1 on saved); with 6 h it goes on",
+         isinstance(g2("소파: grade B, market certificate attached. Asking 80000"), str)
+         and g2("grade B, 6 h warranty, certificate attached") is None
+         and buyer_r3.accept_policy({"kind": "goods"}, {"warranty_hours": 0})["grades"] == ["A"]
+         and "B" in buyer_r3.accept_policy({"kind": "goods"}, {"warranty_hours": 72})["grades"], "")
     case("grade C without a warranty ends the talk (another shop is tried); with a 6 h warranty: no cap",
          isinstance(cut, str) and "grade C" in cut and g2("grade C, 6 h warranty, certificate attached") is None, str(cut))
     pol = lambda r: buyer_r3.accept_policy({"kind": "goods"}, r, 100000)["grades"]
@@ -333,7 +338,7 @@ def main():
     async def fake_scout(order, cat, s, off, lp):
         return {"A": {"state": "TASK_STATE_REJECTED", "text": "Sorry, none in stock."},
                 "B": {"state": "TASK_STATE_INPUT_REQUIRED", "ask": 90000, "text": "grade A. Asking 90000"},
-                "C": {"state": "TASK_STATE_INPUT_REQUIRED", "ask": 60000, "text": "grade B. Asking 60000"}}[s["name"]]
+                "C": {"state": "TASK_STATE_INPUT_REQUIRED", "ask": 60000, "text": "grade B, 6 h warranty. Asking 60000"}}[s["name"]]
     real, buyer_r3.scout = buyer_r3.scout, fake_scout
     buyer_r3.SCOUTS, buyer_r3.CAP = 3, 0.9
     mk = lambda n, est: (est, {"name": n, "url": "http://" + n}, {"sku": "G" + n}, 100000, "")

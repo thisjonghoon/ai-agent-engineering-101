@@ -36,6 +36,9 @@ HERE = Path(__file__).resolve().parent
 BOARD = HERE / "logs" / "board" / "board-round3.json"
 # the rules of 11/5 03:49: the shop's first term is book (cash + what unsold units cost), no longer cash ("profit")
 SHOP_TERMS = {"book": 0.5, "revenue": 0.3, "stars": 0.2}
+# the board ranks the stars term on stars_rank, not the raw mean (11/9 audit: ALL fits stars_rank with a mean error of
+# 0.020 against 0.045 for stars over 58 shops; we sit at 4.57 raw, about p0.56, but 4.30 on stars_rank, about p0.28)
+FIELD = {"stars": "stars_rank"}
 # the rules of 11/6 06:02: the buyer's first term is saved, the sum over deals of surplus / list price (-1 for a deal that
 # served nothing, 0 if refunded) divided by deals + 100, so a snack and a sofa at 30% off score the same
 BUYER_TERMS = {"saved": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}
@@ -289,20 +292,21 @@ def lever_prices(board=None, k=3):
                             ("buyers", "saved", "saved")):
         rows = [r for r in board.get(side) or [] if r.get("deals")]
         mine = next((r for r in rows if r.get("name") == ME), None)
-        if not mine or not isinstance(mine.get(term), (int, float)):
+        f = FIELD.get(term, term) if side == "shops" else term
+        if not mine or not isinstance(mine.get(f), (int, float)):
             continue
-        above = sorted(v for r in rows if r is not mine and isinstance(v := r.get(term), (int, float)) and v > mine[term])
+        above = sorted(v for r in rows if r is not mine and isinstance(v := r.get(f), (int, float)) and v > mine[f])
         if not above:
             continue
         kk = min(k, len(above))
         w = (SHOP_TERMS if side == "shops" else BUYER_TERMS)[term]
-        out[key] = w * kk / (len(rows) - 1) / max(above[kk - 1] - mine[term], 1e-9)
+        out[key] = w * kk / (len(rows) - 1) / max(above[kk - 1] - mine[f], 1e-9)
         if side == "buyers":
             out["deals_total"] = mine.get("deals") or 0
             out["saved_now"] = mine[term]
         if key == "stars":
             out["reviews_total"] = mine.get("reviews") or 0
-            out["stars_now"] = mine[term]
+            out["stars_now"] = mine.get("stars")     # the raw mean a new review moves (shop_points_h)
     return out
 
 

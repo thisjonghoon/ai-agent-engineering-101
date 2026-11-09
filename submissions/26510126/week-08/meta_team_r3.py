@@ -44,13 +44,16 @@ ROLES = {
         "title": "head of sales",
         "task": ("You set how the shop prices and haggles: ask and floor as shares of list (goods and food), the "
                  "least margin over cost, how fast it concedes, how many turns it haggles, clearance of food near its "
-                 "date, warranty hours on grade-A goods, endgame floors, and how far the ask follows the market "
-                 "(market_ask). The shop's ALL weighs book (cash + unsold stock at cost) 0.5, revenue 0.3, "
-                 "stars 0.2 as percentiles among shops. You may propose one A/B test of a per-negotiation number and "
+                 "date, warranty hours on grade A and B goods (grade C sells without one), endgame floors, and how far the "
+                 "ask follows the market (market_ask). The shop's ALL weighs book (cash + unsold stock at cost) 0.5, "
+                 "revenue 0.3, stars 0.2 (ranked on the board's stars_rank) as percentiles among shops. Read "
+                 "knob_reach first: a number only matters in the talks it decides (most goods talks open at the "
+                 "floor, where step, max_turns and floor_frac change nothing)."
+                 "  You may propose one A/B test of a per-negotiation number and "
                  "a seller-team recruit style."),
         "data": ("minutes", "opens", "deals", "walks", "settled", "settle_refused", "revenue", "price_list", "margin",
                  "profit", "standing", "market_food_price_list", "market_goods_price_list", "going_prices",
-                 "our_reviews", "ab", "warranty_demand", "rules", "board_shop"),
+                 "our_reviews", "ab", "warranty_demand", "rules", "board_shop", "knob_reach"),
         "extra": ('"ab": null or {{"param": "<one of {ab_params}>", "kind": "food" | "goods", "value": <v>}} or '
                   '{{"playbook": "<a playbook name>", "kind": "food" | "goods"}} (a whole playbook against the strategy, on live buyers), '
                   '"recruit": null or {{"ask_delta": <-0.1..0.1>, "floor_delta": <-0.08..0.08>, "step": <0.2..0.7>}}, '
@@ -201,9 +204,8 @@ async def specialist(role, now, cur, plan, hist, after, advice, bounds, buyer_bo
     keys = role_keys(role, bounds, buyer_bounds)
     vals = plan if role == "buying" else cur
     btxt = "\n".join(f"  {k}: [{lo}, {hi}] ({st}), now {vals.get(k)}" for k, (lo, hi, st) in keys.items()) or \
-        ("  forum_weights: kinds best_value, freshness, pay_tips, fun, claims (our_deals posts whenever there are new deals), 0-3 each;"
-         " and every: seconds between our posts (310-1800, at most 120 s a cycle; posts are 0.1 of the buyer's ALL, the votes"
-         " on them 0.3: shorter while votes hold, longer if they fall)")
+        ("  forum_weights: kinds best_value, freshness, pay_tips, fun, claims, weather, haggle (our_deals posts whenever"
+         " there are new deals), 0-3 each. The cadence is fixed by code at the market's limit (one post per 310 s).")
     data = {k: now.get(k) for k in r["data"] if k in now}
     data.update(extra_data.get(role, {}))
     prompt = SPECIALIST.format(goal=GOAL, title=r["title"], task=r["task"], bounds=btxt,

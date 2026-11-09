@@ -95,6 +95,10 @@ hours; in an A/B the arm named before "won" is the winner; a later row that undo
 it, so never recommend a value a later row undid):
 {facts}
 
+The supervisor's standing orders now (they win over any lesson: drop or rewrite a lesson that contradicts them, e.g.
+one that demands an A/B the orders no longer require, or judges an area on another area's metric):
+{orders}
+
 The lessons now (may be empty or stale):
 {lessons}
 
@@ -131,8 +135,12 @@ async def dream(area, base=HERE, ask=None, now=None):
     shown = fs[-80:]                                    # the newest 80 facts: the prompt stays near 15,000 characters
     data = load(base)
     cur = data.get(area) or {}
+    try:                                                # 11/9 audit: lessons of 14:39 still demanded A/Bs the 13:2x orders dropped
+        orders = (base / "standing_orders_r3.md").read_text(encoding="utf-8")[:6000]
+    except OSError:
+        orders = "(none)"
     prompt = DREAM.format(title=TITLES[area], max=MAX, facts="\n".join(f"{i}: {x}" for i, _, x in shown),
-                          lessons=json.dumps(cur.get("lessons") or [], ensure_ascii=False))
+                          orders=orders, lessons=json.dumps(cur.get("lessons") or [], ensure_ascii=False))
     ans = await ask(prompt, model="sonnet", timeout=180, max_chars=30_000)
     kept = valid((ans or {}).get("lessons"), {i for i, _, _ in shown})
     if not kept:

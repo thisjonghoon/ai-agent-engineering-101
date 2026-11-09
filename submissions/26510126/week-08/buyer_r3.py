@@ -47,6 +47,7 @@ MD = Path(os.environ.get("MARKET_DIR") or HERE / ".market")
 CAP = 0.9            # never pay more than this share of the SKU's list price
 PRICE_GUESS = 0.75   # expected price as a share of list price with a shop we never paid (cost is 25-75% of list)
 FOOD_MARGIN = 1.1    # food must have use_within_hours x this left at checkout (the kit's clock and the shop's differ)
+BREAK_HOURS = 6          # goods break only within 6 h of the sale (agent.md)
 GOOD_GRADES = ["A", "B"]  # C is refurbished: the most likely to break after the sale
 # Grade C goods (11/4, the ledger's last 24 h: A broke 1.4%, B 5.2%, C 17.9% of settled units). A settled deal is
 # worth the list price, 0 if the goods break, and a warranty refunds the price, so C is worth buying with a warranty
@@ -329,11 +330,12 @@ def accept_policy(order, receipt=None, lp=None):
     r = receipt if isinstance(receipt, dict) else {}
     price = buyer.as_int(r.get("price"))
     # 11/7: C broke 15.7% of units (A 1.5%); a C at 0.65 of list is worth ~0.14 per deal, half the 0.279 mean, so only a warranty
-    warrantied = (r.get("warranty_hours") or 0) >= C_WARRANTY
-    cheap = lp and price is not None and price <= C_CAP * lp
-    if warrantied or (cheap and not code_ab_r3.on("ba9fd31c6b7c", order.get("order"))):
-        return {"cert": True, "grades": GOOD_GRADES + ["C"]}
-    return {"cert": True, "grades": GOOD_GRADES}
+    # 11/9 audit: B goods break 9-18% within 6 h and a break without a warranty counts -1 on saved (a B at 0.6 of
+    # list: 0.87 x 0.4 - 0.13 = 0.22 a deal against our mean 0.29; with a warranty the break is 0, so 0.35). 35 of
+    # our 198 broken buys were not covered. A without a warranty breaks ~2%: still worth it. So B and C need the
+    # 6 h break window covered; the C_CAP branch never ran (code_ab_r3.on is True with no trial) and is gone
+    warrantied = (r.get("warranty_hours") or 0) >= max(C_WARRANTY, BREAK_HOURS)
+    return {"cert": True, "grades": GOOD_GRADES + ["C"] if warrantied else ["A"]}
 
 
 GRADE_SAID = re.compile(r"\bgrade\s*:?\s*([ABC])\b|등급\s*:?\s*([ABC])\b", re.I)
@@ -350,13 +352,11 @@ def screen_for(order, lp=None):
     def screen(text):
         g = GRADE_SAID.search(text or "")
         grade = (g.group(1) or g.group(2)).upper() if g else None
-        if grade == "C" and pol.get("grades") and lp:
+        if grade in ("B", "C") and pol.get("grades"):
             w = WARRANTY_SAID.search(text or "")
-            if w and float(w.group(1)) >= C_WARRANTY:
+            if w and float(w.group(1)) >= max(C_WARRANTY, BREAK_HOURS):
                 return None
-            if code_ab_r3.on("ba9fd31c6b7c", order.get("order")):
-                return f"the shop says grade C with no {C_WARRANTY} h warranty, we pay only for A/B"
-            return {"cap": int(C_CAP * lp), "why": f"the shop says grade C with no {C_WARRANTY} h warranty"}
+            return f"the shop says grade {grade} with no {BREAK_HOURS} h warranty, we pay only for A or a warranted B/C"
         if grade and pol.get("grades") and grade not in pol["grades"]:
             return f"the shop says grade {grade}, we pay only for {'/'.join(pol['grades'])}"
         h = HOURS_SAID.search(text or "")

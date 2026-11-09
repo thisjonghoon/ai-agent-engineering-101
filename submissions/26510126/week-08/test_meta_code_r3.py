@@ -173,7 +173,7 @@ def main():
     meta_r3.NUMBER_TRIALS.write_text(json.dumps([{"t": now - 4000, "changes": {"ask_frac": [0.7, 0.85]}, "reason": "x"}]))
     mc.metrics_r3.outage_secs = lambda *a, **k: 0
     # by value: before 120 sales at 1% of the market's value, after 25 sales at 0.4% (halved): reverted
-    share = lambda n, v: {"ours": n, "share_value": v}
+    share = lambda n, v, sn=None: {"ours": n, "share_value": v, "share_n": sn if sn is not None else n / 6000}
     mc.metrics_r3.market_share = lambda t0, t1, base=None: share(120, 0.01) if t1 <= now - 3999 else share(25, 0.004)
     cut = meta_r3.fast_guard(now)
     reverted = json.loads(meta_r3.STRATEGY.read_text())["ask_frac"] == 0.7 and json.loads(meta_r3.NUMBER_TRIALS.read_text()) == []

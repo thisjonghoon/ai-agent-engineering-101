@@ -88,6 +88,10 @@ Our own metrics, per hour, oldest first (the metric names a hypothesis may use: 
 Code changes so far, with what was expected and what was measured (newest last):
 {ledger}
 
+Attempts that never went live (a failed test or the slot): do not try the same change again unless you fix why it
+failed; the same forum change failed test_buyer_r3.py on 11/8, 11/9 and 11/10 because this list was not shown:
+{failed}
+
 Code ideas the tuning team wrote lately (inputs, not orders; some describe what the code already does):
 {ideas}
 
@@ -391,8 +395,11 @@ def engineer_prompt():
     except (OSError, ValueError, AttributeError):
         advice = []
     ideas = [i for s in jl(STRATEGIES)[-3:] for i in (s.get("code_ideas") or []) if isinstance(i, str)]
+    failed = "\n".join(f"- {time.strftime('%m/%d %H:%M', time.localtime(a.get('t', 0)))} {str(a.get('idea'))[:220]} -> "
+                       f"{str(a.get('result'))[:120]}" for a in jl(ATTEMPTS)[-30:]
+                       if str(a.get("result") or "").startswith("not deployed"))[-2400:] or "(none)"
     return ENGINEER.format(gap=metrics_r3.gap_text(), metrics=", ".join(metrics_r3.METRICS), windows=windows,
-                           ledger=ledger, ideas="\n".join(f"- {i[:300]}" for i in ideas[-6:]) or "(none)",
+                           ledger=ledger, failed=failed, ideas="\n".join(f"- {i[:300]}" for i in ideas[-6:]) or "(none)",
                            advice="\n".join(f"- {n.get('text', '')[:900]}" for n in advice[-3:]) or "(none)",
                            allowed=", ".join(sorted(ALLOWED)), digest=area_digest())
 

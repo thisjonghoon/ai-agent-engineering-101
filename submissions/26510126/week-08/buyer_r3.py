@@ -301,9 +301,14 @@ def candidates(order, shops, cat, memory, claims):
                 # 88 of 826 payments were refused (25620027 22 of 48, jiseokkk 21 of 79): an agreed deal the kit refuses
                 # is an order with no sale, so a shop that gets paid ranks above one that is only quoted lower
                 pays = [m for m in memory if m.get("kind") == "payment" and m.get("round") == 3 and m.get("shop") == s["name"]]
-                if len(pays) >= 5:
+                # 12-13 of 100 agreed payments are refused for grade C or too little shelf life, all six seen from one
+                # shop: with the second trial on, act from 3 payments, on the last 20 only, and square the factor
+                second = code_ab_r3.on("0eb2c0ca6505", order.get("order"))
+                if second:
+                    pays = pays[-20:]
+                if len(pays) >= (3 if second else 5):
                     paid = sum(1 for m in pays if m.get("paid"))
-                    surplus *= (paid + 1) / (len(pays) + 1)
+                    surplus *= ((paid + 1) / (len(pays) + 1)) ** (2 if second else 1)
             short =order.get("kind") == "food" and need and info.get("shelf_hours") and \
                 info["shelf_hours"] * B_SHARE < need * FOOD_MARGIN
             if short:

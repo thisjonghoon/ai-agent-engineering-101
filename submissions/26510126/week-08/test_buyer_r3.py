@@ -404,6 +404,11 @@ def main():
     case("a shop that is refused 4 of 6 payments ranks behind a cheaper-quoted-by-share one that is always paid",
          got == ["L", "K"], str(got))
 
+    # 16c2. the paid-rate weight starts at 3 payments: a shop refused all 4 ranks behind one that is always paid
+    mem_q = [pay("K", False) for _ in range(4)] + [pay("L", True) for _ in range(4)]
+    got = [c[1]["name"] for c in buyer_r3.candidates(op, shop_p, cat_p, mem_q, {"K": (0, 0, 0.5), "L": (0, 0, 0.6)})]
+    case("a shop refused 4 of 4 payments ranks behind one always paid, though quoted lower", got == ["L", "K"], str(got))
+
     # 16d. the board's saved term is a rate per deal: a 30k SKU at 0.5 of list ranks above a 600k SKU at 0.8, though its surplus is smaller
     shop_r = [{"name": "M", "url": "http://M", "offers": [{"sku": "DEAR", "qty": 1}]},
               {"name": "N", "url": "http://N", "offers": [{"sku": "CHEAP", "qty": 1}]}]

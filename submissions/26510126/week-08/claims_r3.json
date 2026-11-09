@@ -1,0 +1,10 @@
+[
+ {"id": "so3-student-rank", "file": "standing_orders_r3.md", "says": "#20, 1.249 vs 1.556 for #10", "metric": "student_rank", "value": 20, "tol": 1, "as_of": "11/9 16:0x"},
+ {"id": "so3-student-total", "file": "standing_orders_r3.md", "says": "#20, 1.249 vs 1.556 for #10", "metric": "student_total", "value": 1.249, "tol": 0.02, "as_of": "11/9 16:0x"},
+ {"id": "so3-rank10", "file": "standing_orders_r3.md", "says": "#20, 1.249 vs 1.556 for #10", "metric": "rank10_total", "value": 1.556, "tol": 0.02, "as_of": "11/9 16:0x"},
+ {"id": "so6-forum-rank", "file": "standing_orders_r3.md", "says": "#13 of 40 students", "metric": "forum_rank_students", "value": 13, "tol": 1, "as_of": "11/9 16:2x"},
+ {"id": "so6-forum-rating", "file": "standing_orders_r3.md", "says": "(0.909; #1 bjeon01 0.933", "metric": "forum_rating", "value": 0.909, "tol": 0.005, "as_of": "11/9 16:2x"},
+ {"id": "so6-forum-leader", "file": "standing_orders_r3.md", "says": "(0.909; #1 bjeon01 0.933", "metric": "forum_leader_rating", "value": 0.933, "tol": 0.005, "as_of": "11/9 16:2x"},
+ {"id": "mem-goal-rank", "file": "~/.claude/projects/-Users-hoon/memory/agent-market-claude-owns-structure.md", "says": "#20, 1.249 vs 1.556", "metric": "student_rank", "value": 20, "tol": 1, "as_of": "11/9 15:4x"},
+ {"id": "mem-forum-rank", "file": "~/.claude/projects/-Users-hoon/memory/agent-market-ten-principles.md", "says": "#13 of 40 students, 0.909 vs bjeon01 0.933", "metric": "forum_rank_students", "value": 13, "tol": 1, "as_of": "11/9 16:2x"}
+]

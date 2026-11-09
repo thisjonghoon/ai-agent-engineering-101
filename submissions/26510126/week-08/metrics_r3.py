@@ -157,6 +157,21 @@ def settled_sales(t0, t1, base=HERE):
     return out
 
 
+def our_refunds(t0, t1, base=HERE, entries=None):
+    """What the market refunded from our shop for broken goods in [t0, t1) (the ledger's broken entries): a refund takes
+    the price back out of our cash, so out of Book, and out of revenue (11/9: the shop's metrics counted none)."""
+    base = Path(base)
+    if entries is None:
+        try:
+            entries = json.loads((base / ".market" / "ledger-recent.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return 0
+    urls = {(e["data"].get("url") or "").rstrip("/") for e in entries
+            if e.get("kind") == "join" and e["data"].get("name") == ME and e["data"].get("role") == "shop"}
+    return sum((e.get("data") or {}).get("refunded") or 0 for e in entries if e.get("kind") == "broken"
+               and t0 <= e.get("ts", 0) < t1 and str((e.get("data") or {}).get("shop") or "").rstrip("/") in urls)
+
+
 def paid_share(t0, t1, base=HERE):
     """(our paid sales, the whole market's paid sales) in [t0, t1) from the ledger cache: the fast guard compares our
     share before and after a change, so the market's own rhythm (night, outages) cancels out."""
@@ -206,6 +221,15 @@ def record_buckets(base=HERE, now=None):
         if b in rows:
             rows[b]["mkt_n"] += 1
             rows[b]["mkt_value"] += (e.get("data") or {}).get("amount") or 0
+    try:
+        entries = json.loads((base / ".market" / "ledger-recent.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        entries = []
+    for b0 in todo:                                     # refunds out of our value and margin, as on the board
+        rf = our_refunds(b0, b0 + BUCKET, base, entries)
+        rows[b0]["ours_value"] -= rf
+        rows[b0]["ours_margin"] -= rf
+        rows[b0]["ours_refund"] = rf
     for x in settled_sales(todo[0], todo[-1] + BUCKET, base):
         b = int(x["t"]) // BUCKET * BUCKET
         if b in rows:
@@ -227,8 +251,9 @@ def shop_side(t0, t1, base=HERE):
     if settles and min(e["ts"] for e in settles) <= t0:
         ours = settled_sales(t0, t1, base)
         mkt = [e for e in settles if t0 <= e["ts"] < t1]
-        return {"ours_n": len(ours), "ours_value": sum(x["price"] for x in ours),
-                "ours_margin": sum(x["price"] - (x.get("cost") or 0) for x in ours), "mkt_n": len(mkt),
+        refunds = our_refunds(t0, t1, base)
+        return {"ours_n": len(ours), "ours_value": sum(x["price"] for x in ours) - refunds,
+                "ours_margin": sum(x["price"] - (x.get("cost") or 0) for x in ours) - refunds, "mkt_n": len(mkt),
                 "mkt_value": sum((e.get("data") or {}).get("amount") or 0 for e in mkt), "from": "ledger"}
     rows = [x for x in jl(base / BUCKETS) if t0 <= x.get("t", 0) and x["t"] + BUCKET <= t1]
     if not rows or len({x["t"] for x in rows}) * BUCKET < 0.9 * (t1 - t0):
@@ -369,8 +394,9 @@ def window(t0, t1, base=HERE, keep=None):
     posts = posts if isinstance(posts, list) else posts.get("posts", []) if isinstance(posts, dict) else []
     ours = [p for p in posts if isinstance(p, dict) and p.get("author") == ME and p.get("role", "buyer") == "buyer"
             and t0 <= (p.get("ts") or 0) < t1]
-    margin_h = sum(x["price"] - (x.get("cost") or 0) for x in sold) / hours
-    revenue_h = sum(x["price"] for x in sold) / hours
+    refunds = our_refunds(t0, t1, base)
+    margin_h = (sum(x["price"] - (x.get("cost") or 0) for x in sold) - refunds) / hours
+    revenue_h = (sum(x["price"] for x in sold) - refunds) / hours
     saved_deal = sum(rates) / len(rates) if rates else None
     return {
         "board_pts_h": board_points_h(margin_h, revenue_h, len(paid) / hours, saved_deal),

@@ -90,6 +90,10 @@ REFUSED_SECS = 7200
 # u-8766bea1baa3 (11/9 02:25, 05:23) and u-9eec9af868a3 (06:12, 09:33) came back after 2 h and were refused again.
 # Refusals closer than REFUSED_APART are one checkout retried, not a second refusal
 REFUSED_APART = 600
+# the grades that carry a warranty and the share of their price we expect to refund (11/9 15:1x: with every grade
+# warranted from 13:41, 5 refunds came in 90 min, 4.78M, four of them grade C (3.23M on 8.8M of C sold); the market's
+# goods break, counted over the full 6 h after the sale, about A 3%, B 9-18%, C 29-40%). C is sold without one
+WARRANTY_Q = {"A": 0.03, "B": 0.13}
 OPEN_HOLD = 120     # seconds a negotiation keeps its unit before another buyer may be offered it
 MODEL_SLOTS = asyncio.Semaphore(3)    # model calls at once; a turn that finds them all busy is decided by the rules
 MODEL_TIMEOUT = 8                     # seconds (haiku answered in 3.7 s at the median, 5.3 s at p90, over 160k calls)
@@ -350,6 +354,9 @@ def prices(u, s):
         floor = min(floor, cost * s["final_frac"])
     elif left < s["endgame_hours"]:
         floor = min(floor, cost * s["endgame_frac"])
+    # a warranted unit never goes under its cost plus margin after the refunds we expect, whatever drop came above
+    if u.get("kind") == "goods" and s["warranty_hours"] > 0 and grade in WARRANTY_Q:
+        floor = max(floor, cost * (1 + s["min_margin"]) / (1 - WARRANTY_Q[grade]))
     ask = max(min(lp * min(ask_frac, 1.0), cap or lp), floor)
     return int(round(ask)), int(round(min(floor, ask)))
 
@@ -369,7 +376,7 @@ def terms(u, s):
     # same, and buyers that ask for one closed 4% of our 300k+ talks against 41% without (6 h, 367 vs 119 talks) while
     # the market sells 85% of B and 64% of C with a warranty (72 h most often). Expected refunds (B ~5%, C ~18% of the
     # price) stay under the margin at our asks; stars stay on a refunded deal
-    if u.get("kind") == "goods" and s["warranty_hours"] > 0:
+    if u.get("kind") == "goods" and s["warranty_hours"] > 0 and grade in WARRANTY_Q:
         t["warranty_hours"] = int(s["warranty_hours"])
         words.append(f"{int(s['warranty_hours'])} h warranty")
     return t, ", ".join(words)

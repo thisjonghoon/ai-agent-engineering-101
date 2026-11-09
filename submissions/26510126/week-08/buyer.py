@@ -202,7 +202,9 @@ async def shop(base, item, budget, memory="", max_raise=None, max_offers=MAX_OFF
             firm = ask is not None and len(asks) >= 2 and asks[-1] == asks[-2]   # many shops end the talk after two holds
             # 11/5, 1,708 talks: 171 where the shop's first two counters were the same ask above our cap closed once (0.6%)
             # and cost ~0.98 h of 4-7 s model calls; 3 repeats 0 of 89 closed; a first ask over 1.5x cap 0 of 34
-            if ask is not None and ask > budget and ((len(asks) == 3 and asks[1] == asks[2]) or (n == 1 and ask > 1.5 * budget)) \
+            # 11/9: 39 talks where the shop repeated an ask above our cap, 0 closed, median 8 s to 8 min; walk at the first repeat
+            held = (len(asks) >= 2 and asks[-1] == asks[-2]) if code_ab_r3.on("2161982339af", order_id) else (len(asks) == 3 and asks[1] == asks[2])
+            if ask is not None and ask > budget and (held or (n == 1 and ask > 1.5 * budget)) \
                     and code_ab_r3.on("9ce88c6b4ccb", order_id):
                 log("OUT", f"ask {ask} above our cap {budget} and {'held' if n > 1 else 'over 1.5x cap'}, walking away")
                 await seller.cancel(task_id)

@@ -472,7 +472,7 @@ def main():
          and not buyer_r3.dead_pair("Q", "GQ", [qr, priced, priced]) and not buyer_r3.dead_pair("Q", "GX", [qr] * 2),
          str(buyer_r3.dead_pair("Q", "GQ", [qr] * 2)))
 
-    # 22. a shop that repeats an ask above our cap on its first two counters is left without a model call (11/5: 171 talks, 1 closed)
+    # 22. a shop that repeats an ask above our cap is left at the first repeat (11/5: 171 talks, 1 closed; 11/9: 39 talks, 0 closed)
     calls = []
     async def count_harness(prompt, **kw):
         calls.append(1)
@@ -482,8 +482,8 @@ def main():
     got = asyncio.run(buyer_r3.buyer.shop(base_h, "포기김치 5kg", 20000, opening="I want to buy 포기김치 5kg (F1)",
                                          max_raise=0.4, order_id="o-hold"))
     harness.ask = scripted
-    case("a shop holding an ask above our cap through its first two counters is walked away from after two model calls",
-         got.get("state") == "walked" and len(calls) == 2 and len(got["asks"]) == 3, str((got.get("state"), len(calls), got.get("asks"))))
+    case("a shop repeating an ask above our cap is walked away from after one model call",
+         got.get("state") == "walked" and len(calls) == 1 and len(got["asks"]) == 2, str((got.get("state"), len(calls), got.get("asks"))))
 
     # 23. a first offer above 0.88 of a first ask within our cap is cut to 0.88 (first 25 deals: opened 0.93-0.95, closed 0.97-0.99)
     async def high_open(prompt, **kw):

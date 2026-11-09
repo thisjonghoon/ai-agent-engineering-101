@@ -236,7 +236,33 @@ def advice(hours=24, n=3):
     # lessons while CAP's floor is 0.75, approved and silently clamped each time (11/9 review)
     bounds = "\nBuyer numbers' bounds (a value outside is clamped, so do not propose it): " + ", ".join(
         f"{k} {lo}-{hi}" for k, (lo, hi, _) in BUYER_BOUNDS.items())
-    return standing + text + slot + bounds + code_changes() + number_changes() + number_memory() + rivals() + edges()
+    # one budget for the whole block (memory study: a small injected layer; long instruction files lower adherence).
+    # 11/9 17:3x it was ~16,000 characters before each specialist's own data; orders, notes, slot and bounds go whole,
+    # the rest is cut to its share, newest kept for the logs, the head kept for the tables
+    out = standing + text + slot + bounds + fit(code_changes(), 1500, tail=True) + \
+        fit(number_changes(), 1200, tail=True) + fit(number_memory(), 1600) + fit(rivals(), 1500) + fit(edges(), 1500)
+    return out if len(out) <= ADVICE_MAX else out[:ADVICE_MAX] + "\n(cut to fit the prompt)"
+
+
+ADVICE_MAX = 14000
+
+
+def fit(block, n, tail=False):
+    """block cut to n characters at a line, keeping the newest lines (tail) or the first ones, with a note of the cut."""
+    if not block or len(block) <= n:
+        return block or ""
+    lines = block.split("\n")
+    keep, size = [], 0
+    for line in (reversed(lines) if tail else lines):
+        if size + len(line) + 1 > n - 40:
+            break
+        keep.append(line)
+        size += len(line) + 1
+    if tail:
+        keep.reverse()
+        head = next((l for l in lines if l.strip()), "")      # the section's title line stays
+        return "\n" + head + "\n  (older lines cut to fit the prompt)\n" + "\n".join(k for k in keep if k != head)
+    return "\n".join(keep) + "\n  (rest cut to fit the prompt)"
 
 
 def number_memory():

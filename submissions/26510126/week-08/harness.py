@@ -20,7 +20,8 @@ ENV = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
 
 
 def log(tag, text):
-    print(f"[{time.strftime('%H:%M:%S')}] {tag}: {text}", file=sys.stderr, flush=True)
+    # the date too (11/9: twice an old day's line read as today's: the log has days of lines and no date)
+    print(f"[{time.strftime('%m/%d %H:%M:%S')}] {tag}: {text}", file=sys.stderr, flush=True)
 
 
 def clip(text, n):

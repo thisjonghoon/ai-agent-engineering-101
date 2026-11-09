@@ -163,7 +163,7 @@ def append(path, row):
 
 
 def log(msg):
-    print(f"[{time.strftime('%H:%M:%S')}] CODE: {msg}", flush=True)
+    print(f"[{time.strftime('%m/%d %H:%M:%S')}] CODE: {msg}", flush=True)   # dated (11/9)
 
 
 def git(*args):

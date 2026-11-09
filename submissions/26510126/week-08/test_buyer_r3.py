@@ -417,6 +417,9 @@ def main():
     got = [c[2]["sku"] for c in buyer_r3.candidates(orr, shop_r, cat_r, [], {"M": (0, 0, 0.8), "N": (0, 0, 0.5)})]
     case("a cheap SKU saving 50% of list ranks above a dear one saving 20%", got == ["CHEAP", "DEAR"], str(got))
 
+    case("a deal with no offer of ours (the first ask taken) still gets a review",
+         buyer_r3.review({"state": "TASK_STATE_COMPLETED", "asks": [27000], "offers": []}, "X", 30000, None)[0] == 4)
+
     # 17. a refused payment for short shelf life: that pair waits only for orders asking more hours than it shipped
     buyer_r3.avoid_add("S", "GS", "short shelf life", 3600, hours=200.0)
     av = buyer_r3.avoid_load()

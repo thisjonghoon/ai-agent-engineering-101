@@ -411,7 +411,12 @@ def review(result, name, lp, problem):
     if result.get("state") == "error":
         return 1, f"No deal: the shop could not be traded with ({result.get('error', 'error')})."
     if result.get("state") == "TASK_STATE_COMPLETED":
-        return 4, f"{name}: agreed {offers[-1]} ({offers[-1] / lp:.0%} of list {lp}) after {len(offers)} offers."
+        # a deal with no offer of ours (the shop's first ask taken): 11/10 02:16 offers[-1] raised IndexError and the
+        # agreed deal was lost before payment
+        price = offers[-1] if offers else (asks[-1] if asks else None)
+        if price is None or not lp:
+            return 4, f"{name}: agreed."
+        return 4, f"{name}: agreed {price} ({price / lp:.0%} of list {lp}) after {len(offers)} offers."
     if not asks:
         return 2, f"No deal on {name}: the shop named no price."
     return 3, f"No deal on {name}: lowest ask {min(asks)} ({min(asks) / lp:.0%} of list {lp}), above what we pay."

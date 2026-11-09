@@ -30,10 +30,10 @@
  "window_depth": 3.5,
  "order_weight": 1.0,
  "model_share": 0.0,
- "market_ask": 1.0,
+ "market_ask": 0.9,
  "surge_max": 1.15,
  "dear_depth": 5,
  "lines": 20,
- "breadth_lines": 4.0,
+ "breadth_lines": 4,
  "sku_cap": 16
 }

@@ -84,6 +84,7 @@ How past deals and reputation reach the next decision:
 | Each negotiation's offers and outcome | `logs/talks_r3.jsonl` | `simulate_r3` → the meta-harness (until 11/4 21:50; playbooks are now tried on live buyers instead) | which playbook to lean on, which number to A/B test |
 | Margin per negotiation under two values at the same hour | `logs/ab_r3.jsonl` | `ab_r3.winner` → code | the winning value is written into the strategy |
 | Our stars and rank among shops and players | the market's board | `meta_r3.standing`, `rank_r3` | where the meta-harness trades margin for sales or stars |
+| Our reputation as a shop: the reviews and stars buyers give our paid deals; as a buyer: the reviews we write (`review_r3.py`, after each paid deal, from what the market says arrived: grade, claim, shelf life, price against list) | the market's board and reviews, `memory.jsonl` | the sales specialist (`our_reviews`: count, mean, warranty mentions, the low ones with their words), our buyer's shop record | warranty hours and asks on the goods that drew low stars; a shop whose claims were false or whose goods broke is banned by our buyer |
 | Orders our buyer gets, requests our shop gets | `logs/demand_r3.jsonl` | `restock_r3` via `demand_r3.signals` | which categories and SKUs are bought, at what price point |
 | What each category and SKU settled for (24 h), and forum price claims checked against it | `.market/prices_r3.json` (`prices_r3.py`, from the ledger) | the seller's model, the buyer's haggle hint, the sales specialist | where our asks, floors and first offers sit; forum numbers are never used as prices |
 | Each team member's reward per talk (buyer surplus, seller margin over list) | `memory.jsonl`, `logs/talks_r3.jsonl` | `team_r3.review` each cycle | who leads, who is replaced and by what style |
@@ -231,6 +232,29 @@ same way.
 | A2A negotiation | our buyer and our seller | `buyer.py` client, `seller_r3.py` server |
 | `restock` hook, `review` hook, forum outbox | kit v4 | `restock_r3.py`, `review_r3.py`, `forum_r3.py` |
 
+**Tools for the models: computed by code, handed over as tables.** The agents that decide every cycle (the four
+specialists, the manager, the reviewer, the lessons writer) run as `claude -p` with no tools: each reads a prompt that
+code built from the record and answers in JSON, which code bounds and applies. That is a choice, for three reasons:
+every input a model decided on is logged and can be judged later on the same numbers; a model cannot touch the market,
+money or files (no call it makes can pay, post or write); and a cycle of five calls stays near a minute. What a model
+would otherwise fetch with a tool, code computes for it:
+
+| Tool (code) | Input | Output | Read by |
+|---|---|---|---|
+| `metrics_r3` | the ledger's settles, our buyer's memory, our talks, the 10-minute market buckets | per window: paid sales, margin, revenue, our share of the market's paid value and count, shop points and buyer points per hour | every verdict, the engineer |
+| `edges_r3` | the board and the market's `agent.md` | for each board term, what passing the next 1/3/5 rivals needs and the points it buys, with the rule lines it rests on | every specialist and the manager |
+| `digest_r3.rivals_digest` | the ledger's last 6 h | the top shops' paid revenue, sales, mean sale, paid share of list, 300k+ share, grade A and warranty shares, beside ours | every specialist, the manager, the engineer |
+| `prices_r3` | the ledger's settles (24 h), the forum's price claims | going price per SKU and category as a share of list; claims checked against it | the buyer's haggle hint, the sales specialist |
+| `demand_r3` | orders our buyer receives, requests our shop gets | decayed demand by category, SKU and price point | the restock, the merchandising specialist |
+| `rank_r3` | the board's Players table | our rank, the leader's gap, the instructor's agent as a floor | the manager |
+| `rejudge_r3`, `lessons_r3` | the verdict ledger and the market buckets | each number's value now and re-judged past; each area's lessons with their evidence | every specialist and the manager (section 1.2.1) |
+| `ab_r3`, `code_ab_r3` | each negotiation or order, by arm | the winning value at the same hours, on paid shop points per talk or buyer points | code |
+| `supervise_r3` | the supervisor's number and reason | the change, into the same verdict ledger | the supervisor only |
+
+The two agents that do use tools are the outer loop's, and only inside a copy of the code: the engineer reads files
+(`Read`, `Glob`, `Grep`), and the coder may also edit them and run the test suites (`Edit`, `Write`,
+`Bash(python test_*)`); a code gate decides what reaches the live folder (section 2).
+
 **The optional tool buyer.** Built for kit v3 on 10/30 and moved onto kit v4 on 11/1 (`082e28d`, 9/9 offline cases):
 before a session exists a failure falls back to the kit's `acp_pay`; after, one fixed `complete` on the same session
 at most; after a `complete` was sent, never again. **How it was made:** the first attempt in this session was stopped
@@ -349,9 +373,40 @@ something checkable to say); and the meta-harness and the A/B test change prices
 
 ## 3. Round 3 results
 
-TODO from 11/3: settled deals (shop and buyer), Players rank, refused settlements quoted from `logs/market-kit.log`
-and `.market/payments.jsonl` (`python r3_results.py` prints them as Markdown), the A/B results (`python ab_r3.py`), and "값 다시 정하기" (`python reprice_dashboard.py`: opening ask and deal price before
-and after the budgets left the ledger).
+As of **2026-11-09 13:26**; `python r3_results.py` recounts all of it from the logs and the board, and the table is
+refreshed at submission. The final rank is the board's when the round ends (11/17 23:59).
+
+| | Count | Quoted from |
+|---|---|---|
+| Deals settled at our shop | **11,542** (board: 11,545) | `[acp] settled ... ledger #N` lines in the kit log and its archives, one per ledger entry (the archives overlap, 13,036 lines) |
+| Deals settled by our buyer | **10,110** (board: 10,110) | `[acp-tools] paid N with create_checkout_session -> complete_checkout_session, settled at ledger #N` |
+| Players rank | **#22 of 63**, total 1.343; class view: student total 1.253, percentile 0.568 | `/api/board` players |
+| Shop | #13 of 84 by the board's order: Book 129.9M, revenue 671.9M, stars 4.58, 11,173 of 11,173 grade claims true, 0 bankruptcies | `/api/board` shops |
+| Buyer | #11 of 125: saved 0.2888, forum rating 0.908, 912 posts, deals on 61% of orders | `/api/board` buyers |
+
+**Refusals, from the logs.** At our shop (the market's checkout refusing a unit, and settles it refused):
+
+```
+22:54:02 [acp] checkout refused: 409 {"error":"unit u-c3faaaa21dd8 is not in stock for this order"}   496 lines
+13:07:24 [acp] settle refused: ['not_settled_before']                                                  83 lines
+```
+
+"Not in stock" is kit v4's checkout keeping a unit for an abandoned session (reported in the course discussion,
+#378); the seller leaves such a unit out for 2 h and, from the next kit restart, for good on its second refusal
+(`23fad57`). "not_settled_before" is a buyer paying an order a second time.
+
+By our buyer, before it pays (its accept policy, checked by the kit) and when the market refused the payment:
+
+```
+21:05:00 [acp-tools] not paying: 286.82 h of shelf life left, the policy asks for 594.0                 625 of 965 lines
+not paying: grade C, the policy accepts ['A', 'B']                                       145 in .market/payments.jsonl
+not paying: no certificate, and the policy asks for one                                  108 in .market/payments.jsonl
+11:48:58 [acp-tools] payment not completed (complete_checkout_session): 402 {"error":"payment refused by the market", ...}   12 lines
+```
+
+Food that would not last the order's use window, grade C without a warranty (since 11/7, `eafc244`: a C unit broke
+15.7% of the time, so the 11/3 rule "C at 65% of list" gave way to "C only with a warranty"), and units without the
+market's certificate are refused before any money moves; of 11,193 agreed deals, 10,110 were paid.
 
 ### 3.x What went wrong, and what each failure changed in the structure
 

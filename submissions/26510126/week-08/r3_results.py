@@ -21,14 +21,19 @@ PATTERNS = {
     "buyer paid": re.compile(r"\[acp(-tools)?\] paid "),
     "shop settle refused": re.compile(r"\[acp\] settle refused"),
     "shop checkout refused": re.compile(r"\[acp\] checkout refused"),
-    "buyer not paying (accept policy)": re.compile(r"not paying: "),
-    "buyer payment failed": re.compile(r"payment (not completed|failed)"),
+    "buyer not paying (accept policy)": re.compile(r"\[acp(-tools)?\] not paying: "),
+    "buyer payment failed": re.compile(r"\[acp(-tools)?\] payment (not completed|failed)"),
     "supply": re.compile(r"\[supply\]"),
     "forum": re.compile(r"\[forum\]"),
 }
 
 
 def lines():
+    """The whole round: the archived kit logs (archive_kit_log.sh cuts the live log and gzips it), then the live ones."""
+    import gzip
+    for p in sorted((HERE / "logs" / "archive").glob("market-kit-until-*.log.gz")):
+        with gzip.open(p, "rt", encoding="utf-8", errors="replace") as f:
+            yield from (l.rstrip("\n") for l in f)
     for p in LOGS:
         if p.exists():
             yield from p.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -40,14 +45,20 @@ def main():
     a = ap.parse_args()
     count, example = collections.Counter(), {}
     reasons = collections.Counter()
+    seen = set()            # the archives and .log.1 overlap: a settle counts once per ledger entry (11/9: 13,036 lines, 11,542 entries)
     for line in lines():
         for k, rx in PATTERNS.items():
             if rx.search(line):
+                ref = re.search(r"ledger #(\d+)", line) if k in ("shop settled", "buyer paid") else None
+                if ref:
+                    if (k, ref.group(1)) in seen:
+                        continue
+                    seen.add((k, ref.group(1)))
                 count[k] += 1
                 example.setdefault(k, line.strip()[:220])
                 if k in ("shop settle refused", "shop checkout refused", "buyer not paying (accept policy)", "buyer payment failed"):
-                    reasons[(k, re.sub(r"\d+", "N", line.split("]", 2)[-1].strip())[:120])] += 1
-    print(f"Counted {time.strftime('%Y-%m-%d %H:%M')} from `logs/market-kit.log`.\n")
+                    reasons[(k, re.sub(r"\d+", "N", re.sub(r"\b(u|o)-[0-9a-f]+", r"\1-…", line.split("]", 2)[-1].strip()))[:120])] += 1
+    print(f"Counted {time.strftime('%Y-%m-%d %H:%M')} from `logs/archive/market-kit-until-*.log.gz` and `logs/market-kit.log`.\n")
     print("| Line in the kit log | Count | First example |\n|---|---|---|")
     for k in PATTERNS:
         print(f"| {k} | {count[k]} | `{example.get(k, '').replace('|', '/')}` |")
@@ -71,7 +82,10 @@ def main():
     print(f"\nBoard at {time.strftime('%Y-%m-%d %H:%M')} (round {b.get('current')}):\n")
     for kind in ("players", "shops", "buyers"):
         rows = b.get(kind) or []
-        i = next((i for i, r in enumerate(rows) if r.get("name") == US or (r.get("owner") or {}).get("login") == US), None)
+        if kind == "players":
+            rows = sorted(rows, key=lambda r: -(r.get("total") or 0))
+        i = next((i for i, r in enumerate(rows) if US in (r.get("name"), r.get("player"))
+                  or (r.get("owner") or {}).get("login") == US), None)
         if i is not None:
             nums = {k: v for k, v in rows[i].items() if isinstance(v, (int, float)) and not isinstance(v, bool) and k != "joined"}
             print(f"- {kind}: #{i + 1} of {len(rows)} (top {100 * (i + 1) / len(rows):.0f}%) {json.dumps(nums, ensure_ascii=False)}")

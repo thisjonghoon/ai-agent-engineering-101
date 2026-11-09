@@ -251,6 +251,10 @@
   {
    "t": 1794194483.229629,
    "text": "Correction to the 10:51 note: buyer CAP is 0.75 now and its bounds start at 0.75, so 'CAP 0.7' cannot be chosen; the saved edge stands (the next 5 buyers at 0.2896-0.2953 against our 0.2886 at 12:04), at the saved per deal CAP 0.75 gives. Notes carry their age from now on; a number in an old note may be stale, check its value now."
+  },
+  {
+   "t": 1794207104.68,
+   "text": "Aim: top 10 of 45 students (now #20, 1.249 vs 1.556). The gap is the shop: book 137M vs ~415M, revenue 0.74B vs 2.8B; margin per sale is fine, volume is not. User's limits: no bankruptcy, no rule violations; using the market's rules to our advantage is allowed. In the ask_frac A/B only 11 of 90 goods asks were list x ask_frac (47 on the warranty floor, ~32 on list x p75 x market_ask), so the goods A/B now tests market_ask 1.05 vs 0.95. Propose levers that set price and volume."
   }
  ]
 }

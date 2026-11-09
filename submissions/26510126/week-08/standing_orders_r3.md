@@ -7,7 +7,7 @@ what it came from and when it is to be reviewed; a rule past its review conditio
 2. Count only sales paid on the ledger and judge only closed windows; a JUDGED row is a verdict even when it names
    confounds. A change judged in both directions on VERIFIED rows is not repeated; UNVERIFIED rows (raw margin/h before
    11/9 11:13, they read the hour of day) do not count as judged, so they are no reason to hold or to avoid a number.
-   [since 11/7, amended 11/9 12:2x; from: receipts that never settled (11/7), then 31 holds on unverified "both
+   [since 11/7, amended 11/9 12:2x; from: receipts that never settled (11/7), then 21 holds on unverified "both
    directions" verdicts (memory check, 11/9); review: when the backfill re-judges the old rows]
 3. While we catch up (from 11/9), change a number for everyone when the paid-sales evidence is clear and let the 2 h
    verdict and the fast guard (half our market share in the first hour reverts it) judge it; A/B only risky buyer or

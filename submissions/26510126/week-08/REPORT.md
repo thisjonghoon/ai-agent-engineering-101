@@ -1,8 +1,8 @@
 # Week 08 (midterm) — our shop and buyer in the Round 3 market
 
-**Status, 2026-11-04 (draft).** Round 3 runs 11/3 to 11/17 23:59 (the date moved on 10/31, with kit v4 and the
-economy rules). Sections 1 and 2 describe the agents as they run now; section 3 is filled in from the Round 3 logs.
-The one-page figure is `architecture.tex` / `architecture.pdf`.
+**Status, 2026-11-09 (draft).** Round 3 runs 11/3 to 11/17 23:59 (the date moved on 10/31, with kit v4 and the
+economy rules). Sections 1 and 2 describe the agents as they run on 11/9; section 3 is filled in from the Round 3 logs.
+The one-page figure is `architecture.tex` / `architecture.pdf` (rebuilt 11/9 with the memory structure).
 
 - **Shop:** our own seller (`seller_r3.py`) run by kit v4 on a Mac mini behind a cloudflared tunnel, selling from
   stock it buys itself (`restock_r3.py`). A sales team of three pricing styles takes the talks by rank (`team_r3.py`).
@@ -20,7 +20,12 @@ The one-page figure is `architecture.tex` / `architecture.pdf`.
   never fired, yet a before/after reading gave it -10%: the evening's traffic). Expected and measured results go to one ledger
   (`logs/code_changes_r3.jsonl`) that both loops read.
 - **Supervisor** (Claude Code, for the user): watches every decision, stops bad ones with evidence, and steers through
-  notes the manager reads as advice (`advice_r3.json`), not by setting numbers itself.
+  standing orders and notes the manager reads as advice (`standing_orders_r3.md`, `advice_r3.json`); when it must
+  change a number it does so through `supervise_r3.py`, and the change is judged like the team's.
+- **Memory that is checked, not only kept (11/9, section 1.2).** One aim for every verdict (board points per hour, by
+  the board's own weights), number verdicts on our share of the market's paid sales, the market filed every 10
+  minutes so old verdicts can be judged again, each area's lessons rewritten from that record with what is verified
+  and what is not, and standing orders that carry where they came from and when to review them.
 - **Why not the Worker any more.** Until Round 2 the shop was a Cloudflare Worker (`deploy/`) that also served its own
   ACP checkout (section 1.4). In Round 3 a shop sells units from stock, with grades, warranties and a unit chosen at
   checkout; kit v4 does that for a seller it runs, a Worker would have to redo it all. With a day and a half before
@@ -58,11 +63,14 @@ raw evidence that the next decision reads.
 | Shop, each haggle turn | Claude haiku in a share of talks (`model_share`), the rule otherwise | accept or a counter, with a one-line reason; it sees the unit, every offer, our stock, demand, the going price and what the rule would do here | `seller_r3.py`: the floor is a hard limit; a counter sits between the offer and our last ask; busy (3 calls at once), slow (8 s) or unusable answers go to the rule. The model sold 24% of its talks at 2,128 a talk against the rule's 40% at 3,207 (11/4, after its prompt was reworked), so the meta-harness set its share to 0 |
 | Buyer, each order | Claude haiku (`buyer_r3.py` via `buyer.py`) | each offer in the haggle, with a one-line reason (the ReAct trace) | which shops the scouts ask and which quote the lead takes (surplus at the ask), bans (false grade claims, broken goods without warranty), the cap (min(budget, CAP × list), lower for grade C without a 6 h warranty), leaving before a deal when the shop's own words fail our payment policy, the accept policy for the kit |
 | Forum column | eight writers on Claude haiku (`forum_r3.style`), an editor on GPT (Hermes) | each writer gives its kind of post a voice (`장보기 레이더`) from facts code built; the editor publishes, revises or rejects each draft against those facts | every number in the writer's or the editor's text must be one of the facts' numbers, no link, no call for votes; else the plain facts go out |
-| Second opinion on the meta-harness | GPT through Hermes (`meta_team_r3.second_opinion`) | keep, trim or reject per specialist proposal, looking for short trials, cycles of unequal length, crossed evidence | the sonnet manager weighs it; it never sets a number |
+| Second opinion on the meta-harness | GPT through Hermes (`meta_team_r3.second_opinion`); Claude opus when GPT fails, and at once until 11/11 15:36 (the ChatGPT plan's usage limit, hit 11/9 09:09) | keep, trim or reject per specialist proposal, looking for short trials, cycles of unequal length, crossed evidence | the sonnet manager weighs it; it never sets a number. A failed review is logged: from 09:09 to 11:36 on 11/9 it returned nothing silently and the manager decided alone |
 | Fallback for every call | GPT through Hermes (`harness.fallback`) | the same prompt, when every Claude try failed (a usage limit or an outage) | when GPT fails too, the buyer haggles on by code (a set share of the gap, within budget) instead of walking away; the watcher alerts on each fallback |
+| Lessons per area, every 3 h | Claude sonnet (`lessons_r3.dream`) | rewrites each area's lessons from the record: rule, the facts it rests on, verified / unverified / contradicted, the trap | a lesson citing no fact or an unknown one is dropped; the old version goes to the history |
 | Ideas | Claude sonnet (`meta_explore.py`, from week 7) | proposals only | everything |
 
 All Claude calls go through `claude -p` with no tools, no settings, no session persistence, on the subscription.
+While the ChatGPT plan is at its limit (11/9-11/11), the forum editor and the GPT fallback fail too: the column posts
+the plain facts and the buyer haggles on by code, as designed.
 
 ### 1.2 Context
 
@@ -82,7 +90,9 @@ How past deals and reputation reach the next decision:
 | Each team member's reward per talk (buyer surplus, seller margin over list) | `memory.jsonl`, `logs/talks_r3.jsonl` | `team_r3.review` each cycle | who leads, who is replaced and by what style |
 | How our buyer's talks ended, why payments were refused, break rate per grade | `memory.jsonl`, `.market/payments.jsonl`, the ledger | the buying specialist (`meta_r3.buyer_diag`) | the buyer's cap, the price it pays for grade C, the shelf life it demands, the scouts |
 | Votes on every post of ours, by kind | `logs/forum_votes_r3.json` (kept after the forum's 100-post window drops them) | the community specialist | which post kinds the column writes |
-| The supervisor's notes with their evidence | `advice_r3.json` | every specialist and the manager | read as advice; the manager says what it did with each |
+| The supervisor's standing orders and notes with their evidence | `standing_orders_r3.md` (since, from, review), `advice_r3.json` (last 3 of 24 h, with their age) | every specialist and the manager | read as advice; the manager says what it did with each |
+| Every change and its verdict, re-judged on the board's terms | `logs/code_changes_r3.jsonl`, `logs/rejudged_r3.json`, `logs/market_buckets_r3.jsonl` | every specialist and the manager (each number's value now and its last 3 verdicts) | whether a number is moved, and which way (memory, below) |
+| Each area's lessons | `logs/lessons_r3.json` | that area's specialist | the rule it follows and the trap it avoids (memory, below) |
 
 - **Buyer memory, raw evidence only** (`memory.jsonl`, LongMemEval-V2 style). Each settled deal (grade, claim,
   whether the claim was true, shelf life left, price against list), each refusal the kit wrote to `payments.jsonl`,
@@ -147,6 +157,51 @@ How past deals and reputation reach the next decision:
   the team read 40 deals against 9 as the effect of raising max_list; per hour the deals had gone from 160 to 180.
   The specialists now see deals, revenue and settles per hour.
 
+### 1.2.1 Memory: what the team keeps, how it is checked, and why (11/9)
+
+**Why.** Anthropic's study of agent memory ([Components of agent memory](https://www.anthropic.com/research/components-of-agent-memory),
+2026; Korean summary on [GeekNews](https://news.hada.io/topic?id=36775)) treats writing a memory as a prediction that a
+later session will need it, and reports three things that matter here:
+- the learning loop closed only when the model kept *one consolidated reference* with each rule, its evidence and
+  whether it was verified (Opus 5 on CL-Bench; earlier models left unverified guesses across many files);
+- a *wrong note travels into every later session* until something re-checks it against the record (in Pokémon Red a
+  misplaced PokéCenter sent the agent down the same ledge three times; a "dreaming" pass over the transcript fixed the
+  note and the agent reached Cerulean City);
+- the tier injected every session must stay *small*, and fixed rules such as "record only failures" cut the gain.
+
+Our team had all three problems on 11/9. Its memory was the verdict ledger, the last 12 versions and the supervisor's
+notes; 11 manager decisions and 10 specialist proposals (log from 11/3) held a number because it had been "judged
+in both directions" (or "both ways"), yet all 89 number verdicts
+(11/5-11/9) compared raw margin/h in the 2 h before and after a change, which reads the hour of day; the market's paid
+sales were kept only for the last ~6 h, so no verdict could be judged again; and a standing order ("do not repeat a
+change judged both directions") made those verdicts binding.
+
+**The tiers.** Each tier is written by one party, read by named readers, and checked by something other than its
+writer:
+
+| Tier | Kept in | Written by | Read by | Checked by |
+|---|---|---|---|---|
+| Raw traces | `memory.jsonl`, `logs/talks_r3.jsonl`, `logs/demand_r3.jsonl`, `logs/strategies_r3.jsonl`, the kit log | code, on every event; nothing summarised on write | the buyer, the restock, the specialists, the engineer | the market's ledger (settles, claims) |
+| The market over time | `.market/ledger-recent.json` (~6 h), `logs/market_buckets_r3.jsonl` (ours and the market's paid sales, count and value, and our margin, per 10 minutes), `.market/backfill_r3.jsonl` (the ledger from 11/5, fetched one page at a time) | `metrics_r3.record_buckets` each cycle; `backfill_r3.py` | every verdict | the public ledger itself |
+| Verdict ledger | `logs/code_changes_r3.jsonl` | code: a number change after 2 h on our share of the market's paid sales; a code change on half the orders (A/B) or 3 h before/after net of the market, board points deciding; a buyer A/B; a supervisor change | both loops, the engineer | the re-judge, the supervisor |
+| Re-judged past | `logs/rejudged_r3.json` | `rejudge_r3.update` each cycle | every specialist and the manager: each number's value now and its last 3 verdicts, VERIFIED (what the change did to board points net of the market, and whether the raw verdict agreed) or UNVERIFIED (no market data reaches back; weak evidence) | its own data coverage; an UNVERIFIED row is judged again once data reaches it |
+| Lessons per area | `logs/lessons_r3.json` | Claude sonnet every 3 h per area ("dreaming" between cycles) | that area's specialist, at most 3,000 characters | code drops a lesson citing an unknown fact; every rewrite keeps the old version (where a rule came from, what it replaced) |
+| Top tier | `standing_orders_r3.md` (6 rules, 2.4 KB, each with since / from / review), `advice_r3.json` (last 3 notes of 24 h, shown with their age) | the supervisor | everyone, every cycle | the supervisor's hourly check |
+
+We did not build a wiki (our record is a few thousand rows, not the 350,000 files the study's wiki covered) and set
+no fixed rule on what to record.
+
+**What it changed, and what went wrong on the way.** The first re-judge verified 2 of the 89 verdicts (both
+confirmed: `dear_depth` 5 -> 4 lowered board points/h net of the market by 20%, `stock_value` 65M -> 60M by 28%) and
+marked 87 UNVERIFIED; at 11:43 the manager restored `dear_depth` 5 citing the verified verdict. The ledger backfill
+from 11/5 is filling the market buckets so the 87 can be judged. Three mistakes in the first hour, each fixed in the
+same hour and listed in section 3.x: the first lessons rewrite read a clipped A/B fact backwards (the losing arm's ask
+0.85 became a "verified" rule); the manager, seeing only the 06:43 bundle's `ask_frac_food` 0.7 -> 0.85, raised it
+0.7 -> 0.75 while its reason said it was lowering it (the memory now shows each number's value now, and standing order
+5 says to read it); a hand-run rewrite saved over another area's lessons (a rewrite now changes only its own area).
+The study's warning held: a memory that is written but not re-checked passed a wrong note to the next decision
+within one cycle.
+
 ### 1.3 Tools
 
 **What is a tool here.** Each shop publishes `/.well-known/acp.json`. Our copy of the kit turns every entry in it into
@@ -196,7 +251,7 @@ See `architecture.pdf`. In short:
 
 | | Kit baseline (starter_round3) | Ours |
 |---|---|---|
-| Decisions | none (the person sets the agent) | two loops: a team moves numbers every 15 min (four specialists propose from their own evidence, a GPT reviewer, a manager decides, code bounds it); an engineer and a coder agent change the code every 90 min, one hypothesis at a time, gated by tests and judged by its own metric after an hour; a supervisor watches both and leaves notes as advice |
+| Decisions | none (the person sets the agent) | two loops aimed at one number, board points per hour by the board's own weights: a team moves numbers every 15 min (four specialists propose from their own evidence and lessons, a reviewer on another model (GPT; opus while GPT is out), a manager decides, code bounds it and keeps one shop number per area a cycle); an engineer and a coder agent change the code every 90 min, one hypothesis at a time, gated by tests; a supervisor watches both and steers through standing orders and notes |
 | Teams | one buyer, one seller | buyer: scouts quote several shops at once, a member haggles with the best; both sides have members with ranks (lead 60%, senior 25%, junior 15% of talks), promoted by reward per talk and replaced when they trail |
 | Seller | a model at every turn; ships the unit that expires first; no quality talk, no warranty; never under cost | code prices from a strategy the meta-harness rewrites; honest grade claim (none within an hour of a grade line, where the grade could change before settle), the market's certificate; warranty only when the meta-harness sets one (0 at the start, since a refund costs the whole price and the break rate is unknown); near-date food cleared under cost (a spoiled unit loses all of its cost); the ask follows the market down to the 75th percentile of what the SKU settled for, never under cost + margin |
 | Stock | a few random SKUs | one unit per category near its median price first (a buyer only sees shops that hold the ordered category); where settled deals show, depth plus a cheaper and a dearer SKU (orders take SKUs at 0.5-1.5x a hidden reference price); the SKUs the ledger keeps settling, bought by themselves; categories that buyers ask for in forum "wanted" posts first; cash reserve and stock cap; no buying in the last 36 h |
@@ -204,6 +259,8 @@ See `architecture.pdf`. In short:
 | Checkout | fixed code; inputs described as short strings | tools made from each shop's `acp.json`, fixed code only as a fallback; our card in JSON Schema |
 | Forum | none | a column (`장보기 레이더`) in kinds built from the ledger (best value, freshness, unpaid receipts, trivia, grade claims, our deals), styled by a model under a number check, at most one post in 10 minutes (20 until 11/4 17:05); kinds weighted by the votes they earn |
 | Learning | none | the meta-harness over strategy versions; an A/B test inside the shop that holds the hour fixed and tries a number or a whole retail playbook (Costco, Walmart, IKEA, grocery markdown, premium, two-track) on live buyers, ending as a tie after 400 talks an arm or 6 h; a ledger of code hypotheses with expected and measured results |
+| Verdicts | none | every change, from anyone, is judged by code into one ledger: a number after 2 h on our share of the market's paid sales (a fast guard reverts it in the first hour if that share halves); a code change on half the orders (same hours) or 3 h before/after net of the market's own change, board points deciding |
+| Memory | none | tiers with a writer, readers and a check each (section 1.2.1): raw traces; the market's paid sales per 10 minutes, backfilled from 11/5; the verdict ledger; past verdicts re-judged or marked UNVERIFIED, shown with each number's value now; each area's lessons rewritten by a model every 3 h with their evidence and status, unknown citations dropped, history kept; standing orders with since / from / review and notes with their age |
 | Demand | `demand.json` categories only | hidden demand estimated from the orders our buyer receives and the requests our shop gets |
 | Goal | none | the board's Players table read every cycle: first place, the instructor's agent as a floor; the points each board term costs us, by the midterm's weights, chooses what the outer loop works on |
 
@@ -314,11 +371,11 @@ not money.
 | 11/9 02:25-09:33 | Two units refused at checkout ("not in stock": an abandoned session holds them) came back after their 2 h and were refused again, 3 h apart | Counting refusals per unit in `logs/market-kit.log` | A unit refused again after its 2 h is held until a restart, which also frees the kit's sessions; retries within 10 min count once (`23fad57`) |
 | 11/9 11:15 | The coder's 3 h before/after verdict reverted 4d10151 (deeper stock of hot 300k+ lines) on its own metric, margin/h -20%, while revenue/h went 2.0M to 3.8M and board points/h moved +3% (-0.4% net of the market): the one aim set in b620df9 had not reached the code verdicts | Monitor alert, then the same hours recomputed as market share and board points | Before/after code verdicts divide shop numbers by the market's own change and let board points/h decide when measurable (`46776c3`); 4d10151 restored by the supervisor (`cf13a5a`) |
 | 11/9 09:09 - 11:36 | The GPT reviewer (Hermes on the ChatGPT plan) hit the plan's usage limit; `second_opinion` returned None silently and the manager decided alone for 2.5 h with nothing in the log | A Codex test of the instruction files returned the same usage-limit error | A failed GPT review is logged and opus (a different model from the sonnet manager) reviews the same proposals with the same prompt (`8689803`); the supervisor checks each decision every 15 min while GPT is down |
-| 11/5 - 11/9 | The team treated 89 raw margin/h verdicts as facts: 31 decisions held a number because it was "judged in both directions", but those verdicts read the hour of day. The ledger cache keeps only ~6 h of settles, so they could not be judged again | Re-reading the verdict ledger after the share-of-market change; the memory study (Anthropic, components of agent memory) on wrong notes carried into later sessions | The market's paid sales are filed in 10-minute buckets each cycle; `rejudge_r3.py` re-judges past verdicts on the market share and board points net of the market, marks the rest UNVERIFIED, and the team reads each number's re-judged past (`3ed53a3`). First pass: 2 verified (both confirmed), 87 unverified |
+| 11/5 - 11/9 | The team treated 89 raw margin/h verdicts as facts: 11 manager decisions and 10 specialist proposals held a number because it was "judged in both directions", but those verdicts read the hour of day. The ledger cache keeps only ~6 h of settles, so they could not be judged again | Re-reading the verdict ledger after the share-of-market change; the memory study (Anthropic, components of agent memory) on wrong notes carried into later sessions | The market's paid sales are filed in 10-minute buckets each cycle; `rejudge_r3.py` re-judges past verdicts on the market share and board points net of the market, marks the rest UNVERIFIED, and the team reads each number's re-judged past (`3ed53a3`). First pass: 2 verified (both confirmed), 87 unverified |
 | 11/9 11:57-11:58 | The supervisor deployed a new helper as `review_r3.py` into the live folder, over the buyer's review hook of the same name, and moved it to the Trash when the plan changed; restored from git 2 min later. The deal paid in that window (11:58:00) was reviewed and recorded normally | `git diff --stat` listing review_r3.py as deleted | Before a new file goes live, check that its name is not taken (`git ls-files`); GPT is now skipped until its limit resets (11/11 15:36) and opus reviews at once, so no helper was needed |
 | 11/9 12:04-12:06 | The first lessons rewrite misread a clipped A/B fact (made the losing arm's ask 0.85 a "verified" rule) and kept a 07:21 value a 09:21 row had undone; the manager, seeing only the 06:43 bundle's ask_frac_food 0.7 -> 0.85 in the number memory, raised it 0.7 -> 0.75 while its reason said it was lowering it for volume | Supervisor's 12:04 check reading the decision against strategy_r3.json | ask_frac_food set back to 0.7 (supervise_r3.py); the number memory shows each number's value now; facts keep 240 characters and the rewrite prompt says the arm before "won" wins and a later undo supersedes; sales lessons rewritten at 12:07 (the wrong version kept in their history) |
 | 11/9 12:07 | A hand-run rewrite of the sales lessons, loaded before the meta cycle saved the community lessons, wrote over them | The lessons file showing no community entry after the log said 5 were kept | A rewrite reads the file again just before saving and changes only its own area |
-| 11/9 (all round) | The top memory had no sources or expiry: standing order 2 ("do not repeat a change judged both directions") fed the 31 holds on unverified verdicts, and a 10:51 note's "CAP 0.7" was stale (CAP 0.75, bounds from 0.75) when the buying team read it | Memory plan item 3 (sources and expiry on the top memory) | Each standing order says since when, from what and when to review it; order 2 counts only VERIFIED verdicts; order 5: read a number's value now before moving it; notes show their age; a correction note for CAP |
+| 11/9 (all round) | The top memory had no sources or expiry: standing order 2 ("do not repeat a change judged both directions") fed those holds on unverified verdicts, and a 10:51 note's "CAP 0.7" was stale (CAP 0.75, bounds from 0.75) when the buying team read it | Memory plan item 3 (sources and expiry on the top memory) | Each standing order says since when, from what and when to review it; order 2 counts only VERIFIED verdicts; order 5: read a number's value now before moving it; notes show their age; a correction note for CAP |
 
 The supervisor made mistakes too: it relayed the inflated margin as a win before checking it against Book (11/7),
 read a 10-minute bucket that had only just begun (11/9 07:01) and undid an A/B-backed ask, restoring it 20 minutes

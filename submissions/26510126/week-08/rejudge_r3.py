@@ -1,7 +1,7 @@
 """Re-judge the team's past number verdicts on the measure the board pays for, and mark what cannot be re-judged.
 
 11/9: the 2 h verdicts on the team's numbers compared our raw margin/h before and after a change until 11:13 that day,
-so each read the hour of day as much as the number. The team kept them as facts: 31 meta decisions held a number
+so each read the hour of day as much as the number. The team kept them as facts: 11 manager decisions and 10 specialist proposals held a number
 because it had been "judged in both directions". An agent's memory carries a wrong note into every later session
 until something re-checks it (Anthropic, "components of agent memory", 2026: a mislabelled map note sent the agent
 down the same ledge three times until a review of the transcript fixed the note).

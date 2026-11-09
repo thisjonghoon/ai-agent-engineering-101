@@ -12,7 +12,7 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    only the ones judged one at a time from now on.
    [since 11/7, amended 11/9 12:2x and 14:4x; from: receipts that never settled (11/7), 21 holds on unverified "both
    directions" verdicts, the backfilled re-judge (11/9); review: never]
-3. First priority: into the top 10 of the 45 students (11/9 16:0x: #20, 1.249 vs 1.556 for #10; the gap is the
+3. First priority: aim for #1 of the 45 students, the top 10 first (11/9 16:0x: #20, 1.249 vs 1.556 for #10; the gap is the
    shop's book and revenue, i.e. paid sales volume). Change a number for everyone when the paid-sales evidence is
    clear and let the 2 h verdict and the fast guard (half our market share in the first hour reverts it) judge it; no
    A/B unless a change is risky and cannot be judged otherwise. The only limits are bankruptcy and the market's rules:

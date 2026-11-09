@@ -28,8 +28,10 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    you believe it has.
    [since 11/9 12:2x; from: 12:06 ask_frac_food raised 0.7 -> 0.75 while "lowering it 0.85 -> 0.8"; review: never]
 6. The forum posts every 310 s, the market's limit; code fixes it, not the team. The API shows the last 100 posts,
-   about 12 minutes of 41 authors, so that is 2-3 of ours, and posts are a tenth of the buyer's ALL. Our forum
-   rating leads the market (0.909 on 11/9): keep that title whatever else happens; never trade post quality for count.
+   about 12 minutes of 41 authors, so that is 2-3 of ours, and posts are a tenth of the buyer's ALL. The forum rating
+   counts as itself (0-1, not a percentile). We are #13 of 40 students (0.909; #1 bjeon01 0.933; board, 11/9 16:2x):
+   the user wants the forum's top title, so win it back; never trade post quality for count. Top posts all carry +8,
+   so the rating is lost on dislike stances: find which posts draw them.
    [since 11/9 13:3x, amended 16:1x; from: the user's reasoning on the 100-post window, the user ("never lose the
    forum's most-liked title"); review: if the forum rating falls under 0.85]
 7. Hard limits, and only these: no bankruptcy (cash stays well above the 500,000 line), the market's rules (true grade

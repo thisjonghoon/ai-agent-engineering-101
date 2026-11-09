@@ -86,8 +86,10 @@ DREAM = """You keep the lessons of the {title} of a shop-and-buyer agent team in
 (Round 3, until 11/17; the aim is board points: shop book, revenue and stars, buyer saved). The lessons are the one
 reference the {title} reads every cycle, so they must be short, true to the record and useful for the next change.
 
-The record (facts, oldest first; numbers re-judged on our share of the market's paid sales are VERIFIED, those judged
-before 11/9 11:13 on raw margin/h are UNVERIFIED because they read the hour of day; code changes carry their own
+The record (facts, oldest first; numbers re-judged on our share of the market's paid sales are VERIFIED, MIXED ones had
+another change in the same hours and are NO verdict, those judged before 11/9 11:13 on raw margin/h are UNVERIFIED
+because they read the hour of day; a lesson must never rest on MIXED facts, and a bound or a value now is not a
+lesson; code changes carry their own
 verdicts; code verdicts marked "raw before/after" read the hour of day and are weak, A/B ones compare the same
 hours; in an A/B the arm named before "won" is the winner; a later row that undoes or corrects a change supersedes
 it, so never recommend a value a later row undid):

@@ -185,18 +185,21 @@ writer:
 | Raw traces | `memory.jsonl`, `logs/talks_r3.jsonl`, `logs/demand_r3.jsonl`, `logs/strategies_r3.jsonl`, the kit log | code, on every event; nothing summarised on write | the buyer, the restock, the specialists, the engineer | the market's ledger (settles, claims) |
 | The market over time | `.market/ledger-recent.json` (~6 h), `logs/market_buckets_r3.jsonl` (ours and the market's paid sales, count and value, and our margin, per 10 minutes), `.market/backfill_r3.jsonl` (the ledger from 11/5, fetched one page at a time) | `metrics_r3.record_buckets` each cycle; `backfill_r3.py` | every verdict | the public ledger itself |
 | Verdict ledger | `logs/code_changes_r3.jsonl` | code: a number change after 2 h on our share of the market's paid sales; a code change on half the orders (A/B) or 3 h before/after net of the market, board points deciding; a buyer A/B; a supervisor change | both loops, the engineer | the re-judge, the supervisor |
-| Re-judged past | `logs/rejudged_r3.json` | `rejudge_r3.update` each cycle | every specialist and the manager: each number's value now and its last 3 verdicts, VERIFIED (what the change did to board points net of the market, and whether the raw verdict agreed) or UNVERIFIED (no market data reaches back; weak evidence) | its own data coverage; an UNVERIFIED row is judged again once data reaches it |
+| Re-judged past | `logs/rejudged_r3_v2.json` (VERIFIED, MIXED or UNVERIFIED) | `rejudge_r3.update` each cycle | every specialist and the manager: each number's value now and its last 3 verdicts, VERIFIED (what the change did to board points net of the market, and whether the raw verdict agreed) or UNVERIFIED (no market data reaches back; weak evidence) | its own data coverage; an UNVERIFIED row is judged again once data reaches it |
 | Lessons per area | `logs/lessons_r3.json` | Claude sonnet every 3 h per area ("dreaming" between cycles) | that area's specialist, at most 3,000 characters | code drops a lesson citing an unknown fact; every rewrite keeps the old version (where a rule came from, what it replaced) |
 | Top tier | `standing_orders_r3.md` (6 rules, 2.4 KB, each with since / from / review), `advice_r3.json` (last 3 notes of 24 h, shown with their age) | the supervisor | everyone, every cycle | the supervisor's hourly check |
 
 We did not build a wiki (our record is a few thousand rows, not the 350,000 files the study's wiki covered) and set
 no fixed rule on what to record.
 
-**What it changed, and what went wrong on the way.** The first re-judge (11/9 11:4x) verified 2 of the 89 verdicts (both
-confirmed: `dear_depth` 5 -> 4 lowered board points/h net of the market by 20%, `stock_value` 65M -> 60M by 28%) and
-marked 87 UNVERIFIED; at 11:43 the manager restored `dear_depth` 5 citing the verified verdict. By 12:44 a third
-verdict, the first made on the new terms, was verified (90 in all: `clear_frac` 0.5 -> 0.6). The ledger backfill had
-filled 11/5 to 11/7 by 12:44 and is still running, so the 87 can be judged. Three mistakes in the first hour (a lesson read
+**What it changed, and what went wrong on the way.** The first re-judge (11/9 11:4x) called 2 of 89 verdicts verified
+(`dear_depth` 5 -> 4 -20% and `stock_value` 65M -> 60M -28% in board points/h net of the market) and 87 UNVERIFIED, and
+at 11:43 the manager restored `dear_depth` 5 on that ground. A fresh reviewer then showed that the buyer's saved term was
+82-91% of board points/h, so a shop change judged on the total measured the buyer's swings, and that almost every
+window held another change. The second pass (13:0x, `logs/rejudged_r3_v2.json`) judges shop changes on the shop's
+points only and marks a verdict MIXED when another number, code or supervisor change falls in its hours: all 5
+measurable verdicts were MIXED, so none is verified; the first pass stays in `logs/rejudged_r3.json` as it was. The
+ledger backfill had filled 11/5 to 11/7 by 12:44 and is still running. Three mistakes in the first hour (a lesson read
 backwards, a number moved toward a value it no longer had, one rewrite saving over another) were each fixed within
 the hour; they are in section 3.x. The study's warning held: a memory that is written but not re-checked passed a wrong note to the next decision
 within one cycle.
@@ -375,6 +378,7 @@ not money.
 | 11/9 12:04-12:06 | The first lessons rewrite misread a clipped A/B fact (made the losing arm's ask 0.85 a "verified" rule) and kept a 07:21 value a 09:21 row had undone; the manager, seeing only the 06:43 bundle's ask_frac_food 0.7 -> 0.85 in the number memory, raised it 0.7 -> 0.75 while its reason said it was lowering it for volume | Supervisor's 12:04 check reading the decision against strategy_r3.json | ask_frac_food set back to 0.7 (supervise_r3.py); the number memory shows each number's value now; facts keep 240 characters and the rewrite prompt says the arm before "won" wins and a later undo supersedes; sales lessons rewritten at 12:07 (the wrong version kept in their history) |
 | 11/9 12:07 | A hand-run rewrite of the sales lessons, loaded before the meta cycle saved the community lessons, wrote over them | The lessons file showing no community entry after the log said 5 were kept | A rewrite reads the file again just before saving and changes only its own area |
 | 11/9 (all round) | The top memory had no sources or expiry: standing order 2 ("do not repeat a change judged both directions") fed those holds on unverified verdicts, and a 10:51 note's "CAP 0.7" was stale (CAP 0.75, bounds from 0.75) when the buying team read it | Memory plan item 3 (sources and expiry on the top memory) | Each standing order says since when, from what and when to review it; order 2 counts only VERIFIED verdicts; order 5: read a number's value now before moving it; notes show their age; a correction note for CAP |
+| 11/9 11:13-13:0x | The verdicts' one aim, board points/h, was 82-91% the buyer's saved term over a 2 h window, so shop changes (number verdicts' context, the coder's before/after, the re-judge) measured the buyer's swings; 87 of 90 windows held another change; the fast guard and a coder guard counted sales, so a move to dearer stock tripped them while value grew; the meta cycle wrote the strategy file whole and non-atomically over changes made meanwhile | A fresh reviewer agent with no context, read against the code and logs; the supervisor recomputed the split (buyer 82% and 91% in two windows) | Shop changes judged on shop points (Book + revenue) only, the market adjustment applied to shop terms only; the fast guard on value share; the coder's guard on revenue; the re-judge marks MIXED verdicts (all 5 measurable ones were) and the lessons were rewritten on that; whole writes and a cycle keeps values changed while it thought; the coder reverts its own lines (`git revert`), not whole files; the buying prompt speaks of saved, not surplus |
 
 The supervisor made mistakes too: it relayed the inflated margin as a win before checking it against Book (11/7),
 read a 10-minute bucket that had only just begun (11/9 07:01) and undid an A/B-backed ask, restoring it 20 minutes

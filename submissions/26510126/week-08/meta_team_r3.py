@@ -69,9 +69,9 @@ ROLES = {
     },
     "buying": {
         "title": "head of buying",
-        "task": ("You run our buyer, half of our Players total (its ALL: 0.5 surplus, 0.3 forum votes, 0.1 deals, "
-                 "0.1 posts). A settled deal is worth the SKU's list price, 0 if food does not last use_within_hours "
-                 "or goods break (a warranty refunds the price): surplus = list - price on each deal that holds. A "
+        "task": ("You run our buyer, half of our Players total (its ALL: 0.5 saved, 0.3 forum votes, 0.1 deals, "
+                 "0.1 posts). saved is the mean over our deals of (list - price) / list, -1 for a deal that breaks "
+                 "without a refund: a deal saving less than our running mean lowers it, however large in won. A "
                  "team of scouts asks SCOUTS shops for a quote at once and a member (lead 60%, senior 25%, junior "
                  "15%, promoted by surplus per talk) haggles with the best. Set the buyer's numbers and propose a "
                  "buyer-team recruit style when one looks worth trying."),

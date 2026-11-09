@@ -65,6 +65,12 @@ def main():
     (base / "strategy_r3.json").write_text(json.dumps({"dear_depth": 5}))
     case("each number shows its value now", "- dear_depth (now 5):" in rejudge_r3.memory_text(base))
     case("the memory stays under its cap", len(rejudge_r3.memory_text(base, max_chars=300)) <= 300)
+    # a change with another change inside its hours is MIXED, not a verdict (11/9 review: 87 of 90 windows held one)
+    r1 = {"t": t, "source": "inner loop (number)", "change": "sku_depth 3 -> 5"}
+    r2 = {"t": t + 1800, "source": "supervisor", "change": "stock_value 60M -> 70M"}
+    mixed = rejudge_r3.judge(r1, base, [r1, r2])
+    case("a verdict with another change in its hours is MIXED and names it", mixed and mixed["status"] == "mixed"
+         and "stock_value" in rejudge_r3.note(mixed), mixed)
     print(f"{sum(RESULTS)}/{len(RESULTS)} passed")
     return all(RESULTS)
 

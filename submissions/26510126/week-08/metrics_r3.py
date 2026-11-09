@@ -39,7 +39,7 @@ SHOP_TERMS = {"book": 0.5, "revenue": 0.3, "stars": 0.2}
 # the rules of 11/6 06:02: the buyer's first term is saved, the sum over deals of surplus / list price (-1 for a deal that
 # served nothing, 0 if refunded) divided by deals + 100, so a snack and a sofa at 30% off score the same
 BUYER_TERMS = {"saved": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}
-METRICS = ("board_pts_h", "shop_revenue_h", "buyer_close_rate", "buyer_surplus_order", "buyer_paid_h", "shelf_refused_h", "shop_deals_h",
+METRICS = ("board_pts_h", "shop_pts_h", "buyer_pts_h", "shop_revenue_h", "buyer_close_rate", "buyer_surplus_order", "buyer_paid_h", "shelf_refused_h", "shop_deals_h",
            "shop_margin_h", "forum_votes_post", "buyer_dear_close", "buyer_secs_order", "buyer_saved_deal")
 LOWER_IS_BETTER = {"shelf_refused_h", "buyer_secs_order"}
 DEAR = 100000
@@ -274,6 +274,22 @@ def lever_prices(board=None, k=3):
     return out
 
 
+def shop_points_h(margin_h, revenue_h, prices=None):
+    """The shop's part of board points/h (Book via paid margin, revenue). 11/9: the buyer's saved term was 82-91% of
+    board_pts_h over a 2 h window, so shop changes judged on the total read the buyer's swings; a shop change is judged
+    on this part alone."""
+    p = prices if prices is not None else lever_prices()
+    return round(margin_h * p.get("book", 0) + revenue_h * p.get("revenue", 0), 6) if p else None
+
+
+def buyer_points_h(paid_h, saved_deal, prices=None):
+    """The buyer's part of board points/h: saved per deal against our running mean, over deals + 100."""
+    p = prices if prices is not None else lever_prices()
+    if not p or saved_deal is None or "saved" not in p:
+        return None
+    return round(paid_h * (saved_deal - p["saved_now"]) / (p["deals_total"] + 100) * p["saved"], 6)
+
+
 def board_points_h(margin_h, revenue_h, paid_h, saved_deal, prices=None):
     """Estimated ALL points an hour at this pace: Book grows by the margin of paid sales, revenue by their price, and
     saved moves by each paid buyer deal's distance from our running mean, over deals + 100 (the board's formula)."""
@@ -329,6 +345,8 @@ def window(t0, t1, base=HERE, keep=None):
     saved_deal = sum(rates) / len(rates) if rates else None
     return {
         "board_pts_h": board_points_h(margin_h, revenue_h, len(paid) / hours, saved_deal),
+        "shop_pts_h": shop_points_h(margin_h, revenue_h),
+        "buyer_pts_h": buyer_points_h(len(paid) / hours, saved_deal),
         "shop_revenue_h": round(revenue_h),
         "buyer_close_rate": round(len(paid) / len(orders), 3) if orders else None,
         "buyer_surplus_order": round(surplus / len(orders)) if orders else None,

@@ -50,24 +50,24 @@ def main():
     case("a change whose metric fell more than WORSE is reverted",
          mc.judge(r, before, dict(before, buyer_close_rate=0.45))[1], str(mc.judge(r, before, dict(before, buyer_close_rate=0.45))))
     case("a guard falling more than DROP reverts even a change that met its metric",
-         mc.judge(r, before, dict(before, buyer_close_rate=0.7, shop_deals_h=50))[1])
+         mc.judge(r, before, dict(before, buyer_close_rate=0.7, buyer_paid_h=30))[1])
     case("a lower-is-better metric that fell counts as better",
          not mc.judge({"metric": "shelf_refused_h"}, before, dict(before, shelf_refused_h=4))[1])
 
     # 2b. before/after: shop numbers net of the market's own change, and the aim (board points/h) decides (11/9 4d10151)
-    sb = {"shop_margin_h": 412757, "shop_revenue_h": 2014600, "board_pts_h": 0.00195, "shop_deals_h": 32.7}
-    sa = {"shop_margin_h": 332056, "shop_revenue_h": 3841473, "board_pts_h": 0.00201, "shop_deals_h": 31.3}
-    rm = {"metric": "shop_margin_h", "expected": 0.1}
+    sb = {"shop_margin_h": 412757, "shop_revenue_h": 2014600, "shop_pts_h": 0.00195, "shop_deals_h": 32.7}
+    sa = {"shop_margin_h": 332056, "shop_revenue_h": 3841473, "shop_pts_h": 0.00201, "shop_deals_h": 31.3}
+    rm = {"metric": "shop_margin_h", "expected": 0.1, "files": ["restock_r3.py"]}
     text, why = mc.judge(rm, sb, sa, (1.035, 1.048))
     case("margin -20% with board points flat after the market's change is kept, and says so",
-         not why and "board points/h" in text and "net of the market" in text, (text, why))
-    _, why = mc.judge(rm, sb, dict(sa, board_pts_h=0.0015), (1.0, 1.0))
-    case("margin and board points both down past WORSE reverts", any("board_pts_h" in w for w in why), why)
-    _, why = mc.judge(rm, sb, dict(sb, shop_margin_h=600000, board_pts_h=0.0028), (1.6, 1.0))
+         not why and "shop points/h" in text and "net of the market" in text, (text, why))
+    _, why = mc.judge(rm, sb, dict(sa, shop_pts_h=0.0015), (1.0, 1.0))
+    case("margin and shop points both down past WORSE reverts", any("shop_pts_h" in w for w in why), why)
+    _, why = mc.judge(rm, sb, dict(sb, shop_margin_h=600000, shop_pts_h=0.0028), (1.6, 1.0))
     case("a rush hour that lifts the whole market is no gain: +45% margin under x1.6 market value is -9%",
-         "-9%" in mc.judge(rm, sb, dict(sb, shop_margin_h=600000, board_pts_h=0.0028), (1.6, 1.0))[0] and not why)
-    _, why = mc.judge(rm, sb, dict(sb, shop_margin_h=300000, board_pts_h=0.0026), (1.0, 1.0))
-    case("the own metric alone does not revert while board points rose", not why, why)
+         "-9%" in mc.judge(rm, sb, dict(sb, shop_margin_h=600000, shop_pts_h=0.0028), (1.6, 1.0))[0] and not why)
+    _, why = mc.judge(rm, sb, dict(sb, shop_margin_h=300000, shop_pts_h=0.0026), (1.0, 1.0))
+    case("the own metric alone does not revert while shop points rose", not why, why)
     _, why = mc.judge(rm, {"shop_margin_h": 400000}, {"shop_margin_h": 300000}, (1.0, 1.0))
     case("with no board points to measure, the own metric still reverts", why == ["shop_margin_h -25%"], why)
 
@@ -166,23 +166,26 @@ def main():
     import meta_r3
     fg = tmp / "fast"
     fg.mkdir()
-    saved_paths = (meta_r3.NUMBER_TRIALS, meta_r3.STRATEGY, meta_r3.CODE_CHANGES, mc.metrics_r3.paid_share,
+    saved_paths = (meta_r3.NUMBER_TRIALS, meta_r3.STRATEGY, meta_r3.CODE_CHANGES, mc.metrics_r3.market_share,
                    mc.metrics_r3.outage_secs)
     meta_r3.NUMBER_TRIALS, meta_r3.STRATEGY, meta_r3.CODE_CHANGES = fg / "trials.json", fg / "s.json", fg / "c.jsonl"
     meta_r3.STRATEGY.write_text(json.dumps({"ask_frac": 0.85}))
     meta_r3.NUMBER_TRIALS.write_text(json.dumps([{"t": now - 4000, "changes": {"ask_frac": [0.7, 0.85]}, "reason": "x"}]))
     mc.metrics_r3.outage_secs = lambda *a, **k: 0
-    mc.metrics_r3.paid_share = lambda t0, t1, base=None: (120, 2400) if t1 <= now - 3999 else (25, 1300)
+    # by value: before 120 sales at 1% of the market's value, after 25 sales at 0.4% (halved): reverted
+    share = lambda n, v: {"ours": n, "share_value": v}
+    mc.metrics_r3.market_share = lambda t0, t1, base=None: share(120, 0.01) if t1 <= now - 3999 else share(25, 0.004)
     cut = meta_r3.fast_guard(now)
     reverted = json.loads(meta_r3.STRATEGY.read_text())["ask_frac"] == 0.7 and json.loads(meta_r3.NUMBER_TRIALS.read_text()) == []
     meta_r3.STRATEGY.write_text(json.dumps({"ask_frac": 0.85}))
     meta_r3.NUMBER_TRIALS.write_text(json.dumps([{"t": now - 4000, "changes": {"ask_frac": [0.7, 0.85]}, "reason": "x"}]))
-    mc.metrics_r3.paid_share = lambda t0, t1, base=None: (120, 2400) if t1 <= now - 3999 else (60, 1300)
+    # fewer, dearer sales: the count share halves but the value share holds, so it is kept (11/9 review)
+    mc.metrics_r3.market_share = lambda t0, t1, base=None: share(120, 0.01) if t1 <= now - 3999 else share(30, 0.011)
     kept = not meta_r3.fast_guard(now) and json.loads(meta_r3.STRATEGY.read_text())["ask_frac"] == 0.85
-    (meta_r3.NUMBER_TRIALS, meta_r3.STRATEGY, meta_r3.CODE_CHANGES, mc.metrics_r3.paid_share,
+    (meta_r3.NUMBER_TRIALS, meta_r3.STRATEGY, meta_r3.CODE_CHANGES, mc.metrics_r3.market_share,
      mc.metrics_r3.outage_secs) = saved_paths
-    case("fast guard: a change whose first hour halves our share of the market's paid sales is reverted; "
-         "a smaller dip on a quiet market is kept", bool(cut) and reverted and kept, str(cut))
+    case("fast guard: a change whose first hour halves our share of the market's paid value is reverted; "
+         "fewer but dearer sales that hold the value share are kept", bool(cut) and reverted and kept, str(cut))
 
     r6 = {"metric": "buyer_saved_deal", "expected": 0.03}
     _, ab_why = mc.judge(dict(r6, ab_key="k"), {"buyer_saved_deal": 0.30}, {"buyer_saved_deal": 0.282})

@@ -97,6 +97,11 @@ def main():
     case("the ledger row names the share as its metric", row["metric"] == "share_value" and row["share"] == 0.0)
     case("the judged change leaves the queue", json.loads(mr.NUMBER_TRIALS.read_text()) == [])
 
+    # whole writes: a strategy file is replaced in one step, no .tmp left behind
+    w = Path(tempfile.mkdtemp(prefix="meta-r3-w-")) / "s.json"
+    mr.write_json(w, {"ask_frac": 0.7})
+    case("a strategy file is written whole", json.loads(w.read_text()) == {"ask_frac": 0.7}
+         and not w.with_suffix(".tmp").exists())
     print(f"{sum(RESULTS)}/{len(RESULTS)} passed")
     return all(RESULTS)
 

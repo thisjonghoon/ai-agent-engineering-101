@@ -26,7 +26,7 @@ def main(argv):
         v = min(max(float(v), lo), hi)
         changed[k] = (s.get(k), v)
         s[k] = v
-    meta_r3.STRATEGY.write_text(json.dumps(s, indent=1), encoding="utf-8")
+    meta_r3.write_json(meta_r3.STRATEGY, s)
     meta_r3.number_record(changed, f"supervisor: {why}")
     with meta_r3.CODE_CHANGES.open("a", encoding="utf-8") as f:
         f.write(json.dumps({"t": time.time(), "commit": "-", "source": "supervisor",

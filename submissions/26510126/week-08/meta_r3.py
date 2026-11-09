@@ -317,11 +317,19 @@ def jl(path):
         return []
 
 
+def write_json(path, obj):
+    """Write whole, never half: a reader (the seller, the restock every 60 s) that met a half-written strategy file fell
+    back to its defaults (stock_value 2M, max_list 80k)."""
+    tmp = Path(path).with_suffix(".tmp")
+    tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tmp, path)
+
+
 def number_record(changed, reason):
     """Queue the shop numbers this cycle changed for a verdict NUMBER_CHECK later."""
     rows = read_json(NUMBER_TRIALS, [])
     rows.append({"t": time.time(), "changes": {k: list(v) for k, v in changed.items()}, "reason": str(reason or "")[:300]})
-    NUMBER_TRIALS.write_text(json.dumps(rows, ensure_ascii=False, indent=1), encoding="utf-8")
+    write_json(NUMBER_TRIALS, rows)
 
 
 def one_per_area(s, cur, order):
@@ -366,7 +374,7 @@ def number_verdicts(now=None):
                  [x["change"] for x in judged if abs(x.get("t", 0) - t) < NUMBER_CHECK]
         margin, deals = metrics_r3.change("shop_margin_h", a, b), metrics_r3.change("shop_deals_h", a, b)
         what = ", ".join(f"{k} {v[0]} -> {v[1]}" for k, v in r["changes"].items())
-        pts = metrics_r3.change("board_pts_h", a, b)
+        pts = metrics_r3.change("shop_pts_h", a, b)       # the shop's part only: the buyer's saved swamps the total
         # the headline is our share of the market's paid sales (value, then count) over the same hours: raw margin/h
         # before vs after read the clock (11/9), the market's own sales divide it out; the rest stays as context
         ma, mb = metrics_r3.market_share(t - NUMBER_CHECK, t), metrics_r3.market_share(t, t + NUMBER_CHECK)
@@ -377,7 +385,7 @@ def number_verdicts(now=None):
                       if share_n is not None else "")
                    + f" ({ma['ours']}/{ma['market']} -> {mb['ours']}/{mb['market']} sales); context: "
                    if share is not None else "share of the market not measurable; ") + \
-                  (f"board points/h {a.get('board_pts_h')} -> {b.get('board_pts_h')} ({pts:+.0%}), " if pts is not None
+                  (f"shop points/h {a.get('shop_pts_h')} -> {b.get('shop_pts_h')} ({pts:+.0%}), " if pts is not None
                    else "") + \
                   (f"margin/h {a.get('shop_margin_h')} -> {b.get('shop_margin_h')} ({margin:+.0%})" if margin is not None
                    else "margin/h not measurable") + \
@@ -389,7 +397,7 @@ def number_verdicts(now=None):
                                 "evidence": r.get("reason"), "metric": "share_value", "share": share,
                                 "after": verdict, "verdict": verdict}, ensure_ascii=False) + "\n")
         out.append(f"{what}: {verdict}")
-    NUMBER_TRIALS.write_text(json.dumps([r for r in rows if r not in due], ensure_ascii=False, indent=1), encoding="utf-8")
+    write_json(NUMBER_TRIALS, [r for r in rows if r not in due])
     return out
 
 
@@ -410,19 +418,22 @@ def fast_guard(now=None):
         if not FAST_AFTER <= now - t < NUMBER_CHECK:
             keep.append(r)
             continue
-        ours_b, mkt_b = metrics_r3.paid_share(t - 2 * 3600, t)
-        ours_a, mkt_a = metrics_r3.paid_share(t, now)
+        # by value, not count (11/9 review): our count share is 2.0% and value share 0.8%, so a move to dearer stock
+        # halves the count share while the value share grows, and a count guard reverted it
+        sb, sa = metrics_r3.market_share(t - 2 * 3600, t), metrics_r3.market_share(t, now)
+        ours_b, ours_a = sb["ours"], sa["ours"]
         down = metrics_r3.outage_secs(t, now, HERE) > 600
-        if down or ours_b < 20 or not mkt_b or not mkt_a or ours_a / mkt_a >= FAST_DROP * ours_b / mkt_b:
+        if down or ours_b < 20 or not sb["share_value"] or sa["share_value"] is None or \
+                sa["share_value"] >= FAST_DROP * sb["share_value"]:
             keep.append(r)
             continue
         s = read_json(STRATEGY, {})
         for k, (old, new) in r["changes"].items():
             if s.get(k) == new:
                 s[k] = old
-        STRATEGY.write_text(json.dumps(s, indent=1), encoding="utf-8")
+        write_json(STRATEGY, s)
         what = ", ".join(f"{k} {v[1]} -> {v[0]}" for k, v in r["changes"].items())
-        why = (f"our share of the market's paid sales fell {ours_b / mkt_b:.2%} -> {ours_a / mkt_a:.2%} in the "
+        why = (f"our share of the market's paid value fell {sb['share_value']:.2%} -> {sa['share_value']:.2%} in the "
                f"{(now - t) / 3600:.1f} h after the change ({ours_b} -> {ours_a} sales)")
         with CODE_CHANGES.open("a", encoding="utf-8") as f:
             f.write(json.dumps({"t": now, "commit": "-", "source": "inner loop (number)", "change": f"fast guard revert: {what}",
@@ -430,7 +441,7 @@ def fast_guard(now=None):
                                ensure_ascii=False) + "\n")
         out.append(f"fast guard reverted {what}: {why}")
     if out:
-        NUMBER_TRIALS.write_text(json.dumps(keep, ensure_ascii=False, indent=1), encoding="utf-8")
+        write_json(NUMBER_TRIALS, keep)
     return out
 
 
@@ -671,6 +682,7 @@ def standing():
         return {}
     # the rules of 11/5 03:49 rank shops by book (cash + unsold stock at cost), no longer by profit (cash)
     first = "book" if "book" in ours else "profit"
+    rows = [r for r in rows if r.get("deals")] or rows   # the board ranks shops with deals (57, not all 84)
     pct = {k: percentile(ours.get(k2), [r.get(k2) for r in rows])
            for k, k2 in (("profit", first), ("revenue", "revenue"), ("stars", "stars"))}
     if None in pct.values():
@@ -941,7 +953,13 @@ async def cycle():
             forum_r3.PLAN.write_text(json.dumps({"weights": dict(forum_r3.plan(), **w), "every": ev, "t": time.time()}),
                                      encoding="utf-8")
     changed = {k: (cur[k], s[k]) for k in s if s[k] != cur[k]}
-    STRATEGY.write_text(json.dumps(s, indent=1), encoding="utf-8")
+    # a number someone else changed while this cycle thought (the supervisor, the fast guard) and this cycle did not
+    # touch keeps their value: the cycle read cur 1-2 minutes ago and would write it back over them (11/9 review)
+    now_file = read_json(STRATEGY, {})
+    for k in s:
+        if k not in changed and k in now_file and now_file[k] != cur.get(k):
+            s[k] = now_file[k]
+    write_json(STRATEGY, s)
     if changed:
         number_record(changed, (ans or {}).get("reason"))
     HISTORY.parent.mkdir(exist_ok=True)

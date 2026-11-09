@@ -182,7 +182,8 @@ def deploy(files, src):
 # the engineer's own metric decided alone, and raw shop numbers before vs after read the hour of day. Before/after
 # shop numbers are now divided by the market's own change over the same hours (paid value for margin, revenue and
 # board points, paid count for deals), and the one aim (board points/h) decides when it can be measured
-BY_VALUE = ("shop_margin_h", "shop_revenue_h", "board_pts_h")
+BY_VALUE = ("shop_margin_h", "shop_revenue_h", "shop_pts_h")   # the market's paid value scales the shop's terms only
+SHOP_FILES = {"restock_r3.py", "demand_r3.py", "prices_r3.py", "seller_r3.py"}
 BY_COUNT = ("shop_deals_h",)
 
 
@@ -204,15 +205,18 @@ def judge(r, before, after, market=None):
     if market:
         after = market_adjust(after, market)
     own = metrics_r3.change(r.get("metric"), before, after) if r.get("metric") else None
-    aim = None if r.get("ab_key") else metrics_r3.change("board_pts_h", before, after)
+    # the aim is the side the change works on: the buyer's saved was 82-91% of board points/h, so a shop change judged
+    # on the total read the buyer's swings (11/9 review)
+    side = "shop_pts_h" if set(r.get("files") or []) & SHOP_FILES else "buyer_pts_h"
+    aim = None if r.get("ab_key") else metrics_r3.change(side, before, after)
     if aim is not None and aim < -WORSE:
-        why.append(f"board_pts_h {aim:+.0%}")
+        why.append(f"{side} {aim:+.0%}")
     # one aim: when board points/h can be measured they decide, the engineer's own metric is context; it reverts
     # alone only when the aim cannot be measured (buyer-only numbers, A/B arms)
-    if own is not None and own < -(WORSE_AB if r.get("ab_key") else WORSE) and r.get("metric") != "board_pts_h" \
+    if own is not None and own < -(WORSE_AB if r.get("ab_key") else WORSE) and r.get("metric") not in ("board_pts_h", side) \
             and aim is None:
         why.append(f"{r['metric']} {own:+.0%}")
-    for g in ("buyer_paid_h", "shop_deals_h"):
+    for g in ("buyer_paid_h", "shop_revenue_h"):     # revenue, not sale count: dearer stock sells fewer units
         b, a = before.get(g), after.get(g)
         if b and a is not None and a < b * (1 - DROP):
             why.append(f"guard {g} {b} -> {a}")
@@ -220,7 +224,7 @@ def judge(r, before, after, market=None):
     text = (f"{r.get('metric')}: expected {expected:+.0%}, measured {own:+.0%}" if isinstance(expected, (int, float))
             and own is not None else f"{r.get('metric')}: {before.get(r.get('metric'))} -> {after.get(r.get('metric'))}")
     if aim is not None:
-        text += f"; board points/h {aim:+.0%}"
+        text += f"; {side.replace('_pts_h', ' points/h')} {aim:+.0%}"
     if market:
         text += "; shop numbers net of the market's own change" + (
             f" (paid value x{market[0]:.2f}, count x{market[1]:.2f})" if all(market) else "")
@@ -253,21 +257,28 @@ def check():
         text += (f" (A/B: same hours, {before.get('orders')} and {after.get('orders')} orders)" if r.get("ab_key")
                  else f" ({SPAN // 3600} h before against {SPAN // 3600} h after)")
         if why:
-            prev = git("rev-parse", f"{r['commit']}^").stdout.strip()
-            for f in r.get("files", []):
-                old = git("show", f"{prev}:submissions/26510126/week-08/{f}")
-                if old.returncode == 0:
-                    tmp = HERE / f".{f}.auto"
-                    tmp.write_text(old.stdout, encoding="utf-8")
-                    os.replace(tmp, HERE / f)
-            git("add", *r.get("files", []))
-            git("commit", "-q", "-m", f"week-08: [auto revert] {r['change'][:80]} - {'; '.join(why)} in the hour after")
-            r["verdict"] = f"reverted ({'; '.join(why)}); {text}"
+            # undo this commit's own lines, not the whole file as it was before it: a hand fix made to the same file
+            # in the hours before the verdict went with it (11/9 review); a conflict leaves the change and says so
+            rv = git("revert", "--no-edit", r["commit"])
+            if rv.returncode == 0:
+                git("commit", "--amend", "-q", "-m",
+                    f"week-08: [auto revert] {r['change'][:80]} - {'; '.join(why)} in the hours after")
+                r["verdict"] = f"reverted ({'; '.join(why)}); {text}"
+            else:
+                git("revert", "--abort")
+                r["verdict"] = f"should be reverted ({'; '.join(why)}) but its lines changed since: left for the supervisor; {text}"
         else:
             r["verdict"] = f"kept; {text}"
         r["after"], r["measured"] = r["verdict"], after
-        rows[i] = r
-        CHANGES.write_text("".join(json.dumps(x, ensure_ascii=False) + "\n" for x in rows), encoding="utf-8")
+        # write back this row only, into the file as it is now: rows other writers appended meanwhile stay
+        fresh = jl(CHANGES)
+        for j, x in enumerate(fresh):
+            if x.get("t") == r["t"] and x.get("commit") == r.get("commit") and x.get("source") == r.get("source"):
+                fresh[j] = r
+                break
+        tmp = CHANGES.with_suffix(".tmp")
+        tmp.write_text("".join(json.dumps(x, ensure_ascii=False) + "\n" for x in fresh), encoding="utf-8")
+        os.replace(tmp, CHANGES)
         log(r["verdict"] + f" for {r['commit']}")
         return True
     return False

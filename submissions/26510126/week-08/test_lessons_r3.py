@@ -36,7 +36,7 @@ def main():
     mt = " ".join(x[2] for x in merch)
     case("merchandising gets its numbers, its code changes and the supervisor's restore", len(merch) == 3
          and "dear_depth" in mt and "heat cap" in mt and "restore 4d10151" in mt, [x[2][:60] for x in merch])
-    case("a verified number says what the change did", "lowered board points/h net of the market by 20%" in mt, mt)
+    case("a verified number says what the change did", "lowered shop points/h net of the market by 20%" in mt, mt)
     case("an old before/after code verdict is marked weak", "raw before/after" in mt, mt)
     case("sales gets ask_frac only, buying its A/B, no area gets a fast guard revert",
          len(sales) == 1 and "ask_frac" in sales[0][2] and len(buying) == 1 and "fast guard" not in mt)

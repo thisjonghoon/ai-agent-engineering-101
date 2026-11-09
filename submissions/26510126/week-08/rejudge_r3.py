@@ -19,7 +19,10 @@ from pathlib import Path
 import metrics_r3
 
 HERE = Path(__file__).resolve().parent
-OUT = Path("logs") / "rejudged_r3.json"
+# v2 (11/9 13:xx): judged on the shop's points only, and a verdict with another change in its hours is MIXED, not
+# VERIFIED (the fresh review: the buyer's saved was 82-91% of the total, and 87 of 90 windows held another change);
+# the first pass stays in logs/rejudged_r3.json as it was
+OUT = Path("logs") / "rejudged_r3_v2.json"
 CHANGES = Path("logs") / "code_changes_r3.jsonl"
 SPAN = 2 * 3600          # the number verdict's span (meta_r3.NUMBER_CHECK)
 NOISE = 0.05             # a move under 5% either way is flat
@@ -42,13 +45,19 @@ def side(t0, t1, base):
         return None
     w = metrics_r3.window(t0, t1, base)
     hours = max((t1 - t0 - (w.get("outage_min") or 0) * 60) / 3600, 0.25)
-    pts = metrics_r3.board_points_h(s["ours_margin"] / hours, s["ours_value"] / hours, w.get("buyer_paid_h") or 0,
-                                    w.get("buyer_saved_deal"))
+    pts = metrics_r3.shop_points_h(s["ours_margin"] / hours, s["ours_value"] / hours)
     return {"pts": pts, "share_value": s["ours_value"] / s["mkt_value"], "mkt_value": s["mkt_value"],
             "ours_n": s["ours_n"], "mkt_n": s["mkt_n"]}
 
 
-def judge(r, base=HERE):
+def others(r, rows):
+    """The other changes inside r's before and after hours: a number, a code change or a supervisor's change."""
+    return [x.get("change", "")[:60] for x in rows if key(x) != key(r) and abs(x.get("t", 0) - r["t"]) < SPAN
+            and x.get("source") in ("inner loop (number)", "meta (auto)", "supervisor")
+            and not str(x.get("change", "")).startswith("fast guard")]
+
+
+def judge(r, base=HERE, rows=()):
     """The re-judged result for one verdict row, or None when no data reaches back to it."""
     t = r["t"]
     a, b = side(t - SPAN, t, base), side(t, t + SPAN, base)
@@ -62,6 +71,11 @@ def judge(r, base=HERE):
     orig = r.get("measured") if isinstance(r.get("measured"), (int, float)) else r.get("share")
     if aim is None:
         return None
+    mixed = others(r, rows)
+    if mixed:
+        return {"status": "mixed", "aim": round(aim, 3), "share": round(share, 3) if share is not None else None,
+                "net_pts": round(net, 3) if net is not None else None, "orig": orig, "with": mixed[:3],
+                "sales": f"{a['ours_n']}/{a['mkt_n']} -> {b['ours_n']}/{b['mkt_n']}"}
     if abs(aim) < NOISE:
         status = "flat"
     elif not isinstance(orig, (int, float)) or abs(orig) < NOISE:
@@ -92,13 +106,14 @@ def update(base=HERE, now=None):
     except (OSError, ValueError):
         done = {}
     first, added = earliest(base), 0
+    every = metrics_r3.jl(base / CHANGES)
     for r in rows(base):
         k = key(r)
         covered = bool(first) and r["t"] - SPAN >= first
         # an UNVERIFIED row is tried again once data reaches back to it (11/9: the ledger backfill, backfill_r3.py)
         if (k in done and not (done[k].get("status") == "unverified" and covered)) or now - r["t"] < SPAN:
             continue
-        res = judge(r, base) if covered else None
+        res = judge(r, base, every) if covered else None
         if res is None and covered:
             continue                                    # covered but not measurable yet (no market sales): retry
         if res is None and k in done:
@@ -119,9 +134,11 @@ def note(res):
     raw = f"raw margin {o:+.0%}" if isinstance(o, (int, float)) else "raw verdict"
     if res["status"] == "unverified":
         return f"UNVERIFIED ({raw})"
+    if res["status"] == "mixed":
+        return f"MIXED, no verdict: {', '.join(res.get('with') or [])} changed in the same hours ({raw})"
     # say what the change did, not "confirmed -20%": on 11/9 a model read "VERIFIED confirmed: board -20%" for
     # dear_depth 5 -> 4 as "hold dear_depth at 4"
-    aim, what = res.get("aim"), "board points/h net of the market" if res.get("net_pts") is not None else "value share"
+    aim, what = res.get("aim"), "shop points/h net of the market" if res.get("net_pts") is not None else "value share"
     did = ("made no difference beyond noise" if res["status"] == "flat" else
            f"{'raised' if aim > 0 else 'lowered'} {what} by {abs(aim):.0%}")
     agree = {"confirmed": "; the raw verdict agreed", "reversed": "; the raw verdict said the opposite"}.get(res["status"], "")
@@ -152,8 +169,8 @@ def memory_text(base=HERE, per_key=3, max_chars=2500):
     for k, items in sorted(by.items(), key=lambda kv: -kv[1][-1][0]):
         lines.append(f"- {k} (now {now_vals.get(k, '?')}): " + "; ".join(x for _, x in items[-per_key:]))
     head = ("\nYour numbers' past verdicts, re-judged (memory check): VERIFIED rows were judged again on our share of "
-            "the market's paid sales over the same hours; UNVERIFIED rows were judged on raw margin/h before 11/9 "
-            "11:13 and read the hour of day, so they are weak evidence, not a reason to hold a number "
+            "the market's paid sales over the same hours; MIXED rows had another change in the same hours, so they are no verdict; UNVERIFIED rows were judged on raw "
+            "margin/h before 11/9 11:13 and read the hour of day, so they are weak evidence, not a reason to hold a number "
             "(\"judged in both directions\" on UNVERIFIED rows proves nothing); \"now\" is the value in force, later "
             "supervisor changes included:\n")
     out = head

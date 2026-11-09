@@ -983,12 +983,12 @@ async def cycle():
              if isinstance(fw.get(k), (int, float)) and not isinstance(fw.get(k), bool)}
         # the cadence too (11/6: the user left it to the team and the supervisor): seconds between posts, at most 120 s
         # a cycle from now, within forum_r3's EVERY_MIN..EVERY_MAX
-        ev = fw.get("every")
+        # the cadence is fixed at the market's limit (the supervisor, 11/9, user's reasoning): the forum API shows the
+        # last 100 posts, about 12 minutes of 41 authors, so one post per 5 minutes puts 2-3 of ours in it, while
+        # posts are a tenth of the buyer's ALL (911, percentile 0.52) and the model had stretched it to 450-600 s.
+        # Back to the model if the forum rating (0.908) falls under 0.85 (standing order)
         now_every = forum_r3.every()
-        if isinstance(ev, (int, float)) and not isinstance(ev, bool):
-            ev = int(min(max(ev, now_every - 120, forum_r3.EVERY_MIN), now_every + 120, forum_r3.EVERY_MAX))
-        else:
-            ev = now_every
+        ev = forum_r3.EVERY_MIN
         if (w and any(w.values())) or ev != now_every:
             forum_r3.PLAN.write_text(json.dumps({"weights": dict(forum_r3.plan(), **w), "every": ev, "t": time.time()}),
                                      encoding="utf-8")

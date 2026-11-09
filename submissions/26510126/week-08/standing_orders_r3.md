@@ -20,6 +20,10 @@ what it came from and when it is to be reviewed; a rule past its review conditio
 5. Before changing a number, read its value now (shown beside its past verdicts); never move a number toward a value
    you believe it has.
    [since 11/9 12:2x; from: 12:06 ask_frac_food raised 0.7 -> 0.75 while "lowering it 0.85 -> 0.8"; review: never]
-6. Hard limits: no bankruptcy (cash stays well above the 500,000 line), no sale below cost except stock that would be
+6. The forum posts every 310 s, the market's limit; code fixes it, not the team. The API shows the last 100 posts,
+   about 12 minutes of 41 authors, so that is 2-3 of ours, and posts are a tenth of the buyer's ALL.
+   [since 11/9 13:3x; from: the user's reasoning on the 100-post window; review: if the forum rating (0.908) falls
+   under 0.85]
+7. Hard limits: no bankruptcy (cash stays well above the 500,000 line), no sale below cost except stock that would be
    lost, true grade claims and the certificate shown, no votes against others, no deals with ourselves.
    [since 11/3; from: the market's rules and the user; review: never]

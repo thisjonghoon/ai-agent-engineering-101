@@ -57,8 +57,58 @@ def record(**event):
         f.write(json.dumps(dict(event, t=round(time.time(), 1)), ensure_ascii=False) + "\n")
 
 
+def paid_rewards(exp_id):
+    """arm -> rewards counting only what the ledger paid (an experiment with "reward": "paid", 11/9): a talk that ended
+    in a deal earns (price - cost) / list + RATIO * price / list when our shop's settle of that SKU at that price follows
+    within 15 minutes, else 0; a walk or a buyer that left earns 0. RATIO is the board's price of revenue over that of
+    Book (metrics_r3.lever_prices), so the reward is the shop's board points per talk in Book units. Until 11/9 the
+    reward was margin at agreement, and a playbook that won on it cut paid sales 65% (06:43-09:21)."""
+    try:
+        import metrics_r3
+        p = metrics_r3.lever_prices() or {}
+    except Exception:
+        p = {}
+    ratio = p["revenue"] / p["book"] if p.get("book") and p.get("revenue") else 0.15
+    try:
+        entries = json.loads((AB_DIR / ".market" / "ledger-recent.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        entries = []
+    ours = {(e.get("data") or {}).get("url", "").rstrip("/") for e in entries if e.get("kind") == "join"
+            and (e.get("data") or {}).get("name") == "thisjonghoon" and (e.get("data") or {}).get("role") == "shop"}
+    paid = {}
+    for e in entries:
+        d = e.get("data") or {}
+        if e.get("kind") == "settle" and str(d.get("shop") or "").rstrip("/") in ours:
+            paid.setdefault((d.get("sku") or d.get("item"), d.get("amount")), []).append(e.get("ts", 0))
+    out = {}
+    try:
+        talks = (AB_DIR / "logs" / "talks_r3.jsonl").read_text(encoding="utf-8").splitlines()
+    except OSError:
+        talks = []
+    for line in talks:
+        try:
+            x = json.loads(line)
+        except ValueError:
+            continue
+        ab = x.get("ab")
+        if not ab or ab[0] != exp_id:
+            continue
+        if x.get("event") == "deal" and x.get("price") and x.get("list_price"):
+            got = any(x["t"] - 60 <= ts <= x["t"] + 900 for ts in paid.get((x.get("sku"), x["price"]), []))
+            r = ((x["price"] - (x.get("cost") or 0)) / x["list_price"] + ratio * x["price"] / x["list_price"]) if got else 0.0
+        elif x.get("event") in ("walk", "gone"):
+            r = 0.0
+        else:
+            continue
+        out.setdefault(ab[1], []).append(round(r, 4))
+    return out
+
+
 def rewards(exp_id):
     """arm -> list of rewards of the negotiations of experiment `exp_id` that have ended (open ones are left out)."""
+    e = experiment()
+    if e and e.get("id") == exp_id and e.get("reward") == "paid":
+        return paid_rewards(exp_id)
     out, arm_of = {}, {}
     try:
         lines = LOG.read_text(encoding="utf-8").splitlines()

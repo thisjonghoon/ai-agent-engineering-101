@@ -183,6 +183,7 @@ def deploy(files, src):
 # shop numbers are now divided by the market's own change over the same hours (paid value for margin, revenue and
 # board points, paid count for deals), and the one aim (board points/h) decides when it can be measured
 BY_VALUE = ("shop_margin_h", "shop_revenue_h", "shop_pts_h")   # the market's paid value scales the shop's terms only
+NUMBER_TRIALS = HERE / "logs" / "number_trials_r3.json"
 SHOP_FILES = {"restock_r3.py", "demand_r3.py", "prices_r3.py", "seller_r3.py"}
 BY_COUNT = ("shop_deals_h",)
 
@@ -427,6 +428,14 @@ def build():
     row["files"], row["secs"] = changed, round(time.time() - t0)
     if why:
         row["result"] = f"not deployed: {why}"
+        append(ATTEMPTS, row)
+        log(row["result"])
+        return
+    pending = json.loads(NUMBER_TRIALS.read_text(encoding="utf-8")) if NUMBER_TRIALS.exists() else []
+    if pending and set(changed) & SHOP_FILES:
+        # shop changes run one at a time: a shop number is being judged, so a change to the shop's files waits (its
+        # hours would mix with the number's); the attempt is logged and the engineer may try again later
+        row["result"] = "not deployed: a shop number verdict is pending; shop files wait for it"
         append(ATTEMPTS, row)
         log(row["result"])
         return

@@ -116,8 +116,9 @@ You manage a team of four specialists who each proposed changes to their own num
 reject each proposal. Be bold (the user, 11/6 18:2x: "more aggressive"): we sit outside the top 10 with 11 days left,
 so approve changes in different areas in the same cycle; code judges each number 2 h before vs after on our share of
 the market's paid sales and names the others as confounds, so a verdict pending in one area is no reason to hold
-another, only to leave that one number alone. At most ONE shop number per area a cycle (sales numbers, merchandising
-numbers): code keeps the first one you list in each area and holds the rest back, so put the one worth most first. Lean hardest where the most points are lost (the standing below). Bankruptcy and the market's rules are the
+another, only to leave that one number alone. Shop changes run ONE at a time (the notes say whether the shop change
+slot is free): when it is free, approve the single shop number change worth most and list it first; code keeps only
+the first and holds the rest. A pending verdict is no reason to hold buyer, forum or A/B moves. Lean hardest where the most points are lost (the standing below). Bankruptcy and the market's rules are the
 only hard limits, and the supervisor watches those. Resolve conflicts between proposals (for example, sales cutting
 prices while merchandising buys dearer stock). Our
 standing now (each part a percentile among shops or buyers):

@@ -97,6 +97,24 @@ def main():
     case("the ledger row names the share as its metric", row["metric"] == "share_value" and row["share"] == 0.0)
     case("the judged change leaves the queue", json.loads(mr.NUMBER_TRIALS.read_text()) == [])
 
+    # shop changes one at a time: none while another is judged, else only the manager's first
+    s = dict(cur, max_list=900_000, min_margin=0.06)
+    out, held = mr.one_shop_change(dict(s), cur, ["min_margin", "max_list"])
+    case("with the slot free only the manager's first shop number moves", out["min_margin"] == 0.06
+         and out["max_list"] == 600_000 and set(held) == {"max_list"}, (out, held))
+    out, held = mr.one_shop_change(dict(s), cur, ["min_margin", "max_list"], busy="ask_frac is being judged")
+    case("with the slot busy no shop number moves", out == cur and set(held) == {"min_margin", "max_list"}, held)
+    d = Path(tempfile.mkdtemp(prefix="meta-r3-busy-"))
+    mr.NUMBER_TRIALS, mr.CODE_CHANGES = d / "trials.json", d / "changes.jsonl"
+    mr.NUMBER_TRIALS.write_text("[]")
+    mr.CODE_CHANGES.write_text(json.dumps({"t": 1, "source": "meta (auto)", "commit": "abc", "files": ["buyer_r3.py"]}) + "\n")
+    free = mr.shop_busy()
+    with mr.CODE_CHANGES.open("a") as f:
+        f.write(json.dumps({"t": 2, "source": "meta (auto)", "commit": "def", "files": ["restock_r3.py"]}) + "\n")
+    code_busy = mr.shop_busy()
+    mr.NUMBER_TRIALS.write_text(json.dumps([{"t": 1000, "changes": {"ask_frac": [0.7, 0.75]}}]))
+    case("the slot is busy while a shop number or a shop-file code change is judged, free for buyer code",
+         free is None and "def" in (code_busy or "") and "ask_frac" in (mr.shop_busy() or ""), (free, code_busy))
     # whole writes: a strategy file is replaced in one step, no .tmp left behind
     w = Path(tempfile.mkdtemp(prefix="meta-r3-w-")) / "s.json"
     mr.write_json(w, {"ask_frac": 0.7})

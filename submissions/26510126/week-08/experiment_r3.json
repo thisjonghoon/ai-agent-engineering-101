@@ -1,35 +1,15 @@
 {
- "on": false,
- "id": "ask_frac-goods-11061329",
+ "on": true,
+ "id": "ask_frac-goods-11091319-paid",
  "param": "ask_frac",
  "kind": "goods",
  "arms": {
-  "A": 0.9,
-  "B": 0.87
+  "A": 0.75,
+  "B": 0.7
  },
  "min_n": 30,
  "p_win": 0.95,
- "started": 1793939384.61076,
- "result": {
-  "winner": "tie",
-  "summary": {
-   "id": "ask_frac-goods-11061329",
-   "param": "ask_frac",
-   "kind": "goods",
-   "A": {
-    "value": 0.9,
-    "n": 118,
-    "deals": 15,
-    "mean_reward": 0.0324
-   },
-   "B": {
-    "value": 0.87,
-    "n": 93,
-    "deals": 14,
-    "mean_reward": 0.0276
-   },
-   "p_B_better": 0.333
-  },
-  "time": 1793947455.1648
- }
+ "started": 1794197947.884906,
+ "reward": "paid",
+ "why": "supervisor, user's go-ahead 11/9 13:1x: first ask vs close rate (fresh review: 0.75 of list closed 11-30%, 0.70 20-35%, mixed with other changes); judged on paid shop points per talk, same hours"
 }

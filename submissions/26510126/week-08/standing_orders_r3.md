@@ -11,8 +11,10 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    directions" verdicts (memory check, 11/9); review: when the backfill re-judges the old rows]
 3. While we catch up (from 11/9), change a number for everyone when the paid-sales evidence is clear and let the 2 h
    verdict and the fast guard (half our market share in the first hour reverts it) judge it; A/B only risky buyer or
-   code changes. At most one shop number per area a cycle (code enforces it).
-   [since 11/9 11:3x; from: the user (A/Bs may pause while we catch up); review: once we are back in the top 15]
+   code changes, and the goods ask A/B the supervisor started at 13:2x (0.75 vs 0.70, judged on paid shop points per
+   talk). Shop changes run one at a time: none while another is judged (code enforces it, the slot shows in the notes).
+   [since 11/9 11:3x, amended 13:2x; from: the user (A/Bs may pause while we catch up), then a review that found 87 of
+   90 verdict windows mixed; review: once we are back in the top 15]
 4. Read the rivals table and the edges table each cycle; the cheapest points are where a small move passes many rivals.
    [since 11/9 11:0x; from: the user (follow the leaders all the time); review: never]
 5. Before changing a number, read its value now (shown beside its past verdicts); never move a number toward a value

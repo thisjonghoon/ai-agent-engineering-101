@@ -79,6 +79,23 @@ def main():
         ab_r3.record(id="t3", arm="B", task=f"y{i}", event="walk", reward=0.0)
     case("an arm short of min_n is drawn even when the other earns more", ab_r3.choose("goods")[1] == "B")
 
+    # paid reward: only talks the ledger paid earn, in shop points per talk (Book units)
+    (TMP / ".market").mkdir(exist_ok=True)
+    (TMP / "logs").mkdir(exist_ok=True)
+    now = time.time()
+    (TMP / ".market" / "ledger-recent.json").write_text(json.dumps([
+        {"kind": "join", "ts": 0, "data": {"name": "thisjonghoon", "role": "shop", "url": "https://ours.x"}},
+        {"kind": "settle", "ts": now + 30, "data": {"shop": "https://ours.x", "sku": "S1", "amount": 700}},
+        {"kind": "settle", "ts": now + 30, "data": {"shop": "https://other.x", "sku": "S2", "amount": 750}}]))
+    talk = lambda sku, price, arm, ev: json.dumps({"t": now, "sku": sku, "price": price, "cost": 500, "list_price": 1000,
+                                                    "event": ev, "ab": ["paid-1", arm]})
+    (TMP / "logs" / "talks_r3.jsonl").write_text("\n".join([talk("S1", 700, "B", "deal"), talk("S2", 750, "A", "deal"),
+                                                             talk("S3", None, "A", "walk")]) + "\n")
+    ab_r3.EXPERIMENT.write_text(json.dumps({"on": True, "id": "paid-1", "param": "ask_frac", "kind": "goods",
+                                         "arms": {"A": 0.75, "B": 0.70}, "reward": "paid"}))
+    r = ab_r3.rewards("paid-1")
+    case("paid reward: our settled deal earns margin plus revenue, an unpaid agreement and a walk earn 0",
+         r.get("A") == [0.0, 0.0] and len(r.get("B", [])) == 1 and r["B"][0] > 0.2, r)
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
 
 

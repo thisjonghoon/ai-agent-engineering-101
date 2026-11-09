@@ -50,7 +50,7 @@ EVERY = 15 * 60
 BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min_margin": (0.02, 0.40, 0.04),
           "step": (0.2, 0.7, 0.1), "clear_hours": (2, 24, 4), "clear_frac": (0.3, 1.0, 0.1),
           "warranty_hours": (0, 6, 2), "max_turns": (3, 8, 1),
-          "reserve_cash": (700_000, 3_000_000, 250_000), "stock_value": (500_000, 90_000_000, 10_000_000),
+          "reserve_cash": (700_000, 3_000_000, 250_000), "stock_value": (500_000, 150_000_000, 10_000_000),
           "max_list": (30_000, 3_000_000, 300_000), "dear_first": (0.0, 3.0, 0.5), "min_shelf_hours": (24, 720, 48), "depth": (1, 6, 1),
           "endgame_hours": (12, 24, 6), "endgame_frac": (1.0, 1.2, 0.1), "final_hours": (2, 12, 2),
           "final_frac": (0.3, 1.0, 0.1), "ask_frac_food": (0.70, 1.00, 0.05), "floor_frac_food": (0.45, 0.95, 0.05),
@@ -221,7 +221,12 @@ def advice(hours=24, n=3):
         standing = STANDING.read_text(encoding="utf-8").strip() + "\n"
     except OSError:
         standing = ""
-    return standing + text + code_changes() + number_changes() + number_memory() + rivals() + edges()
+    busy = shop_busy()
+    slot = ("\nShop change slot: busy (" + busy + "); shop numbers wait, buyer, forum and A/B moves do not." if busy else
+            "\nShop change slot: FREE. Shop changes run one at a time so each verdict is clean; while it is free, pick "
+            "the ONE shop number change worth most on the evidence (holding is the exception and needs evidence that "
+            "every move would lose; a pending verdict is no reason, there is none).")
+    return standing + text + slot + code_changes() + number_changes() + number_memory() + rivals() + edges()
 
 
 def number_memory():
@@ -330,6 +335,40 @@ def number_record(changed, reason):
     rows = read_json(NUMBER_TRIALS, [])
     rows.append({"t": time.time(), "changes": {k: list(v) for k, v in changed.items()}, "reason": str(reason or "")[:300]})
     write_json(NUMBER_TRIALS, rows)
+
+
+SHOP_FILES = {"restock_r3.py", "demand_r3.py", "prices_r3.py", "seller_r3.py"}
+
+
+def shop_busy(now=None):
+    """Why a new shop change must wait, or None. Shop changes run one at a time (11/9 review: 87 of 90 two-hour windows
+    held another change, so no verdict was clean): a shop number waiting for its verdict, or a code change to the
+    shop's files waiting for its own, holds the next one."""
+    now = now or time.time()
+    rows = read_json(NUMBER_TRIALS, [])
+    if rows:
+        r = min(rows, key=lambda x: x["t"])
+        return (f"{', '.join(r['changes'])} is being judged until "
+                f"{time.strftime('%H:%M', time.localtime(r['t'] + NUMBER_CHECK))}")
+    for x in jl(CODE_CHANGES):
+        if x.get("source") == "meta (auto)" and not x.get("verdict") and set(x.get("files") or []) & SHOP_FILES:
+            return f"code change {x.get('commit')} to {', '.join(x['files'])} is being judged"
+    return None
+
+
+def one_shop_change(s, cur, order, busy=None):
+    """At most one shop number moves, and none while another shop change is judged: the manager's first in `order`
+    stays, the rest go back to their value now. Returns (s, {key: (wanted, kept)} held back)."""
+    keys = [k for k in order if k in s and s[k] != cur.get(k)] + \
+           [k for k in s if k not in order and s[k] != cur.get(k)]
+    held = {}
+    for i, k in enumerate(keys):
+        if busy or i > 0:
+            held[k] = (s[k], cur[k])
+            s[k] = cur[k]
+    if s.get("floor_frac", 0) > s.get("ask_frac", 1):
+        s["floor_frac"] = s["ask_frac"]
+    return s, held
 
 
 def one_per_area(s, cur, order):
@@ -884,7 +923,8 @@ async def cycle():
                                 max_chars=60_000)
     new = (ans or {}).get("strategy") if isinstance((ans or {}).get("strategy"), dict) else None
     s = guard(new or {}, cur)
-    s, held = one_per_area(s, cur, list((new or {}).keys()))
+    busy = shop_busy()
+    s, held = one_shop_change(s, cur, list((new or {}).keys()), busy)
     # receipts that never settle: the buyer's kit refused to pay (its accept policy: certificate, shelf life, grade,
     # warranty). We cannot see why from the shop, so when most of a busy window does not settle and we offer no
     # warranty, code tries a short one on grade-A goods; the harness sees the result next cycle and may undo it
@@ -979,7 +1019,8 @@ async def cycle():
                     f"; A/B {exp['id']} won by {win} ({exp['param']} = {exp['arms'][win]})") if ab_done else "")
                 + (f"; A/B {ab_new['id']} started: {ab_new['param']} {ab_new['arms']}" if ab_new else "")
                 + "".join(f"; judged {j}" for j in judged)
-                + (f"; held back (one number per area a cycle): {json.dumps(held)}" if held else ""))
+                + (f"; held back ({'shop change slot busy: ' + busy if busy else 'one shop number at a time'}): "
+                   f"{json.dumps(held)}" if held else ""))
 
 
 async def main():

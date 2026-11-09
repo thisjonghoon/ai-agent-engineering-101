@@ -17,6 +17,9 @@ def main(argv):
     i = argv.index("--")
     pairs, why = argv[:i], " ".join(argv[i + 1:])
     s = meta_r3.read_json(meta_r3.STRATEGY, {})
+    busy = meta_r3.shop_busy()
+    if busy:   # the supervisor overlapped the slot twice on 11/9 (13:17, 13:40) and left both verdicts MIXED
+        print(f"warning: the shop change slot is busy ({busy}); this change will be judged MIXED. Go on only for safety.")
     changed = {}
     for pair in pairs:
         k, v = pair.split("=", 1)

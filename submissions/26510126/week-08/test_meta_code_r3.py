@@ -137,6 +137,15 @@ def main():
     case("the rivals table ranks shops by paid revenue on the ledger and marks ours",
          rv.index("rival:") < rv.index("*thisjonghoon") and "2 sales" in rv, rv)
 
+    import edges_r3
+    lv = edges_r3.levers({"shops": [], "buyers": [
+        {"name": "thisjonghoon", "deals": 5, "saved": 0.28, "posts": 10},
+        {"name": "a", "deals": 5, "saved": 0.29, "posts": 5}, {"name": "b", "deals": 5, "saved": 0.30, "posts": 5},
+        {"name": "c", "deals": 5, "saved": 0.27, "posts": 5}]})
+    saved = next(x for x in lv if x[1] == "saved")
+    case("levers: passing the next rivals on a term names the value needed and the ALL points it buys",
+         saved[4][0][:2] == (1, 0.29) and saved[4][0][2] == round(0.5 * 1 / 3, 3), str(lv))
+
     r6 = {"metric": "buyer_saved_deal", "expected": 0.03}
     _, ab_why = mc.judge(dict(r6, ab_key="k"), {"buyer_saved_deal": 0.30}, {"buyer_saved_deal": 0.282})
     _, span_why = mc.judge(r6, {"buyer_saved_deal": 0.30}, {"buyer_saved_deal": 0.282})

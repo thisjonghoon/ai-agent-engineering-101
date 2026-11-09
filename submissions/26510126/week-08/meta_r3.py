@@ -212,7 +212,17 @@ def advice(hours=24, n=3):
     notes = [x for x in notes if isinstance(x, dict) and x.get("t", 0) >= cut and isinstance(x.get("text"), str)][-n:]
     text = "\n".join(f"- {time.strftime('%m/%d %H:%M', time.localtime(x['t']))}: {x['text'][:600]}" for x in notes) \
         or "(none)"
-    return text + code_changes() + number_changes() + rivals()
+    return text + code_changes() + number_changes() + rivals() + edges()
+
+
+def edges():
+    """Where the board's formula pays most for the next step, with the rule lines it rests on (edges_r3); the user
+    (11/9): keep looking for the edges the rules leave open, aggressively, short of bankruptcy and within the rules."""
+    try:
+        import edges_r3
+        return "\n" + edges_r3.edges_text()
+    except Exception as e:                              # a broken table must not cost the cycle
+        return f"\n(edges table failed: {type(e).__name__})"
 
 
 def rivals():

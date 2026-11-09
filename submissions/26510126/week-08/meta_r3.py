@@ -509,6 +509,7 @@ def number_verdicts(now=None):
 
 
 FAST_AFTER = 3600       # a number change is checked once an hour of paid sales has passed since it
+FAST_DROP_N = 0.75       # and the count share under three quarters of its share before
 FAST_DROP = 0.5         # our share of the market's paid sales under half its share before the change reverts it
 
 
@@ -530,8 +531,12 @@ def fast_guard(now=None):
         sb, sa = metrics_r3.market_share(t - 2 * 3600, t), metrics_r3.market_share(t, now)
         ours_b, ours_a = sb["ours"], sa["ours"]
         down = metrics_r3.outage_secs(t, now, HERE) > 600
+        # and the count share must fall too (11/10 05:02: stuck_hours 6 -> 5 was reverted as value share went 4.64% ->
+        # 2.44% while the count share rose 3.61% -> 4.85%: the hour before held a one-off release of stuck 300k+ units,
+        # so the value share read the stock mix; floor_frac on 11/9 23:32 the same). A real collapse moves both
+        cut_n = sb.get("share_n") and sa.get("share_n") is not None and sa["share_n"] < FAST_DROP_N * sb["share_n"]
         if down or ours_b < 20 or not sb["share_value"] or sa["share_value"] is None or \
-                sa["share_value"] >= FAST_DROP * sb["share_value"]:
+                sa["share_value"] >= FAST_DROP * sb["share_value"] or not cut_n:
             keep.append(r)
             continue
         s = read_json(STRATEGY, {})
@@ -540,7 +545,8 @@ def fast_guard(now=None):
                 s[k] = old
         write_json(STRATEGY, s)
         what = ", ".join(f"{k} {v[1]} -> {v[0]}" for k, v in r["changes"].items())
-        why = (f"our share of the market's paid value fell {sb['share_value']:.2%} -> {sa['share_value']:.2%} in the "
+        why = (f"our share of the market's paid value fell {sb['share_value']:.2%} -> {sa['share_value']:.2%} and of its "
+               f"paid sales {sb['share_n']:.2%} -> {sa['share_n']:.2%} in the "
                f"{(now - t) / 3600:.1f} h after the change ({ours_b} -> {ours_a} sales)")
         with CODE_CHANGES.open("a", encoding="utf-8") as f:
             f.write(json.dumps({"t": now, "commit": "-", "source": "inner loop (number)", "change": f"fast guard revert: {what}",

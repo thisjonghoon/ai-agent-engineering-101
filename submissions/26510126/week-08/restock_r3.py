@@ -282,11 +282,14 @@ def main():
                 # full depth only for a 300k+ SKU that keeps selling (sku_score 6 or more, the cheap-goods hot bar), else 2
                 # the bar is DEAR_HOT, not 6: once settles fed sku_score every SKU passed 6, and at 13:04 on 11/6 an
                 # empty-category line bought 8 sofas (7.2M, 19 sold market-wide in 6 h) before the best seller (416) got 1
-                full = c["list_price"] >= 300_000 and sku_score.get(c["sku"], 0) >= DEAR_HOT
+                # the 100-300k band settled 183 units an hour and we sold 0.3 (0.2%) holding 16 units at depth 2 while 64M sat
+                # idle: a 150-300k SKU that reached DEAR_HOT gets the full depth too, with heat capped at 2x (margin there is
+                # 8.9k a unit, price 0.61 against cost 0.57)
+                full = sku_score.get(c["sku"], 0) >= DEAR_HOT
                 # 6 h: the market sold 334-341 units of each top 300k+ SKU while we held 5-8, with 39.7M of cash idle: the
                 # depth grows with sku_score up to 5x dear_depth (goods_room and spend still bound it); 6 h: 300k+ settled
                 # 572 an hour and we got 2.8%, the top SKUs sold 158-398 units while we held 0-12, and the 3x cap (12) bound
-                heat = min(5.0, max(1.0, sku_score.get(c["sku"], 0) / DEAR_HOT))
+                heat = min(5.0 if c["list_price"] >= 300_000 else 2.0, max(1.0, sku_score.get(c["sku"], 0) / DEAR_HOT))
                 # stock sat at its cap (69.5M of 70M) with 53.2M in 107 units of 300k+, about 65 of them non-hot SKUs bought at
                 # 2 while 8 best sellers sold 148-359 units each: a non-hot 300k+ SKU gets 1, the room goes to the hot ones
                 # and none once we hold 40 slow 300k+ units: 131 units of 300k+ (62.5M) sold 5.2 an hour, 1.0% of the market's

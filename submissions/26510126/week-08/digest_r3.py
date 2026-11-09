@@ -22,6 +22,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import metrics_r3
+from metrics_r3 import ME
 
 HERE = Path(__file__).resolve().parent
 AREAS = {
@@ -242,6 +243,44 @@ def forum_digest(base=HERE, hours=24, now=None):
     return "\n".join(lines)
 
 
+def rivals_digest(base=HERE, hours=6, now=None, top=6):
+    """The top shops by paid revenue on the ledger in the last `hours` next to ours: sales, mean sale, median paid share
+    of list, share of 300k+ sales, of grade A and of sales with a warranty. The user (11/9): follow the leaders' strategy
+    all the time, not once; on 11/9 they sold 500-1300 units in 6 h at 150-700k a sale while we sold 206 at 80k, at the
+    same paid share of list (~0.65), so the gap is what they stock (dear, grade A, warrantied) and how much, not price."""
+    now = now or time.time()
+    base = Path(base)
+    try:
+        entries = json.loads((base / ".market" / "ledger-recent.json").read_text(encoding="utf-8"))
+        cat = json.loads((base / ".market" / "catalog.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return "(no ledger cache yet)"
+    cat = cat if isinstance(cat, dict) else {c.get("sku"): c for c in cat}
+    names = {(e["data"].get("url") or "").rstrip("/"): e["data"].get("name") for e in entries
+             if e.get("kind") == "join" and e["data"].get("role") == "shop"}
+    sales = {}
+    for e in entries:
+        d = e.get("data") or {}
+        lp = (cat.get(d.get("sku")) or {}).get("list_price")
+        if e.get("kind") != "settle" or now - e.get("ts", 0) > hours * 3600 or not lp:
+            continue
+        name = names.get(str(d.get("shop") or "").rstrip("/"), "?")
+        sales.setdefault(name, []).append((d.get("amount") or 0, lp, d.get("grade"), bool(d.get("warranty_hours"))))
+    order = sorted(sales, key=lambda n: -sum(a for a, *_ in sales[n]))
+    shown = order[:top] + ([ME] if ME in sales and ME not in order[:top] else [])
+    lines = [f"Top shops by paid revenue, last {hours} h (ledger): revenue, sales, mean sale, median paid/list, "
+             "300k+ share, grade A share, warranty share"]
+    for n in shown:
+        x = sales[n]
+        k = len(x)
+        shares = sorted(a / lp for a, lp, *_ in x)
+        lines.append(f"  {'*' if n == ME else ' '}{n}: {sum(a for a, *_ in x) / 1e6:.0f}M, {k} sales, "
+                     f"{sum(a for a, *_ in x) / k / 1e3:.0f}k, {shares[k // 2]:.2f}, "
+                     f"{sum(lp >= 300000 for _, lp, *_ in x) / k:.0%}, {sum(g == 'A' for *_, g, _ in x) / k:.0%}, "
+                     f"{sum(w for *_, w in x) / k:.0%}")
+    return "\n".join(lines)
+
+
 def for_prompt(base=HERE):
     rows = focus(base)
     head = ["Areas, the one to look at first on top (priority = board points it loses / (1 + tries in the last day, a "
@@ -254,6 +293,10 @@ def for_prompt(base=HERE):
             body.append(f"[{a}]\n" + parts[a](base))
         except Exception as e:                          # one broken table must not cost the cycle
             body.append(f"[{a}] (could not count: {type(e).__name__})")
+    try:
+        body.append("[rivals]\n" + rivals_digest(base))
+    except Exception as e:
+        body.append(f"[rivals] (could not count: {type(e).__name__})")
     return "\n".join(head) + "\n\n" + "\n\n".join(body)
 
 

@@ -125,6 +125,18 @@ def main():
     case("shop metrics count sales paid on the ledger, not receipts signed (a 900k agreement never paid is left out)",
          [(x["price"], x["cost"]) for x in sold] == [(150000, 100000), (30000, 20000)], str(sold))
 
+    for e in led:                                    # the same ledger with SKUs named, and a catalog
+        if e["kind"] == "settle":
+            e["data"]["sku"] = "G1"
+    led.append({"kind": "join", "ts": 0, "data": {"name": "rival", "role": "shop", "url": "https://other.example"}})
+    led.append({"kind": "settle", "ts": now - 300, "data": {"shop": "https://other.example", "sku": "G1", "amount": 900000,
+                                                             "grade": "A", "warranty_hours": 6}})
+    (base / ".market" / "ledger-recent.json").write_text(json.dumps(led))
+    (base / ".market" / "catalog.json").write_text(json.dumps({"G1": {"list_price": 1000000}}))
+    rv = d.rivals_digest(base, now=now)
+    case("the rivals table ranks shops by paid revenue on the ledger and marks ours",
+         rv.index("rival:") < rv.index("*thisjonghoon") and "2 sales" in rv, rv)
+
     r6 = {"metric": "buyer_saved_deal", "expected": 0.03}
     _, ab_why = mc.judge(dict(r6, ab_key="k"), {"buyer_saved_deal": 0.30}, {"buyer_saved_deal": 0.282})
     _, span_why = mc.judge(r6, {"buyer_saved_deal": 0.30}, {"buyer_saved_deal": 0.282})

@@ -212,7 +212,17 @@ def advice(hours=24, n=3):
     notes = [x for x in notes if isinstance(x, dict) and x.get("t", 0) >= cut and isinstance(x.get("text"), str)][-n:]
     text = "\n".join(f"- {time.strftime('%m/%d %H:%M', time.localtime(x['t']))}: {x['text'][:600]}" for x in notes) \
         or "(none)"
-    return text + code_changes() + number_changes()
+    return text + code_changes() + number_changes() + rivals()
+
+
+def rivals():
+    """The top shops' paid sales next to ours (digest_r3.rivals_digest), so the team follows them every cycle: the
+    user (11/9) asked that the leaders' strategy be followed all the time, not found by hand once a day."""
+    try:
+        import digest_r3
+        return "\n" + digest_r3.rivals_digest(HERE)
+    except Exception as e:                              # a broken table must not cost the cycle
+        return f"\n(rivals table failed: {type(e).__name__})"
 
 
 def number_changes(n=6):

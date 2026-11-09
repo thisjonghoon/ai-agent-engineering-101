@@ -1,10 +1,10 @@
 {
  "merch": {
-  "t": 1794197263.072105,
-  "facts": 89,
+  "t": 1794202775.0292659,
+  "facts": 92,
   "lessons": [
    {
-    "rule": "Do not add reserves, room tests, surge cut-offs, own-sales caps or score-based drops that cut hot 300k+ goods lines (sku_score at DEAR_HOT or more). Change those lines only by adding depth.",
+    "rule": "Do not add reserves, room tests, surge cut-offs, own-sales caps or score-based drops to 300k+ goods lines. Change those lines only by adding depth to hot SKUs (sku_score at DEAR_HOT or more).",
     "evidence": [
      "F13",
      "F26",
@@ -15,7 +15,7 @@
      "F80"
     ],
     "status": "unverified",
-    "trap": "Each guard was expected to help (+10% to +20%) and was reverted: 11/05 23:29 -53%, 11/06 16:16 -24%, 11/07 06:54 -32% (deals 115.3 -> 67.7), 11/07 18:34 -30%, 11/08 05:01 -43% (deals 70.7 -> 40.3), 11/05 13:08",
+    "trap": "Each guard was expected to help and was reverted: 11/05 23:29 shop_margin_h -53%, 11/06 16:16 -24%, 11/07 06:54 -32% (shop_deals_h 115.3 -> 67.7), 11/07 18:34 -30%, 11/08 05:01 shop_deals_h -43% (70.7",
     "when": [
      "11/05 23:29",
      "11/06 14:35",
@@ -27,18 +27,16 @@
     ]
    },
    {
-    "rule": "Put the depth on goods that keep selling and keep slow or mid-priced SKUs small: non-hot 300k+ at 1 unit, 100-150k goods capped at 2, and hot cheap SKUs scaled by heat.",
+    "rule": "Put depth on goods that keep selling and keep slow or mid-priced SKUs small: non-hot 300k+ at 1 unit, 100-150k goods capped at 2 units, hot 300k+ and hot cheap SKUs scaled by heat.",
     "evidence": [
-     "F11",
      "F14",
      "F33",
      "F38",
      "F60"
     ],
     "status": "unverified",
-    "trap": "All were kept, but only on raw before/after verdicts that read the hour of day (11/06 01:05 +354%, 11/07 03:21 +107%, 11/05 21:54 +107%, 11/06 19:38 +19%, 11/08 01:27 deals +13%). They show direction,",
+    "trap": "All were kept, but only on raw before/after verdicts that read the hour of day (11/06 01:05 +354%, 11/06 19:38 +19%, 11/07 03:21 +107%, 11/08 01:27 shop_deals_h +13%). They show direction, not",
     "when": [
-     "11/05 21:54",
      "11/06 01:05",
      "11/06 19:38",
      "11/07 03:21",
@@ -46,14 +44,14 @@
     ]
    },
    {
-    "rule": "Free stock room from slow 300k+ units by sku_score (exclude them from the stock_value cap and goods_frac room, and stop slow lines once 40 are held). Never use an age-based exclusion.",
+    "rule": "Free stock room from slow 300k+ units by sku_score: exclude them from the stock_value cap and goods_frac room, and stop adding slow lines once 40 are held. Never exclude by age.",
     "evidence": [
      "F50",
      "F57",
      "F66"
     ],
     "status": "unverified",
-    "trap": "The age-based version (11/07 14:59, unsold over a day) was expected +20% and measured -29%, so it was reverted. The sku_score versions were kept (11/07 22:06 deals +63%, 11/08 08:33 ma",
+    "trap": "The age-based version (11/07 14:59, unsold over a day) was expected +20% and measured -29%, so it was reverted. The sku_score versions were kept (11/07 22:06 shop_deals_h +63%,",
     "when": [
      "11/07 14:59",
      "11/07 22:06",
@@ -61,43 +59,18 @@
     ]
    },
    {
-    "rule": "The hot 300k+ heat cap is undecided. Do not stack more depth changes (including the 150-300k heat at 2x) on the supervisor's restore of 5x (20 units) until it has been judged on our share of paid sales.",
+    "rule": "The hot 300k+ heat cap (5x dear_depth, 20 units a line) is undecided. Do not stack more depth changes, including the 150-300k heat at 2x, until it has been judged on our share of paid sales.",
     "evidence": [
      "F84",
      "F88",
-     "F89"
+     "F90"
     ],
     "status": "unverified",
-    "trap": "Raising the cap from 3x to 5x (11/09 08:06, expected +10%) measured -20% on raw before/after and was reverted. The supervisor then restored it (11/09 11:18) with no verdict, an",
+    "trap": "Raising the cap from 3x to 5x (11/09 08:06, expected +10%) measured -20% on raw before/after and was reverted. The supervisor restored it (11/09 11:18) with no verdict, and 11/09 11:33",
     "when": [
      "11/09 08:06",
      "11/09 11:18",
      "11/09 11:33"
-    ]
-   },
-   {
-    "rule": "Treat the earlier number sweeps (max_list, stock_value, window_depth, sku_depth, ask_frac, breadth_lines and similar) as weak. Do not use them as a reason to move these numbers again.",
-    "evidence": [
-     "F61",
-     "F63",
-     "F65",
-     "F73",
-     "F76",
-     "F78",
-     "F81",
-     "F82"
-    ],
-    "status": "unverified",
-    "trap": "They were judged on raw margin, which reads the hour of day. max_list went 900000 -> 600000 -> 900000 -> 600000 and stock_value swung 75000000 -> 70000000 -> 65",
-    "when": [
-     "11/08 01:58",
-     "11/08 04:43",
-     "11/08 07:43",
-     "11/08 18:44",
-     "11/08 21:51",
-     "11/09 02:00",
-     "11/09 05:01",
-     "11/09 05:35"
     ]
    },
    {
@@ -381,22 +354,135 @@
       ]
      }
     ]
+   },
+   {
+    "t": 1794197263.072105,
+    "lessons": [
+     {
+      "rule": "Do not add reserves, room tests, surge cut-offs, own-sales caps or score-based drops that cut hot 300k+ goods lines (sku_score at DEAR_HOT or more). Change those lines only by adding depth.",
+      "evidence": [
+       "F13",
+       "F26",
+       "F28",
+       "F42",
+       "F53",
+       "F64",
+       "F80"
+      ],
+      "status": "unverified",
+      "trap": "Each guard was expected to help (+10% to +20%) and was reverted: 11/05 23:29 -53%, 11/06 16:16 -24%, 11/07 06:54 -32% (deals 115.3 -> 67.7), 11/07 18:34 -30%, 11/08 05:01 -43% (deals 70.7 -> 40.3), 11/05 13:08",
+      "when": [
+       "11/05 23:29",
+       "11/06 14:35",
+       "11/06 16:16",
+       "11/07 06:54",
+       "11/07 18:34",
+       "11/08 05:01",
+       "11/09 04:44"
+      ]
+     },
+     {
+      "rule": "Put the depth on goods that keep selling and keep slow or mid-priced SKUs small: non-hot 300k+ at 1 unit, 100-150k goods capped at 2, and hot cheap SKUs scaled by heat.",
+      "evidence": [
+       "F11",
+       "F14",
+       "F33",
+       "F38",
+       "F60"
+      ],
+      "status": "unverified",
+      "trap": "All were kept, but only on raw before/after verdicts that read the hour of day (11/06 01:05 +354%, 11/07 03:21 +107%, 11/05 21:54 +107%, 11/06 19:38 +19%, 11/08 01:27 deals +13%). They show direction,",
+      "when": [
+       "11/05 21:54",
+       "11/06 01:05",
+       "11/06 19:38",
+       "11/07 03:21",
+       "11/08 01:27"
+      ]
+     },
+     {
+      "rule": "Free stock room from slow 300k+ units by sku_score (exclude them from the stock_value cap and goods_frac room, and stop slow lines once 40 are held). Never use an age-based exclusion.",
+      "evidence": [
+       "F50",
+       "F57",
+       "F66"
+      ],
+      "status": "unverified",
+      "trap": "The age-based version (11/07 14:59, unsold over a day) was expected +20% and measured -29%, so it was reverted. The sku_score versions were kept (11/07 22:06 deals +63%, 11/08 08:33 ma",
+      "when": [
+       "11/07 14:59",
+       "11/07 22:06",
+       "11/08 08:33"
+      ]
+     },
+     {
+      "rule": "The hot 300k+ heat cap is undecided. Do not stack more depth changes (including the 150-300k heat at 2x) on the supervisor's restore of 5x (20 units) until it has been judged on our share of paid sales.",
+      "evidence": [
+       "F84",
+       "F88",
+       "F89"
+      ],
+      "status": "unverified",
+      "trap": "Raising the cap from 3x to 5x (11/09 08:06, expected +10%) measured -20% on raw before/after and was reverted. The supervisor then restored it (11/09 11:18) with no verdict, an",
+      "when": [
+       "11/09 08:06",
+       "11/09 11:18",
+       "11/09 11:33"
+      ]
+     },
+     {
+      "rule": "Treat the earlier number sweeps (max_list, stock_value, window_depth, sku_depth, ask_frac, breadth_lines and similar) as weak. Do not use them as a reason to move these numbers again.",
+      "evidence": [
+       "F61",
+       "F63",
+       "F65",
+       "F73",
+       "F76",
+       "F78",
+       "F81",
+       "F82"
+      ],
+      "status": "unverified",
+      "trap": "They were judged on raw margin, which reads the hour of day. max_list went 900000 -> 600000 -> 900000 -> 600000 and stock_value swung 75000000 -> 70000000 -> 65",
+      "when": [
+       "11/08 01:58",
+       "11/08 04:43",
+       "11/08 07:43",
+       "11/08 18:44",
+       "11/08 21:51",
+       "11/09 02:00",
+       "11/09 05:01",
+       "11/09 05:35"
+      ]
+     },
+     {
+      "rule": "Do not count on the food shelf-life bar change (selling food categories need min(min_shelf_hours, 48)) to cut refusals. Check shelf_refused_h before building on it.",
+      "evidence": [
+       "F77"
+      ],
+      "status": "contradicted",
+      "trap": "It was kept, but shelf_refused_h was expected -30% and measured +21%, the wrong way. Assuming it worked would hide a refusal problem.",
+      "when": [
+       "11/09 01:10"
+      ]
+     }
+    ]
    }
   ]
  },
  "sales": {
-  "t": 1794197234.856996,
-  "facts": 63,
+  "t": 1794202755.1815438,
+  "facts": 65,
   "lessons": [
    {
-    "rule": "Keep the slower playbook with more turns and gentler concessions on goods. Do not switch to fast concessions with few turns (the IKEA playbook: step 0.5, max_turns 3). This is the only same-hours A/B verdict in the record.",
+    "rule": "Keep goods haggling on the slower playbook with more turns and gentler concessions. Do not go back to fast concessions with few turns (step 0.5, max_turns 3). This is the only same-hours A/B verdict in the record.",
     "evidence": [
      "F6",
      "F57",
      "F60"
     ],
     "status": "verified",
-    "trap": "The IKEA arm made 8.8% margin over list and closed 17 of 31 deals. The strategy made 13.7% and closed 39 of 55 (p 0.953). The 11/09 06:43 bundle brought step 0.",
+    "trap": "The IKEA arm made 8.8% margin over list and closed 17 of 31 deals. The strategy made 13.7% and closed 39 of 55 (p 0.953). The 11/09 06:43 bundle (step 0.5, max_",
     "when": [
      "11/05 07:47",
      "11/09 06:43",
@@ -404,130 +490,69 @@
     ]
    },
    {
-    "rule": "Change one knob at a time. Never ship an overhaul bundle. Measure each change on our share of paid sales with an A/B on the same hours.",
-    "evidence": [
-     "F57",
-     "F58",
-     "F59",
-     "F60"
-    ],
-    "status": "unverified",
-    "trap": "The 11/09 06:43 bundle moved ask, floors, min_margin, step, max_turns and the food asks together. Its raw margin of +30% carried no share verdict and cannot be ",
-    "when": [
-     "11/09 06:43",
-     "11/09 07:02",
-     "11/09 07:21",
-     "11/09 09:21"
-    ]
-   },
-   {
-    "rule": "Do not treat raw margin/h after a parameter tweak as evidence. Only readings on our share of paid sales count, and an A/B is how to get one.",
-    "evidence": [
-     "F14",
-     "F15",
-     "F16",
-     "F17",
-     "F28",
-     "F44",
-     "F45",
-     "F54",
-     "F55"
-    ],
-    "status": "unverified",
-    "trap": "Raw margin swung from -72% to +418% on small tweaks and flipped sign on reversals. clear_hours 20 -> 24 read +23% and the reversal 24 -> 20 also read +23%. ask_",
-    "when": [
-     "11/06 00:31",
-     "11/06 00:32",
-     "11/06 03:11",
-     "11/06 05:35",
-     "11/07 09:58",
-     "11/08 10:15",
-     "11/08 10:33",
-     "11/09 00:52",
-     "11/09 03:20"
-    ]
-   },
-   {
-    "rule": "Before reading a change's effect, check what else moved in the comparison window (stock_value, other knobs). A confounded window gives no verdict. Do not pair stock_value changes with ask changes.",
+    "rule": "Change one knob at a time, and measure it with an A/B on the same hours on our share of paid sales. A change that has no such reading is not evidence. Do not pair stock_value or restock changes with ask or floor changes.",
     "evidence": [
      "F8",
-     "F20",
-     "F27",
-     "F34",
-     "F44"
+     "F57",
+     "F60",
+     "F62"
     ],
     "status": "unverified",
-    "trap": "The -33% raw margin on ask_frac 0.85 -> 0.9 looked like a loss, but its prior window held stock_value 34M (changed back to 30M at 16:32), so it was confounded. ",
+    "trap": "The 11/05 ask_frac verdict of -33% was confounded because its comparison window held a different stock_value, so it gave no clean reading (11/05 18:58). The 06:43 bundle",
     "when": [
      "11/05 18:58",
-     "11/06 18:15",
-     "11/07 06:53",
-     "11/07 16:51",
-     "11/08 10:15"
+     "11/09 06:43",
+     "11/09 09:21",
+     "11/09 10:48"
     ]
    },
    {
-    "rule": "Stop flipping the same knob back and forth (ask_frac, ask_frac_food, clear_hours, max_turns, market_ask, clear_frac). Move one only through an A/B on the same hours and then leave it alone.",
+    "rule": "Do not read raw margin/h after a tweak as proof. Readings taken on raw margin read the hour of day.",
     "evidence": [
-     "F9",
-     "F10",
-     "F12",
-     "F24",
-     "F25",
-     "F37",
-     "F46",
-     "F47",
-     "F48",
-     "F49",
-     "F52",
-     "F53",
-     "F54",
-     "F55",
-     "F56"
+     "F8",
+     "F56",
+     "F57"
     ],
     "status": "unverified",
-    "trap": "ask_frac_food went 0.72 -> 0.75 -> 0.8 -> 0.72 in one evening. max_turns went 6 -> 7 -> 6 within 15 minutes. ask_frac went 0.74 -> 0.7 -> 0.74 -> 0.7 within abo",
+    "trap": "11/09 06:26 (+61%) and 11/09 06:43 (+30%) were both UNVERIFIED raw-margin readings, and the 11/09 06:43 bundle was then undone anyway. Most 11/05-11/09 tweaks were MIXED, so they give ",
     "when": [
-     "11/05 19:30",
-     "11/05 20:02",
-     "11/05 20:02",
-     "11/06 22:57",
-     "11/07 02:47",
-     "11/07 23:28",
-     "11/08 14:39",
-     "11/08 16:04",
-     "11/08 16:19",
-     "11/08 17:07",
-     "11/08 20:30",
-     "11/08 23:26",
-     "11/09 00:52",
-     "11/09 03:20",
-     "11/09 06:26"
+     "11/05 18:58",
+     "11/09 06:26",
+     "11/09 06:43"
     ]
    },
    {
-    "rule": "Treat lower floors and lower min_margin as unproven. Test them by A/B before keeping them. Do not cut them in steps on raw margin.",
+    "rule": "Stop flipping the same knob back and forth (ask_frac, ask_frac_food). Move one only after a same-hours A/B reading, then leave it alone.",
     "evidence": [
-     "F33",
-     "F36",
-     "F39",
-     "F40",
-     "F41",
-     "F43",
-     "F50",
+     "F58",
+     "F59",
+     "F60",
+     "F63",
+     "F64",
+     "F65"
+    ],
+    "status": "unverified",
+    "trap": "ask_frac was 0.85 -> 0.7 -> 0.85 -> 0.7 within about 2 h on 11/09. ask_frac_food went 0.7 -> 0.75 at 12:06 and back to 0.7 at 12:07, twice (11/09 12:07, 11/09 12:07). None of t",
+    "when": [
+     "11/09 07:02",
+     "11/09 07:21",
+     "11/09 09:21",
+     "11/09 12:06",
+     "11/09 12:07",
+     "11/09 12:07"
+    ]
+   },
+   {
+    "rule": "Treat lower floors and lower min_margin as unproven. Test them by A/B before keeping them. Do not move them as part of a bundle.",
+    "evidence": [
+     "F6",
      "F57",
      "F60"
     ],
     "status": "unverified",
-    "trap": "min_margin cuts 0.1 -> 0.06 -> 0.04 -> 0.02 read +36%, +154% and +119%, and floor cuts read -35%, -16% and -66%. A floor raise read +76%. These are hour-of-day ",
+    "trap": "The only same-hours evidence says faster, looser concessions lost margin and deals (11/05 07:47). The 06:43 bundle cut floors to 0.45 while raising min_margin to 0.14 an",
     "when": [
-     "11/07 16:02",
-     "11/07 22:54",
-     "11/08 01:10",
-     "11/08 03:35",
-     "11/08 04:26",
-     "11/08 07:12",
-     "11/08 17:55",
+     "11/05 07:47",
      "11/09 06:43",
      "11/09 09:21"
     ]
@@ -539,22 +564,22 @@
      "F3"
     ],
     "status": "unverified",
-    "trap": "Even with the model shown what the rule would do, it still lost, and model_share has been 0 since 11/04 10:00. The 11/04 09:31 reading was never a formal verdict, so thi",
+    "trap": "Even with the model shown what the rule would do, it still lost, and model_share has been 0 since 10:00 on 11/04. That was never a formal A/B verdict, so it is ",
     "when": [
      "11/03 21:02",
      "11/04 09:31"
     ]
    },
    {
-    "rule": "Treat code changes without a verdict as unmeasured: scout wait, b-fast single-call haggle, food shelf-life shipping, the kit v4 checkout workaround, and the latest ask_frac_food 0.75 -> 0.7 (11/09 12:07). Check them against paid-sales share",
+    "rule": "Treat code changes with no verdict as unmeasured: food shelf-life shipping, the 6 s scout wait, b-fast single-call haggle, the kit v4 checkout workaround, and the latest ask_frac_food 0.75 -> 0.7. Check each against paid-sales share before ",
     "evidence": [
      "F2",
      "F4",
      "F5",
-     "F63"
+     "F65"
     ],
     "status": "unverified",
-    "trap": "They shipped with no verdict, so a later gain or drop in sales can be neither blamed on them nor ruled out. Stacking new changes on top makes it worse.",
+    "trap": "They shipped with no verdict, so a later gain or drop in sales can neither be blamed on them nor ruled out. Stacking more changes on top makes them impossible t",
     "when": [
      "11/03 21:14",
      "11/04 12:33",
@@ -899,21 +924,200 @@
       ]
      }
     ]
+   },
+   {
+    "t": 1794197234.856996,
+    "lessons": [
+     {
+      "rule": "Keep the slower playbook with more turns and gentler concessions on goods. Do not switch to fast concessions with few turns (the IKEA playbook: step 0.5, max_turns 3). This is the only same-hours A/B verdict in the record.",
+      "evidence": [
+       "F6",
+       "F57",
+       "F60"
+      ],
+      "status": "verified",
+      "trap": "The IKEA arm made 8.8% margin over list and closed 17 of 31 deals. The strategy made 13.7% and closed 39 of 55 (p 0.953). The 11/09 06:43 bundle brought step 0.",
+      "when": [
+       "11/05 07:47",
+       "11/09 06:43",
+       "11/09 09:21"
+      ]
+     },
+     {
+      "rule": "Change one knob at a time. Never ship an overhaul bundle. Measure each change on our share of paid sales with an A/B on the same hours.",
+      "evidence": [
+       "F57",
+       "F58",
+       "F59",
+       "F60"
+      ],
+      "status": "unverified",
+      "trap": "The 11/09 06:43 bundle moved ask, floors, min_margin, step, max_turns and the food asks together. Its raw margin of +30% carried no share verdict and cannot be ",
+      "when": [
+       "11/09 06:43",
+       "11/09 07:02",
+       "11/09 07:21",
+       "11/09 09:21"
+      ]
+     },
+     {
+      "rule": "Do not treat raw margin/h after a parameter tweak as evidence. Only readings on our share of paid sales count, and an A/B is how to get one.",
+      "evidence": [
+       "F14",
+       "F15",
+       "F16",
+       "F17",
+       "F28",
+       "F44",
+       "F45",
+       "F54",
+       "F55"
+      ],
+      "status": "unverified",
+      "trap": "Raw margin swung from -72% to +418% on small tweaks and flipped sign on reversals. clear_hours 20 -> 24 read +23% and the reversal 24 -> 20 also read +23%. ask_",
+      "when": [
+       "11/06 00:31",
+       "11/06 00:32",
+       "11/06 03:11",
+       "11/06 05:35",
+       "11/07 09:58",
+       "11/08 10:15",
+       "11/08 10:33",
+       "11/09 00:52",
+       "11/09 03:20"
+      ]
+     },
+     {
+      "rule": "Before reading a change's effect, check what else moved in the comparison window (stock_value, other knobs). A confounded window gives no verdict. Do not pair stock_value changes with ask changes.",
+      "evidence": [
+       "F8",
+       "F20",
+       "F27",
+       "F34",
+       "F44"
+      ],
+      "status": "unverified",
+      "trap": "The -33% raw margin on ask_frac 0.85 -> 0.9 looked like a loss, but its prior window held stock_value 34M (changed back to 30M at 16:32), so it was confounded. ",
+      "when": [
+       "11/05 18:58",
+       "11/06 18:15",
+       "11/07 06:53",
+       "11/07 16:51",
+       "11/08 10:15"
+      ]
+     },
+     {
+      "rule": "Stop flipping the same knob back and forth (ask_frac, ask_frac_food, clear_hours, max_turns, market_ask, clear_frac). Move one only through an A/B on the same hours and then leave it alone.",
+      "evidence": [
+       "F9",
+       "F10",
+       "F12",
+       "F24",
+       "F25",
+       "F37",
+       "F46",
+       "F47",
+       "F48",
+       "F49",
+       "F52",
+       "F53",
+       "F54",
+       "F55",
+       "F56"
+      ],
+      "status": "unverified",
+      "trap": "ask_frac_food went 0.72 -> 0.75 -> 0.8 -> 0.72 in one evening. max_turns went 6 -> 7 -> 6 within 15 minutes. ask_frac went 0.74 -> 0.7 -> 0.74 -> 0.7 within abo",
+      "when": [
+       "11/05 19:30",
+       "11/05 20:02",
+       "11/05 20:02",
+       "11/06 22:57",
+       "11/07 02:47",
+       "11/07 23:28",
+       "11/08 14:39",
+       "11/08 16:04",
+       "11/08 16:19",
+       "11/08 17:07",
+       "11/08 20:30",
+       "11/08 23:26",
+       "11/09 00:52",
+       "11/09 03:20",
+       "11/09 06:26"
+      ]
+     },
+     {
+      "rule": "Treat lower floors and lower min_margin as unproven. Test them by A/B before keeping them. Do not cut them in steps on raw margin.",
+      "evidence": [
+       "F33",
+       "F36",
+       "F39",
+       "F40",
+       "F41",
+       "F43",
+       "F50",
+       "F57",
+       "F60"
+      ],
+      "status": "unverified",
+      "trap": "min_margin cuts 0.1 -> 0.06 -> 0.04 -> 0.02 read +36%, +154% and +119%, and floor cuts read -35%, -16% and -66%. A floor raise read +76%. These are hour-of-day ",
+      "when": [
+       "11/07 16:02",
+       "11/07 22:54",
+       "11/08 01:10",
+       "11/08 03:35",
+       "11/08 04:26",
+       "11/08 07:12",
+       "11/08 17:55",
+       "11/09 06:43",
+       "11/09 09:21"
+      ]
+     },
+     {
+      "rule": "Keep the rules as the seller's default haggler. Do not raise model_share (haiku haggling) without a share-based A/B.",
+      "evidence": [
+       "F1",
+       "F3"
+      ],
+      "status": "unverified",
+      "trap": "Even with the model shown what the rule would do, it still lost, and model_share has been 0 since 11/04 10:00. The 11/04 09:31 reading was never a formal verdict, so thi",
+      "when": [
+       "11/03 21:02",
+       "11/04 09:31"
+      ]
+     },
+     {
+      "rule": "Treat code changes without a verdict as unmeasured: scout wait, b-fast single-call haggle, food shelf-life shipping, the kit v4 checkout workaround, and the latest ask_frac_food 0.75 -> 0.7 (11/09 12:07). Check them against paid-sales share",
+      "evidence": [
+       "F2",
+       "F4",
+       "F5",
+       "F63"
+      ],
+      "status": "unverified",
+      "trap": "They shipped with no verdict, so a later gain or drop in sales can be neither blamed on them nor ruled out. Stacking new changes on top makes it worse.",
+      "when": [
+       "11/03 21:14",
+       "11/04 12:33",
+       "11/04 13:58",
+       "11/09 12:07"
+      ]
+     }
+    ]
    }
   ]
  },
  "community": {
-  "t": 1794197307.956277,
+  "t": 1794202824.928766,
   "facts": 5,
   "lessons": [
    {
-    "rule": "Do not judge forum changes on raw before/after votes per post, because the hour of day contaminates them. Re-judge on our share of the market's paid sales, or run an A/B over the same hours, before keeping or reverting a change.",
+    "rule": "Do not judge forum changes on raw before/after votes per post, because the hour of day contaminates the reading. Judge on our share of the market's paid sales, or run an A/B over the same hours, before keeping or reverting a change.",
     "evidence": [
      "F3",
      "F4"
     ],
     "status": "unverified",
-    "trap": "11/05 09:22 was reverted on forum_votes_post -20% and 11/05 10:57 was kept despite -9%, both from the hour before against the hour after. One revert and one kee",
+    "trap": "11/05 09:22 was reverted on forum_votes_post -20% and 11/05 10:57 was kept despite -9%, both read as the hour before against the hour after. Both verdicts are w",
     "when": [
      "11/05 09:22",
      "11/05 10:57"
@@ -931,7 +1135,7 @@
     ]
    },
    {
-    "rule": "Do not re-attempt the narrowed note() (top 4 shops with 2+ settles, last 2 refs per shown shop) on the strength of the old result. Its revert rests on a weak measurement, so any retry or any further judgement needs an A/B over the same hour",
+    "rule": "Do not treat the narrowed note() (top 4 shops with 2+ settles, last 2 refs per shown shop) as disproven. Its revert rests on a weak measurement, so any retry or further judgement needs an A/B over the same hours.",
     "evidence": [
      "F3"
     ],
@@ -942,16 +1146,14 @@
     ]
    },
    {
-    "rule": "Judge the forum cadence change (every 600 s -> 310 s, one post per market limit) on our share of the market's paid sales, and check it does not hurt vote quality, before building on it. It has no verdict.",
+    "rule": "Judge the forum cadence change (EVERY 600 -> 310 s, one post per market limit) on our share of the market's paid sales, and check it does not hurt vote quality, before building on it. It has no verdict.",
     "evidence": [
-     "F5",
-     "F4"
+     "F5"
     ],
     "status": "unverified",
-    "trap": "Assuming more posts means more votes or sales. 11/06 15:01 has no verdict, and 11/05 10:57 (itself a weak reading) gives no sign that posting more of one kind helped, so a faster",
+    "trap": "Assuming more posts means more votes or sales. 11/06 15:01 has no verdict, and the only related reading (11/05 10:57, weak) gives no sign that posting more helped.",
     "when": [
-     "11/06 15:01",
-     "11/05 10:57"
+     "11/06 15:01"
     ]
    },
    {
@@ -1034,15 +1236,81 @@
       ]
      }
     ]
+   },
+   {
+    "t": 1794197307.956277,
+    "lessons": [
+     {
+      "rule": "Do not judge forum changes on raw before/after votes per post, because the hour of day contaminates them. Re-judge on our share of the market's paid sales, or run an A/B over the same hours, before keeping or reverting a change.",
+      "evidence": [
+       "F3",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "11/05 09:22 was reverted on forum_votes_post -20% and 11/05 10:57 was kept despite -9%, both from the hour before against the hour after. One revert and one kee",
+      "when": [
+       "11/05 09:22",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "Treat the cap on our_deals posts (no our_deals post if either of our last two posts was one, about 1 post in 3) as unproven. Re-test it with an A/B over the same hours before building on it or tuning the cap.",
+      "evidence": [
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "It was kept with expected +15% but measured -9% on a raw before/after (weak). Assuming it helps because it was 'kept' credits a benefit that was never shown.",
+      "when": [
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "Do not re-attempt the narrowed note() (top 4 shops with 2+ settles, last 2 refs per shown shop) on the strength of the old result. Its revert rests on a weak measurement, so any retry or any further judgement needs an A/B over the same hour",
+      "evidence": [
+       "F3"
+      ],
+      "status": "unverified",
+      "trap": "Reverting on -20% from a raw before/after may have discarded a good change. Re-adding it without an A/B repeats the same unmeasured guess.",
+      "when": [
+       "11/05 09:22"
+      ]
+     },
+     {
+      "rule": "Judge the forum cadence change (every 600 s -> 310 s, one post per market limit) on our share of the market's paid sales, and check it does not hurt vote quality, before building on it. It has no verdict.",
+      "evidence": [
+       "F5",
+       "F4"
+      ],
+      "status": "unverified",
+      "trap": "Assuming more posts means more votes or sales. 11/06 15:01 has no verdict, and 11/05 10:57 (itself a weak reading) gives no sign that posting more of one kind helped, so a faster",
+      "when": [
+       "11/06 15:01",
+       "11/05 10:57"
+      ]
+     },
+     {
+      "rule": "Keep prices and forum kinds built by code from the ledger (going prices, forum price claims checked, kinds weighted by votes), but attach a verdict on our share of paid sales to each later change so the lead can see which one moves board po",
+      "evidence": [
+       "F1",
+       "F2"
+      ],
+      "status": "unverified",
+      "trap": "Neither foundation has a verdict. Layering later changes on them without measuring leaves the lead unable to attribute any change in board points, and 'no verdi",
+      "when": [
+       "11/03 21:10",
+       "11/03 21:24"
+      ]
+     }
+    ]
    }
   ]
  },
  "buying": {
-  "t": 1794197280.504361,
-  "facts": 45,
+  "t": 1794202795.516115,
+  "facts": 46,
   "lessons": [
    {
-    "rule": "Keep buyer CAP at 0.75, the latest kept value. Lower it further only through a new same-hours A/B judged on saved/deal.",
+    "rule": "Keep buyer CAP at 0.75, the latest kept value. Lower it further only through a new same-hours A/B judged on saved/deal, and read the close rate alongside it.",
     "evidence": [
      "F43",
      "F38",
@@ -1051,7 +1319,7 @@
      "F22"
     ],
     "status": "verified",
-    "trap": "Lowering CAP from 0.85 lost in 11/06 12:28, 11/07 13:15 and 11/08 05:01, then won in 11/08 14:39 (0.85 -> 0.8) and 11/08 21:51 (0.8 -> 0.75, saved/deal 0.33 -> 0.3498). One lost trial does not settle ",
+    "trap": "Lowering CAP lost in 11/06 12:28, 11/07 13:15 and 11/08 05:01 (0.85 -> 0.8 and 0.85 -> 0.82), then won in 11/08 14:39 (0.85 -> 0.8, saved/deal 0.3113 -> 0.327) and 11/08 21:51 (0.8 -> 0.75, saved/deal",
     "when": [
      "11/08 21:51",
      "11/08 14:39",
@@ -1069,7 +1337,7 @@
      "F40"
     ],
     "status": "verified",
-    "trap": "0.07 -> 0.05 was tried twice (11/07 10:29, 11/08 17:55) and not taken either time. 11/07 10:29 showed saved/deal 0.2949 -> 0.2988, a gain too small to count against the same-hours nois",
+    "trap": "0.07 -> 0.05 was tried twice (11/07 10:29, 11/08 17:55) and not taken either time. 11/07 10:29 showed saved/deal 0.2949 -> 0.2988, a gain too small to count against same-hours noise, a",
     "when": [
      "11/06 14:50",
      "11/06 20:57",
@@ -1085,7 +1353,7 @@
      "F45"
     ],
     "status": "verified",
-    "trap": "1.1 -> 1.15 lost in 11/06 17:22 and then won in 11/07 23:45 (saved/deal 0.2981 -> 0.3195), so a single loss is weak. But 1.15 -> 1.2 (11/09 07:33) went 0.3619 -> 0.3536 on saved/deal, ",
+    "trap": "1.1 -> 1.15 lost in 11/06 17:22 and then won in 11/07 23:45 (saved/deal 0.2981 -> 0.3195), so a single loss is weak evidence. But 1.15 -> 1.2 (11/09 07:33) went 0.3619 -> 0.3536 on sav",
     "when": [
      "11/07 23:45",
      "11/06 17:22",
@@ -1093,26 +1361,28 @@
     ]
    },
    {
-    "rule": "Leave MAX_RAISE at 0.4. The alternatives 0.5, 0.35 and 0.3 were not taken in five trials.",
+    "rule": "MAX_RAISE 0.35 won most recently (11/09 10:35, judged on buyer points/h +3%), so do not go back to 0.4. Do not try 0.3 or 0.5 without a new reason.",
     "evidence": [
-     "F21",
-     "F27",
+     "F46",
      "F29",
      "F35",
-     "F44"
+     "F27",
+     "F44",
+     "F21"
     ],
     "status": "verified",
-    "trap": "11/09 01:09 (0.4 -> 0.3) showed saved/deal 0.3472 -> 0.3535 on uneven arms (149 vs 107 orders) and was still not taken. Gains of about 0.005 on uneven arms are noise. D",
+    "trap": "The same 0.4 -> 0.35 step lost twice before (11/07 07:25, 11/08 08:49) and won in 11/09 10:35 (saved/deal 0.3477 -> 0.3517, close rate 0.685 -> 0.719). The result is not stable across ",
     "when": [
-     "11/06 09:13",
-     "11/07 02:12",
+     "11/09 10:35",
      "11/07 07:25",
      "11/08 08:49",
-     "11/09 01:09"
+     "11/07 02:12",
+     "11/09 01:09",
+     "11/06 09:13"
     ]
    },
    {
-    "rule": "Leave C_CAP at 0.6. Do not restart the 0.55 trial, which lost five times. Note that 11/07 10:14 dropped the C_CAP price clause for grade C behind a trial flag, so C_CAP now matters only where that clause remains.",
+    "rule": "Leave C_CAP at 0.6. Do not restart the 0.55 trial, which lost five times. 11/07 10:14 dropped the C_CAP price clause for grade C behind a trial flag, so C_CAP now matters only where that clause remains.",
     "evidence": [
      "F13",
      "F17",
@@ -1143,7 +1413,7 @@
      "F11"
     ],
     "status": "verified",
-    "trap": "11/04 21:11 and 11/06 02:41 won big on surplus/order (+243% and +65%), but that is the older metric, not saved/deal. The global CLOSE_GAP 0.11 -> 0.12 was not taken in 11/05 00:07 (0.70",
+    "trap": "11/04 21:11 and 11/06 02:41 won big on surplus/order (+243% and +65%), but that is the older metric, not saved/deal. The global step 0.11 -> 0.12 lost in 11/05 00:07 (close rate 0.705 -",
     "when": [
      "11/04 21:11",
      "11/06 02:41",
@@ -1152,28 +1422,32 @@
     ]
    },
    {
-    "rule": "Do not add new candidate-ranking reweightings (per-list-price ranking, break-rate penalties). Re-test or revert the code changes that were kept despite a negative saved/deal: 11/06 22:59 (-2%), 11/07 10:14 (-2%) and 11/08 11:55 (-2%).",
+    "rule": "Do not add new candidate-ranking or first-offer reweightings. Re-test or revert the code changes that were kept despite a negative measured result: 11/05 00:24 (-10%), 11/06 22:59 (-2%), 11/07 10:14 (-2%) and 11/08 11:55 (-2%).",
     "evidence": [
+     "F12",
+     "F26",
+     "F30",
      "F37",
      "F39",
      "F41",
      "F42",
-     "F26",
-     "F30"
+     "F16"
     ],
     "status": "verified",
-    "trap": "Each was predicted at +1% to +5% but measured -2%, -6%, -4%, -2% and -2% on saved/deal. 11/08 16:36 was reverted by the supervisor (11/08 19:53) and 11/08 21:36 reverted itself. 11/06 22:59, F",
+    "trap": "These changes were each predicted at +1% to +5% and measured -10%, -2%, -2%, -2%, -6% and -4%. 11/05 17:22 was predicted -8% and measured +1%, no gain. 11/08 16:36 was reverted",
     "when": [
+     "11/05 00:24",
+     "11/06 22:59",
+     "11/07 10:14",
      "11/08 11:55",
      "11/08 16:36",
      "11/08 19:53",
      "11/08 21:36",
-     "11/06 22:59",
-     "11/07 10:14"
+     "11/05 17:22"
     ]
    },
    {
-    "rule": "Do not rely on the 11/04 17:57 (floor entries for lowest asks) and 11/04 19:36 (taking the second ask outright) conclusions. Their verdicts are weak.",
+    "rule": "Do not rely on 11/04 17:57 (floor entries for lowest asks) or 11/04 19:36 (taking the second ask outright). Their verdicts are weak.",
     "evidence": [
      "F6",
      "F7"
@@ -1321,6 +1595,155 @@
      },
      {
       "rule": "Do not rely on the 11/04 17:57 and 11/04 19:36 conclusions (floor entries for lowest asks, taking the second ask outright). Their verdicts are weak.",
+      "evidence": [
+       "F6",
+       "F7"
+      ],
+      "status": "unverified",
+      "trap": "Both were judged on raw before/after, which reads the hour of day. 11/04 17:57 measured -1% against an expected +5%, and 11/04 19:36 measured -10% against an expected +5%. Neithe",
+      "when": [
+       "11/04 17:57",
+       "11/04 19:36"
+      ]
+     }
+    ]
+   },
+   {
+    "t": 1794197280.504361,
+    "lessons": [
+     {
+      "rule": "Keep buyer CAP at 0.75, the latest kept value. Lower it further only through a new same-hours A/B judged on saved/deal.",
+      "evidence": [
+       "F43",
+       "F38",
+       "F34",
+       "F32",
+       "F22"
+      ],
+      "status": "verified",
+      "trap": "Lowering CAP from 0.85 lost in 11/06 12:28, 11/07 13:15 and 11/08 05:01, then won in 11/08 14:39 (0.85 -> 0.8) and 11/08 21:51 (0.8 -> 0.75, saved/deal 0.33 -> 0.3498). One lost trial does not settle ",
+      "when": [
+       "11/08 21:51",
+       "11/08 14:39",
+       "11/08 05:01",
+       "11/07 13:15",
+       "11/06 12:28"
+      ]
+     },
+     {
+      "rule": "Keep FIRM_GAP at 0.07, which won in two steps (0.03 -> 0.05, then 0.05 -> 0.07). Do not retry 0.07 -> 0.05.",
+      "evidence": [
+       "F23",
+       "F25",
+       "F31",
+       "F40"
+      ],
+      "status": "verified",
+      "trap": "0.07 -> 0.05 was tried twice (11/07 10:29, 11/08 17:55) and not taken either time. 11/07 10:29 showed saved/deal 0.2949 -> 0.2988, a gain too small to count against the same-hours nois",
+      "when": [
+       "11/06 14:50",
+       "11/06 20:57",
+       "11/07 10:29",
+       "11/08 17:55"
+      ]
+     },
+     {
+      "rule": "Keep FOOD_MARGIN at 1.15. Do not try 1.2 again without a new reason.",
+      "evidence": [
+       "F33",
+       "F24",
+       "F45"
+      ],
+      "status": "verified",
+      "trap": "1.1 -> 1.15 lost in 11/06 17:22 and then won in 11/07 23:45 (saved/deal 0.2981 -> 0.3195), so a single loss is weak. But 1.15 -> 1.2 (11/09 07:33) went 0.3619 -> 0.3536 on saved/deal, ",
+      "when": [
+       "11/07 23:45",
+       "11/06 17:22",
+       "11/09 07:33"
+      ]
+     },
+     {
+      "rule": "Leave MAX_RAISE at 0.4. The alternatives 0.5, 0.35 and 0.3 were not taken in five trials.",
+      "evidence": [
+       "F21",
+       "F27",
+       "F29",
+       "F35",
+       "F44"
+      ],
+      "status": "verified",
+      "trap": "11/09 01:09 (0.4 -> 0.3) showed saved/deal 0.3472 -> 0.3535 on uneven arms (149 vs 107 orders) and was still not taken. Gains of about 0.005 on uneven arms are noise. D",
+      "when": [
+       "11/06 09:13",
+       "11/07 02:12",
+       "11/07 07:25",
+       "11/08 08:49",
+       "11/09 01:09"
+      ]
+     },
+     {
+      "rule": "Leave C_CAP at 0.6. Do not restart the 0.55 trial, which lost five times. Note that 11/07 10:14 dropped the C_CAP price clause for grade C behind a trial flag, so C_CAP now matters only where that clause remains.",
+      "evidence": [
+       "F13",
+       "F17",
+       "F18",
+       "F28",
+       "F36",
+       "F20",
+       "F30"
+      ],
+      "status": "verified",
+      "trap": "At 0.55 the close rate rises (0.598 -> 0.683 in 11/05 19:30), which looks good. But surplus/order or saved/deal fell in most trials (23094 -> 11281 in 11/05 19:30). 11/08 11:54 gained ",
+      "when": [
+       "11/05 02:44",
+       "11/05 19:30",
+       "11/06 02:24",
+       "11/07 05:02",
+       "11/08 11:54",
+       "11/06 05:36",
+       "11/07 10:14"
+      ]
+     },
+     {
+      "rule": "Keep the close_gap overrides by price tier (11/04 21:11: 0.15 for SKUs at 200k or more; 11/06 02:41: 0.06 for 300k or more) and the global CLOSE_GAP at 0.12. Tune close_gap by price tier rather than assuming one global value fits.",
+      "evidence": [
+       "F8",
+       "F19",
+       "F14",
+       "F11"
+      ],
+      "status": "verified",
+      "trap": "11/04 21:11 and 11/06 02:41 won big on surplus/order (+243% and +65%), but that is the older metric, not saved/deal. The global CLOSE_GAP 0.11 -> 0.12 was not taken in 11/05 00:07 (0.70",
+      "when": [
+       "11/04 21:11",
+       "11/06 02:41",
+       "11/05 11:12",
+       "11/05 00:07"
+      ]
+     },
+     {
+      "rule": "Do not add new candidate-ranking reweightings (per-list-price ranking, break-rate penalties). Re-test or revert the code changes that were kept despite a negative saved/deal: 11/06 22:59 (-2%), 11/07 10:14 (-2%) and 11/08 11:55 (-2%).",
+      "evidence": [
+       "F37",
+       "F39",
+       "F41",
+       "F42",
+       "F26",
+       "F30"
+      ],
+      "status": "verified",
+      "trap": "Each was predicted at +1% to +5% but measured -2%, -6%, -4%, -2% and -2% on saved/deal. 11/08 16:36 was reverted by the supervisor (11/08 19:53) and 11/08 21:36 reverted itself. 11/06 22:59, F",
+      "when": [
+       "11/08 11:55",
+       "11/08 16:36",
+       "11/08 19:53",
+       "11/08 21:36",
+       "11/06 22:59",
+       "11/07 10:14"
+      ]
+     },
+     {
+      "rule": "Do not rely on the 11/04 17:57 (floor entries for lowest asks) and 11/04 19:36 (taking the second ask outright) conclusions. Their verdicts are weak.",
       "evidence": [
        "F6",
        "F7"

@@ -1,335 +1,1077 @@
 {
  "1793863920|stock_value 34000000 -> 30000000": {
-  "status": "unverified",
-  "orig": 0.036
+  "status": "mixed",
+  "aim": 0.073,
+  "share": 0.031,
+  "net_pts": 0.073,
+  "orig": 0.036,
+  "with": [
+   "measured: stock_value 30M -> 34M (13:22)",
+   "`buyer.shop()` cancels without a model call when the first t",
+   "ask_frac 0.85 -> 0.9"
+  ],
+  "sales": "139/4379 -> 163/3871"
  },
  "1793864880|ask_frac 0.85 -> 0.9": {
-  "status": "unverified",
-  "orig": -0.326
+  "status": "mixed",
+  "aim": -0.14,
+  "share": -0.126,
+  "net_pts": -0.14,
+  "orig": -0.326,
+  "with": [
+   "measured: stock_value 30M -> 34M (13:22)",
+   "`buyer.shop()` cancels without a model call when the first t",
+   "stock_value 34000000 -> 30000000"
+  ],
+  "sales": "123/4228 -> 148/3922"
  },
  "1793874636|ask_frac_food 0.72 -> 0.75": {
-  "status": "unverified",
-  "orig": -0.201
+  "status": "mixed",
+  "aim": -0.201,
+  "share": -0.311,
+  "net_pts": -0.201,
+  "orig": -0.201,
+  "with": [
+   "correction to the 18:57 verdict of ask_frac 0.85 -> 0.9",
+   "ask_frac_food 0.8 -> 0.72 (undo)",
+   "ask_frac_food 0.75 -> 0.8"
+  ],
+  "sales": "172/4969 -> 125/4883"
  },
  "1793876533|ask_frac_food 0.75 -> 0.8": {
-  "status": "unverified",
-  "orig": -0.041
+  "status": "mixed",
+  "aim": 0.051,
+  "share": -0.103,
+  "net_pts": 0.051,
+  "orig": -0.041,
+  "with": [
+   "correction to the 18:57 verdict of ask_frac 0.85 -> 0.9",
+   "ask_frac_food 0.8 -> 0.72 (undo)",
+   "ask_frac_food 0.72 -> 0.75"
+  ],
+  "sales": "143/5033 -> 136/4890"
  },
  "1793876564|ask_frac_food 0.8 -> 0.72": {
-  "status": "unverified",
-  "orig": -0.033
+  "status": "mixed",
+  "aim": 0.051,
+  "share": -0.103,
+  "net_pts": 0.051,
+  "orig": -0.033,
+  "with": [
+   "correction to the 18:57 verdict of ask_frac 0.85 -> 0.9",
+   "ask_frac_food 0.8 -> 0.72 (undo)",
+   "ask_frac_food 0.72 -> 0.75"
+  ],
+  "sales": "143/5033 -> 136/4890"
  },
  "1793885090|sku_cap 8 -> 10": {
-  "status": "unverified",
-  "orig": 0.01
+  "status": "mixed",
+  "aim": -0.314,
+  "share": -0.237,
+  "net_pts": -0.314,
+  "orig": 0.01,
+  "with": [
+   "In restock_r3.py, give the dear_depth of 4 units per SKU onl",
+   "In `restock_r3.py`, 300k+ goods lines are trimmed to what `s",
+   "clear_hours 16 -> 20"
+  ],
+  "sales": "132/4833 -> 150/4990"
  },
  "1793888886|clear_hours 16 -> 20": {
-  "status": "unverified",
-  "orig": -0.017
+  "status": "mixed",
+  "aim": -0.501,
+  "share": -0.453,
+  "net_pts": -0.501,
+  "orig": -0.017,
+  "with": [
+   "In restock_r3.py, give the dear_depth of 4 units per SKU onl",
+   "In `restock_r3.py`, 300k+ goods lines are trimmed to what `s",
+   "sku_cap 8 -> 10"
+  ],
+  "sales": "166/4924 -> 134/4880"
  },
  "1793892700|clear_hours 20 -> 24": {
-  "status": "unverified",
-  "orig": 0.233
+  "status": "mixed",
+  "aim": 0.198,
+  "share": 0.178,
+  "net_pts": 0.198,
+  "orig": 0.233,
+  "with": [
+   "In `restock_r3.py`, 300k+ goods lines are trimmed to what `s",
+   "clear_hours 24 -> 20 (undo); meta snapshot profit = book - s",
+   "In `restock_r3.py`, goods listed at 100,000 or more (and und"
+  ],
+  "sales": "134/5010 -> 164/4894"
  },
  "1793892738|clear_hours 24 -> 20": {
-  "status": "unverified",
-  "orig": 0.227
+  "status": "mixed",
+  "aim": 0.198,
+  "share": 0.178,
+  "net_pts": 0.198,
+  "orig": 0.227,
+  "with": [
+   "In `restock_r3.py`, 300k+ goods lines are trimmed to what `s",
+   "clear_hours 24 -> 20 (undo); meta snapshot profit = book - s",
+   "In `restock_r3.py`, goods listed at 100,000 or more (and und"
+  ],
+  "sales": "134/5010 -> 164/4894"
  },
  "1793902311|ask_frac 0.9 -> 0.93": {
-  "status": "unverified",
-  "orig": -0.608
+  "status": "mixed",
+  "aim": -0.412,
+  "share": -0.451,
+  "net_pts": -0.412,
+  "orig": -0.608,
+  "with": [
+   "`buyer_r3.py` `attempt()` sets `close_gap` to 0.06 for list "
+  ],
+  "sales": "142/4626 -> 137/4702"
  },
  "1793910944|ask_frac 0.93 -> 0.9": {
-  "status": "unverified",
-  "orig": 0.666
+  "status": "mixed",
+  "aim": 1.152,
+  "share": 0.983,
+  "net_pts": 1.152,
+  "orig": 0.666,
+  "with": [
+   "stopped the third C_CAP 0.6 -> 0.55 buyer trial (05:35); a t",
+   "In restock_r3.py, let a goods SKU priced under 100k with a h"
+  ],
+  "sales": "137/4690 -> 162/5337"
  },
  "1793921148|max_list 1400000 -> 1500000": {
-  "status": "unverified",
-  "orig": -0.169
+  "status": "mixed",
+  "aim": -0.092,
+  "share": -0.058,
+  "net_pts": -0.092,
+  "orig": -0.169,
+  "with": [
+   "In restock_r3.py, let a goods SKU priced under 100k with a h",
+   "dear_first 2.5 -> 3.0 (undo)",
+   "sku_cap 10 -> 12"
+  ],
+  "sales": "183/5539 -> 141/5269"
  },
  "1793922092|sku_cap 10 -> 12": {
-  "status": "unverified",
-  "orig": -0.041
+  "status": "mixed",
+  "aim": -0.097,
+  "share": -0.06,
+  "net_pts": -0.097,
+  "orig": -0.041,
+  "with": [
+   "In restock_r3.py, let a goods SKU priced under 100k with a h",
+   "dear_first 2.5 -> 3.0 (undo)",
+   "max_list 1400000 -> 1500000"
+  ],
+  "sales": "186/5604 -> 160/5208"
  },
  "1793931729|stock_value 30000000 -> 32000000": {
-  "status": "unverified",
-  "orig": 0.094
+  "status": "mixed",
+  "aim": 0.218,
+  "share": 0.357,
+  "net_pts": 0.218,
+  "orig": 0.094,
+  "with": [
+   "dear_first 2.5 -> 3.0 (undo)",
+   "In `restock_r3.py`, a 300k+ goods SKU now gets full `dear_de",
+   "restock: dear priority a factor, dear lines trimmed to room;"
+  ],
+  "sales": "183/4887 -> 201/4903"
  },
  "1793936780|stock_value 32000000 -> 40000000": {
-  "status": "unverified",
-  "orig": 1.279
+  "status": "mixed",
+  "aim": 0.293,
+  "share": 0.539,
+  "net_pts": 0.293,
+  "orig": 1.279,
+  "with": [
+   "restock: dear priority a factor, dear lines trimmed to room;",
+   "restock: 300k+ full dear depth only from sku_score 200 (DEAR",
+   "goods_frac 0.8 -> 0.9, goods_age_days 5 -> 2 (bound goods_fr"
+  ],
+  "sales": "211/4819 -> 138/5180"
  },
  "1793939251|goods_frac 0.8 -> 0.9, goods_age_days 5 -> 2": {
-  "status": "unverified",
-  "orig": 1.671
+  "status": "mixed",
+  "aim": 0.665,
+  "share": 0.813,
+  "net_pts": 0.665,
+  "orig": 1.671,
+  "with": [
+   "restock: dear priority a factor, dear lines trimmed to room;",
+   "restock: 300k+ full dear depth only from sku_score 200 (DEAR",
+   "goods_frac 0.8 -> 0.9, goods_age_days 5 -> 2 (bound goods_fr"
+  ],
+  "sales": "201/4903 -> 129/5091"
  },
  "1793940503|stock_value 40000000 -> 50000000": {
-  "status": "unverified",
-  "orig": 0.404
+  "status": "mixed",
+  "aim": 0.978,
+  "share": 1.164,
+  "net_pts": 0.978,
+  "orig": 0.404,
+  "with": [
+   "restock: dear priority a factor, dear lines trimmed to room;",
+   "restock: 300k+ full dear depth only from sku_score 200 (DEAR",
+   "goods_frac 0.8 -> 0.9, goods_age_days 5 -> 2 (bound goods_fr"
+  ],
+  "sales": "199/5019 -> 118/4966"
  },
  "1793949357|ask_frac 0.9 -> 0.85": {
-  "status": "unverified",
-  "orig": -0.251
+  "status": "mixed",
+  "aim": 0.061,
+  "share": -0.042,
+  "net_pts": 0.061,
+  "orig": -0.251,
+  "with": [
+   "`restock_r3.py` stops buying 300k+ goods once held units rea",
+   "restock: a cheap SKU holds 2x sku_cap only from sku_score DE",
+   "In `restock_r3.py` I added `GOODS_RESERVE = 0.2`, so every g"
+  ],
+  "sales": "117/4846 -> 191/4936"
  },
  "1793956503|step 0.2 -> 0.3, stock_value 50000000 -> 54000000": {
-  "status": "unverified",
-  "orig": 0.687
+  "status": "mixed",
+  "aim": 0.534,
+  "share": 0.603,
+  "net_pts": 0.534,
+  "orig": 0.687,
+  "with": [
+   "In `restock_r3.py` I added `GOODS_RESERVE = 0.2`, so every g",
+   "meta_r3 BOUNDS stock_value max 50M -> 90M (number unchanged;",
+   "meta_team_r3 MANAGER/REVIEW: approve changes in different ar"
+  ],
+  "sales": "191/4936 -> 210/4667"
  },
  "1793957533|floor_frac 0.72 -> 0.67": {
-  "status": "unverified",
-  "orig": 1.063
+  "status": "mixed",
+  "aim": 0.558,
+  "share": 0.64,
+  "net_pts": 0.558,
+  "orig": 1.063,
+  "with": [
+   "meta_r3 BOUNDS stock_value max 50M -> 90M (number unchanged;",
+   "meta_team_r3 MANAGER/REVIEW: approve changes in different ar",
+   "In restock_r3.py, give a 300k+ SKU with sku_score >= DEAR_HO"
+  ],
+  "sales": "197/4817 -> 196/4754"
  },
  "1793959506|max_list 1500000 -> 1800000, market_ask 1.0 -> 1.05": {
-  "status": "unverified",
-  "orig": 0.866
+  "status": "mixed",
+  "aim": 0.014,
+  "share": -0.026,
+  "net_pts": 0.014,
+  "orig": 0.866,
+  "with": [
+   "meta_r3 BOUNDS stock_value max 50M -> 90M (number unchanged;",
+   "meta_team_r3 MANAGER/REVIEW: approve changes in different ar",
+   "In restock_r3.py, give a 300k+ SKU with sku_score >= DEAR_HO"
+  ],
+  "sales": "224/4673 -> 185/4878"
  },
  "1793962382|clear_hours 20 -> 16, breadth_lines 6 -> 8": {
-  "status": "unverified",
-  "orig": 0.279
+  "status": "mixed",
+  "aim": -0.273,
+  "share": -0.273,
+  "net_pts": -0.273,
+  "orig": 0.279,
+  "with": [
+   "meta_r3 BOUNDS stock_value max 50M -> 90M (number unchanged;",
+   "meta_team_r3 MANAGER/REVIEW: approve changes in different ar",
+   "In restock_r3.py, give a 300k+ SKU with sku_score >= DEAR_HO"
+  ],
+  "sales": "213/4668 -> 169/5016"
  },
  "1793966279|stock_value 54000000 -> 60000000": {
-  "status": "unverified",
-  "orig": -0.452
+  "status": "mixed",
+  "aim": -0.291,
+  "share": -0.257,
+  "net_pts": -0.291,
+  "orig": -0.452,
+  "with": [
+   "In restock_r3.py, give a 300k+ SKU with sku_score >= DEAR_HO",
+   "max_list 1500000 -> 1800000, market_ask 1.0 -> 1.05",
+   "clear_hours 20 -> 16, breadth_lines 6 -> 8"
+  ],
+  "sales": "175/4838 -> 166/5051"
  },
  "1793973472|clear_hours 16 -> 20": {
-  "status": "unverified",
-  "orig": 0.048
+  "status": "mixed",
+  "aim": 0.033,
+  "share": 0.014,
+  "net_pts": 0.033,
+  "orig": 0.048,
+  "with": [
+   "In `buyer.py`, the buyer's first offer is now cut to at most",
+   "stock_value 54000000 -> 60000000",
+   "breadth_lines 8 -> 10"
+  ],
+  "sales": "166/5051 -> 176/5042"
  },
  "1793976559|breadth_lines 8 -> 10": {
-  "status": "unverified",
-  "orig": 0.12
+  "status": "mixed",
+  "aim": -0.162,
+  "share": -0.207,
+  "net_pts": -0.162,
+  "orig": 0.12,
+  "with": [
+   "In `buyer.py`, the buyer's first offer is now cut to at most",
+   "clear_hours 16 -> 20",
+   "stock_value 60000000 -> 70000000"
+  ],
+  "sales": "158/5028 -> 184/5059"
  },
  "1793980408|stock_value 60000000 -> 70000000": {
-  "status": "unverified",
-  "orig": 0.818
+  "status": "mixed",
+  "aim": -0.167,
+  "share": -0.133,
+  "net_pts": -0.167,
+  "orig": 0.818,
+  "with": [
+   "In `buyer.py`, the buyer's first offer is now cut to at most",
+   "clear_hours 16 -> 20",
+   "breadth_lines 8 -> 10"
+  ],
+  "sales": "176/5042 -> 189/5213"
  },
  "1793987228|clear_hours 20 -> 24": {
-  "status": "unverified",
-  "orig": 1.057
+  "status": "mixed",
+  "aim": 2.142,
+  "share": 1.925,
+  "net_pts": 2.142,
+  "orig": 1.057,
+  "with": [
+   "stock_value 60000000 -> 70000000",
+   "In `restock_r3.py`, the depth for a non-hot (`sku_score` < `",
+   "ask_frac_food 0.72 -> 0.75"
+  ],
+  "sales": "176/5184 -> 230/5346"
  },
  "1793992358|ask_frac_food 0.72 -> 0.75": {
-  "status": "unverified",
-  "orig": 0.413
+  "status": "mixed",
+  "aim": -0.17,
+  "share": -0.215,
+  "net_pts": -0.17,
+  "orig": 0.413,
+  "with": [
+   "In `restock_r3.py`, the depth for a non-hot (`sku_score` < `",
+   "clear_hours 20 -> 24",
+   "stock_value 70000000 -> 80000000"
+  ],
+  "sales": "229/5313 -> 194/5606"
  },
  "1793993388|stock_value 70000000 -> 80000000": {
-  "status": "unverified",
-  "orig": -0.366
+  "status": "mixed",
+  "aim": -0.486,
+  "share": -0.495,
+  "net_pts": -0.486,
+  "orig": -0.366,
+  "with": [
+   "In `restock_r3.py`, the depth for a non-hot (`sku_score` < `",
+   "clear_hours 20 -> 24",
+   "ask_frac_food 0.72 -> 0.75"
+  ],
+  "sales": "239/5307 -> 191/5598"
  },
  "1793997272|breadth_lines 10 -> 12": {
-  "status": "unverified",
-  "orig": -0.172
+  "status": "mixed",
+  "aim": -0.532,
+  "share": -0.531,
+  "net_pts": -0.532,
+  "orig": -0.172,
+  "with": [
+   "ask_frac_food 0.72 -> 0.75",
+   "stock_value 70000000 -> 80000000",
+   "In `restock_r3.py`, non-hot 300k+ lines and empty-category b"
+  ],
+  "sales": "207/5627 -> 219/5434"
  },
  "1794002007|ask_frac 0.85 -> 0.82, stock_value 80000000 -> 70000000": {
-  "status": "unverified",
-  "orig": 0.373
+  "status": "mixed",
+  "aim": 0.756,
+  "share": 0.324,
+  "net_pts": 0.756,
+  "orig": 0.373,
+  "with": [
+   "In `restock_r3.py`, non-hot 300k+ lines and empty-category b",
+   "breadth_lines 10 -> 12",
+   "breadth_lines 12 -> 10"
+  ],
+  "sales": "197/5583 -> 144/5414"
  },
  "1794009072|breadth_lines 12 -> 10": {
-  "status": "unverified",
-  "orig": -0.053
+  "status": "mixed",
+  "aim": 0.135,
+  "share": 0.358,
+  "net_pts": 0.135,
+  "orig": -0.053,
+  "with": [
+   "In `restock_r3.py`, non-hot 300k+ lines and empty-category b",
+   "ask_frac 0.85 -> 0.82, stock_value 80000000 -> 70000000",
+   "metrics_r3 shop_deals_h/shop_margin_h count ledger settles o"
+  ],
+  "sales": "144/5414 -> 98/4904"
  },
  "1794013085|ask_frac 0.82 -> 0.8, max_list 1800000 -> 1500000, dear_first 3.0 -> 2.5, ask_frac_food 0.75 -> 0.73, fresh_premium 0.1 -> 0.15, dear_depth 8 -> 7": {
-  "status": "unverified",
-  "orig": 2.335
+  "status": "mixed",
+  "aim": 2.249,
+  "share": 2.019,
+  "net_pts": 2.249,
+  "orig": 2.335,
+  "with": [
+   "metrics_r3 shop_deals_h/shop_margin_h count ledger settles o",
+   "grade C is accepted only with a `C_WARRANTY`-hour warranty a",
+   "breadth_lines 12 -> 10"
+  ],
+  "sales": "84/5258 -> 82/5161"
  },
  "1794014035|market_ask 1.05 -> 1.0": {
-  "status": "unverified",
-  "orig": 2.537
+  "status": "mixed",
+  "aim": 1.459,
+  "share": 1.314,
+  "net_pts": 1.459,
+  "orig": 2.537,
+  "with": [
+   "metrics_r3 shop_deals_h/shop_margin_h count ledger settles o",
+   "grade C is accepted only with a `C_WARRANTY`-hour warranty a",
+   "breadth_lines 12 -> 10"
+  ],
+  "sales": "84/5211 -> 84/5245"
  },
  "1794014983|stock_value 70000000 -> 60000000": {
-  "status": "unverified",
-  "orig": 0.285
+  "status": "mixed",
+  "aim": -0.207,
+  "share": -0.152,
+  "net_pts": -0.207,
+  "orig": 0.285,
+  "with": [
+   "metrics_r3 shop_deals_h/shop_margin_h count ledger settles o",
+   "grade C is accepted only with a `C_WARRANTY`-hour warranty a",
+   "breadth_lines 12 -> 10"
+  ],
+  "sales": "95/5244 -> 75/5277"
  },
  "1794016959|spread_high 1.3 -> 1.2": {
-  "status": "unverified",
-  "orig": 0.29
+  "status": "mixed",
+  "aim": 0.069,
+  "share": 0.315,
+  "net_pts": 0.069,
+  "orig": 0.29,
+  "with": [
+   "metrics_r3 shop_deals_h/shop_margin_h count ledger settles o",
+   "grade C is accepted only with a `C_WARRANTY`-hour warranty a",
+   "ask_frac 0.82 -> 0.8, max_list 1800000 -> 1500000, dear_firs"
+  ],
+  "sales": "91/4821 -> 89/5897"
  },
  "1794021809|max_list 1500000 -> 1200000, dear_depth 7 -> 6": {
-  "status": "unverified",
-  "orig": -0.508
+  "status": "mixed",
+  "aim": -0.363,
+  "share": -0.313,
+  "net_pts": -0.363,
+  "orig": -0.508,
+  "with": [
+   "stock_value 70000000 -> 60000000",
+   "spread_high 1.3 -> 1.2",
+   "ask_frac_food 0.73 -> 0.7"
+  ],
+  "sales": "75/5277 -> 69/5804"
  },
  "1794025941|ask_frac_food 0.73 -> 0.7": {
-  "status": "unverified",
-  "orig": -0.39
+  "status": "mixed",
+  "aim": -0.362,
+  "share": -0.452,
+  "net_pts": -0.362,
+  "orig": -0.39,
+  "with": [
+   "max_list 1500000 -> 1200000, dear_depth 7 -> 6",
+   "In `restock_r3.py`, 300k+ goods of non-hot SKUs (sku_score b",
+   "ask_frac 0.8 -> 0.75"
+  ],
+  "sales": "104/5846 -> 86/5736"
  },
  "1794026964|ask_frac 0.8 -> 0.75": {
-  "status": "unverified",
-  "orig": -0.247
+  "status": "mixed",
+  "aim": -0.252,
+  "share": -0.385,
+  "net_pts": -0.252,
+  "orig": -0.247,
+  "with": [
+   "max_list 1500000 -> 1200000, dear_depth 7 -> 6",
+   "In `restock_r3.py`, 300k+ goods of non-hot SKUs (sku_score b",
+   "ask_frac_food 0.73 -> 0.7"
+  ],
+  "sales": "100/5855 -> 96/5697"
  },
  "1794027991|max_turns 4 -> 5": {
-  "status": "unverified",
-  "orig": -0.098
+  "status": "mixed",
+  "aim": -0.037,
+  "share": -0.187,
+  "net_pts": -0.037,
+  "orig": -0.098,
+  "with": [
+   "max_list 1500000 -> 1200000, dear_depth 7 -> 6",
+   "In `restock_r3.py`, 300k+ goods of non-hot SKUs (sku_score b",
+   "ask_frac_food 0.73 -> 0.7"
+  ],
+  "sales": "82/5810 -> 120/5639"
  },
  "1794030049|dear_first 2.5 -> 2.0": {
-  "status": "unverified",
-  "orig": 0.094
+  "status": "mixed",
+  "aim": -0.045,
+  "share": 0.038,
+  "net_pts": -0.045,
+  "orig": 0.094,
+  "with": [
+   "In `restock_r3.py`, 300k+ goods of non-hot SKUs (sku_score b",
+   "ask_frac_food 0.73 -> 0.7",
+   "ask_frac 0.8 -> 0.75"
+  ],
+  "sales": "65/5765 -> 168/5632"
  },
  "1794031083|max_list 1200000 -> 1500000": {
-  "status": "unverified",
-  "orig": -0.057
+  "status": "mixed",
+  "aim": 0.019,
+  "share": 0.095,
+  "net_pts": 0.019,
+  "orig": -0.057,
+  "with": [
+   "In `restock_r3.py`, 300k+ goods of non-hot SKUs (sku_score b",
+   "ask_frac_food 0.73 -> 0.7",
+   "ask_frac 0.8 -> 0.75"
+  ],
+  "sales": "70/5793 -> 177/5642"
  },
  "1794034926|floor_frac_food 0.7 -> 0.67": {
-  "status": "unverified",
-  "orig": -0.35
+  "status": "mixed",
+  "aim": -0.321,
+  "share": -0.238,
+  "net_pts": -0.321,
+  "orig": -0.35,
+  "with": [
+   "In `restock_r3.py`, 300k+ goods of non-hot SKUs (sku_score b",
+   "max_turns 4 -> 5",
+   "dear_first 2.5 -> 2.0"
+  ],
+  "sales": "120/5639 -> 144/5844"
  },
  "1794037904|ask_frac 0.75 -> 0.72, stock_value 60000000 -> 55000000": {
-  "status": "unverified",
-  "orig": -0.285
+  "status": "mixed",
+  "aim": -0.364,
+  "share": -0.322,
+  "net_pts": -0.364,
+  "orig": -0.285,
+  "with": [
+   "In `restock_r3.py`, 300k+ goods of non-hot SKUs (sku_score b",
+   "max_list 1200000 -> 1500000",
+   "floor_frac_food 0.7 -> 0.67"
+  ],
+  "sales": "177/5642 -> 109/5816"
  },
  "1794043986|dear_depth 6 -> 5": {
-  "status": "unverified",
-  "orig": -0.249
+  "status": "mixed",
+  "aim": -0.46,
+  "share": -0.523,
+  "net_pts": -0.46,
+  "orig": -0.249,
+  "with": [
+   "In `restock_r3.py`, a surged 300k+ SKU is now left out when ",
+   "ask_frac 0.75 -> 0.72, stock_value 60000000 -> 55000000",
+   "max_list 1500000 -> 1200000"
+  ],
+  "sales": "117/5804 -> 78/5884"
  },
  "1794045013|max_list 1500000 -> 1200000": {
-  "status": "unverified",
-  "orig": -0.236
+  "status": "mixed",
+  "aim": -0.434,
+  "share": -0.514,
+  "net_pts": -0.434,
+  "orig": -0.236,
+  "with": [
+   "In `restock_r3.py`, a surged 300k+ SKU is now left out when ",
+   "ask_frac 0.75 -> 0.72, stock_value 60000000 -> 55000000",
+   "stock_value 55000000 -> 70000000"
+  ],
+  "sales": "109/5816 -> 64/5839"
  },
  "1794050093|depth 6 -> 5, sku_depth 6 -> 5, breadth_lines 10 -> 12, sku_cap 12 -> 14": {
-  "status": "unverified",
-  "orig": -0.261
+  "status": "mixed",
+  "aim": 0.316,
+  "share": 0.572,
+  "net_pts": 0.316,
+  "orig": -0.261,
+  "with": [
+   "In `restock_r3.py`, a surged 300k+ SKU is now left out when ",
+   "stock_value 55000000 -> 70000000",
+   "dear_depth 6 -> 5"
+  ],
+  "sales": "83/5887 -> 101/5610"
  },
  "1794051048|market_ask 1.0 -> 0.95": {
-  "status": "unverified",
-  "orig": -0.069
+  "status": "mixed",
+  "aim": 0.751,
+  "share": 1.029,
+  "net_pts": 0.751,
+  "orig": -0.069,
+  "with": [
+   "In `restock_r3.py`, a surged 300k+ SKU is now left out when ",
+   "stock_value 55000000 -> 70000000",
+   "dear_depth 6 -> 5"
+  ],
+  "sales": "78/5884 -> 124/5580"
  },
  "1794058657|sku_cap 14 -> 16": {
-  "status": "unverified",
-  "orig": -0.05
+  "status": "mixed",
+  "aim": -0.054,
+  "share": -0.052,
+  "net_pts": -0.054,
+  "orig": -0.05,
+  "with": [
+   "stock_value 55000000 -> 70000000",
+   "In `restock_r3.py`, slow 300k+ units (sku_score under DEAR_H",
+   "clear_hours 20 -> 24 (undo 23:28)"
+  ],
+  "sales": "124/5580 -> 135/5285"
  },
  "1794059687|floor_frac_food 0.67 -> 0.64": {
-  "status": "unverified",
-  "orig": -0.159
+  "status": "mixed",
+  "aim": -0.029,
+  "share": 0.104,
+  "net_pts": -0.029,
+  "orig": -0.159,
+  "with": [
+   "In `restock_r3.py`, slow 300k+ units (sku_score under DEAR_H",
+   "clear_hours 20 -> 24 (undo 23:28)",
+   "sku_cap 14 -> 16"
+  ],
+  "sales": "135/5475 -> 141/5234"
  },
  "1794060709|stock_value 70000000 -> 80000000": {
-  "status": "unverified",
-  "orig": -0.093
+  "status": "mixed",
+  "aim": 0.04,
+  "share": 0.154,
+  "net_pts": 0.04,
+  "orig": -0.093,
+  "with": [
+   "In `restock_r3.py`, slow 300k+ units (sku_score under DEAR_H",
+   "clear_hours 20 -> 24 (undo 23:28)",
+   "sku_cap 14 -> 16"
+  ],
+  "sales": "133/5373 -> 145/5163"
  },
  "1794061730|clear_hours 24 -> 20": {
-  "status": "unverified",
-  "orig": 0.167
+  "status": "mixed",
+  "aim": 0.207,
+  "share": 0.412,
+  "net_pts": 0.207,
+  "orig": 0.167,
+  "with": [
+   "In `restock_r3.py`, slow 300k+ units (sku_score under DEAR_H",
+   "clear_hours 20 -> 24 (undo 23:28)",
+   "sku_cap 14 -> 16"
+  ],
+  "sales": "133/5348 -> 151/5129"
  },
  "1794062757|ask_frac 0.72 -> 0.74": {
-  "status": "unverified",
-  "orig": -0.231
+  "status": "mixed",
+  "aim": 0.168,
+  "share": 0.468,
+  "net_pts": 0.168,
+  "orig": -0.231,
+  "with": [
+   "In `restock_r3.py`, slow 300k+ units (sku_score under DEAR_H",
+   "clear_hours 20 -> 24 (undo 23:28)",
+   "sku_cap 14 -> 16"
+  ],
+  "sales": "140/5305 -> 166/5126"
  },
  "1794067827|min_margin 0.1 -> 0.06, aged_margin 0.03 -> 0.0": {
-  "status": "unverified",
-  "orig": 0.355
+  "status": "mixed",
+  "aim": 0.235,
+  "share": 0.083,
+  "net_pts": 0.235,
+  "orig": 0.355,
+  "with": [
+   "clear_hours 20 -> 24 (undo 23:28)",
+   "stock_value 70000000 -> 80000000",
+   "In restock_r3.py, let a hot cheap goods SKU (under 100k, sku"
+  ],
+  "sales": "145/5163 -> 194/5021"
  },
  "1794070695|max_list 1200000 -> 900000, dear_depth 5 -> 4": {
-  "status": "unverified",
-  "orig": 0.452
+  "status": "mixed",
+  "aim": -0.043,
+  "share": -0.2,
+  "net_pts": -0.043,
+  "orig": 0.452,
+  "with": [
+   "In restock_r3.py, let a hot cheap goods SKU (under 100k, sku",
+   "min_margin 0.1 -> 0.06, aged_margin 0.03 -> 0.0",
+   "stock_value 80000000 -> 70000000"
+  ],
+  "sales": "188/5119 -> 155/4855"
  },
  "1794073571|stock_value 80000000 -> 70000000": {
-  "status": "unverified",
-  "orig": 1.138
+  "status": "mixed",
+  "aim": 0.173,
+  "share": 0.126,
+  "net_pts": 0.173,
+  "orig": 1.138,
+  "with": [
+   "In restock_r3.py, let a hot cheap goods SKU (under 100k, sku",
+   "min_margin 0.1 -> 0.06, aged_margin 0.03 -> 0.0",
+   "max_list 1200000 -> 900000, dear_depth 5 -> 4"
+  ],
+  "sales": "200/5043 -> 126/4812"
  },
  "1794076528|min_margin 0.06 -> 0.04": {
-  "status": "unverified",
-  "orig": 1.537
+  "status": "mixed",
+  "aim": 0.824,
+  "share": 0.928,
+  "net_pts": 0.824,
+  "orig": 1.537,
+  "with": [
+   "max_list 1200000 -> 900000, dear_depth 5 -> 4",
+   "stock_value 80000000 -> 70000000",
+   "In `restock_r3.py` the surge cut-off now depends on list pri"
+  ],
+  "sales": "173/4960 -> 111/4886"
  },
  "1794079611|floor_frac_food 0.64 -> 0.67": {
-  "status": "unverified",
-  "orig": 0.755
+  "status": "mixed",
+  "aim": 1.088,
+  "share": 0.852,
+  "net_pts": 1.088,
+  "orig": 0.755,
+  "with": [
+   "stock_value 80000000 -> 70000000",
+   "In `restock_r3.py` the surge cut-off now depends on list pri",
+   "min_margin 0.06 -> 0.04"
+  ],
+  "sales": "140/4822 -> 92/4954"
  },
  "1794080638|max_list 900000 -> 600000, dear_depth 4 -> 3": {
-  "status": "unverified",
-  "orig": -0.775
+  "status": "mixed",
+  "aim": -0.452,
+  "share": -0.372,
+  "net_pts": -0.452,
+  "orig": -0.775,
+  "with": [
+   "stock_value 80000000 -> 70000000",
+   "In `restock_r3.py` the surge cut-off now depends on list pri",
+   "min_margin 0.06 -> 0.04"
+  ],
+  "sales": "126/4812 -> 80/4998"
  },
  "1794083722|market_ask 0.95 -> 1.0": {
-  "status": "unverified",
-  "orig": -0.721
+  "status": "mixed",
+  "aim": 0.289,
+  "share": 0.076,
+  "net_pts": 0.289,
+  "orig": -0.721,
+  "with": [
+   "In `restock_r3.py` the surge cut-off now depends on list pri",
+   "min_margin 0.06 -> 0.04",
+   "floor_frac_food 0.64 -> 0.67"
+  ],
+  "sales": "111/4886 -> 68/5060"
  },
  "1794089533|min_margin 0.04 -> 0.02": {
-  "status": "unverified",
-  "orig": 1.186
+  "status": "mixed",
+  "aim": 2.744,
+  "share": 1.824,
+  "net_pts": 2.744,
+  "orig": 1.186,
+  "with": [
+   "market_ask 0.95 -> 1.0",
+   "In `restock_r3.py`, the `slow = 1` rule for non-hot 300k+ SK",
+   "max_list 600000 -> 900000, dear_depth 3 -> 4"
+  ],
+  "sales": "69/5053 -> 127/5027"
  },
  "1794091435|max_list 600000 -> 900000, dear_depth 3 -> 4": {
-  "status": "unverified",
-  "orig": 0.488
+  "status": "mixed",
+  "aim": -0.468,
+  "share": -0.257,
+  "net_pts": -0.468,
+  "orig": 0.488,
+  "with": [
+   "In `restock_r3.py`, the `slow = 1` rule for non-hot 300k+ SK",
+   "min_margin 0.04 -> 0.02"
+  ],
+  "sales": "56/5066 -> 154/5040"
  },
  "1794100548|max_turns 5 -> 6, stock_value 70000000 -> 75000000": {
-  "status": "unverified",
-  "orig": 4.007
+  "status": "mixed",
+  "aim": 1.6,
+  "share": 1.255,
+  "net_pts": 1.6,
+  "orig": 4.007,
+  "with": [
+   "In `restock_r3.py`, the `slow = 1` rule for non-hot 300k+ SK",
+   "In `buyer_r3.py` `candidates()`, behind `code_ab_r3.on(\"0ceb",
+   "step 0.3 -> 0.4, dear_first 2.0 -> 1.5, market_ask 1.0 -> 0."
+  ],
+  "sales": "167/5009 -> 185/5300"
  },
  "1794101582|step 0.3 -> 0.4, dear_first 2.0 -> 1.5, market_ask 1.0 -> 0.95": {
-  "status": "unverified",
-  "orig": 4.175
+  "status": "mixed",
+  "aim": 1.535,
+  "share": 1.254,
+  "net_pts": 1.535,
+  "orig": 4.175,
+  "with": [
+   "In `restock_r3.py`, the `slow = 1` rule for non-hot 300k+ SK",
+   "In `buyer_r3.py` `candidates()`, behind `code_ab_r3.on(\"0ceb",
+   "max_turns 5 -> 6, stock_value 70000000 -> 75000000"
+  ],
+  "sales": "164/5063 -> 181/5294"
  },
  "1794114325|goods_frac 0.9 -> 0.95": {
-  "status": "unverified",
-  "orig": 0.393
+  "status": "mixed",
+  "aim": 0.178,
+  "share": -0.013,
+  "net_pts": 0.178,
+  "orig": 0.393,
+  "with": [
+   "ask_frac 0.74 -> 0.7",
+   "max_turns 6 -> 7"
+  ],
+  "sales": "264/5205 -> 233/5324"
  },
  "1794116393|ask_frac 0.74 -> 0.7": {
-  "status": "unverified",
-  "orig": -0.107
+  "status": "mixed",
+  "aim": -0.191,
+  "share": -0.275,
+  "net_pts": -0.191,
+  "orig": -0.107,
+  "with": [
+   "goods_frac 0.9 -> 0.95",
+   "In `buyer_r3.py` `candidates()`, a goods offer's surplus is ",
+   "max_turns 6 -> 7"
+  ],
+  "sales": "263/5171 -> 221/5307"
  },
  "1794121449|max_turns 6 -> 7": {
-  "status": "unverified",
-  "orig": -0.189
+  "status": "mixed",
+  "aim": -0.237,
+  "share": -0.18,
+  "net_pts": -0.237,
+  "orig": -0.189,
+  "with": [
+   "goods_frac 0.9 -> 0.95",
+   "In `buyer_r3.py` `candidates()`, a goods offer's surplus is ",
+   "ask_frac 0.74 -> 0.7"
+  ],
+  "sales": "233/5324 -> 191/5211"
  },
  "1794122397|max_turns 7 -> 6": {
-  "status": "unverified",
-  "orig": -0.061
+  "status": "mixed",
+  "aim": -0.07,
+  "share": -0.005,
+  "net_pts": -0.07,
+  "orig": -0.061,
+  "with": [
+   "In `buyer_r3.py` `candidates()`, a goods offer's surplus is ",
+   "ask_frac 0.74 -> 0.7",
+   "max_turns 6 -> 7"
+  ],
+  "sales": "221/5358 -> 193/5196"
  },
  "1794123346|window_depth 4.0 -> 3.5": {
-  "status": "unverified",
-  "orig": -0.155
+  "status": "mixed",
+  "aim": -0.102,
+  "share": -0.038,
+  "net_pts": -0.102,
+  "orig": -0.155,
+  "with": [
+   "In `buyer_r3.py` `candidates()`, a goods offer's surplus is ",
+   "ask_frac 0.74 -> 0.7",
+   "max_turns 6 -> 7"
+  ],
+  "sales": "221/5307 -> 187/5144"
  },
  "1794125250|ask_frac 0.7 -> 0.74": {
-  "status": "unverified",
-  "orig": -0.289
+  "status": "mixed",
+  "aim": -0.219,
+  "share": -0.254,
+  "net_pts": -0.219,
+  "orig": -0.289,
+  "with": [
+   "In `buyer_r3.py` `candidates()`, a goods offer's surplus is ",
+   "max_turns 6 -> 7",
+   "max_turns 7 -> 6"
+  ],
+  "sales": "195/5341 -> 161/5135"
  },
  "1794127160|sku_depth 5 -> 4": {
-  "status": "unverified",
-  "orig": -0.333
+  "status": "mixed",
+  "aim": -0.426,
+  "share": -0.533,
+  "net_pts": -0.426,
+  "orig": -0.333,
+  "with": [
+   "In `buyer_r3.py` `candidates()`, a goods offer's surplus is ",
+   "max_turns 6 -> 7",
+   "max_turns 7 -> 6"
+  ],
+  "sales": "182/5288 -> 127/5176"
  },
  "1794128115|floor_frac 0.67 -> 0.65": {
-  "status": "unverified",
-  "orig": -0.663
+  "status": "mixed",
+  "aim": -0.674,
+  "share": -0.69,
+  "net_pts": -0.674,
+  "orig": -0.663,
+  "with": [
+   "In `buyer_r3.py` `candidates()`, a goods offer's surplus is ",
+   "max_turns 6 -> 7",
+   "max_turns 7 -> 6"
+  ],
+  "sales": "175/5235 -> 102/5126"
  },
  "1794129068|stock_value 75000000 -> 70000000": {
-  "status": "unverified",
-  "orig": -0.604
+  "status": "mixed",
+  "aim": -0.706,
+  "share": -0.737,
+  "net_pts": -0.706,
+  "orig": -0.604,
+  "with": [
+   "In `buyer_r3.py` `candidates()`, a goods offer's surplus is ",
+   "max_turns 7 -> 6",
+   "window_depth 4.0 -> 3.5"
+  ],
+  "sales": "193/5196 -> 87/5217"
  },
  "1794131045|max_list 900000 -> 600000": {
-  "status": "unverified",
-  "orig": -0.47
+  "status": "mixed",
+  "aim": -0.628,
+  "share": -0.685,
+  "net_pts": -0.628,
+  "orig": -0.47,
+  "with": [
+   "max_list 600000 -> 900000 (undo 18:44)",
+   "ask_frac 0.7 -> 0.74",
+   "sku_depth 5 -> 4"
+  ],
+  "sales": "181/5093 -> 98/5205"
  },
  "1794133100|window_depth 3.5 -> 4.0": {
-  "status": "unverified",
-  "orig": -0.135
+  "status": "mixed",
+  "aim": -0.367,
+  "share": -0.51,
+  "net_pts": -0.367,
+  "orig": -0.135,
+  "with": [
+   "max_list 600000 -> 900000 (undo 18:44)",
+   "sku_depth 5 -> 4",
+   "git revert ec72c6f (buyer break-rate weighting)"
+  ],
+  "sales": "151/5165 -> 117/5228"
  },
  "1794136392|floor_frac 0.65 -> 0.67, dear_first 1.5 -> 1.0": {
-  "status": "unverified",
-  "orig": 0.141
+  "status": "mixed",
+  "aim": 0.444,
+  "share": 0.188,
+  "net_pts": 0.444,
+  "orig": 0.141,
+  "with": [
+   "max_list 600000 -> 900000 (undo 18:44)",
+   "git revert ec72c6f (buyer break-rate weighting)",
+   "max_list 900000 -> 600000"
+  ],
+  "sales": "87/5217 -> 150/5267"
  },
  "1794137429|ask_frac 0.74 -> 0.7": {
-  "status": "unverified",
-  "orig": 0.189
+  "status": "mixed",
+  "aim": 0.676,
+  "share": 0.711,
+  "net_pts": 0.676,
+  "orig": 0.189,
+  "with": [
+   "max_list 600000 -> 900000 (undo 18:44)",
+   "git revert ec72c6f (buyer break-rate weighting)",
+   "max_list 900000 -> 600000"
+  ],
+  "sales": "91/5234 -> 153/5271"
  },
  "1794142274|stock_value 70000000 -> 75000000": {
-  "status": "unverified",
-  "orig": -0.575
+  "status": "mixed",
+  "aim": -0.271,
+  "share": -0.011,
+  "net_pts": -0.271,
+  "orig": -0.575,
+  "with": [
+   "git revert ec72c6f (buyer break-rate weighting)",
+   "In buyer_r3.py's candidate ranking, rank each (shop, SKU) of",
+   "floor_frac 0.65 -> 0.67, dear_first 1.5 -> 1.0"
+  ],
+  "sales": "138/5283 -> 146/5282"
  },
  "1794147968|market_ask 0.95 -> 0.9": {
-  "status": "unverified",
-  "orig": -0.372
+  "status": "mixed",
+  "aim": -0.177,
+  "share": -0.046,
+  "net_pts": -0.177,
+  "orig": -0.372,
+  "with": [
+   "In buyer_r3.py's candidate ranking, rank each (shop, SKU) of",
+   "stock_value 70000000 -> 75000000",
+   "In `restock_r3.py` the `ok_food` check no longer lets sellin"
+  ],
+  "sales": "139/5273 -> 169/5114"
  },
  "1794153129|clear_frac 0.5 -> 0.6": {
-  "status": "unverified",
-  "orig": -0.153
+  "status": "mixed",
+  "aim": -0.406,
+  "share": -0.532,
+  "net_pts": -0.406,
+  "orig": -0.153,
+  "with": [
+   "In `restock_r3.py` the `ok_food` check no longer lets sellin",
+   "market_ask 0.95 -> 0.9",
+   "stock_value 75000000 -> 70000000"
+  ],
+  "sales": "159/5207 -> 149/4958"
  },
  "1794157235|stock_value 75000000 -> 70000000": {
-  "status": "unverified",
-  "orig": 0.712
+  "status": "mixed",
+  "aim": 1.104,
+  "share": 1.589,
+  "net_pts": 1.104,
+  "orig": 0.712,
+  "with": [
+   "In `restock_r3.py` the `ok_food` check no longer lets sellin",
+   "clear_frac 0.5 -> 0.6",
+   "window_depth 4.0 -> 3.5"
+  ],
+  "sales": "166/4917 -> 164/4924"
  },
  "1794159166|window_depth 4.0 -> 3.5": {
-  "status": "unverified",
-  "orig": 1.002
+  "status": "mixed",
+  "aim": 2.682,
+  "share": 4.212,
+  "net_pts": 2.682,
+  "orig": 1.002,
+  "with": [
+   "In `restock_r3.py` the `ok_food` check no longer lets sellin",
+   "clear_frac 0.5 -> 0.6",
+   "stock_value 75000000 -> 70000000"
+  ],
+  "sales": "154/4946 -> 148/4913"
  },
  "1794162039|clear_frac 0.6 -> 0.5": {
-  "status": "unverified",
-  "orig": -0.32
+  "status": "mixed",
+  "aim": -0.337,
+  "share": -0.364,
+  "net_pts": -0.337,
+  "orig": -0.32,
+  "with": [
+   "stock_value 75000000 -> 70000000",
+   "window_depth 4.0 -> 3.5",
+   "In `restock_r3.py`'s SKU loop, a goods SKU listed above 2x `"
+  ],
+  "sales": "161/4918 -> 120/5038"
  },
  "1794168061|dear_depth 4 -> 5": {
   "status": "unverified",
@@ -411,5 +1153,57 @@
    "a 150-300k goods SKU at `DEAR_HOT` or more now gets `dear_de"
   ],
   "sales": "66/5396 -> 110/5411"
+ },
+ "1794191563|dear_first 1.0 -> 1.5": {
+  "status": "mixed",
+  "aim": 0.606,
+  "share": 0.216,
+  "net_pts": 0.606,
+  "orig": 0.208,
+  "with": [
+   "restore 4d10151: hot 300k+ lines stocked up to 5x dear_depth",
+   "a 150-300k goods SKU at `DEAR_HOT` or more now gets `dear_de",
+   "clear_frac 0.5 -> 0.6"
+  ],
+  "sales": "89/5428 -> 119/5365"
+ },
+ "1794192212|dear_depth 4 -> 5": {
+  "status": "mixed",
+  "aim": 0.164,
+  "share": 0.026,
+  "net_pts": 0.164,
+  "orig": 0.025,
+  "with": [
+   "restore 4d10151: hot 300k+ lines stocked up to 5x dear_depth",
+   "a 150-300k goods SKU at `DEAR_HOT` or more now gets `dear_de",
+   "clear_frac 0.5 -> 0.6"
+  ],
+  "sales": "93/5424 -> 120/5415"
+ },
+ "1794193568|ask_frac_food 0.7 -> 0.75": {
+  "status": "mixed",
+  "aim": 2.485,
+  "share": 1.676,
+  "net_pts": 2.485,
+  "orig": 1.679,
+  "with": [
+   "restore 4d10151: hot 300k+ lines stocked up to 5x dear_depth",
+   "a 150-300k goods SKU at `DEAR_HOT` or more now gets `dear_de",
+   "ask_frac_food 0.75 -> 0.7"
+  ],
+  "sales": "101/5375 -> 139/5466"
+ },
+ "1794193622|ask_frac_food 0.75 -> 0.7": {
+  "status": "mixed",
+  "aim": 2.504,
+  "share": 1.716,
+  "net_pts": 2.504,
+  "orig": 1.726,
+  "with": [
+   "restore 4d10151: hot 300k+ lines stocked up to 5x dear_depth",
+   "a 150-300k goods SKU at `DEAR_HOT` or more now gets `dear_de",
+   "ask_frac 0.7 -> 0.75, max_list 900000 -> 1200000, sku_depth "
+  ],
+  "sales": "102/5374 -> 139/5465"
  }
 }

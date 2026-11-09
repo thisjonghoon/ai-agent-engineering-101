@@ -7,8 +7,11 @@ what it came from and when it is to be reviewed; a rule past its review conditio
 2. Count only sales paid on the ledger and judge only closed windows; a JUDGED row is a verdict even when it names
    confounds. A change judged in both directions on VERIFIED rows is not repeated; UNVERIFIED rows (raw margin/h before
    11/9 11:13, they read the hour of day) do not count as judged, so they are no reason to hold or to avoid a number.
-   [since 11/7, amended 11/9 12:2x; from: receipts that never settled (11/7), then 21 holds on unverified "both
-   directions" verdicts (memory check, 11/9); review: when the backfill re-judges the old rows]
+   With the market's record back to 11/5 (backfill, 11/9 14:34), all 92 measurable shop number verdicts of 11/5-11/9
+   were MIXED (another change fell in their hours) and 4 stay UNVERIFIED: no past shop number verdict is evidence,
+   only the ones judged one at a time from now on.
+   [since 11/7, amended 11/9 12:2x and 14:4x; from: receipts that never settled (11/7), 21 holds on unverified "both
+   directions" verdicts, the backfilled re-judge (11/9); review: never]
 3. While we catch up (from 11/9), change a number for everyone when the paid-sales evidence is clear and let the 2 h
    verdict and the fast guard (half our market share in the first hour reverts it) judge it; A/B only risky buyer or
    code changes, and the goods ask A/B the supervisor started at 13:2x (0.75 vs 0.70, judged on paid shop points per

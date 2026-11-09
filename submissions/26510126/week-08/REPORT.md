@@ -199,7 +199,7 @@ writer:
 | Tier | Kept in | Written by | Read by | Checked by |
 |---|---|---|---|---|
 | Raw traces | `memory.jsonl`, `logs/talks_r3.jsonl`, `logs/demand_r3.jsonl`, `logs/strategies_r3.jsonl`, the kit log | code, on every event; nothing summarised on write | the buyer, the restock, the specialists, the engineer | the market's ledger (settles, claims) |
-| The market over time | `.market/ledger-recent.json` (~6 h), `logs/market_buckets_r3.jsonl` (ours and the market's paid sales, count and value, and our margin, per 10 minutes), `.market/backfill_r3.jsonl` (the ledger from 11/5, fetched one page at a time) | `metrics_r3.record_buckets` each cycle; `backfill_r3.py` | every verdict | the public ledger itself |
+| The market over time | `.market/ledger-recent.json` (~6 h), `logs/market_buckets_r3.jsonl` (ours and the market's paid sales, count and value, and our margin, per 10 minutes), `.market/backfill_r3.jsonl` (the ledger 11/5 13:48 - 11/9 05:3x, 248,450 entries kept of ~1.4M, fetched one page at a time) | `metrics_r3.record_buckets` each cycle; `backfill_r3.py` | every verdict | the public ledger itself |
 | Verdict ledger | `logs/code_changes_r3.jsonl` | code: a shop number change after 2 h on the shop's points and value share; a code change on half the orders (A/B) or 3 h before/after net of the market, on the points of its side; a buyer A/B; a supervisor change | both loops, the engineer | the re-judge, the supervisor |
 | Re-judged past | `logs/rejudged_r3_v2.json` (VERIFIED, MIXED or UNVERIFIED) | `rejudge_r3.update` each cycle | every specialist and the manager: each number's value now and its last 3 verdicts, VERIFIED (what the change did to board points net of the market, and whether the raw verdict agreed) or UNVERIFIED (no market data reaches back; weak evidence) | its own data coverage; an UNVERIFIED row is judged again once data reaches it |
 | Lessons per area | `logs/lessons_r3.json` | Claude sonnet every 3 h per area ("dreaming" between cycles) | that area's specialist, at most 3,000 characters | code drops a lesson citing an unknown fact; every rewrite keeps the old version (where a rule came from, what it replaced) |
@@ -215,7 +215,10 @@ at 11:43 the manager restored `dear_depth` 5 on that ground. A fresh reviewer th
 window held another change. The second pass (13:0x, `logs/rejudged_r3_v2.json`) judges shop changes on the shop's
 points only and marks a verdict MIXED when another number, code or supervisor change falls in its hours: all 5
 measurable verdicts were MIXED, so none is verified; the first pass stays in `logs/rejudged_r3.json` as it was. The
-ledger backfill had reached 11/6 21:51 by 12:44 and 11/7 18:15 by 13:26, and is still running. Three mistakes in the first hour (a lesson read
+ledger backfill (11/5 13:48 to 11/9 05:3x, one page at a time, finished 14:34) then filled the market's record back to
+11/5 13:50 with one 10-minute gap: re-judged on it, **all 92 measurable shop number verdicts of 11/5-11/9 were MIXED**
+and 4 from before the record stay UNVERIFIED. Not one past shop number verdict was clean, which is why shop changes
+now run one at a time (standing order 3) and why standing order 2 no longer counts any of them as evidence. Three mistakes in the first hour (a lesson read
 backwards, a number moved toward a value it no longer had, one rewrite saving over another) were each fixed within
 the hour; they are in section 3.x. The study's warning held: a memory that is written but not re-checked passed a wrong note to the next decision
 within one cycle.
@@ -301,7 +304,7 @@ See `architecture.pdf`. In short:
 | Forum | none | a column (`장보기 레이더`) in kinds built from the ledger (best value, freshness, unpaid receipts, trivia, grade claims, our deals), styled by a model under a number check, at most one post in 10 minutes (20 until 11/4 17:05); kinds weighted by the votes they earn |
 | Learning | none | the meta-harness over strategy versions; an A/B test inside the shop that holds the hour fixed and tries a number or a whole retail playbook (Costco, Walmart, IKEA, grocery markdown, premium, two-track) on live buyers, ending as a tie after 400 talks an arm or 6 h; a ledger of code hypotheses with expected and measured results |
 | Verdicts | none | every change, from anyone, is judged by code into one ledger: a shop number after 2 h on the shop's points (Book + revenue) and our share of the market's paid value, MIXED when another change fell in its hours (a fast guard reverts it in the first hour if that value share halves); a code change on half the orders (same hours) or 3 h before/after net of the market's own change, on the points of the side it works on |
-| Memory | none | tiers with a writer, readers and a check each (section 1.2.1): raw traces; the market's paid sales per 10 minutes, being backfilled from 11/5; the verdict ledger; past verdicts re-judged or marked UNVERIFIED, shown with each number's value now; each area's lessons rewritten by a model every 3 h with their evidence and status, unknown citations dropped, history kept; standing orders with since / from / review and notes with their age |
+| Memory | none | tiers with a writer, readers and a check each (section 1.2.1): raw traces; the market's paid sales per 10 minutes, backfilled to 11/5; the verdict ledger; past verdicts re-judged or marked UNVERIFIED, shown with each number's value now; each area's lessons rewritten by a model every 3 h with their evidence and status, unknown citations dropped, history kept; standing orders with since / from / review and notes with their age |
 | Demand | `demand.json` categories only | hidden demand estimated from the orders our buyer receives and the requests our shop gets |
 | Goal | none | the board's Players table read every cycle: first place, the instructor's agent as a floor; the points each board term costs us, by the midterm's weights, chooses what the outer loop works on |
 
@@ -353,7 +356,7 @@ market's certificate are refused before any money moves; of 11,193 agreed deals,
 |---|---|---|
 | Outer loop (code changes by the engineer and coder agents) | 47 builds | 35 went live: 22 kept, 11 reverted by their verdict, 2 waiting |
 | Buyer numbers on half the orders (A/B) | 25 trials | 6 kept |
-| Shop numbers (inner loop) | 92 judged changes | the 89 judged on raw margin/h before 11/9 11:13 are UNVERIFIED; the measurable ones since were MIXED (section 1.2.1) |
+| Shop numbers (inner loop) | 96 judged changes | re-judged on the market's record back to 11/5: all 92 measurable ones MIXED (another change in their hours), 4 UNVERIFIED (before the record) (section 1.2.1) |
 
 One that paid: `4d10151` (deeper stock of the best-selling 300k+ lines) took our revenue from 2.0M to 3.8M an hour over
 the 3 h after it (11/9 08:06), and our share of the market's paid value from 0.38% to 0.70%; its revert on margin/h

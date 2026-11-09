@@ -117,7 +117,7 @@ How the last versions did (oldest first: what changed among your numbers, then t
 Notes from the supervisor who watches the team for the user (advice with evidence, not orders):
 {advice}
 
-Answer with JSON only: {{"proposal": {{"<key>": <value>, ...only the numbers you would change}}, {extra}"why": "<two sentences with the evidence>", "ideas": ["<up to 2: what no number can do, with evidence>"]}}"""
+Answer with JSON only: {{"proposal": {{"<key>": <value>, ...only the numbers you would change}}, {extra}"why": "<two sentences with the evidence>", "ideas": ["<up to 2: what no number can do, with evidence>"], "lessons_used": ["<ids of your lessons (L1, L2, ...) that shaped this answer, or none>"]}}"""
 MANAGER = """{goal}
 
 You manage a team of four specialists who each proposed changes to their own numbers this cycle. Approve, trim or
@@ -226,6 +226,11 @@ async def decide(now, cur, plan, hist, after, advice, bounds, buyer_bounds, ab_p
     for role, ans in got.items():
         harness.log("TEAM", f"{role}: {json.dumps((ans or {}).get('proposal'), ensure_ascii=False)} - "
                             f"{harness.clip(str((ans or {}).get('why') or 'no answer'), 200)}")
+    try:                                    # which lessons each answer leaned on, for lessons_r3.evaluate (11/9)
+        import lessons_r3
+        lessons_r3.record_use(got)
+    except Exception as e:
+        harness.log("TEAM", f"lessons use not recorded: {type(e).__name__}")
     proposals = "\n".join(f"- {ROLES[r]['title']}: " + json.dumps(
         {k: v for k, v in (a or {}).items() if k in ("proposal", "ab", "recruit", "playbook", "why", "ideas")},
         ensure_ascii=False) for r, a in got.items())

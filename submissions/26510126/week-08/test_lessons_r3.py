@@ -51,9 +51,25 @@ def main():
     calls = []
 
     async def ask(prompt, **k):
+        if prompt.startswith("Check each lesson"):
+            return {"pass": [0]}
         calls.append(prompt)
         return {"lessons": [{"rule": f"rule {len(calls)}", "evidence": ["F1", "F3"], "status": "verified",
                              "trap": "F2 went -20%"}]}
+    async def check_fails(prompt, **k):
+        if prompt.startswith("Check each lesson"):
+            return {"pass": [1], "fail": {"0": "reads a MIXED fact as a verdict"}}
+        return {"lessons": [{"rule": "bad", "evidence": ["F1"], "status": "verified", "trap": ""},
+                            {"rule": "good", "evidence": ["F3"], "status": "verified", "trap": ""}]}
+    import shutil
+    b2 = Path(tempfile.mkdtemp())
+    shutil.copytree(base / "logs", b2 / "logs")
+    asyncio.run(ls.dream("merch", b2, ask=check_fails, now=t + 50))
+    got = ls.load(b2).get("merch") or {}
+    case("a lesson the second reading fails is dropped, its reason kept",
+         [x["rule"] for x in got.get("lessons") or []] == ["good"] and "0" in (got.get("failed_check") or {}), got)
+    g = ls.grounded({"rule": "r", "evidence": ["F1"], "status": "verified"}, {"F1": "number x 1 -> 2: MIXED, no verdict"})
+    case("a 'verified' lesson resting only on MIXED facts is downgraded", g["status"] == "unverified", g)
     n1 = asyncio.run(ls.dream("merch", base, ask=ask, now=t + 100))
     n2 = asyncio.run(ls.dream("merch", base, ask=ask, now=t + 200))
     cur = ls.load(base)["merch"]
@@ -78,6 +94,20 @@ def main():
     case("an area never dreamed reads nothing", ls.text("buying", base) == "")
     case("the most overdue area is dreamed next", ls.due(base, now=t + 200 + ls.DREAM_EVERY + 1) in
          ("sales", "buying", "community") and ls.due(base, now=t + 200) in ("sales", "buying", "community"))
+    # memory evaluation: lesson use is recorded per answer and matched to the number changes that followed
+    eb = Path(tempfile.mkdtemp()); (eb / "logs").mkdir()
+    t0 = 1794200000
+    ls.record_use({"sales": {"proposal": {"step": 0.5}, "lessons_used": ["L2"]},
+                   "merch": {"proposal": {"dear_depth": 5}, "lessons_used": []}}, base=eb, now=t0)
+    rows = [{"t": t0 + 60, "source": "inner loop (number)", "change": "step 0.4 -> 0.5"},
+            {"t": t0 + 90, "source": "inner loop (number)", "change": "dear_depth 4 -> 5"}]
+    (eb / rejudge_r3.CHANGES).write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
+    (eb / rejudge_r3.OUT).write_text(json.dumps({rejudge_r3.key(rows[0]): {"status": "mixed"}}), encoding="utf-8")
+    ev = ls.evaluate(eb, now=t0 + 100)
+    case("lesson use is recorded and matched to the changes that followed",
+         ev["sales"] == {"answers": 1, "named_a_lesson": 1, "changes": {"with_lesson": {"mixed": 1}, "without": {}}}
+         and ev["merch"]["changes"]["without"] == {"pending": 1}, ev)
+
     print(f"{sum(RESULTS)}/{len(RESULTS)} passed")
     return all(RESULTS)
 

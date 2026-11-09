@@ -6,6 +6,8 @@ nothing checked it. The memory study (Anthropic, components of agent memory) clo
 record; the team's lessons already drop rules that cite no fact (lessons_r3.valid). This does the same for the
 supervisor's own claims.
 
+  Since 11/9 17:1x the standing orders carry no board numbers: {live:key} is filled from the board as the team
+  reads them (board_terms_r3.render), so claims_r3.json is empty and this mostly catches a number typed in again.
   claims_r3.json   one row per claim: {"id", "file", "says" (text that must still be in the file), "metric",
                    "value", "tol", "as_of"}. A claim whose `says` text is gone from its file is retired.
   check(board)     [(claim, now, status)] with status ok / STALE / retired.

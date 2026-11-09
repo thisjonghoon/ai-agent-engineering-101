@@ -12,7 +12,8 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    only the ones judged one at a time from now on.
    [since 11/7, amended 11/9 12:2x and 14:4x; from: receipts that never settled (11/7), 21 holds on unverified "both
    directions" verdicts, the backfilled re-judge (11/9); review: never]
-3. First priority: aim for #1 of the 45 students, the top 10 first (11/9 16:0x: #20, 1.249 vs 1.556 for #10; the gap is the
+3. First priority: aim for first place among the students, the top 10 first (now: {live:student_rank}th of
+   {live:students}, {live:student_total} against {live:rank10_total} for 10th; the gap is the
    shop's book and revenue: more paid sales from the same capital, i.e. faster turns). Change a number for everyone when the paid-sales evidence is
    clear and let the 2 h verdict and the fast guard (half our market share in the first hour reverts it) judge it; no
    A/B unless a change is risky and cannot be judged otherwise. The only limits are bankruptcy and the market's rules:
@@ -29,8 +30,8 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    [since 11/9 12:2x; from: 12:06 ask_frac_food raised 0.7 -> 0.75 while "lowering it 0.85 -> 0.8"; review: never]
 6. The forum posts every 310 s, the market's limit; code fixes it, not the team. The API shows the last 100 posts,
    about 12 minutes of 41 authors, so that is 2-3 of ours, and posts are a tenth of the buyer's ALL. The forum rating
-   counts as itself (0-1, not a percentile). We are #13 of 40 students (0.909; #1 bjeon01 0.933; board, 11/9 16:2x):
-   the user wants the forum's top title, so win it back; never trade post quality for count. Top posts all carry +8,
+   counts as itself (0-1, not a percentile). Now: {live:forum} ({live:forum_rank}th of {live:forum_students}
+   students; the leader {live:forum_leader} at {live:forum_lead}): the user wants the forum's top title, so win it; never trade post quality for count. Top posts all carry +8,
    so the rating is lost on dislike stances: find which posts draw them.
    [since 11/9 13:3x, amended 16:1x; from: the user's reasoning on the 100-post window, the user ("never lose the
    forum's most-liked title"); review: if the forum rating falls under 0.85]

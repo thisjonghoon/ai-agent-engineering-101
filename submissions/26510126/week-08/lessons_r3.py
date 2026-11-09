@@ -110,6 +110,46 @@ that appear in the facts. Drop a lesson the facts no longer support; merge dupli
 Answer with JSON only: {{"lessons": [{{"rule": "...", "evidence": ["F3", "F9"], "status": "verified", "trap": "..."}}]}}"""
 
 
+CHECK = """Check each lesson below against the facts it cites. A lesson passes only if its cited facts say what the
+rule claims (same number, same direction, same metric, and the facts' own verdict words: MIXED and "no verdict" are
+not evidence, UNVERIFIED is weak). Fail a lesson that reads more into its facts than they say, cites the wrong
+metric for its area (the {title}'s board terms: {terms}), or contradicts the standing orders below.
+
+Standing orders:
+{orders}
+
+Lessons with their cited facts:
+{items}
+
+Answer with JSON only: {{"pass": [indexes of passing lessons], "fail": {{"<index>": "why, in a few words"}}}}"""
+TERMS = {"sales": "shop book, revenue, stars_rank", "merch": "shop book, revenue, stars_rank",
+         "buying": "buyer saved, deals", "community": "the forum rating (stances, dislikes), posts"}
+
+
+def grounded(x, text_of):
+    """A lesson's status as its facts allow: 'verified' needs at least one cited fact that is not MIXED, UNVERIFIED or
+    without a verdict (the memory study: mark which facts are confirmed; 11/9 a lesson called an MIXED arm verified)."""
+    weak = ("MIXED", "UNVERIFIED", "no verdict", "not re-judged")
+    if x["status"] == "verified" and all(any(w in text_of.get(e, "") for w in weak) for e in x["evidence"]):
+        return dict(x, status="unverified")
+    return x
+
+
+async def check(area, kept, text_of, orders, ask):
+    """The lessons that a second reading finds true to their cited facts (memory study: check notes against the
+    record, not only that the record exists). Fails open: if the check gives nothing, the lessons stay."""
+    items = "\n".join(f"[{i}] ({x['status']}) {x['rule']}\n" + "\n".join(f"    {e}: {text_of.get(e, '?')[:300]}"
+                                                                         for e in x["evidence"])
+                      for i, x in enumerate(kept))
+    ans = await ask(CHECK.format(title=TITLES[area], terms=TERMS[area], orders=orders[:4000], items=items),
+                    model="sonnet", timeout=180, max_chars=30_000)
+    ok = (ans or {}).get("pass")
+    if not isinstance(ok, list):
+        return kept, {}
+    fail = (ans or {}).get("fail") if isinstance((ans or {}).get("fail"), dict) else {}
+    return [x for i, x in enumerate(kept) if i in ok], fail
+
+
 def valid(lessons, ids):
     """The model's lessons that cite only known facts, with a known status, at most MAX."""
     out = []
@@ -145,6 +185,11 @@ async def dream(area, base=HERE, ask=None, now=None):
     kept = valid((ans or {}).get("lessons"), {i for i, _, _ in shown})
     if not kept:
         return None
+    text_of = {i: x for i, _, x in shown}
+    kept = [grounded(x, text_of) for x in kept]
+    kept, failed = await check(area, kept, text_of, orders, ask)
+    if not kept:
+        return None
     when = {i: t for i, t, _ in fs}
     import re
     for x in kept:                                      # the facts' times travel with a lesson; ids are renumbered
@@ -155,7 +200,8 @@ async def dream(area, base=HERE, ask=None, now=None):
     # read again just before writing and change only this area: on 11/9 12:07 a hand-run rewrite of sales, loaded before
     # the meta cycle wrote community's lessons, saved over them
     data = load(base)
-    data[area] = {"t": now, "facts": len(fs), "lessons": kept, "history": history[-KEEP_HISTORY:]}
+    data[area] = {"t": now, "facts": len(fs), "lessons": kept, "history": history[-KEEP_HISTORY:],
+                  "failed_check": failed}
     path = base / OUT
     path.parent.mkdir(exist_ok=True)
     tmp = path.with_suffix(".tmp")
@@ -178,13 +224,59 @@ def text(area, base=HERE):
     if not cur.get("lessons"):
         return ""
     out = (f"\nYour lessons (rewritten {stamp(cur['t'])} from the verdict ledger; verified rests on judged facts, "
-           f"unverified only on raw verdicts, contradicted was overturned and is kept for its trap):\n")
-    for x in cur["lessons"]:
-        line = f"- [{x['status']}] {x['rule']} (facts {', '.join(x.get('when') or [])}" + \
+           f"unverified only on raw verdicts, contradicted was overturned and is kept for its trap; name the ids "
+           f"of those that shape your answer in lessons_used):\n")
+    for i, x in enumerate(cur["lessons"]):
+        line = f"- L{i + 1} [{x['status']}] {x['rule']} (facts {', '.join(x.get('when') or [])}" + \
                (f"; trap: {x['trap']}" if x.get("trap") else "") + ")\n"
         if len(out) + len(line) > MAX_CHARS:
             break
         out += line
+    return out
+
+
+USE = Path("logs") / "lessons_use_r3.jsonl"
+
+
+def record_use(answers, base=HERE, now=None):
+    """One line per specialist answer: the lessons it named, the version it read and the numbers it proposed."""
+    now, data = now or time.time(), load(base)
+    path = Path(base) / USE
+    path.parent.mkdir(exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        for role, ans in answers.items():
+            used = (ans or {}).get("lessons_used")
+            used = [u for u in used if isinstance(u, str) and u.startswith("L")] if isinstance(used, list) else []
+            prop = (ans or {}).get("proposal") if isinstance((ans or {}).get("proposal"), dict) else {}
+            f.write(json.dumps({"t": round(now), "area": role, "used": used, "proposal": sorted(prop),
+                                "version": (data.get(role) or {}).get("t")}) + "\n")
+
+
+def evaluate(base=HERE, hours=48, now=None):
+    """Memory evaluation (the memory study tested agents with and without memory): per area, how often answers name a
+    lesson, and how the number changes that followed those answers were judged, split by whether a lesson shaped
+    them. A change is matched to an answer when a number it proposed was changed within 20 minutes after it."""
+    now, base = now or time.time(), Path(base)
+    uses = [u for u in metrics_r3.jl(base / USE) if now - u.get("t", 0) < hours * 3600]
+    try:
+        again = json.loads((base / rejudge_r3.OUT).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        again = {}
+    changes = [r for r in metrics_r3.jl(base / rejudge_r3.CHANGES) if r.get("source") == "inner loop (number)"]
+    out = {}
+    for area in TITLES:
+        us = [u for u in uses if u["area"] == area]
+        o = {"answers": len(us), "named_a_lesson": sum(1 for u in us if u["used"]),
+             "changes": {"with_lesson": {}, "without": {}}}
+        for u in us:
+            keys = set(u.get("proposal") or [])
+            for r in changes:
+                if keys and 0 <= r["t"] - u["t"] <= 1200 and \
+                        keys & {p.split(" ")[0] for p in str(r.get("change", "")).split(", ") if " -> " in p}:
+                    st = (again.get(rejudge_r3.key(r)) or {}).get("status") or "pending"
+                    side = o["changes"]["with_lesson" if u["used"] else "without"]
+                    side[st] = side.get(st, 0) + 1
+        out[area] = o
     return out
 
 

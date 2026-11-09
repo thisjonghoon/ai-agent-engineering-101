@@ -223,7 +223,8 @@ def advice(hours=24, n=3):
     text = "\n".join(f"- {time.strftime('%m/%d %H:%M', time.localtime(x['t']))} ({(time.time() - x['t']) / 3600:.1f} h "
                      f"ago; its numbers may be stale, check them now): {x['text'][:600]}" for x in notes) or "(none)"
     try:
-        standing = STANDING.read_text(encoding="utf-8").strip() + "\n"
+        import board_terms_r3                           # {live:key} filled from the board now, never stored
+        standing = board_terms_r3.render(STANDING.read_text(encoding="utf-8").strip()) + "\n"
     except OSError:
         standing = ""
     busy = shop_busy()

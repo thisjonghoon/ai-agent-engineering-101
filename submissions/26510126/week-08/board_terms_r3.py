@@ -11,6 +11,7 @@ cycle (append-only) and shows each area its own terms with their trend.
   text(area)        the area's terms now and their change over 1, 6 and 24 h
 """
 import json
+import re
 import time
 from pathlib import Path
 
@@ -44,12 +45,14 @@ def row(board, now=None):
     return {"t": round(now or time.time()), "student_rank": rank, "students": len(st),
             "student_total": me.get("student_total"),
             "gap_10": round(st[9]["student_total"] - (me.get("student_total") or 0), 3) if len(st) >= 10 else None,
+            "rank10_total": st[9].get("student_total") if len(st) >= 10 else None,
             "top_total": st[0].get("student_total") if st else None,
             "shop_all": (shop or {}).get("all"), "book": shop.get("book"), "revenue": shop.get("revenue"),
             "stars_rank": shop.get("stars_rank"), "buyer_all": buyer.get("all"), "saved": buyer.get("saved"),
             "deals": buyer.get("deals"), "forum": buyer.get("forum"), "posts": buyer.get("posts"),
             "forum_rank": next((i + 1 for i, r in enumerate(fr) if r.get("name") == US), None),
-            "forum_lead": fr[0]["forum"] if fr else None, "forum_leader": fr[0].get("name") if fr else None}
+            "forum_lead": fr[0]["forum"] if fr else None, "forum_leader": fr[0].get("name") if fr else None,
+            "forum_students": len(fr)}
 
 
 def append(board=None, now=None):
@@ -65,6 +68,29 @@ def append(board=None, now=None):
     with HISTORY.open("a", encoding="utf-8") as f:
         f.write(json.dumps(r, ensure_ascii=False) + "\n")
     return r
+
+
+LIVE = re.compile(r"\{live:([a-z_0-9]+)\}")
+
+
+def render(text, current=None):
+    """Fills {live:key} in a text the team reads (the standing orders) with the board's value now (11/9: the memory
+    study warns against storing state that keeps changing; "our forum rating leads the market" sat in the orders
+    while we were 13th). An unknown key or no board shows "?" rather than a stale number."""
+    cur = current if current is not None else (append_free_row() or {})
+
+    def val(m):
+        v = cur.get(m.group(1))
+        return "?" if v is None else f"{v:,}" if isinstance(v, int) and v >= 10_000 else str(v)
+    return LIVE.sub(val, text)
+
+
+def append_free_row():
+    """row() of the saved board without appending to the history."""
+    try:
+        return row(json.loads(BOARD.read_text(encoding="utf-8")))
+    except (OSError, ValueError, KeyError, IndexError):
+        return None
 
 
 def rows():

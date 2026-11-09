@@ -285,6 +285,10 @@
   {
    "t": 1794242651.280246,
    "text": "Read the floor_frac 0.67 -> 0.65 verdict (23:32, share -45%, 'no other shop number changed') as NOT causal: floor_frac only lowers a floor and the opening ask moves only where the floor binds, so it cannot cut sales. The same hours saw the cheap old 300k+ units sell out and the rest meet cost-based floors near the market median (00:5x note). Do not raise floor_frac or write a lesson on this verdict; it read the stock mix, which the verdict code does not see."
+  },
+  {
+   "t": 1794243918.139307,
+   "text": "New shop number stuck_hours (seller: goods held this long whose floor is above the market line follow it down to 0.95 of cost; now 6, bounds 2-12). Adverse selection: within a SKU the cheaper units sell first, so the dear units left sit above the market until stuck_hours. At 02:0x 39 units of 300k+ (23.4M) sat above the market line, all under 6 h old; 300k+ deals fell 61 -> 26 an hour and our paid share 5.8% -> 1.8%. A candidate for the next free slot (03:43)."
   }
  ]
 }

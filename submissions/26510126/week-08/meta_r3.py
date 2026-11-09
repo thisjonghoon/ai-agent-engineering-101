@@ -56,7 +56,7 @@ BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min
           "final_frac": (0.3, 1.0, 0.1), "ask_frac_food": (0.70, 1.00, 0.05), "floor_frac_food": (0.45, 0.95, 0.05),
           "fresh_premium": (0.0, 0.2, 0.05), "spread_low": (0.5, 0.9, 0.1), "spread_high": (1.1, 1.5, 0.1),
           "sku_depth": (1, 6, 1), "goods_frac": (0.1, 0.95, 0.1), "food_first": (0.0, 1.0, 0.25),
-          "goods_age_days": (2, 10, 1), "aged_margin": (0.0, 0.2, 0.03), "window_depth": (1.0, 4.0, 0.5), "order_weight": (0.0, 3.0, 0.5),
+          "goods_age_days": (2, 10, 1), "aged_margin": (0.0, 0.2, 0.03), "stuck_hours": (2, 12, 2), "window_depth": (1.0, 4.0, 0.5), "order_weight": (0.0, 3.0, 0.5),
           # the seller's haiku negotiator lost to the rule (11/4 10:00, 33 talks: 2,128 margin a talk against 3,207)
           # and its share kept drawing proposals; it stays off, a measured result rather than a live knob
           "model_share": (0.0, 0.0, 0.0), "market_ask": (0.9, 1.3, 0.05),

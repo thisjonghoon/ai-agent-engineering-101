@@ -793,6 +793,13 @@ def snapshot(since):
         snap["forum_weights"] = forum_r3.plan()
     except Exception as e:
         snap["forum_ours"] = {"error": type(e).__name__}
+    try:                                    # each area's board terms and their trend (board_terms_r3, 11/9 16:4x)
+        import board_terms_r3
+        board_terms_r3.append()
+        for area in ("shop", "buyer", "forum"):
+            snap["board_" + area] = board_terms_r3.text(area)
+    except Exception as e:
+        snap["board_shop"] = {"error": type(e).__name__}
     pr = prices_r3.read(MD)
     if pr:
         top = sorted((pr.get("categories") or {}).items(), key=lambda kv: -kv[1]["h24"]["n"])[:8]

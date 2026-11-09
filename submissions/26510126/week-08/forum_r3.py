@@ -440,8 +440,9 @@ def track(forum, memory, path=None):
         if p.get("round") != 3 or p.get("role") != "buyer" or p.get("id") is None:
             continue
         v = (p.get("likes") or 0) - (p.get("dislikes") or 0)
-        if p.get("owner") == "thisjonghoon":
-            rec["ours"][str(p["id"])] = {"kind": kind_of.get(p.get("text"), "our_deals"), "votes": v}
+        if p.get("owner") == "thisjonghoon":   # likes and dislikes apart too (11/9: the rating is lost on dislikes)
+            rec["ours"][str(p["id"])] = {"kind": kind_of.get(p.get("text"), "our_deals"), "votes": v,
+                                         "likes": p.get("likes") or 0, "dislikes": p.get("dislikes") or 0}
         else:
             rec["others"][str(p["id"])] = v
     try:
@@ -456,11 +457,15 @@ def stats(forum, memory, path=None):
     """Per kind: our posts and the mean votes they got, next to the market's mean for buyer posts, over every post the
     vote record has seen (track), not only the 100 forum.json shows now."""
     rec = track(forum, memory, path)
-    by = defaultdict(list)
+    by, dis = defaultdict(list), defaultdict(list)
     for x in rec["ours"].values():
         by[x["kind"]].append(x["votes"])
+        if "dislikes" in x:
+            dis[x["kind"]].append(x["dislikes"])
     others = list(rec["others"].values())
     out = {k: {"posts": len(v), "mean_votes": round(sum(v) / len(v), 2)} for k, v in by.items()}
+    for k, v in dis.items():                       # posts seen since dislikes were kept apart (11/9 16:4x)
+        out[k].update(dislikes_seen=len(v), mean_dislikes=round(sum(v) / len(v), 2))
     out["market_buyer_posts"] = {"posts": len(others), "mean_votes": round(sum(others) / len(others), 2) if others else None}
     return out
 

@@ -34,6 +34,6 @@
  "surge_max": 1.15,
  "dear_depth": 5,
  "lines": 20,
- "breadth_lines": 12,
+ "breadth_lines": 4.0,
  "sku_cap": 16
 }

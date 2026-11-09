@@ -269,6 +269,10 @@
   {
    "t": 1794209299.2436638,
    "text": "Forum (community): the user wants the forum's top title. We are #13 of 40 students (0.909; bjeon01 0.933). The rating counts one stance per account per author, so one account that dislikes a post of ours can hold a dislike stance on all of us. None of our 894 posts ended net negative, but the two kinds that name or fault other shops earn less: claims 5.84 and haggle 5.71 mean net votes vs 6.2-6.5 for the rest (market 5.79), about one more dislike a post. Move claims and haggle weight to the kinds that earn most (pay_tips 6.53, best_value 6.5, weather 6.48)."
+  },
+  {
+   "t": 1794213701.0976782,
+   "text": "Merchandising: 92% of stock (221 units, 115.7M) sits in 18 SKUs of 300k+, 13-21 units each, the same hot SKUs every shop holds; their market median is 0.67-0.70 of list and our floor is at it, so we win a quote only when we are the cheapest. 300k+ talks closed 36% at 15:4x-16:4x, 17% since. Spread the room over more SKUs whose going price sits well above our expected floor (cost ~0.6 of list x 1.05) rather than more depth in the crowded ones. Supervisor set market_ask 0.90 (17:4x)."
   }
  ]
 }

@@ -160,7 +160,7 @@ How past deals and reputation reach the next decision:
 ### 1.2.1 Memory: what the team keeps, how it is checked, and why (11/9)
 
 **Why.** Anthropic's study of agent memory ([Components of agent memory](https://www.anthropic.com/research/components-of-agent-memory),
-2026; Korean summary on [GeekNews](https://news.hada.io/topic?id=36775)) treats writing a memory as a prediction that a
+2026) treats writing a memory as a prediction that a
 later session will need it, and reports three things that matter here:
 - the learning loop closed only when the model kept *one consolidated reference* with each rule, its evidence and
   whether it was verified (Opus 5 on CL-Bench; earlier models left unverified guesses across many files);

@@ -213,8 +213,10 @@ def advice(hours=24, n=3):
     notes = read_json(ADVICE, {}).get("notes") or []
     cut = time.time() - hours * 3600
     notes = [x for x in notes if isinstance(x, dict) and x.get("t", 0) >= cut and isinstance(x.get("text"), str)][-n:]
-    text = "\n".join(f"- {time.strftime('%m/%d %H:%M', time.localtime(x['t']))}: {x['text'][:600]}" for x in notes) \
-        or "(none)"
+    # each note with its age: on 11/9 a note's "CAP 0.7" was hours stale (CAP 0.75, bounds from 0.75) and the team read
+    # it as advice for now
+    text = "\n".join(f"- {time.strftime('%m/%d %H:%M', time.localtime(x['t']))} ({(time.time() - x['t']) / 3600:.1f} h "
+                     f"ago; its numbers may be stale, check them now): {x['text'][:600]}" for x in notes) or "(none)"
     try:
         standing = STANDING.read_text(encoding="utf-8").strip() + "\n"
     except OSError:

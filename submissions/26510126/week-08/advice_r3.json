@@ -163,6 +163,94 @@
   {
    "t": 1793948900.6961532,
    "text": "Round 3 patch 3.5 (course repo, 11/6 15:53; agent.md not yet updated): (1) the forum rating counts as itself in the buyer's ALL (0.3 x rating, not a percentile): ours 0.897, the leaders 0.917, so little to gain there; (2) a dislike can be bought as N votes on one author at 3% of the voter's largest Book x (N-1)^2, paid from Book and not refunded: we do not buy them (it costs book and wins little); watch our forum rating for paid dislike campaigns; (3) the midterm's rank is the class (students only) percentile of the Players total. Points lost now: shop book 0.137, revenue 0.098, stars 0.073 (4.58, percentile 0.64 and falling: 1-star buyers), buyer saved 0.065."
+  },
+  {
+   "t": 1793955985.107879,
+   "text": "11/6 18:05 the board started scoring the forum as the raw rating (patch 3.5, agent.md 18:05): rivals with ratings 0.81-0.86 gained ~0.1-0.15 buyer ALL in 10 min, we fell #8->#13 with no change of our own. Forum is now flat (everyone 0.8-0.9), so extra forum effort buys little. Where we trail: shop revenue 379M vs top shops 1.5B, book 85M vs 280-307M; buyer saved 0.279 vs 0.32-0.36 (they pay 0.52-0.56 of list, we pay 0.61). Shop revenue/book and buyer price paid are the levers now."
+  },
+  {
+   "t": 1793956186.8602471,
+   "text": "18:1x stock_value bound raised 50M -> 90M (you called 50M binding; 40M cash idle; stock counts at cost in Book). Buyer: of 168 talks whose first ask was within our cap, 98% closed, so we mostly pay the shop's opening ask; our deals average 0.295 saved before broken goods, rivals 0.32-0.36. Counter below a within-cap first ask before accepting (saved 0.279 -> 0.32 would lift the saved percentile 0.89 -> 0.94). Broken goods: 87 so far, each -1."
+  },
+  {
+   "t": 1793957009.4309812,
+   "text": "User 11/6 18:3x: keep our forum standing (rating 0.90, among the best) solid while lifting the rest. Since the forum now counts as the raw rating, protect it: no post kind whose votes run under our average. The posts count is still a percentile (342 posts, pct 0.53; leaders 700): a shorter every is fine while the rating holds, back off the moment it slips under 0.89."
+  },
+  {
+   "t": 1793971448.207855,
+   "text": "Fact check 22:2x: ask_frac 0.9->0.85 is NOT pending; it was judged at 18:15 (margin/h -25%, deals/h +37%, confounded by step 0.2->0.3 and stock_value 50M->54M) and sits in the ledger. A confounded verdict is still a verdict: weigh it and decide ask_frac now instead of waiting for it."
+  },
+  {
+   "t": 1793987235.526464,
+   "text": "Fact check 02:4x: the stars gap is NOT shelf life. Of 143 one-star reviews of our shop 17:55-23:54, 139 came from two buyers that rate 1 star whatever they get (shaun0927-labbuyer 96/96 ones from us, also 1-starring kimauve, dragonash, Kiro729, yms979; totato2203-r3 rates every shop 1). Without them our mean is ~4.72. Our seller cannot tell who the buyer is, so no shop number fixes this; judge clear_hours on margin and deals, not on stars."
+  },
+  {
+   "t": 1794011939.9068868,
+   "text": "IMPORTANT 09:4x: shop_deals_h and shop_margin_h counted receipts our seller signed, not sales paid. Buyers haggle with several shops and pay one. 06:52-09:35: 300k+ agreed 23 (24M), paid 1 (1.8M); 100-300k 15 vs 7; <100k ~66% paid. Real margin was ~0.75-1.2M/h, not 2-4M/h (Book grew 0.7-0.9M/h). From now on the metrics count paid sales only. Every shop verdict before 09:40 11/7 (stock_value, dear_depth, restock code) was judged on agreements: re-weigh them, and ask why our 300k+ asks lose at checkout (price vs rivals?) before buying more dear stock; stock also pays 1%/day storage."
+  },
+  {
+   "t": 1794025880.545256,
+   "text": "13:3x paid-sales evidence on 300k+ goods (ledger, last 6 h): the market settled 3,586 units on 100 SKUs (~600 an hour); we settled 17 on 13 SKUs from 373 talks. Our first ask sits 4-9 points of list above the market's median paid on every SKU we share (G021aae64 0.77 vs 0.73, G8ec51935 0.79 vs 0.72, G1515d951 0.82 vs 0.78, G429bd69e 0.77 vs 0.68 with floor 0.77). Top shops do 100-470M revenue in 6 h at 250-800k a deal; we did 20M. Price dear goods at or under the market median paid (about 0.70-0.75 of list) and stock more of the 300k+ SKUs that sell (cost is ~0.5-0.6 of list, so the margin holds); skip SKUs whose surge cost puts the floor above the market median."
+  },
+  {
+   "t": 1794049159.884326,
+   "text": "19:5x: the ask cut alone did not add paid sales, so the 300k+ gap is not only price. Buyers only talk to shops that hold the ordered SKU (shops.json lists each shop's stock of the category): the market sold 300k+ goods on 100 SKUs in 6 h, we hold 13, and the top shops' revenue comes from breadth there. The untested combination is breadth at market prices: depth 1-2 on many of the 300k+ SKUs the market settles most (skip those whose surged cost is above the paid median), asks at the paid median, judged on paid revenue. Cash is 47M idle and stock counts at cost in Book (1%/day storage), so a few hours' trial is cheap. Shrinking dear_depth/max_list moves the other way."
+  },
+  {
+   "t": 1794051738.370212,
+   "text": "Supervisor 20:4x set stock_value 55M -> 70M: 97 slow 300k+ units hold 51.3M of our 61M stock, over the cap, so restock had bought nothing and the cheap shelves that actually sell ran down (318 units under 30k, 2.3M). The cap counts all stock, so cutting it starved the sellers, not the dear goods. Clear the slow 300k+ units (aged_margin / clearance at or above cost toward the paid median) and keep cap room for the lines that sell; judge on paid revenue."
+  },
+  {
+   "t": 1794061753.017441,
+   "text": "Supervisor 23:3x undid clear_hours 24 -> 20: clear_hours is how many hours BEFORE the date food clearing starts, so a higher number clears earlier. 23:28 wanted earlier clearing and lowered it, which clears later; 24 is the bound's top and 20 -> 24 was judged +106% margin/h."
+  },
+  {
+   "t": 1794066943.142623,
+   "text": "01:0x evidence on why 300k+ goods do not sell (talks, last 6 h): 263 talks, 24 agreed, 231 gone. Where buyers did offer, they stopped 1-5% under our floor: Gb5d0dde7 offers up to 0.78 vs floor 0.81, G45c54b01 0.66 vs 0.67, G2607d1f6 0.68 vs 0.68-0.69, G021aae64 0.68 vs 0.71. On many dear SKUs floor = first ask (0.76-0.81 of list) because the units were bought at surged cost and min_margin sits on top. Paid revenue is only 1-2M an hour while we hold ~149 units of 300k+ goods. A lower min_margin on goods (or aged_margin for goods held over a day) would close these at a profit over cost; judge on paid revenue and margin."
+  },
+  {
+   "t": 1794109368.8820438,
+   "text": "Fact check 12:4x on the 'receipt honesty' alarm: the three SCAM reviews (Gf33adda6, G74e686be, G757bdfb4) are all from q00, the instructor's house buyer, which compares the order's CATEGORY name (신선육류, 침구) with the receipt's SKU. In Round 3 a receipt names the SKU shipped; the market's own checks on those very settles say item_matches: True, sig ok, settled. Other buyers paid the same SKUs and confirmed the match. Our receipts are honest; there is nothing to fix in code. Do not spend the coder on it (we already asked the instructor about q00's SCAM reviews on 11/3)."
+  },
+  {
+   "t": 1794131065.04786,
+   "text": "Supervisor 18:4x undid max_list 900k -> 600k: the same step was judged today (04:43, margin/h -78%, deals/h -36%) and its reverse (07:43, 600k -> 900k) was judged margin/h +49%, deals/h +138%. Before repeating a number, read its JUDGED rows; do not retry a change both directions have already answered."
+  },
+  {
+   "t": 1794140975.9926322,
+   "text": "21:3x board check: buyer saved is now our 2nd biggest loss (pct 0.84 -> 0.71, 0.143 points) as rivals push it up; ours is 0.284 cumulative, 0.312 over the last 24 h. Saved = mean of (list - price)/list over deals, so every deal paid above ~0.7 of list drags the mean. Our last 24 h, by most paid: <=0.80 of list: 1738 deals, mean 0.317; <=0.75: 1399, 0.338; <=0.70: 906, 0.372; <=0.65: 505, 0.413. Projected to 11/17: CAP 0.8 ends near 0.30, CAP 0.7 near 0.33, with about half the deals (the deals term weighs 0.1 and we sit at pct 0.84; saved weighs 0.5). Worth a CAP 0.7 trial, judged on saved per deal with deals/h as the guard."
+  },
+  {
+   "t": 1794175327.403208,
+   "text": "Supervisor 07:0x set ask_frac and ask_frac_food back to 0.7 (kept the costco floors, step, max_turns and min_margin 0.14). After the 06:43 bundle, talks opened with us fell to 1 per 10 min while the market held steady. A per-talk A/B only sees talks that already opened; a higher listed ask changes whether buyers pick our shop at all, which the A/B cannot measure. Judge ask changes on talks opened and paid sales per hour, not on the A/B alone; food had no test at all."
+  },
+  {
+   "t": 1794176489.288063,
+   "text": "Correction 07:2x: my 07:0x note was wrong. The '1 talk opened per 10 min' was a partial bucket (07:00-07:01); the full 07:0x had 30. Goods ask_frac is back at 0.85 as your A/B-backed 06:43 bundle set it; food ask stays 0.7 because food was not in the A/B. Sorry for the noise."
+  },
+  {
+   "t": 1794183719.497568,
+   "text": "Supervisor 09:2x undid the 06:43 costco bundle (back to ask 0.7, floor 0.67, min_margin 0.02, step 0.4, max_turns 6, food the same). Paid sales, 2.5 h each side: 141 -> 49 sales, revenue 3.07M -> 2.46M/h, margin 0.42M -> 0.40M/h. It kept margin flat and cut revenue and sales; Book and revenue are what the board scores. Its A/B won on margin per talk, which rewards fewer, dearer closes. Judge playbooks on paid revenue and margin per hour."
+  },
+  {
+   "t": 1794188153.809371,
+   "text": "User 11/9 10:4x: back into the top 10 in the 8 days left (we are #21, 0.26 behind #10). Where the points are, in order: (1) shop book+revenue (0.29 lost): top shops sell hundreds of 300k+ units a day at the market's paid median (~0.70-0.75 of list) on stock bought unsurged (cost ~0.5-0.6). Buy 300k+ only where supply cost is well under the paid median, ask at that median, and keep the cheap shelves full. (2) buyer saved (0.15 lost): keep CAP 0.7 if its verdict holds; every deal above 0.7 of list drags the mean. (3) posts (0.05 lost, pct 0.52): forum every at the 310 s floor while the rating holds 0.9. Judge everything on paid revenue/margin per hour and saved per deal; not on margin per talk."
+  },
+  {
+   "t": 1794188794.4425569,
+   "text": "11:0x the rivals table is now in your advice every cycle. What it shows: the leaders sell at the SAME paid share of list as we do (0.63-0.73 vs our 0.65), but 500-1300 sales in 6 h against our 205, at 150-700k a sale against our 81k, 24-77% of them 300k+ (ours 18%). Their Book is 270M-1B, so they hold far more stock; we sit on 73M idle cash with stock_value 60M. The gap is how much and what we stock, not price: more depth on the 300k+ and 100-300k SKUs the market pays for (unsurged, cost well under the paid median), judged on paid revenue per hour."
+  },
+  {
+   "t": 1794189093.165693,
+   "text": "11:2x first read of the new edges table (in your advice every cycle). Cheapest points on the board: (1) buyer saved: the next 5 rivals sit between 0.2890 and 0.2946; ours 0.2881. About 900 new deals at ~0.37 (CAP 0.7) pass all five: +0.045 ALL in about a day. Every deal under ~0.29 saved now costs rank; by the rule a broken unit counts -1 but 0 if refunded, so a goods deal with no warranty is the costliest kind. (2) shop stars: 4.59 -> 4.63 passes 5 shops (+0.018). (3) Book: the next 3 shops are at 250M+, so it is a days-long climb via volume, not a quick edge. Aggressive is fine short of bankruptcy (cash 74M)."
+  },
+  {
+   "t": 1794189311.6572921,
+   "text": "User 11/9 11:3x: while we catch up, A/B tests may be paused if they get in the way. Guidance: do not open new shop playbook or ask A/Bs that put half the buyers on a likely-worse arm; when the paid-sales evidence is clear, change the number for everyone and let the 2 h verdict judge it. Keep A/B only for risky buyer or code changes, where half the orders cap the damage."
+  },
+  {
+   "t": 1794194483.229629,
+   "text": "Correction to the 10:51 note: buyer CAP is 0.75 now and its bounds start at 0.75, so 'CAP 0.7' cannot be chosen; the saved edge stands (the next 5 buyers at 0.2896-0.2953 against our 0.2886 at 12:04), at the saved per deal CAP 0.75 gives. Notes carry their age from now on; a number in an old note may be stale, check its value now."
   }
  ]
 }

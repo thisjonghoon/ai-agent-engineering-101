@@ -142,6 +142,9 @@ async def dream(area, base=HERE, ask=None, now=None):
         for k in ("rule", "trap"):                      # the specialist sees no ids: "F13 -53%" -> "11/05 23:29 -53%"
             x[k] = re.sub(r"\bF(\d+)\b", lambda m: stamp(when[m.group(0)]) if m.group(0) in when else m.group(0), x[k])
     history = (cur.get("history") or []) + ([{"t": cur["t"], "lessons": cur["lessons"]}] if cur.get("lessons") else [])
+    # read again just before writing and change only this area: on 11/9 12:07 a hand-run rewrite of sales, loaded before
+    # the meta cycle wrote community's lessons, saved over them
+    data = load(base)
     data[area] = {"t": now, "facts": len(fs), "lessons": kept, "history": history[-KEEP_HISTORY:]}
     path = base / OUT
     path.parent.mkdir(exist_ok=True)

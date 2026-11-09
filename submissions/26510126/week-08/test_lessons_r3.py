@@ -66,9 +66,16 @@ def main():
         return {"lessons": [{"rule": "x", "evidence": ["F99"], "status": "verified"}]}
     case("a dream with nothing valid leaves the lessons alone",
          asyncio.run(ls.dream("merch", base, ask=nothing, now=t + 300)) is None and ls.load(base)["merch"]["t"] == t + 200)
+    async def racing(prompt, **k):                       # another writer saves community while this one waits
+        d = ls.load(base)
+        d["community"] = {"t": t + 400, "lessons": [{"rule": "c", "evidence": ["F1"], "status": "verified"}]}
+        (base / ls.OUT).write_text(json.dumps(d))
+        return {"lessons": [{"rule": "rule 3", "evidence": ["F1"], "status": "verified"}]}
+    asyncio.run(ls.dream("merch", base, ask=racing, now=t + 400))
+    case("a rewrite keeps another area saved while it ran", ls.load(base).get("community", {}).get("lessons"))
     txt = ls.text("merch", base)
-    case("the specialist reads its lessons with status and times", "[verified] rule 2" in txt and len(txt) <= ls.MAX_CHARS)
-    case("an area never dreamed reads nothing", ls.text("community", base) == "")
+    case("the specialist reads its lessons with status and times", "[verified] rule 3" in txt and len(txt) <= ls.MAX_CHARS)
+    case("an area never dreamed reads nothing", ls.text("buying", base) == "")
     case("the most overdue area is dreamed next", ls.due(base, now=t + 200 + ls.DREAM_EVERY + 1) in
          ("sales", "buying", "community") and ls.due(base, now=t + 200) in ("sales", "buying", "community"))
     print(f"{sum(RESULTS)}/{len(RESULTS)} passed")

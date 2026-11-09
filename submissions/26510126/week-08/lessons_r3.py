@@ -188,9 +188,18 @@ async def dream(area, base=HERE, ask=None, now=None):
         orders = "(none)"
     prompt = DREAM.format(title=TITLES[area], max=MAX, facts="\n".join(f"{i}: {x}" for i, _, x in shown),
                           orders=orders, lessons=json.dumps(cur.get("lessons") or [], ensure_ascii=False))
-    ans = await ask(prompt, model="sonnet", timeout=180, max_chars=30_000)
+    # 45,000: with the rendered orders the merch prompt reached 31,748 characters and the harness refused it (11/9 17:47)
+    ans = await ask(prompt, model="sonnet", timeout=240, max_chars=45_000)
     kept = valid((ans or {}).get("lessons"), {i for i, _, _ in shown})
     if not kept:
+        # a failed rewrite waits a full DREAM_EVERY like a good one (it was retried every 15-minute cycle)
+        data = load(base)
+        data.setdefault(area, {})["tried"] = now
+        path = base / OUT
+        path.parent.mkdir(exist_ok=True)
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+        tmp.replace(path)
         return None
     text_of = {i: x for i, _, x in shown}
     kept = [grounded(x, text_of) for x in kept]
@@ -220,7 +229,7 @@ async def dream(area, base=HERE, ask=None, now=None):
 def due(base=HERE, now=None):
     """The most overdue area whose DREAM_EVERY has passed, or None."""
     now, data = now or time.time(), load(base)
-    late = [(now - (data.get(a) or {}).get("t", 0), a) for a in TITLES]
+    late = [(now - max((data.get(a) or {}).get("t", 0), (data.get(a) or {}).get("tried", 0)), a) for a in TITLES]
     late = [x for x in late if x[0] >= DREAM_EVERY]
     return max(late)[1] if late else None
 

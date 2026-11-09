@@ -226,7 +226,11 @@ def advice(hours=24, n=3):
             "\nShop change slot: FREE. Shop changes run one at a time so each verdict is clean; while it is free, pick "
             "the ONE shop number change worth most on the evidence (holding is the exception and needs evidence that "
             "every move would lose; a pending verdict is no reason, there is none).")
-    return standing + text + slot + code_changes() + number_changes() + number_memory() + rivals() + edges()
+    # the buyer's bounds for everyone (the manager saw none): "CAP 0.7" came back in 20 manager decisions and 17 specialist proposals from notes and
+    # lessons while CAP's floor is 0.75, approved and silently clamped each time (11/9 review)
+    bounds = "\nBuyer numbers' bounds (a value outside is clamped, so do not propose it): " + ", ".join(
+        f"{k} {lo}-{hi}" for k, (lo, hi, _) in BUYER_BOUNDS.items())
+    return standing + text + slot + bounds + code_changes() + number_changes() + number_memory() + rivals() + edges()
 
 
 def number_memory():
@@ -299,12 +303,16 @@ def buyer_trial_verdict():
         return {}                                   # too few orders an arm: a few dear orders would decide it
     # 11/6 06:02 rules: the board scores the buyer's saved rate (surplus / list per deal), no longer surplus in won
     gain, close = metrics_r3.change("buyer_saved_deal", a, b), metrics_r3.change("buyer_close_rate", a, b)
-    win = t["B"] if gain is not None and gain > 0.03 and (close is None or close > -BUYER_GUARD) else t["A"]
+    # the board's own terms (11/9 review): buyer points/h = paid deals/h x (saved per deal - our running mean), so a
+    # trial that buys less but saves more is weighed as the board weighs it; the close-rate guard (20%) is gone
+    pts = metrics_r3.change("buyer_pts_h", a, b)
+    win = t["B"] if pts is not None and pts > 0.03 else t["A"]
     plan = dict(BUYER_DEFAULTS, **{k: v for k, v in read_json(BUYER_PLAN, {}).items() if k in BUYER_BOUNDS})
     plan[t["param"]] = win
     BUYER_PLAN.write_text(json.dumps(dict(plan, t=time.time()), indent=1), encoding="utf-8")
     BUYER_TRIAL.write_text("{}", encoding="utf-8")
-    verdict = (f"{'kept' if win == t['B'] else 'not taken'}; saved/deal {a.get('buyer_saved_deal')} -> "
+    verdict = (f"{'kept' if win == t['B'] else 'not taken'}; buyer points/h {a.get('buyer_pts_h')} -> "
+               f"{b.get('buyer_pts_h')}" + (f" ({pts:+.0%})" if pts is not None else "") + f"; saved/deal {a.get('buyer_saved_deal')} -> "
                f"{b.get('buyer_saved_deal')}, close rate {a.get('buyer_close_rate')} -> {b.get('buyer_close_rate')} "
                f"({a.get('orders')} vs {b.get('orders')} orders, same hours)")
     with CODE_CHANGES.open("a", encoding="utf-8") as f:
@@ -550,6 +558,7 @@ def team_records():
     """Per team member, (time, reward) for each talk it ran: the buyer's surplus (list - price on a deal, else 0) from
     memory.jsonl, the seller's margin over cost as a share of list (0 when no deal) from talks_r3.jsonl."""
     out = {"buyer": {}, "seller": {}}
+    mean_saved = (metrics_r3.lever_prices() or {}).get("saved_now", 0.29)
     try:
         for l in (HERE / "memory.jsonl").read_text(encoding="utf-8").splitlines()[-30000:]:
             if '"member"' not in l or '"kind": "trade"' not in l:
@@ -557,9 +566,10 @@ def team_records():
             r = json.loads(l)
             if r.get("member"):
                 t = time.mktime(time.strptime(r["time"], "%Y-%m-%d %H:%M:%S"))
-                v = (r["list_price"] - r["price"]) if r.get("outcome") == "deal" and r.get("price") else 0
-                # surplus per minute of talk: orders come one at a time, so a faster member serves more of them
-                v = v * 60 / max(10.0, r["secs"]) if isinstance(r.get("secs"), (int, float)) else None
+                # the board's buyer term per talk (11/9 review): saved rate minus our running mean on a deal, 0 without
+                # one; until 11/9 it was surplus in won per minute, which favoured dear deals the saved mean does not
+                v = ((r["list_price"] - r["price"]) / r["list_price"] - mean_saved
+                     if r.get("outcome") == "deal" and r.get("price") is not None and r.get("list_price") else 0)
                 if v is not None:
                     out["buyer"].setdefault(r["member"], []).append((t, v))
         for l in simulate_r3.TALKS.read_text(encoding="utf-8").splitlines()[-30000:]:
@@ -967,10 +977,14 @@ async def cycle():
                 new[k] = int(round(v)) if isinstance(lo, int) and isinstance(hi, int) else round(v, 3)
         # a trial that lost in the last day is not run again: C_CAP 0.6 -> 0.55 was put on trial three times on 11/5-6
         # and lost twice, each time holding the one buyer trial for 1-3 h
-        lost = {x.get("change") for x in jl(CODE_CHANGES) if x.get("source") == "inner loop (buyer A/B)"
-                and time.time() - x.get("t", 0) < 86400 and str(x.get("verdict", "")).startswith("not taken")}
-        wanted = {k: (old[k], new[k]) for k in new if new[k] != old[k]
-                  and f"buyer {k} {old[k]} -> {new[k]} on half the orders" not in lost}
+        # by number and direction, not the exact string: MAX_RAISE 0.4 -> 0.35 lost and came back from 0.4 -> 0.3 (11/9)
+        lost = set()
+        for x in jl(CODE_CHANGES):
+            m = re.match(r"buyer (\w+) ([\d.]+) -> ([\d.]+)", str(x.get("change") or ""))
+            if m and x.get("source") == "inner loop (buyer A/B)" and time.time() - x.get("t", 0) < 86400 \
+                    and str(x.get("verdict", "")).startswith("not taken"):
+                lost.add((m.group(1), float(m.group(3)) > float(m.group(2))))
+        wanted = {k: (old[k], new[k]) for k in new if new[k] != old[k] and (k, new[k] > old[k]) not in lost}
         if wanted and not read_json(BUYER_TRIAL, {}).get("param"):
             k, (a, b) = next(iter(wanted.items()))       # the first change goes on trial; the rest wait their turn
             BUYER_TRIAL.write_text(json.dumps({"key": f"{k}-{time.strftime('%m%d%H%M')}", "param": k, "A": a, "B": b,

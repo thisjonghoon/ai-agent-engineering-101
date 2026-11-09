@@ -67,6 +67,19 @@ def main():
          and json.loads(meta_r3.BUYER_PLAN.read_text())["CAP"] == 0.85 and json.loads(meta_r3.BUYER_TRIAL.read_text()) == {}
          and "inner loop (buyer A/B)" in meta_r3.CODE_CHANGES.read_text(), str(got))
 
+    # judged on the board's buyer term: fewer closes but more points per hour is kept (11/9 review)
+    meta_r3.BUYER_TRIAL.write_text(json.dumps({"key": "CAP-t2", "param": "CAP", "A": 0.85, "B": 0.8,
+                                               "started": time.time() - 4000}))
+    def fake_window2(t0, t1, base=None, keep=None):
+        b = keep("o-b") if keep else False
+        return {"buyer_close_rate": 0.45 if b else 0.65, "buyer_pts_h": 0.0016 if b else 0.0012, "orders": 200}
+    meta_r3.metrics_r3.window = fake_window2
+    real_arm, code_ab_r3.arm = code_ab_r3.arm, lambda key, o: "B" if o == "o-b" else "A"
+    got2 = meta_r3.buyer_trial_verdict()
+    code_ab_r3.arm, meta_r3.metrics_r3.window = real_arm, real_window
+    case("a buyer number that closes fewer orders but earns more buyer points/h is kept", got2 == {"CAP": (0.85, 0.8)},
+         str(got2))
+
     # both arms reach min_n before the draw leans: an arm with fewer ended negotiations is drawn first
     e3 = {"on": True, "id": "t3", "param": "ask_frac", "kind": "goods", "arms": {"A": 0.9, "B": 0.85}, "min_n": 30,
           "p_win": 0.95, "started": time.time()}

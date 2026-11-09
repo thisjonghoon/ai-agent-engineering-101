@@ -82,8 +82,14 @@ def main():
     print(f"\nBoard at {time.strftime('%Y-%m-%d %H:%M')} (round {b.get('current')}):\n")
     for kind in ("players", "shops", "buyers"):
         rows = b.get(kind) or []
+        # rank by the board's own score, not the order the API lists them in (11/9: "#13 of 84" was the list order)
+        rows = sorted(rows, key=lambda r: -((r.get("total") if kind == "players" else r.get("all")) or 0))
         if kind == "players":
-            rows = sorted(rows, key=lambda r: -(r.get("total") or 0))
+            st = sorted([r for r in rows if r.get("student")], key=lambda r: -(r.get("student_total") or 0))
+            j = next((j for j, r in enumerate(st) if r.get("player") == US), None)
+            if j is not None:
+                print(f"- graded: #{j + 1} of {len(st)} students (student_pct {st[j].get('student_pct')}, "
+                      f"student_total {st[j].get('student_total')})")
         i = next((i for i, r in enumerate(rows) if US in (r.get("name"), r.get("player"))
                   or (r.get("owner") or {}).get("login") == US), None)
         if i is not None:

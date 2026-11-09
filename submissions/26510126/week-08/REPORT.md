@@ -15,8 +15,9 @@ The one-page figure is `architecture.tex` / `architecture.pdf` (rebuilt 11/9 wit
   promotes team members; an A/B test inside the shop tries one number or a whole retail playbook on live buyers. The
   *outer loop* (`meta_code_r3.py`) changes the harness's own code every 90 minutes: an engineer agent reads the code
   and the raw traces and writes one hypothesis aimed at the board term that costs the most points
-  (`metrics_r3.py`), a coder agent builds it with a test, a code gate puts it live on half the buyer's orders, and an hour
-  later code keeps or reverts it by the metric it named, the two halves compared over the same hours. Expected and measured results go to one ledger
+  (`metrics_r3.py`), a coder agent builds it with a test, a code gate puts it live, and code keeps or reverts it: a buyer
+  change on half the orders, the two halves compared over the same hours; a shop change (stock, prices) over the 3 h
+  before and after, net of the market's own change. Expected and measured results go to one ledger
   (`logs/code_changes_r3.jsonl`) that both loops read.
 - **Supervisor** (Claude Code, for the user): watches every decision, stops bad ones with evidence, and steers through
   standing orders and notes the manager reads as advice (`standing_orders_r3.md`, `advice_r3.json`); when it must
@@ -41,6 +42,10 @@ The one-page figure is `architecture.tex` / `architecture.pdf` (rebuilt 11/9 wit
   rivals on it pays (`metrics_r3`); *shop points* are its Book and revenue part, *buyer points* its saved part.
 - *Verdicts*: VERIFIED (judged again on the market share, nothing else changed in its hours), MIXED (another change
   fell in its hours: no verdict), UNVERIFIED (judged on raw margin/h before 11/9 11:13, which reads the hour of day).
+- *Hermes*: the open-source agent CLI through which GPT is called on the user's ChatGPT plan. *CL-Bench*: the
+  learning-from-feedback benchmark in Anthropic's memory study. *Class view* and `student_pct`: the board's ranking
+  among the 45 students only, the graded percentile. *Fast guard*: code that reverts a shop change in its first hour
+  if our share of the market's paid value halves. `CAP`: the most our buyer pays, as a share of list.
 - *Dear goods*: units listed at 300,000 or more. Strategy numbers such as `ask_frac` (the opening ask as a share of
   list), `dear_depth` (units held of a dear line) and `stock_value` (the cap on stock at cost) are named where used.
 
@@ -60,7 +65,7 @@ raw evidence that the next decision reads.
   (observe: code, traces, the ledger of past changes; think: one hypothesis with the metric it should move and by how
   much), a coder agent acts in a copy, and code judges: the gate before it goes live, the named metric an hour after.
   The supervisor still watches it, reads each automatic diff and pushes the commits.
-- **Memory follows LongMemEval-V2:**
+- **Memory follows the abilities LongMemEval tests** (Wu et al., 2024, a benchmark of chat assistants' long-term memory):
   - raw evidence only, appended and never summarised on write; summaries are derived on read;
   - static facts and dynamic ones, with the newest evidence winning;
   - transitions (how a shop moved its asks in our last talks);
@@ -82,7 +87,8 @@ raw evidence that the next decision reads.
 | Lessons per area, every 3 h | Claude sonnet (`lessons_r3.dream`) | rewrites each area's lessons from the record: rule, the facts it rests on, verified / unverified / contradicted, the trap | a lesson citing no fact or an unknown one is dropped; the old version goes to the history |
 | Ideas (week 7; not run in Round 3) | Claude sonnet (`meta_explore.py`) | proposals only | everything |
 
-All Claude calls go through `claude -p` with no tools, no settings, no session persistence, on the subscription.
+All Claude calls go through `claude -p` with no settings and no session persistence, on the subscription; the models
+that decide each cycle get no tools (section 1.3), the outer loop's two agents get file tools inside a copy.
 While the ChatGPT plan is at its limit (11/9-11/11), the forum editor and the GPT fallback fail too: the column posts
 the plain facts and the buyer haggles on by code, as designed.
 
@@ -109,7 +115,7 @@ How past deals and reputation reach the next decision:
 | Every change and its verdict, re-judged on the board's terms | `logs/code_changes_r3.jsonl`, `logs/rejudged_r3.json`, `logs/market_buckets_r3.jsonl` | every specialist and the manager (each number's value now and its last 3 verdicts) | whether a number is moved, and which way (memory, below) |
 | Each area's lessons | `logs/lessons_r3.json` | that area's specialist | the rule it follows and the trap it avoids (memory, below) |
 
-- **Buyer memory, raw evidence only** (`memory.jsonl`, LongMemEval-V2 style). Each settled deal (grade, claim,
+- **Buyer memory, raw evidence only** (`memory.jsonl`, in that style). Each settled deal (grade, claim,
   whether the claim was true, shelf life left, price against list), each refusal the kit wrote to `payments.jsonl`,
   and each broken item from `broken.jsonl` (matched to our last purchase of that name, so we know the shop and the
   warranty) is appended; nothing is summarised on write. The shop's record is derived when an order reads it.
@@ -121,9 +127,10 @@ How past deals and reputation reach the next decision:
   but traffic moves more than prices between hours (on 11/3, 8 deals in a night half hour, 73 in a late-morning one).
   So one strategy number is also tested inside the shop: each negotiation draws one of two values at the same hour
   (Thompson sampling, reward = margin over list, 0 for a lost sale), and once one value is better with probability
-  0.95 after 30 negotiations each, code writes it into the strategy; a test with no winner after 400 talks an arm or
-  6 hours ends as a tie. The first test (11/3) was the ask on goods at 0.95 or 0.85 of list. Since 11/9 shop numbers are
-  changed for everyone and judged after 2 hours (standing order 3); the A/B stays for risky buyer and code changes.
+  0.95 after 30 negotiations each, code writes it into the strategy; a test with no winner after 250 talks an arm or
+  2 hours ends as a tie. The first test (11/3) was the ask on goods at 0.95 or 0.85 of list. Since 11/9 shop numbers are
+  changed for everyone and judged after 2 hours (standing order 3); the A/B stays for risky buyer and code changes and for the goods ask the supervisor put on trial at 13:19 (0.75 vs 0.70,
+  judged on paid shop points per talk); before that it was for risky buyer and code changes.
 - **Retail playbooks, and a counterfactual replay until 11/4 21:50** (`playbooks_r3.py`, `simulate_r3.py`, `logs/talks_r3.jsonl`): our
   meta-harness only searched near its own last strategy, so it is also shown whole positions from real retail
   (Costco's capped markup with deep, few SKUs; Walmart's everyday low price with little haggling; grocery markdowns
@@ -216,8 +223,8 @@ window held another change. The second pass (13:0x, `logs/rejudged_r3_v2.json`) 
 points only and marks a verdict MIXED when another number, code or supervisor change falls in its hours: all 5
 measurable verdicts were MIXED, so none is verified; the first pass stays in `logs/rejudged_r3.json` as it was. The
 ledger backfill (11/5 13:48 to 11/9 05:3x, one page at a time, finished 14:34) then filled the market's record back to
-11/5 13:50 with one 10-minute gap: re-judged on it, **all 92 measurable shop number verdicts of 11/5-11/9 were MIXED**
-and 4 from before the record stay UNVERIFIED. Not one past shop number verdict was clean, which is why shop changes
+11/5 13:50; its one 10-minute gap (11/9 05:40) was fetched at 15:05. Re-judged on it, **all 96 shop number verdicts of
+11/5-11/9 were MIXED** (89 made before 11/9 11:13 and judged on raw margin/h, 7 since). Not one past shop number verdict was clean, which is why shop changes
 now run one at a time (standing order 3) and why standing order 2 no longer counts any of them as evidence. Three mistakes in the first hour (a lesson read
 backwards, a number moved toward a value it no longer had, one rewrite saving over another) were each fixed within
 the hour; they are in section 3.x. The study's warning held: a memory that is written but not re-checked passed a wrong note to the next decision
@@ -257,7 +264,9 @@ every input a model decided on is logged and can be judged later on the same num
 money or files (no call it makes can pay, post or write); and a cycle of five calls stays near a minute. What a model
 would otherwise fetch with a tool, code computes for it:
 
-| Tool (code) | Input | Output | Read by |
+Computed context handed to the models (code that plays the part a tool call would):
+
+| Code | Input | Output | Read by |
 |---|---|---|---|
 | `metrics_r3` | the ledger's settles, our buyer's memory, our talks, the 10-minute market buckets | per window: paid sales, margin, revenue, our share of the market's paid value and count, shop points and buyer points per hour | every verdict, the engineer |
 | `edges_r3` | the board and the market's `agent.md` | for each board term, what passing the next 1/3/5 rivals needs and the points it buys, with the rule lines it rests on | every specialist and the manager |
@@ -297,12 +306,12 @@ See `architecture.pdf`. In short:
 |---|---|---|
 | Decisions | none (the person sets the agent) | two loops aimed at one number, board points per hour by the board's own weights: a team moves numbers every 15 min (four specialists propose from their own evidence and lessons, a reviewer on another model (GPT; opus while GPT is out), a manager decides, code bounds it and runs shop changes one at a time); an engineer and a coder agent change the code every 90 min, one hypothesis at a time, gated by tests; a supervisor watches both and steers through standing orders and notes |
 | Teams | one buyer, one seller | buyer: scouts quote several shops at once, a member haggles with the best; both sides have members with ranks (lead 60%, senior 25%, junior 15% of talks), promoted by reward per talk and replaced when they trail |
-| Seller | a model at every turn; ships the unit that expires first; no quality talk, no warranty; never under cost | code prices from a strategy the meta-harness rewrites; honest grade claim (none within an hour of a grade line, where the grade could change before settle), the market's certificate; warranty only when the meta-harness sets one (0 at the start, since a refund costs the whole price and the break rate is unknown); near-date food cleared under cost (a spoiled unit loses all of its cost); the ask follows the market down to the 75th percentile of what the SKU settled for, never under cost + margin |
+| Seller | a model at every turn; ships the unit that expires first; no quality talk, no warranty; never under cost | code prices from a strategy the meta-harness rewrites; honest grade claim (none within an hour of a grade line, where the grade could change before settle), the market's certificate; a 72 h warranty on every goods grade since 11/9 13:41 (goods break only within 6 h of the sale; before, only grade A and 0 at the start, since a refund costs the whole price and the break rate is unknown); near-date food cleared under cost (a spoiled unit loses all of its cost); the ask follows the market down to the 75th percentile of what the SKU settled for, never under cost + margin |
 | Stock | a few random SKUs | one unit per category near its median price first (a buyer only sees shops that hold the ordered category); where settled deals show, depth plus a cheaper and a dearer SKU (orders take SKUs at 0.5-1.5x a hidden reference price); the SKUs the ledger keeps settling, bought by themselves; categories that buyers ask for in forum "wanted" posts first; cash reserve and stock cap; no buying in the last 36 h |
 | Buyer | picks and haggles | expected-surplus choice over (shop, SKU), memory of raw evidence, bans for false claims and unwarranted breakages, accept policy (certificate, shelf life, grade) checked by the kit before paying; an affordable ask within a few percent of its offer is taken rather than haggled away |
 | Checkout | fixed code; inputs described as short strings | tools made from each shop's `acp.json`, fixed code only as a fallback; our card in JSON Schema |
-| Forum | none | a column (`장보기 레이더`) in kinds built from the ledger (best value, freshness, unpaid receipts, trivia, grade claims, our deals), styled by a model under a number check, at most one post in 10 minutes (20 until 11/4 17:05); kinds weighted by the votes they earn |
-| Learning | none | the meta-harness over strategy versions; an A/B test inside the shop that holds the hour fixed and tries a number or a whole retail playbook (Costco, Walmart, IKEA, grocery markdown, premium, two-track) on live buyers, ending as a tie after 400 talks an arm or 6 h; a ledger of code hypotheses with expected and measured results |
+| Forum | none | a column (`장보기 레이더`) in kinds built from the ledger (best value, freshness, unpaid receipts, trivia, grade claims, our deals), styled by a model under a number check, one post per 310 s, the market's limit, since 11/9 (20 minutes until 11/4 17:05, then 10, then 6); kinds weighted by the votes they earn |
+| Learning | none | the meta-harness over strategy versions; an A/B test inside the shop that holds the hour fixed and tries a number or a whole retail playbook (Costco, Walmart, IKEA, grocery markdown, premium, two-track) on live buyers, ending as a tie after 250 talks an arm or 2 h, judged on paid shop points per talk since 11/9; a ledger of code hypotheses with expected and measured results |
 | Verdicts | none | every change, from anyone, is judged by code into one ledger: a shop number after 2 h on the shop's points (Book + revenue) and our share of the market's paid value, MIXED when another change fell in its hours (a fast guard reverts it in the first hour if that value share halves); a code change on half the orders (same hours) or 3 h before/after net of the market's own change, on the points of the side it works on |
 | Memory | none | tiers with a writer, readers and a check each (section 1.2.1): raw traces; the market's paid sales per 10 minutes, backfilled to 11/5; the verdict ledger; past verdicts re-judged or marked UNVERIFIED, shown with each number's value now; each area's lessons rewritten by a model every 3 h with their evidence and status, unknown citations dropped, history kept; standing orders with since / from / review and notes with their age |
 | Demand | `demand.json` categories only | hidden demand estimated from the orders our buyer receives and the requests our shop gets |
@@ -312,51 +321,54 @@ How the structure got here, day by day from 11/3 to 11/6, with the measurement b
 
 ## 3. Round 3 results
 
-As of **2026-11-09 13:26**; `python r3_results.py` recounts all of it from the logs and the board, and the table is
-refreshed at submission. The final rank is the board's when the round ends (11/17 23:59).
+As of **2026-11-09 15:06**, all from one run of `python r3_results.py` (the kit log and its archives, and the board at
+that minute); it is rerun and this section refreshed at submission. The final rank is the board's at 11/17 23:59.
 
 | | Count | Quoted from |
 |---|---|---|
-| Deals settled at our shop | **11,542** (board: 11,545) | `[acp] settled ... ledger #N` lines in the kit log and its archives, one per ledger entry (the archives overlap, 13,036 lines) |
-| Deals settled by our buyer | **10,110** (board: 10,110) | `[acp-tools] paid N with create_checkout_session -> complete_checkout_session, settled at ledger #N` |
-| Players rank (graded) | the rubric grades the percentile among students in the Class view: **20th of 56 students, percentile 0.568** (student total 1.253); among all 63 players, #22 by total 1.343 | `/api/board` players (`student_total`, `student_pct`) |
-| Shop | #27 of 84 by ALL (57 shops with deals): Book 129.9M, revenue 671.9M, stars 4.58, 11,173 of 11,173 grade claims true, 0 bankruptcies | `/api/board` shops, sorted by `all` |
-| Buyer | #18 of 125 by ALL: saved 0.2888, forum rating 0.908, 912 posts, deals on 61% of orders | `/api/board` buyers, sorted by `all` |
+| Deals settled at our shop | **11,700** (board: 11,704) | `[acp] settled ... ledger #N` in the kit log and its archives, one per ledger entry |
+| Deals settled by our buyer | **10,213** (board: 10,212) | `[acp-tools] paid N with create_checkout_session -> complete_checkout_session, settled at ledger #N` |
+| Players rank (graded) | **21st of 45 students, `student_pct` 0.545** (student total 1.245); the board computes the percentile as (45 - rank) / 44. Among all 63 players (students, the instructor's agents and others), #23 by total 1.336 | `/api/board` players, the rows marked `student` |
+| Shop | #29 of 84 by ALL: Book 136.0M, revenue 726.4M, stars 4.58, every grade claim true, 0 bankruptcies; 23,106 visits for 11,704 deals | `/api/board` shops, sorted by `all` |
+| Buyer | #18 of 125 by ALL: saved 0.2896, forum rating 0.909, 927 posts, deals on 61% of orders | `/api/board` buyers, sorted by `all` |
 
-**Refusals, from the logs.** At our shop (the market's checkout refusing a unit, and settles it refused):
+**Refusals at our shop**, as the kit log has them (497 checkout refusals in two wordings, 83 settles refused):
 
 ```
-22:54:02 [acp] checkout refused: 409 {"error":"unit u-c3faaaa21dd8 is not in stock for this order"}   496 lines
-13:07:24 [acp] settle refused: ['not_settled_before']                                                  83 lines
+22:54:02 [acp] checkout refused: 409 {"error":"unit u-c3faaaa21dd8 is not in stock for this order"}   260
+         [acp] checkout refused: unit u-… is not in stock for this order                              237
+13:07:24 [acp] settle refused: ['not_settled_before']                                                  59
+         [acp] settle refused: {'error': ''}                                                           19
+         [acp] settle refused: ['not_expired']                                                          1
 ```
 
 "Not in stock" is kit v4's checkout keeping a unit for an abandoned session (reported in the course discussion,
-#378); the seller leaves such a unit out for 2 h and, from the next kit restart, for good on its second refusal
-(`23fad57`). "not_settled_before" is a buyer paying an order a second time.
+#378); the seller leaves such a unit out for 2 h and for good on its second refusal (`23fad57`, live since 11/9
+13:41). `not_settled_before` is a buyer paying an order a second time. About half of our shop's visits end without a
+deal: the buyer asked another shop as well and paid there, or walked at our ask.
 
-By our buyer, counted in `.market/payments.jsonl` (one line per agreed deal; 1,083 of 11,193 not paid), with the
-kit log's wording:
+**Refusals by our buyer**, counted in `.market/payments.jsonl` (11,310 agreed deals, 10,213 paid), in the log's words:
 
 ```
-not paying: 286.82 h of shelf life left, the policy asks for 594.0                       546
-checkout refused: 409 {"error":"unit u-8fcfa2f19440 is not in stock for this order"}     251   (the other shop's checkout)
-not paying: grade C, the policy accepts ['A', 'B']                                       145
-not paying: no certificate, and the policy asks for one                                  108
-the shop's ACP endpoint is outside its own host (not paid)                                21
-payment not completed (complete_checkout_session): 402 {"error":"payment refused by the market", ...}   10
+not paying: 286.82 h of shelf life left, the policy asks for 594.0                                   552
+checkout refused: 409 {"error":"unit u-8fcfa2f19440 is not in stock for this order"}                 252   (the other shop's checkout)
+not paying: grade C, the policy accepts ['A', 'B']                                                   148
+not paying: no certificate, and the policy asks for one                                              111
+the ACP endpoint https://…/acp/… is not on the shop's host; not paying                                21
+payment not completed (complete_checkout_session): 402 {"error":"payment refused by the market", …}    9
 ```
 
-Food that would not last the order's use window, grade C without a warranty (since 11/7, `eafc244`: by then a C unit broke
-15.7% of the time against 17.9% in the market's 24 h on 11/4, so the 11/3 rule "C at 65% of list" gave way to "C only with a warranty"), and units without the
-market's certificate are refused before any money moves; of 11,193 agreed deals, 10,110 were paid.
+Food that would not last the order's use window, grade C without a warranty (since 11/7, `eafc244`: by then a C unit
+broke 15.7% of the time against 17.9% in the market's 24 h on 11/4), units without the market's certificate and
+checkout endpoints off the shop's own host are refused before any money moves.
 
-**What the loops did (11/3-11/9 13:2x, from `logs/code_changes_r3.jsonl` and `logs/code_attempts_r3.jsonl`).**
+**What the loops did (11/3 to 11/9 15:06, from `logs/code_changes_r3.jsonl` and `logs/code_attempts_r3.jsonl`).**
 
 | Loop | Tried | Outcome |
 |---|---|---|
-| Outer loop (code changes by the engineer and coder agents) | 47 builds | 35 went live: 22 kept, 11 reverted by their verdict, 2 waiting |
-| Buyer numbers on half the orders (A/B) | 25 trials | 6 kept |
-| Shop numbers (inner loop) | 96 judged changes | re-judged on the market's record back to 11/5: all 92 measurable ones MIXED (another change in their hours), 4 UNVERIFIED (before the record) (section 1.2.1) |
+| Outer loop (code changes by the engineer and coder agents) | 48 builds | 35 went live: 23 kept, 10 reverted by their verdict, 1 reverted by the supervisor, 1 superseded by a later change |
+| Buyer numbers on half the orders (A/B) | 26 trials | 7 kept |
+| Shop numbers (inner loop) | 96 judged changes | re-judged on the market's record back to 11/5 (no gaps): all 96 were MIXED, another change in their hours (section 1.2.1) |
 
 One that paid: `4d10151` (deeper stock of the best-selling 300k+ lines) took our revenue from 2.0M to 3.8M an hour over
 the 3 h after it (11/9 08:06), and our share of the market's paid value from 0.38% to 0.70%; its revert on margin/h
@@ -364,7 +376,7 @@ alone was undone (section 3.x).
 
 ### 3.x What went wrong, and what each failure changed in the structure
 
-Kept as it happened (11/6-11/9); every row is in `logs/code_changes_r3.jsonl` and the git history. The rank fell
+Kept as it happened (11/4-11/9); every row is in `logs/code_changes_r3.jsonl` and the git history. The rank fell
 from 8th (11/6 08:05) to 22nd (11/9 12:44) while Book kept growing (85M on 11/6 18:09, 130M on the board at 11/9 12:44): the failures below cost us relative speed,
 not money.
 

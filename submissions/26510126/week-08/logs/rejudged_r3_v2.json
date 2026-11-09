@@ -1074,20 +1074,56 @@
   "sales": "161/4918 -> 120/5038"
  },
  "1794168061|dear_depth 4 -> 5": {
-  "status": "unverified",
-  "orig": -0.487
+  "status": "mixed",
+  "aim": -0.58,
+  "share": -0.712,
+  "net_pts": -0.58,
+  "orig": -0.487,
+  "with": [
+   "In `restock_r3.py`'s SKU loop, a goods SKU listed above 2x `",
+   "clear_frac 0.6 -> 0.5",
+   "stock_value 70000000 -> 65000000"
+  ],
+  "sales": "146/4970 -> 79/4914"
  },
  "1794170118|stock_value 70000000 -> 65000000": {
-  "status": "unverified",
-  "orig": 0.401
+  "status": "mixed",
+  "aim": -0.152,
+  "share": -0.42,
+  "net_pts": -0.152,
+  "orig": 0.401,
+  "with": [
+   "In `restock_r3.py`'s SKU loop, a goods SKU listed above 2x `",
+   "ask_frac 0.85 -> 0.7, ask_frac_food 0.85 -> 0.7 (undo the 06",
+   "dear_depth 4 -> 5"
+  ],
+  "sales": "114/5078 -> 73/4974"
  },
  "1794173201|market_ask 0.9 -> 0.95": {
-  "status": "unverified",
-  "orig": 0.606
+  "status": "mixed",
+  "aim": 0.153,
+  "share": -0.162,
+  "net_pts": 0.153,
+  "orig": 0.606,
+  "with": [
+   "In `restock_r3.py`'s SKU loop, a goods SKU listed above 2x `",
+   "ask_frac 0.85 -> 0.7, ask_frac_food 0.85 -> 0.7 (undo the 06",
+   "dear_depth 4 -> 5"
+  ],
+  "sales": "110/5137 -> 38/4825"
  },
  "1794174228|ask_frac 0.7 -> 0.85, floor_frac 0.67 -> 0.45, min_margin 0.02 -> 0.14, step 0.4 -> 0.5, max_turns 6 -> 4, ask_frac_food 0.7 -> 0.85, floor_frac_food 0.67 -> 0.45": {
-  "status": "unverified",
-  "orig": 0.298
+  "status": "mixed",
+  "aim": 0.781,
+  "share": 0.93,
+  "net_pts": 0.781,
+  "orig": 0.298,
+  "with": [
+   "In `restock_r3.py`'s SKU loop, a goods SKU listed above 2x `",
+   "ask_frac 0.85 -> 0.7, ask_frac_food 0.85 -> 0.7 (undo the 06",
+   "dear_depth 4 -> 5"
+  ],
+  "sales": "92/4991 -> 37/4788"
  },
  "1794179139|dear_depth 5 -> 4": {
   "status": "mixed",

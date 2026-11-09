@@ -575,3 +575,7 @@
 {"t": 1794168600, "ours_n": 6, "ours_value": 70703, "ours_margin": 15335.125, "mkt_n": 429, "mkt_value": 67698663, "from": "backfill"}
 {"t": 1794169200, "ours_n": 4, "ours_value": 56747, "ours_margin": 16003.75, "mkt_n": 461, "mkt_value": 105960493, "from": "backfill"}
 {"t": 1794169800, "ours_n": 12, "ours_value": 197155, "ours_margin": 39199.625, "mkt_n": 442, "mkt_value": 84095197, "from": "backfill"}
+{"t": 1794201000, "ours_n": 24, "ours_value": 9271307, "ours_margin": 1727054.1625939847, "mkt_n": 461, "mkt_value": 105015633}
+{"t": 1794201600, "ours_n": 10, "ours_value": 5820589, "ours_margin": 557627.2467105261, "mkt_n": 528, "mkt_value": 113209661}
+{"t": 1794202200, "ours_n": 19, "ours_value": 10445525, "ours_margin": 1444370.1622807013, "mkt_n": 480, "mkt_value": 107946133}
+{"t": 1794170400, "ours_n": 9, "ours_value": 295045, "ours_margin": 39319.8125, "mkt_n": 477, "mkt_value": 97687920, "from": "backfill"}

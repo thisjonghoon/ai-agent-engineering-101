@@ -36,7 +36,7 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 \node[member] (s2) at (4.0,-4.3) {\textbf{senior} 25\%\\ premium};
 \node[member] (s3) at (6.1,-4.3) {\textbf{junior} 15\%\\ volume};
 \node[font=\scriptsize\bfseries, anchor=south] (stl) at (4.0,-3.6) {sales team (styles over the strategy)};
-\node[code=52mm] (seller) at (4,-6.3) {\textbf{seller\_r3.py}: rule prices, honest grade claims, the unit that lasts as long as the buyer asks\\ \scriptsize haiku negotiator measured, turned off (lost to the rule)};
+\node[code=52mm] (seller) at (4,-6.3) {\textbf{seller\_r3.py}: rule prices, honest grade claims, the unit that lasts as long as the buyer asks\\ \scriptsize 72 h warranty on every goods grade; haiku negotiator off (lost to the rule)};
 \node[code=24mm] (restock) at (2.3,-8.5) {\textbf{restock\_r3}\\ \scriptsize breadth, depth where settles and demand show};
 \node[ctx=26mm] (inv) at (5.9,-8.5) {\texttt{inventory.json}\\ units, cost, grade, shelf life};
 \begin{scope}[on background layer]
@@ -59,7 +59,7 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 \end{scope}
 
 % ================= forum writers (centre right)
-\node[model=50mm] (forum) at (13,-3.3) {\textbf{forum column} (Jangbogi Radar): 8 writers, one per kind (deals, weather, haggle meter, freshness, claims ...)\\ \scriptsize facts by code from the ledger; haiku writers, a GPT editor per draft, every number checked by code; \texttt{agent-data} JSON line};
+\node[model=50mm] (forum) at (13,-3.3) {\textbf{forum column} (Jangbogi Radar): 8 writers, one per kind (deals, weather, haggle meter, freshness, claims ...)\\ \scriptsize facts by code from the ledger; haiku writers, a GPT editor per draft (plain facts while GPT is out), every number checked by code; \texttt{agent-data} JSON line};
 
 % ================= A/B inside the shop (centre left)
 \node[code=96mm, font=\scriptsize, minimum height=6mm, inner sep=2pt] (ab) at (12.9,-7.5) {\textbf{A/B inside the shop}: each talk draws value A or B at the same hour (Thompson sampling); winner at $p \ge 0.95$ after 30 talks each, on paid shop points per talk; a tie after 250 talks or 2 h (now: the goods ask)};
@@ -72,7 +72,7 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 \node[model=26mm] (sp2) at (9.4,-11.2) {\textbf{merchandising}\\ \scriptsize what and how much to stock};
 \node[model=26mm] (sp3) at (12.6,-11.2) {\textbf{buying}\\ \scriptsize buyer numbers, buyer recruit};
 \node[model=26mm] (sp4) at (15.8,-11.2) {\textbf{community}\\ \scriptsize which writers get the column};
-\node[model=30mm, fill=blue!3] (gpt) at (6.6,-13.5) {\textbf{reviewer}\\ \scriptsize GPT (opus while out): keep / trim / reject};
+\node[model=30mm, fill=blue!3] (gpt) at (6.6,-13.5) {\textbf{reviewer}\\ \scriptsize GPT (opus while out): keep / trim / reject each of the four};
 \node[model=34mm, fill=blue!15] (mgr) at (10.8,-13.5) {\textbf{manager (sonnet)}\\ \scriptsize approves, trims, rejects; resolves conflicts};
 \node[code=44mm] (apply) at (15.6,-13.5) {\textbf{code}: bounds; one shop change at a time; 2 h verdict on shop points (MIXED if another change); fast guard on value share; promotions};
 \begin{scope}[on background layer]
@@ -129,7 +129,7 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 \draw[->] (plans.west) -| node[lab, pos=0.7]{strategy, styles} ([xshift=-8mm]restock.south);
 \draw[->] (plans.east) -| node[lab, pos=0.8]{plan, styles} ([xshift=-1mm]guards.south);
 \draw[->] (ab.west) -| node[lab, pos=0.25]{A or B per talk} ([xshift=12mm]seller.south);
-\draw[->] ([xshift=40mm]ab.south) -- node[lab, left=1mm, pos=0.55]{margin per arm; winner into the strategy} ([xshift=40mm]ab.south |- metabox.north);
+\draw[->] ([xshift=40mm]ab.south) -- node[lab, left=1mm, pos=0.55]{paid shop points per arm; winner into the strategy} ([xshift=40mm]ab.south |- metabox.north);
 \draw[->] (user) -- (supv);
 \draw[->] (supv) -- (advice);
 \draw[->, violet!70!black] (advice.west) -- node[lab]{advice} (metabox.east |- advice.west);
@@ -143,6 +143,8 @@ Dashed: runs inside kit v4. Purple: the supervisor, who only advises and stops b
 \draw[->] (5.0,-14.45) |- node[lab, pos=0.35]{code ideas} (eng.west);
 \draw[->, dashed] (ledger.north) -- node[lab]{results} (ledger.north |- advice.south);
 \foreach \c in {c1,c2,c3,c4,c5} \draw[->, green!45!black] (\c.north) -- ++(0,0.9);
+\draw[->, green!45!black, thick] (membox.west) -- ++(-0.7,0) |- node[lab, pos=0.3, rotate=90, fill=white]{read every cycle: lessons, re-judged past, tables} (metabox.west);
+\draw[->, green!45!black] (mem.north) -- node[lab, right=0.5mm]{bans, expected price} ([xshift=12mm]guards.south);
 
 % ================= the kit's baseline
 \node[draw=black!40, dotted, fill=black!2, align=left, text width=250mm, font=\scriptsize, anchor=north]

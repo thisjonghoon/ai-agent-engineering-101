@@ -24,6 +24,7 @@ GOAL = ("GOAL: first place on the board's Players table (our shop ALL + our buye
 MERCH_KEYS = ("dear_first", "reserve_cash", "stock_value", "max_list", "min_shelf_hours", "depth", "spread_low", "spread_high",
               "sku_depth", "goods_frac", "food_first", "window_depth", "order_weight", "surge_max", "dear_depth", "lines", "breadth_lines", "sku_cap")
 MANAGER_MODEL = "sonnet"
+FALLBACK_REVIEWER = "opus"     # when GPT does not answer: a different model from the manager (sonnet) and specialists
 REVIEWER = ["hermes", "--safe-mode", "--ignore-rules", "-z"]   # GPT through the user's ChatGPT plan (Hermes, 11/4)
 REVIEW = """You are a skeptical reviewer on a different model from the team (GPT), checking four specialists'
 proposals for an online shop and buyer agent in a market of AI agents, before their manager decides. For each
@@ -217,10 +218,18 @@ async def decide(now, cur, plan, hist, after, advice, bounds, buyer_bounds, ab_p
         {k: v for k, v in (a or {}).items() if k in ("proposal", "ab", "recruit", "playbook", "why", "ideas")},
         ensure_ascii=False) for r, a in got.items())
     standing = json.dumps({k: now.get(k) for k in ("standing", "players")}, ensure_ascii=False)
-    review = await second_opinion(proposals)
+    review, who = await second_opinion(proposals), "GPT"
+    if not review and os.environ.get("META_GPT", "1") != "0":
+        # 11/9: the ChatGPT plan hit its usage limit (until 11/11 15:36) and the review returned None silently from
+        # 09:09 on, so the manager decided alone for hours with nothing in the log. Now the failure is logged and
+        # a different Claude model than the manager reads the same proposals with the same reviewer prompt
+        harness.log("TEAM", f"second opinion (GPT) failed; asking {FALLBACK_REVIEWER} instead")
+        review, who = await harness.ask(REVIEW.format(proposals=proposals[:12000]), model=FALLBACK_REVIEWER,
+                                        timeout=120), FALLBACK_REVIEWER
+        review = review if isinstance(review, dict) else None
     if review:
-        harness.log("TEAM", f"second opinion (GPT): {harness.clip(json.dumps(review, ensure_ascii=False), 300)}")
-        proposals += "\n\nSecond opinion from a reviewer on another model (GPT; advice, weigh it):\n" + json.dumps(
+        harness.log("TEAM", f"second opinion ({who}): {harness.clip(json.dumps(review, ensure_ascii=False), 300)}")
+        proposals += f"\n\nSecond opinion from a reviewer on another model ({who}; advice, weigh it):\n" + json.dumps(
             review, ensure_ascii=False)
     # the manager decides once a cycle: the larger model (sonnet), where judgment matters most; specialists use haiku
     m = await harness.ask(MANAGER.format(goal=GOAL, standing=standing, hist=history(hist, after, ()), advice=advice,

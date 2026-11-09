@@ -277,6 +277,10 @@
   {
    "t": 1794225887.340246,
    "text": "Paid share of our agreed deals fell: 300k+ goods agreed ~29M at 18:20-19:20 and ~24M at 19:20-20:20, while paid settles were 21.1M and 12.1M (ledger, gross; refunds 3.2M on top, the tail of grade C warranties sold before 15:11, ending ~21:11). Buyers agree with several shops and pay one. Look for what makes a buyer pay us after agreeing (speed of the receipt, warranty length, certificate shown, price vs the other quotes) once the floor_frac verdict is in (22:00)."
+  },
+  {
+   "t": 1794239585.637582,
+   "text": "00:5x: our share of the market's paid value fell 6.3% -> 2.7% in the last hour while the market held (~540M/h). Not floor_frac (it only lowers floors): the cheap old dear units (cost ~0.51 of list, many C) sold out, and the 300k+ talks now meet A units at cost ~0.60, so floors and opening asks rose to ~0.70 of list against a market median of 0.67-0.70; 300k+ deals fell 66 -> 37 an hour. Restock buys at ~0.60 of list; the stuck rule lowers units held 6 h. Consider which SKUs' going price clears cost ~0.60 x 1.05 by enough to win quotes."
   }
  ]
 }

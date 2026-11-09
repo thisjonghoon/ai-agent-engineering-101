@@ -12,12 +12,15 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    only the ones judged one at a time from now on.
    [since 11/7, amended 11/9 12:2x and 14:4x; from: receipts that never settled (11/7), 21 holds on unverified "both
    directions" verdicts, the backfilled re-judge (11/9); review: never]
-3. While we catch up (from 11/9), change a number for everyone when the paid-sales evidence is clear and let the 2 h
-   verdict and the fast guard (half our market share in the first hour reverts it) judge it; A/B only risky buyer or
-   code changes, and the goods ask A/B the supervisor started at 13:2x (0.75 vs 0.70, judged on paid shop points per
-   talk). Shop changes run one at a time: none while another is judged (code enforces it, the slot shows in the notes).
-   [since 11/9 11:3x, amended 13:2x; from: the user (A/Bs may pause while we catch up), then a review that found 87 of
-   90 verdict windows mixed; review: once we are back in the top 15]
+3. First priority: into the top 10 of the 45 students (11/9 16:0x: #20, 1.249 vs 1.556 for #10; the gap is the
+   shop's book and revenue, i.e. paid sales volume). Change a number for everyone when the paid-sales evidence is
+   clear and let the 2 h verdict and the fast guard (half our market share in the first hour reverts it) judge it; no
+   A/B unless a change is risky and cannot be judged otherwise. The only limits are bankruptcy and the market's rules:
+   using the rules to our advantage is allowed. Shop changes run one at a time: none while another is judged (code
+   enforces it, the slot shows in the notes). Note: goods asks mostly sit on the warranty floor or on the market line
+   (list x p75 x market_ask); ask_frac set only 11 of 90 goods asks in the 13:2x A/B.
+   [since 11/9 11:3x, amended 13:2x and 16:0x; from: the user (A/Bs stop unless needed, top 10 first, anything but
+   bankruptcy or rule breaking), a review that found 87 of 90 verdict windows mixed; review: once we are in the top 10]
 4. Read the rivals table and the edges table each cycle; the cheapest points are where a small move passes many rivals.
    [since 11/9 11:0x; from: the user (follow the leaders all the time); review: never]
 5. Before changing a number, read its value now (shown beside its past verdicts); never move a number toward a value

@@ -306,13 +306,20 @@ def buyer_trial_verdict():
     # the board's own terms (11/9 review): buyer points/h = paid deals/h x (saved per deal - our running mean), so a
     # trial that buys less but saves more is weighed as the board weighs it; the close-rate guard (20%) is gone
     pts = metrics_r3.change("buyer_pts_h", a, b)
-    win = t["B"] if pts is not None and pts > 0.03 else t["A"]
+    # and the saved rate must differ by more than twice its standard error (11/9 review: MAX_RAISE 0.35 was kept on
+    # a difference of 0.3 sd); without both, A stays
+    z = None
+    if a.get("buyer_saved_sd") and b.get("buyer_saved_sd") and a.get("buyer_saved_n") and b.get("buyer_saved_n"):
+        se = (a["buyer_saved_sd"] ** 2 / a["buyer_saved_n"] + b["buyer_saved_sd"] ** 2 / b["buyer_saved_n"]) ** 0.5
+        z = ((b.get("buyer_saved_deal") or 0) - (a.get("buyer_saved_deal") or 0)) / se if se else None
+    win = t["B"] if pts is not None and pts > 0.03 and (z is None or z > 2) else t["A"]
     plan = dict(BUYER_DEFAULTS, **{k: v for k, v in read_json(BUYER_PLAN, {}).items() if k in BUYER_BOUNDS})
     plan[t["param"]] = win
     BUYER_PLAN.write_text(json.dumps(dict(plan, t=time.time()), indent=1), encoding="utf-8")
     BUYER_TRIAL.write_text("{}", encoding="utf-8")
     verdict = (f"{'kept' if win == t['B'] else 'not taken'}; buyer points/h {a.get('buyer_pts_h')} -> "
-               f"{b.get('buyer_pts_h')}" + (f" ({pts:+.0%})" if pts is not None else "") + f"; saved/deal {a.get('buyer_saved_deal')} -> "
+               f"{b.get('buyer_pts_h')}" + (f" ({pts:+.0%})" if pts is not None else "") +
+               (f", saved difference {z:+.1f} sd" if z is not None else "") + f"; saved/deal {a.get('buyer_saved_deal')} -> "
                f"{b.get('buyer_saved_deal')}, close rate {a.get('buyer_close_rate')} -> {b.get('buyer_close_rate')} "
                f"({a.get('orders')} vs {b.get('orders')} orders, same hours)")
     with CODE_CHANGES.open("a", encoding="utf-8") as f:

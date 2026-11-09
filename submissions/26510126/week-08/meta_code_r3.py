@@ -255,6 +255,15 @@ def check():
             market = (mb["market_value"] / ma["market_value"] if ma.get("market_value") else None,
                       mb["market"] / ma["market"] if ma.get("market") else None)
         text, why = judge(r, before, after, market if not r.get("ab_key") else None)
+        # another change inside a before/after window makes it MIXED (11/9: dc04325 read +398% revenue over hours that
+        # also held the 130M stock cap and the warranty on every grade): recorded, and not reverted on that reading
+        mixed = [] if r.get("ab_key") else [
+            str(x.get("change", ""))[:50] for x in rows if x is not r and abs(x.get("t", 0) - r["t"]) < SPAN
+            and x.get("source") in ("inner loop (number)", "supervisor", "meta (auto)")
+            and not str(x.get("change", "")).startswith("fast guard")]
+        if mixed:
+            text += f"; MIXED with {', '.join(mixed[:3])}"
+            why = [w for w in why if w.startswith("guard")]   # only a collapse (a guard) still reverts it
         text += (f" (A/B: same hours, {before.get('orders')} and {after.get('orders')} orders)" if r.get("ab_key")
                  else f" ({SPAN // 3600} h before against {SPAN // 3600} h after)")
         if why:

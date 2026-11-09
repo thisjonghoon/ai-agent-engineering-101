@@ -116,6 +116,12 @@ def main():
     mr.NUMBER_TRIALS.write_text(json.dumps([{"t": 1000, "changes": {"ask_frac": [0.7, 0.75]}}]))
     case("the slot is busy while a shop number or a shop-file code change is judged, free for buyer code",
          free is None and "def" in (code_busy or "") and "ask_frac" in (mr.shop_busy() or ""), (free, code_busy))
+    # the shop's points count stars: reviews above our mean add, below it take away (11/9 review)
+    pr = {"book": 1e-9, "revenue": 1e-10, "stars": 0.1, "stars_now": 4.5, "reviews_total": 1000}
+    base_pts = metrics_r3.shop_points_h(1000, 10000, pr)
+    up = metrics_r3.shop_points_h(1000, 10000, pr, reviews_h=10, stars_mean=5.0)
+    down = metrics_r3.shop_points_h(1000, 10000, pr, reviews_h=10, stars_mean=3.0)
+    case("five-star reviews raise the shop's points, low ones lower them", down < base_pts < up, (down, base_pts, up))
     # whole writes: a strategy file is replaced in one step, no .tmp left behind
     w = Path(tempfile.mkdtemp(prefix="meta-r3-w-")) / "s.json"
     mr.write_json(w, {"ask_frac": 0.7})

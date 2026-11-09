@@ -260,7 +260,8 @@ def lever_prices(board=None, k=3):
         except (OSError, ValueError):
             return {}
     out = {}
-    for side, term, key in (("shops", "book", "book"), ("shops", "revenue", "revenue"), ("buyers", "saved", "saved")):
+    for side, term, key in (("shops", "book", "book"), ("shops", "revenue", "revenue"), ("shops", "stars", "stars"),
+                            ("buyers", "saved", "saved")):
         rows = [r for r in board.get(side) or [] if r.get("deals")]
         mine = next((r for r in rows if r.get("name") == ME), None)
         if not mine or not isinstance(mine.get(term), (int, float)):
@@ -274,15 +275,39 @@ def lever_prices(board=None, k=3):
         if side == "buyers":
             out["deals_total"] = mine.get("deals") or 0
             out["saved_now"] = mine[term]
+        if key == "stars":
+            out["reviews_total"] = mine.get("reviews") or 0
+            out["stars_now"] = mine[term]
     return out
 
 
-def shop_points_h(margin_h, revenue_h, prices=None):
+def our_stars(t0, t1, base=HERE):
+    """Stars of the verified reviews of our paid deals in [t0, t1) (the market's result entries): only these move our
+    shop's stars, 0.2 of its ALL (11/9 review: the shop's points had no stars term)."""
+    base = Path(base)
+    try:
+        entries = json.loads((base / ".market" / "ledger-recent.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    urls = {(e["data"].get("url") or "").rstrip("/") for e in entries
+            if e.get("kind") == "join" and e["data"].get("name") == ME and e["data"].get("role") == "shop"}
+    return [e["data"]["stars"] for e in entries if e.get("kind") == "result" and t0 <= e.get("ts", 0) < t1
+            and (e.get("data") or {}).get("verified") and isinstance(e["data"].get("stars"), int)
+            and str(e["data"].get("shop") or "").rstrip("/") in urls]
+
+
+def shop_points_h(margin_h, revenue_h, prices=None, reviews_h=0, stars_mean=None):
     """The shop's part of board points/h (Book via paid margin, revenue). 11/9: the buyer's saved term was 82-91% of
     board_pts_h over a 2 h window, so shop changes judged on the total read the buyer's swings; a shop change is judged
     on this part alone."""
     p = prices if prices is not None else lever_prices()
-    return round(margin_h * p.get("book", 0) + revenue_h * p.get("revenue", 0), 6) if p else None
+    if not p:
+        return None
+    pts = margin_h * p.get("book", 0) + revenue_h * p.get("revenue", 0)
+    if reviews_h and stars_mean is not None and "stars" in p and p.get("reviews_total"):
+        # each new review moves our mean stars by (its stars - the mean now) / reviews so far, as saved moves
+        pts += reviews_h * (stars_mean - p["stars_now"]) / p["reviews_total"] * p["stars"]
+    return round(pts, 6)
 
 
 def buyer_points_h(paid_h, saved_deal, prices=None):
@@ -334,6 +359,7 @@ def window(t0, t1, base=HERE, keep=None):
     dear_paid = sum(1 for m in paid if m.get("order") in dear)
     rates = [(lists[m["order"]] - m["price"]) / lists[m["order"]] for m in paid
              if lists.get(m.get("order")) and m.get("price") is not None]
+    stars = our_stars(t0, t1, base)
     surplus = sum((lists.get(m.get("order")) or 0) - (m.get("price") or 0) for m in paid if lists.get(m.get("order")))
     sold = settled_sales(t0, t1, base)
     try:
@@ -348,7 +374,12 @@ def window(t0, t1, base=HERE, keep=None):
     saved_deal = sum(rates) / len(rates) if rates else None
     return {
         "board_pts_h": board_points_h(margin_h, revenue_h, len(paid) / hours, saved_deal),
-        "shop_pts_h": shop_points_h(margin_h, revenue_h),
+        "shop_pts_h": shop_points_h(margin_h, revenue_h, reviews_h=len(stars) / hours,
+                                    stars_mean=sum(stars) / len(stars) if stars else None),
+        "shop_stars": round(sum(stars) / len(stars), 3) if stars else None,
+        "buyer_saved_sd": round((sum((x - sum(rates) / len(rates)) ** 2 for x in rates) / (len(rates) - 1)) ** 0.5, 4)
+        if len(rates) > 1 else None,
+        "buyer_saved_n": len(rates),
         "buyer_pts_h": buyer_points_h(len(paid) / hours, saved_deal),
         "shop_revenue_h": round(revenue_h),
         "buyer_close_rate": round(len(paid) / len(orders), 3) if orders else None,

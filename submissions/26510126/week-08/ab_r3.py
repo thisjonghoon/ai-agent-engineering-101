@@ -75,7 +75,7 @@ def paid_rewards(exp_id):
         entries = []
     ours = {(e.get("data") or {}).get("url", "").rstrip("/") for e in entries if e.get("kind") == "join"
             and (e.get("data") or {}).get("name") == "thisjonghoon" and (e.get("data") or {}).get("role") == "shop"}
-    paid = {}
+    paid = {}                           # (sku, amount) -> settle times; each settle is used by one talk only
     for e in entries:
         d = e.get("data") or {}
         if e.get("kind") == "settle" and str(d.get("shop") or "").rstrip("/") in ours:
@@ -94,8 +94,15 @@ def paid_rewards(exp_id):
         if not ab or ab[0] != exp_id:
             continue
         if x.get("event") == "deal" and x.get("price") and x.get("list_price"):
-            got = any(x["t"] - 60 <= ts <= x["t"] + 900 for ts in paid.get((x.get("sku"), x["price"]), []))
-            r = ((x["price"] - (x.get("cost") or 0)) / x["list_price"] + ratio * x["price"] / x["list_price"]) if got else 0.0
+            if time.time() - x["t"] < 900:
+                continue                    # its settle may still come: not counted yet, rather than counted as 0
+            ts_list = paid.get((x.get("sku"), x["price"]), [])
+            hit = next((ts for ts in ts_list if x["t"] - 60 <= ts <= x["t"] + 900), None)
+            if hit is not None:
+                ts_list.remove(hit)
+            # in won, per 100,000 (11/9 review): over list price a 30k sale weighed what a 600k one did, while Book
+            # grows in won; the prior's 0.10 is then a 10,000-won point
+            r = ((x["price"] - (x.get("cost") or 0)) + ratio * x["price"]) / 100_000 if hit is not None else 0.0
         elif x.get("event") in ("walk", "gone"):
             r = 0.0
         else:

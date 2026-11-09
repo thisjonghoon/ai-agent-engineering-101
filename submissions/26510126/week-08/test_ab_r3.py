@@ -80,6 +80,20 @@ def main():
     case("a buyer number that closes fewer orders but earns more buyer points/h is kept", got2 == {"CAP": (0.85, 0.8)},
          str(got2))
 
+    # ...but not when the saved rates differ by less than twice their standard error
+    meta_r3.BUYER_TRIAL.write_text(json.dumps({"key": "CAP-t3", "param": "CAP", "A": 0.85, "B": 0.8,
+                                               "started": time.time() - 4000}))
+    def fake_window3(t0, t1, base=None, keep=None):
+        b = keep("o-b") if keep else False
+        return {"buyer_pts_h": 0.0016 if b else 0.0012, "orders": 200, "buyer_saved_deal": 0.36 if b else 0.35,
+                "buyer_saved_sd": 0.2, "buyer_saved_n": 100}
+    meta_r3.metrics_r3.window = fake_window3
+    real_arm, code_ab_r3.arm = code_ab_r3.arm, lambda key, o: "B" if o == "o-b" else "A"
+    got3 = meta_r3.buyer_trial_verdict()
+    code_ab_r3.arm, meta_r3.metrics_r3.window = real_arm, real_window
+    case("more buyer points on a saved difference inside 2 standard errors is not taken", got3 == {"CAP": (0.85, 0.85)},
+         str(got3))
+
     # both arms reach min_n before the draw leans: an arm with fewer ended negotiations is drawn first
     e3 = {"on": True, "id": "t3", "param": "ask_frac", "kind": "goods", "arms": {"A": 0.9, "B": 0.85}, "min_n": 30,
           "p_win": 0.95, "started": time.time()}
@@ -95,20 +109,22 @@ def main():
     # paid reward: only talks the ledger paid earn, in shop points per talk (Book units)
     (TMP / ".market").mkdir(exist_ok=True)
     (TMP / "logs").mkdir(exist_ok=True)
-    now = time.time()
+    now = time.time() - 1000                              # talks older than 15 min: their settles are in
     (TMP / ".market" / "ledger-recent.json").write_text(json.dumps([
         {"kind": "join", "ts": 0, "data": {"name": "thisjonghoon", "role": "shop", "url": "https://ours.x"}},
         {"kind": "settle", "ts": now + 30, "data": {"shop": "https://ours.x", "sku": "S1", "amount": 700}},
         {"kind": "settle", "ts": now + 30, "data": {"shop": "https://other.x", "sku": "S2", "amount": 750}}]))
     talk = lambda sku, price, arm, ev: json.dumps({"t": now, "sku": sku, "price": price, "cost": 500, "list_price": 1000,
                                                     "event": ev, "ab": ["paid-1", arm]})
-    (TMP / "logs" / "talks_r3.jsonl").write_text("\n".join([talk("S1", 700, "B", "deal"), talk("S2", 750, "A", "deal"),
-                                                             talk("S3", None, "A", "walk")]) + "\n")
+    (TMP / "logs" / "talks_r3.jsonl").write_text("\n".join([talk("S1", 700, "B", "deal"), talk("S1", 700, "B", "deal"),
+                                                             talk("S2", 750, "A", "deal"), talk("S3", None, "A", "walk")]) + "\n")
     ab_r3.EXPERIMENT.write_text(json.dumps({"on": True, "id": "paid-1", "param": "ask_frac", "kind": "goods",
                                          "arms": {"A": 0.75, "B": 0.70}, "reward": "paid"}))
     r = ab_r3.rewards("paid-1")
-    case("paid reward: our settled deal earns margin plus revenue, an unpaid agreement and a walk earn 0",
-         r.get("A") == [0.0, 0.0] and len(r.get("B", [])) == 1 and r["B"][0] > 0.2, r)
+    case("paid reward: our settled deal earns margin plus revenue in won/100k, one settle pays one talk only, "
+         "an unpaid agreement and a walk earn 0",
+         r.get("A") == [0.0, 0.0] and sorted(r.get("B", [])) == [0.0, r["B"][0] or r["B"][1]]
+         and max(r["B"]) > 0.002, r)
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
 
 

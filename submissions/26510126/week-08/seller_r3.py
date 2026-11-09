@@ -68,7 +68,8 @@ DEFAULTS = {"ask_frac": 0.95, "floor_frac": 0.78, "min_margin": 0.10, "step": 0.
             "clear_hours": 6, "clear_frac": 0.6, "warranty_hours": 0, "max_turns": 6,
             "endgame_hours": 24, "endgame_frac": 1.0, "final_hours": 6, "final_frac": 0.6,
             "ask_frac_food": 0.95, "floor_frac_food": 0.78, "fresh_premium": 0.10,
-            "goods_age_days": 5, "aged_margin": 0.03, "model_share": 0.5, "market_ask": 1.0}
+            "goods_age_days": 5, "aged_margin": 0.03, "model_share": 0.5, "market_ask": 1.0,
+            "stuck_hours": 6, "stuck_frac": 0.95}
 ROUND_END = 1794927540                                       # 2026-11-17 23:59 KST: stock left then is a loss
 OFFER = re.compile(r"(?<![A-Za-z0-9])\d[\d,]*(?![A-Za-z0-9])")   # a number on its own, not the digits of a SKU
 FOOD_CUTS = (0.80, 0.45)                                     # shelf life left: A at or above 80%, B at or above 45%
@@ -357,6 +358,14 @@ def prices(u, s):
     # a warranted unit never goes under its cost plus margin after the refunds we expect, whatever drop came above
     if u.get("kind") == "goods" and s["warranty_hours"] > 0 and grade in WARRANTY_Q:
         floor = max(floor, cost * (1 + s["min_margin"]) / (1 - WARRANTY_Q[grade]))
+    # stuck goods (11/9 16:0x): 50 grade-A 450k+ units (41.7M of 125M stock) sat on floors above the market's p75 and
+    # opened at the floor in 413 of 543 talks, closing 17% against 42% where the market line was above it. The market
+    # allows a sale under cost (it costs the shop); the user: only bankruptcy and the rules are limits. Goods held
+    # stuck_hours whose market line is under their floor follow it down to stuck_frac of cost, warranty or not:
+    # ~6% of cost lost once frees the capital for faster lines
+    if u.get("kind") != "food" and cap and cap < floor and u.get("supplied_at") and \
+            (time.time() - u["supplied_at"]) / 3600 > s.get("stuck_hours", 6):
+        floor = max(cost * s.get("stuck_frac", 0.95), cap)
     ask = max(min(lp * min(ask_frac, 1.0), cap or lp), floor)
     return int(round(ask)), int(round(min(floor, ask)))
 

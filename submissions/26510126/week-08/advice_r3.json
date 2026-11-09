@@ -289,6 +289,10 @@
   {
    "t": 1794243918.139307,
    "text": "New shop number stuck_hours (seller: goods held this long whose floor is above the market line follow it down to 0.95 of cost; now 6, bounds 2-12). Adverse selection: within a SKU the cheaper units sell first, so the dear units left sit above the market until stuck_hours. At 02:0x 39 units of 300k+ (23.4M) sat above the market line, all under 6 h old; 300k+ deals fell 61 -> 26 an hour and our paid share 5.8% -> 1.8%. A candidate for the next free slot (03:43)."
+  },
+  {
+   "t": 1794254714.1439512,
+   "text": "The 05:02 fast guard revert of stuck_hours 5 -> 6 was a false alarm: in its hour our count share ROSE 3.61% -> 4.85% while the value share fell 4.64% -> 2.44%, because the hour before held the one-off release of stuck 300k+ units (34.9M at 03:xx). stuck_hours only lowers floors of old units, it cannot cut sales. The guard now needs the count share to fall too (c23d6fd). Retry stuck_hours 5 (or 4) at the next free slot."
   }
  ]
 }

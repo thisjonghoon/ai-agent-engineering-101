@@ -47,6 +47,7 @@ MD = Path(os.environ.get("MARKET_DIR") or HERE / ".market")
 CAP = 0.9            # never pay more than this share of the SKU's list price
 PRICE_GUESS = 0.75   # expected price as a share of list price with a shop we never paid (cost is 25-75% of list)
 FOOD_MARGIN = 1.1    # food must have use_within_hours x this left at checkout (the kit's clock and the shop's differ)
+GRADE_SECS = 3 * 3600   # a shop and SKU that sent a grade we do not pay for is skipped this long
 BREAK_HOURS = 6          # goods break only within 6 h of the sale (agent.md)
 GOOD_GRADES = ["A", "B"]  # C is refurbished: the most likely to break after the sale
 # Grade C goods (11/4, the ledger's last 24 h: A broke 1.4%, B 5.2%, C 17.9% of settled units). A settled deal is
@@ -180,6 +181,11 @@ def sync_kit_files(memory, remember):
         h = SHELF_LEFT.search(p.get("reason") or "")
         if h and not p.get("paid") and shop and p.get("item"):
             avoid_add(shop, p["item"], "short shelf life", SHORT_SECS, hours=float(h.group(1)))
+        # a grade the policy does not pay for (a B/C with no 6 h warranty): the same shop sent the same SKU as grade C
+        # three times in an hour on 11/9 20:1x, each a full talk for a receipt we would not pay
+        g = re.search(r"grade ([ABC]), the policy accepts", p.get("reason") or "")
+        if g and not p.get("paid") and shop and p.get("item"):
+            avoid_add(shop, p["item"], f"sent grade {g.group(1)} without a warranty", GRADE_SECS)
     seen_broken = {(m.get("name"), m.get("broke_at")) for m in memory if m.get("kind") == "broken"}
     for b in lines(MD / "broken.jsonl"):
         key = (b.get("name"), b.get("broke_at"))

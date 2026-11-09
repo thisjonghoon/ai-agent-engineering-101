@@ -199,6 +199,13 @@ def main():
     case("broken.jsonl matched to our purchase and shop", len(broke) == 1 and broke[0]["shop"] == "good-shop" and broke[0]["covered"] is False, str(broke))
     buyer_r3.sync_kit_files(mem, market_buyer.remember)
     case("sync is idempotent", len([m for m in market_buyer.load_memory() if m.get("kind") in ("payment", "broken")]) == 2)
+    with open(MD / "payments.jsonl", "a") as f:
+        f.write(json.dumps({"order": "o-g", "shop": good, "item": "GC", "price": 13786, "paid": False,
+                            "reason": "not paying: grade C, the policy accepts ['A']"}) + "\n")
+    buyer_r3.sync_kit_files(market_buyer.load_memory(), market_buyer.remember)
+    gav = next((v for k, v in buyer_r3.avoid_load().items() if k.endswith("|GC")), {})
+    case("a shop that sent grade C without a warranty is skipped for that SKU a while",
+         "grade C" in gav.get("why", "") and gav.get("until", 0) > time.time() + 3000, str(gav))
 
     # 6. forum: the buyer run in case 2 already posted the liar-shop facts; within 5 minutes nothing more is sent,
     # and once 5 minutes have passed the next note covers only what is new (the o-1 deal, ledger #777)

@@ -193,8 +193,11 @@ def record_buckets(base=HERE, now=None):
     settles = _settles(base)
     if not settles:
         return 0
-    first = min(e["ts"] for e in settles)
-    todo = [b for b in range((int(first) // BUCKET + 1) * BUCKET, int(now) // BUCKET * BUCKET, BUCKET) if b not in done]
+    first, last = min(e["ts"] for e in settles), max(e["ts"] for e in settles)
+    # only buckets the cache has surely caught up on (15 min before its newest settle): a fetch that failed or lagged
+    # would otherwise file a half-empty bucket for good (11/9 review: "ledger fetch failed ReadTimeout" at 13:0x)
+    end = min(int(now), int(last) - 900) // BUCKET * BUCKET
+    todo = [b for b in range((int(first) // BUCKET + 1) * BUCKET, end, BUCKET) if b not in done]
     if not todo:
         return 0
     rows = {b: {"t": b, "ours_n": 0, "ours_value": 0, "ours_margin": 0, "mkt_n": 0, "mkt_value": 0} for b in todo}

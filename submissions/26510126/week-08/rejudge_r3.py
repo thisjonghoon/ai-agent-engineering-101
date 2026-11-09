@@ -25,7 +25,7 @@ HERE = Path(__file__).resolve().parent
 OUT = Path("logs") / "rejudged_r3_v2.json"
 CHANGES = Path("logs") / "code_changes_r3.jsonl"
 SPAN = 2 * 3600          # the number verdict's span (meta_r3.NUMBER_CHECK)
-NOISE = 0.05             # a move under 5% either way is flat
+NOISE = 0.30             # flat under 30% either way: two 2 h windows of our value share differ by sd ~0.32 with no change (11/9 review)
 
 
 def key(r):
@@ -78,7 +78,7 @@ def judge(r, base=HERE, rows=()):
                 "sales": f"{a['ours_n']}/{a['mkt_n']} -> {b['ours_n']}/{b['mkt_n']}"}
     if abs(aim) < NOISE:
         status = "flat"
-    elif not isinstance(orig, (int, float)) or abs(orig) < NOISE:
+    elif not isinstance(orig, (int, float)) or abs(orig) < 0.05:   # the raw verdict's own sign counts from 5%
         status = "up" if aim > 0 else "down"
     else:
         status = "confirmed" if (aim > 0) == (orig > 0) else "reversed"

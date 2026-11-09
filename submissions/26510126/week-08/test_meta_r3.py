@@ -63,7 +63,8 @@ def main():
     # 2b. the 10-minute buckets: filed from the cache, then used once the cache no longer reaches back
     tb = Path(tempfile.mkdtemp(prefix="meta-r3-b-"))
     b0 = (int(time.time()) // 600 - 30) * 600           # 30 buckets ago, on a bucket edge
-    ledger(tb, [(b0 + 60, "us", 100), (b0 + 120, "x", 300), (b0 + 700, "x", 600), (b0 + 1300, "us", 50)])
+    ledger(tb, [(b0 + 60, "us", 100), (b0 + 120, "x", 300), (b0 + 700, "x", 600), (b0 + 1300, "us", 50),
+                (b0 + 3000, "x", 0)])                    # the cache has caught up 15 min past the span
     added = metrics_r3.record_buckets(tb)
     again = metrics_r3.record_buckets(tb)
     case("closed buckets are filed once", added >= 3 and again == 0, (added, again))

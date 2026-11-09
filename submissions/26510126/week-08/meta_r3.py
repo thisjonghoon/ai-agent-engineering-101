@@ -49,8 +49,8 @@ EVERY = 15 * 60
 # at cost, so stock only costs score when it ages or breaks, and the top shops turn 1.5B of revenue to our 0.38B
 BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min_margin": (0.02, 0.40, 0.04),
           "step": (0.2, 0.7, 0.1), "clear_hours": (2, 24, 4), "clear_frac": (0.3, 1.0, 0.1),
-          "warranty_hours": (0, 6, 2), "max_turns": (3, 8, 1),
-          "reserve_cash": (700_000, 3_000_000, 250_000), "stock_value": (500_000, 150_000_000, 10_000_000),
+          "warranty_hours": (0, 72, 12), "max_turns": (3, 8, 1),
+          "reserve_cash": (700_000, 10_000_000, 1_000_000), "stock_value": (500_000, 150_000_000, 10_000_000),
           "max_list": (30_000, 3_000_000, 300_000), "dear_first": (0.0, 3.0, 0.5), "min_shelf_hours": (24, 720, 48), "depth": (1, 6, 1),
           "endgame_hours": (12, 24, 6), "endgame_frac": (1.0, 1.2, 0.1), "final_hours": (2, 12, 2),
           "final_frac": (0.3, 1.0, 0.1), "ask_frac_food": (0.70, 1.00, 0.05), "floor_frac_food": (0.45, 0.95, 0.05),
@@ -355,8 +355,8 @@ def shop_busy(now=None):
     now = now or time.time()
     rows = read_json(NUMBER_TRIALS, [])
     if rows:
-        r = min(rows, key=lambda x: x["t"])
-        return (f"{', '.join(r['changes'])} is being judged until "
+        r = max(rows, key=lambda x: x["t"])             # the slot frees when the last one is judged
+        return (f"{len(rows)} shop change(s) being judged, the last ({', '.join(r['changes'])}) until "
                 f"{time.strftime('%H:%M', time.localtime(r['t'] + NUMBER_CHECK))}")
     for x in jl(CODE_CHANGES):
         if x.get("source") == "meta (auto)" and not x.get("verdict") and set(x.get("files") or []) & SHOP_FILES:
@@ -444,7 +444,8 @@ def number_verdicts(now=None):
                                 "evidence": r.get("reason"), "metric": "share_value", "share": share,
                                 "after": verdict, "verdict": verdict}, ensure_ascii=False) + "\n")
         out.append(f"{what}: {verdict}")
-    write_json(NUMBER_TRIALS, [r for r in rows if r not in due])
+    # read again before writing: a row the supervisor added while the verdicts were computed stays (11/9 review)
+    write_json(NUMBER_TRIALS, [r for r in read_json(NUMBER_TRIALS, []) if r not in due])
     return out
 
 
@@ -488,7 +489,8 @@ def fast_guard(now=None):
                                ensure_ascii=False) + "\n")
         out.append(f"fast guard reverted {what}: {why}")
     if out:
-        write_json(NUMBER_TRIALS, keep)
+        gone = [r for r in rows if r not in keep]
+        write_json(NUMBER_TRIALS, [r for r in read_json(NUMBER_TRIALS, []) if r not in gone])
     return out
 
 

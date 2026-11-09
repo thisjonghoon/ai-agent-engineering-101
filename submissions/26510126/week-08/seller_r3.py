@@ -365,7 +365,11 @@ def terms(u, s):
     words = ([f"grade {claim}"] if claim else []) + ["market certificate attached"]
     if u.get("kind") == "food" and hours is not None:
         words.append(f"{hours:.0f} h of shelf life left")
-    if u.get("kind") == "goods" and s["warranty_hours"] > 0 and grade == "A":   # B and C break more, we guess
+    # every grade of goods (11/9 review): goods break only within 6 h of the sale (agent.md), so any warranty costs the
+    # same, and buyers that ask for one closed 4% of our 300k+ talks against 41% without (6 h, 367 vs 119 talks) while
+    # the market sells 85% of B and 64% of C with a warranty (72 h most often). Expected refunds (B ~5%, C ~18% of the
+    # price) stay under the margin at our asks; stars stay on a refunded deal
+    if u.get("kind") == "goods" and s["warranty_hours"] > 0:
         t["warranty_hours"] = int(s["warranty_hours"])
         words.append(f"{int(s['warranty_hours'])} h warranty")
     return t, ", ".join(words)

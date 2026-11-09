@@ -1,5 +1,5 @@
 {
- "on": true,
+ "on": false,
  "id": "ask_frac-goods-11091319-paid",
  "param": "ask_frac",
  "kind": "goods",
@@ -11,5 +11,27 @@
  "p_win": 0.95,
  "started": 1794197947.884906,
  "reward": "paid",
- "why": "supervisor, user's go-ahead 11/9 13:1x: first ask vs close rate (fresh review: 0.75 of list closed 11-30%, 0.70 20-35%, mixed with other changes); judged on paid shop points per talk, same hours"
+ "why": "supervisor, user's go-ahead 11/9 13:1x: first ask vs close rate (fresh review: 0.75 of list closed 11-30%, 0.70 20-35%, mixed with other changes); judged on paid shop points per talk, same hours",
+ "result": {
+  "winner": "A",
+  "summary": {
+   "id": "ask_frac-goods-11091319-paid",
+   "param": "ask_frac",
+   "kind": "goods",
+   "A": {
+    "value": 0.75,
+    "n": 51,
+    "deals": 13,
+    "mean_reward": 0.0615
+   },
+   "B": {
+    "value": 0.7,
+    "n": 36,
+    "deals": 3,
+    "mean_reward": 0.0201
+   },
+   "p_B_better": 0.014
+  },
+  "time": 1794200257.120896
+ }
 }

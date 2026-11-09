@@ -129,25 +129,31 @@ TERMS = {"sales": "shop book, revenue, stars_rank", "merch": "shop book, revenue
 def grounded(x, text_of):
     """A lesson's status as its facts allow: 'verified' needs at least one cited fact that is not MIXED, UNVERIFIED or
     without a verdict (the memory study: mark which facts are confirmed; 11/9 a lesson called an MIXED arm verified)."""
-    weak = ("MIXED", "UNVERIFIED", "no verdict", "not re-judged")
+    weak = ("MIXED", "UNVERIFIED", "no verdict", "not re-judged", "not judged", "weak", "raw before/after")
     if x["status"] == "verified" and all(any(w in text_of.get(e, "") for w in weak) for e in x["evidence"]):
         return dict(x, status="unverified")
     return x
 
 
 async def check(area, kept, text_of, orders, ask):
-    """The lessons that a second reading finds true to their cited facts (memory study: check notes against the
-    record, not only that the record exists). Fails open: if the check gives nothing, the lessons stay."""
-    items = "\n".join(f"[{i}] ({x['status']}) {x['rule']}\n" + "\n".join(f"    {e}: {text_of.get(e, '?')[:300]}"
+    """(lessons a second reading finds true to their cited facts, {index: why failed} or None when unchecked).
+    Memory study: check notes against the record. A contradicted lesson is kept as it is (its facts point against
+    its rule by definition; its trap is the point). The check sees the whole orders and whole facts (11/9 review:
+    cut to 4,000 and 300 characters it missed rule 7 and the "weak" tails). Fails open, marked unchecked."""
+    todo = [(i, x) for i, x in enumerate(kept) if x["status"] != "contradicted"]
+    if not todo:
+        return kept, {}
+    items = "\n".join(f"[{i}] ({x['status']}) {x['rule']}\n" + "\n".join(f"    {e}: {text_of.get(e, '?')[:1200]}"
                                                                          for e in x["evidence"])
-                      for i, x in enumerate(kept))
-    ans = await ask(CHECK.format(title=TITLES[area], terms=TERMS[area], orders=orders[:4000], items=items),
-                    model="sonnet", timeout=180, max_chars=30_000)
+                      for i, x in todo)
+    ans = await ask(CHECK.format(title=TITLES[area], terms=TERMS[area], orders=orders[:12000], items=items),
+                    model="sonnet", timeout=180, max_chars=40_000)
     ok = (ans or {}).get("pass")
     if not isinstance(ok, list):
-        return kept, {}
+        return kept, None
+    ok = {int(i) for i in ok if str(i).strip().lstrip("-").isdigit()}
     fail = (ans or {}).get("fail") if isinstance((ans or {}).get("fail"), dict) else {}
-    return [x for i, x in enumerate(kept) if i in ok], fail
+    return [x for i, x in enumerate(kept) if x["status"] == "contradicted" or i in ok], fail
 
 
 def valid(lessons, ids):
@@ -176,7 +182,8 @@ async def dream(area, base=HERE, ask=None, now=None):
     data = load(base)
     cur = data.get(area) or {}
     try:                                                # 11/9 audit: lessons of 14:39 still demanded A/Bs the 13:2x orders dropped
-        orders = (base / "standing_orders_r3.md").read_text(encoding="utf-8")[:6000]
+        import board_terms_r3                           # rendered: the numbers the team reads, not placeholders
+        orders = board_terms_r3.render((base / "standing_orders_r3.md").read_text(encoding="utf-8"))[:12000]
     except OSError:
         orders = "(none)"
     prompt = DREAM.format(title=TITLES[area], max=MAX, facts="\n".join(f"{i}: {x}" for i, _, x in shown),
@@ -188,8 +195,8 @@ async def dream(area, base=HERE, ask=None, now=None):
     text_of = {i: x for i, _, x in shown}
     kept = [grounded(x, text_of) for x in kept]
     kept, failed = await check(area, kept, text_of, orders, ask)
-    if not kept:
-        return None
+    # nothing passed: store the empty set and move t on (11/9 review: returning None left the old, unchecked lessons
+    # injected and re-ran two sonnet calls every cycle)
     when = {i: t for i, t, _ in fs}
     import re
     for x in kept:                                      # the facts' times travel with a lesson; ids are renumbered
@@ -201,7 +208,7 @@ async def dream(area, base=HERE, ask=None, now=None):
     # the meta cycle wrote community's lessons, saved over them
     data = load(base)
     data[area] = {"t": now, "facts": len(fs), "lessons": kept, "history": history[-KEEP_HISTORY:],
-                  "failed_check": failed}
+                  "failed_check": failed if failed is not None else "unchecked"}
     path = base / OUT
     path.parent.mkdir(exist_ok=True)
     tmp = path.with_suffix(".tmp")
@@ -236,9 +243,18 @@ def text(area, base=HERE):
 
 
 USE = Path("logs") / "lessons_use_r3.jsonl"
+HIDE_SHARE = 0.25
 
 
-def record_use(answers, base=HERE, now=None):
+def shown_now(now):
+    """{area: shown?} for this cycle: each area's lessons are hidden in HIDE_SHARE of cycles, drawn from the cycle's
+    quarter-hour and the area (stable within a cycle, independent across areas)."""
+    import hashlib
+    slot = int(now // 900)
+    return {a: int(hashlib.sha1(f"{slot}|{a}".encode()).hexdigest()[:8], 16) / 0xFFFFFFFF >= HIDE_SHARE for a in TITLES}
+
+
+def record_use(answers, base=HERE, now=None, shown=None):
     """One line per specialist answer: the lessons it named, the version it read and the numbers it proposed."""
     now, data = now or time.time(), load(base)
     path = Path(base) / USE
@@ -249,32 +265,47 @@ def record_use(answers, base=HERE, now=None):
             used = [u for u in used if isinstance(u, str) and u.startswith("L")] if isinstance(used, list) else []
             prop = (ans or {}).get("proposal") if isinstance((ans or {}).get("proposal"), dict) else {}
             f.write(json.dumps({"t": round(now), "area": role, "used": used, "proposal": sorted(prop),
+                                "shown": (shown or {}).get(role, True),
                                 "version": (data.get(role) or {}).get("t")}) + "\n")
 
 
+def outcome(r, again):
+    """A ledger row's verdict in one word: verified (re-judged), mixed, flat, kept / not taken (buyer A/B), pending."""
+    if r.get("source") == "inner loop (buyer A/B)":
+        a = str(r.get("after") or "")
+        return "kept" if a.startswith("kept") else "not taken" if a.startswith("not taken") else "pending"
+    st = (again.get(rejudge_r3.key(r)) or {}).get("status") or "pending"
+    return {"confirmed": "verified", "reversed": "verified"}.get(st, st)
+
+
 def evaluate(base=HERE, hours=48, now=None):
-    """Memory evaluation (the memory study tested agents with and without memory): per area, how often answers name a
-    lesson, and how the number changes that followed those answers were judged, split by whether a lesson shaped
-    them. A change is matched to an answer when a number it proposed was changed within 20 minutes after it."""
+    """Memory evaluation (the memory study tested agents with and without memory). The comparison that counts is
+    shown vs hidden (meta hides an area's lessons in HIDE_SHARE of cycles): how the changes that followed were
+    judged. Self-reported use (lessons_used) is kept as a side count. A change is matched to an answer when a number
+    it proposed (shop numbers; buyer numbers via their A/B rows) changed within 20 minutes after it; fast-guard
+    reverts are left out. Forum weights have no ledger rows, so community is counted but not judged."""
     now, base = now or time.time(), Path(base)
     uses = [u for u in metrics_r3.jl(base / USE) if now - u.get("t", 0) < hours * 3600]
     try:
         again = json.loads((base / rejudge_r3.OUT).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         again = {}
-    changes = [r for r in metrics_r3.jl(base / rejudge_r3.CHANGES) if r.get("source") == "inner loop (number)"]
+    changes = [r for r in metrics_r3.jl(base / rejudge_r3.CHANGES)
+               if (r.get("source") == "inner loop (number)" and not str(r.get("change", "")).startswith("fast guard"))
+               or r.get("source") == "inner loop (buyer A/B)"]
     out = {}
     for area in TITLES:
         us = [u for u in uses if u["area"] == area]
-        o = {"answers": len(us), "named_a_lesson": sum(1 for u in us if u["used"]),
-             "changes": {"with_lesson": {}, "without": {}}}
+        o = {"answers": len(us), "hidden": sum(1 for u in us if not u.get("shown", True)),
+             "named_a_lesson": sum(1 for u in us if u["used"]), "changes": {"shown": {}, "hidden": {}}}
         for u in us:
             keys = set(u.get("proposal") or [])
             for r in changes:
+                words = str(r.get("change", "")).replace("buyer ", "", 1)
                 if keys and 0 <= r["t"] - u["t"] <= 1200 and \
-                        keys & {p.split(" ")[0] for p in str(r.get("change", "")).split(", ") if " -> " in p}:
-                    st = (again.get(rejudge_r3.key(r)) or {}).get("status") or "pending"
-                    side = o["changes"]["with_lesson" if u["used"] else "without"]
+                        keys & {p.split(" ")[0] for p in words.split(", ") if " -> " in p}:
+                    side = o["changes"]["shown" if u.get("shown", True) else "hidden"]
+                    st = outcome(r, again)
                     side[st] = side.get(st, 0) + 1
         out[area] = o
     return out

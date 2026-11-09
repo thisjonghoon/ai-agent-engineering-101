@@ -98,15 +98,40 @@ def main():
     eb = Path(tempfile.mkdtemp()); (eb / "logs").mkdir()
     t0 = 1794200000
     ls.record_use({"sales": {"proposal": {"step": 0.5}, "lessons_used": ["L2"]},
-                   "merch": {"proposal": {"dear_depth": 5}, "lessons_used": []}}, base=eb, now=t0)
+                   "merch": {"proposal": {"dear_depth": 5}, "lessons_used": []}}, base=eb, now=t0,
+                  shown={"sales": True, "merch": False})
     rows = [{"t": t0 + 60, "source": "inner loop (number)", "change": "step 0.4 -> 0.5"},
             {"t": t0 + 90, "source": "inner loop (number)", "change": "dear_depth 4 -> 5"}]
     (eb / rejudge_r3.CHANGES).write_text("\n".join(json.dumps(r) for r in rows), encoding="utf-8")
     (eb / rejudge_r3.OUT).write_text(json.dumps({rejudge_r3.key(rows[0]): {"status": "mixed"}}), encoding="utf-8")
     ev = ls.evaluate(eb, now=t0 + 100)
     case("lesson use is recorded and matched to the changes that followed",
-         ev["sales"] == {"answers": 1, "named_a_lesson": 1, "changes": {"with_lesson": {"mixed": 1}, "without": {}}}
-         and ev["merch"]["changes"]["without"] == {"pending": 1}, ev)
+         ev["sales"] == {"answers": 1, "hidden": 0, "named_a_lesson": 1, "changes": {"shown": {"mixed": 1}, "hidden": {}}}
+         and ev["merch"]["hidden"] == 1 and ev["merch"]["changes"]["hidden"] == {"pending": 1}, ev)
+    hid = [ls.shown_now(t0 + i * 900) for i in range(400)]
+    case("lessons are hidden in about a quarter of an area's cycles",
+         all(0.15 < 1 - sum(x[a] for x in hid) / 400 < 0.35 for a in ls.TITLES), hid[:3])
+
+    async def all_fail(prompt, **k):
+        if prompt.startswith("Check each lesson"):
+            return {"pass": [], "fail": {"0": "no"}}
+        return {"lessons": [{"rule": "wrong", "evidence": ["F1"], "status": "verified", "trap": ""},
+                            {"rule": "old trap", "evidence": ["F3"], "status": "contradicted", "trap": "it went -20%"}]}
+    b3 = Path(tempfile.mkdtemp())
+    shutil.copytree(base / "logs", b3 / "logs")
+    asyncio.run(ls.dream("merch", b3, ask=all_fail, now=t + 60))
+    got3 = ls.load(b3).get("merch") or {}
+    case("a contradicted lesson skips the check; when the rest fail, t still moves on",
+         [x["rule"] for x in got3.get("lessons") or []] == ["old trap"] and got3.get("t") == t + 60, got3)
+
+    async def str_idx(prompt, **k):
+        if prompt.startswith("Check each lesson"):
+            return {"pass": ["0"]}
+        return {"lessons": [{"rule": "ok", "evidence": ["F3"], "status": "unverified", "trap": ""}]}
+    b4 = Path(tempfile.mkdtemp())
+    shutil.copytree(base / "logs", b4 / "logs")
+    asyncio.run(ls.dream("merch", b4, ask=str_idx, now=t + 70))
+    case("string indexes from the checker count", [x["rule"] for x in (ls.load(b4).get("merch") or {}).get("lessons") or []] == ["ok"])
 
     print(f"{sum(RESULTS)}/{len(RESULTS)} passed")
     return all(RESULTS)

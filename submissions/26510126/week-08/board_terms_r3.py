@@ -88,7 +88,10 @@ def render(text, current=None):
 def append_free_row():
     """row() of the saved board without appending to the history."""
     try:
-        return row(json.loads(BOARD.read_text(encoding="utf-8")))
+        r = row(json.loads(BOARD.read_text(encoding="utf-8")))
+        age = time.time() - BOARD.stat().st_mtime        # the board file is saved every 10 minutes
+        r["as_of"] = time.strftime("%m/%d %H:%M", time.localtime(BOARD.stat().st_mtime)) + (" STALE" if age > 1800 else "")
+        return r
     except (OSError, ValueError, KeyError, IndexError):
         return None
 

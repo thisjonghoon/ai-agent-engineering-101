@@ -208,7 +208,7 @@ async def specialist(role, now, cur, plan, hist, after, advice, bounds, buyer_bo
          " there are new deals), 0-3 each. The cadence is fixed by code at the market's limit (one post per 310 s)."
          " claims and haggle name or fault other shops and draw about one more dislike a post (11/9).")
     data = {k: now.get(k) for k in r["data"] if k in now}
-    data.update(extra_data.get(role, {}))
+    data.update(extra_data.get(role, {}) if isinstance(extra_data.get(role), dict) else {})
     prompt = SPECIALIST.format(goal=GOAL, title=r["title"], task=r["task"], bounds=btxt,
                                data=json.dumps(data, ensure_ascii=False), more=extra_data.get(role + "_text", ""),
                                hist=history(hist, after, tuple(keys)), advice=advice,
@@ -228,7 +228,7 @@ async def decide(now, cur, plan, hist, after, advice, bounds, buyer_bounds, ab_p
                             f"{harness.clip(str((ans or {}).get('why') or 'no answer'), 200)}")
     try:                                    # which lessons each answer leaned on, for lessons_r3.evaluate (11/9)
         import lessons_r3
-        lessons_r3.record_use(got)
+        lessons_r3.record_use(got, shown=extra_data.get("lessons_shown"))
     except Exception as e:
         harness.log("TEAM", f"lessons use not recorded: {type(e).__name__}")
     proposals = "\n".join(f"- {ROLES[r]['title']}: " + json.dumps(

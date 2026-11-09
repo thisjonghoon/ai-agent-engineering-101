@@ -964,8 +964,14 @@ async def cycle():
                  "sales_text": "Retail playbooks (each can be arm B of the A/B test):\n" + playbooks_r3.for_prompt()}
         try:                                            # each specialist reads its own area's lessons (lessons_r3)
             import lessons_r3
+            # memory evaluation (the memory study compared agents with and without memory): an area's lessons are
+            # hidden in HIDE_SHARE of its cycles, drawn per cycle, so lessons_r3.evaluate can compare the verdicts
+            # that followed answers with and without them
+            shown = lessons_r3.shown_now(time.time())
+            extra["lessons_shown"] = shown
             for role in lessons_r3.TITLES:
-                extra[f"{role}_text"] = extra.get(f"{role}_text", "") + lessons_r3.text(role, HERE)
+                if shown.get(role, True):
+                    extra[f"{role}_text"] = extra.get(f"{role}_text", "") + lessons_r3.text(role, HERE)
         except Exception as e:
             harness.log("META", f"lessons not shown: {type(e).__name__}")
         ans = await meta_team_r3.decide(now, cur, plan, hist, after, advice(), BOUNDS, BUYER_BOUNDS,

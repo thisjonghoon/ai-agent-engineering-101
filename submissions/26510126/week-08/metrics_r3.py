@@ -39,7 +39,7 @@ SHOP_TERMS = {"book": 0.5, "revenue": 0.3, "stars": 0.2}
 # the rules of 11/6 06:02: the buyer's first term is saved, the sum over deals of surplus / list price (-1 for a deal that
 # served nothing, 0 if refunded) divided by deals + 100, so a snack and a sofa at 30% off score the same
 BUYER_TERMS = {"saved": 0.5, "forum": 0.3, "deals": 0.1, "posts": 0.1}
-METRICS = ("buyer_close_rate", "buyer_surplus_order", "buyer_paid_h", "shelf_refused_h", "shop_deals_h",
+METRICS = ("board_pts_h", "shop_revenue_h", "buyer_close_rate", "buyer_surplus_order", "buyer_paid_h", "shelf_refused_h", "shop_deals_h",
            "shop_margin_h", "forum_votes_post", "buyer_dear_close", "buyer_secs_order", "buyer_saved_deal")
 LOWER_IS_BETTER = {"shelf_refused_h", "buyer_secs_order"}
 DEAR = 100000
@@ -157,6 +157,58 @@ def settled_sales(t0, t1, base=HERE):
     return out
 
 
+def paid_share(t0, t1, base=HERE):
+    """(our paid sales, the whole market's paid sales) in [t0, t1) from the ledger cache: the fast guard compares our
+    share before and after a change, so the market's own rhythm (night, outages) cancels out."""
+    base = Path(base)
+    try:
+        entries = json.loads((base / ".market" / "ledger-recent.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return 0, 0
+    market = sum(1 for e in entries if e.get("kind") == "settle" and t0 <= e.get("ts", 0) < t1)
+    return len(settled_sales(t0, t1, base)), market
+
+
+def lever_prices(board=None, k=3):
+    """ALL points per unit of Book, revenue and buyer saved where we stand now: the weight times the percentile step of
+    passing the next k rivals, over the distance to the k-th. One price list for every verdict, so a change is judged
+    on what the board pays for it (11/9: the loops judged margin/h, margin per talk or deals/h, each a different aim,
+    and a playbook that won on margin per talk cut revenue and sales)."""
+    if board is None:
+        try:
+            board = json.loads(BOARD.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
+    out = {}
+    for side, term, key in (("shops", "book", "book"), ("shops", "revenue", "revenue"), ("buyers", "saved", "saved")):
+        rows = [r for r in board.get(side) or [] if r.get("deals")]
+        mine = next((r for r in rows if r.get("name") == ME), None)
+        if not mine or not isinstance(mine.get(term), (int, float)):
+            continue
+        above = sorted(v for r in rows if r is not mine and isinstance(v := r.get(term), (int, float)) and v > mine[term])
+        if not above:
+            continue
+        kk = min(k, len(above))
+        w = (SHOP_TERMS if side == "shops" else BUYER_TERMS)[term]
+        out[key] = w * kk / (len(rows) - 1) / max(above[kk - 1] - mine[term], 1e-9)
+        if side == "buyers":
+            out["deals_total"] = mine.get("deals") or 0
+            out["saved_now"] = mine[term]
+    return out
+
+
+def board_points_h(margin_h, revenue_h, paid_h, saved_deal, prices=None):
+    """Estimated ALL points an hour at this pace: Book grows by the margin of paid sales, revenue by their price, and
+    saved moves by each paid buyer deal's distance from our running mean, over deals + 100 (the board's formula)."""
+    p = prices if prices is not None else lever_prices()
+    if not p:
+        return None
+    pts = margin_h * p.get("book", 0) + revenue_h * p.get("revenue", 0)
+    if saved_deal is not None and "saved" in p:
+        pts += paid_h * (saved_deal - p["saved_now"]) / (p["deals_total"] + 100) * p["saved"]
+    return round(pts, 5)
+
+
 def window(t0, t1, base=HERE, keep=None):
     """`keep` (an order id -> bool, the code A/B's arm): the buyer's metrics over those orders only; per hour they
     count the arm's half, so compare an arm with the other arm, not with a whole hour."""
@@ -195,16 +247,21 @@ def window(t0, t1, base=HERE, keep=None):
     posts = posts if isinstance(posts, list) else posts.get("posts", []) if isinstance(posts, dict) else []
     ours = [p for p in posts if isinstance(p, dict) and p.get("author") == ME and p.get("role", "buyer") == "buyer"
             and t0 <= (p.get("ts") or 0) < t1]
+    margin_h = sum(x["price"] - (x.get("cost") or 0) for x in sold) / hours
+    revenue_h = sum(x["price"] for x in sold) / hours
+    saved_deal = sum(rates) / len(rates) if rates else None
     return {
+        "board_pts_h": board_points_h(margin_h, revenue_h, len(paid) / hours, saved_deal),
+        "shop_revenue_h": round(revenue_h),
         "buyer_close_rate": round(len(paid) / len(orders), 3) if orders else None,
         "buyer_surplus_order": round(surplus / len(orders)) if orders else None,
         "buyer_paid_h": round(len(paid) / hours, 1),
         "shelf_refused_h": round(refused / hours, 1),
         "shop_deals_h": round(len(sold) / hours, 1),
-        "shop_margin_h": round(sum(x["price"] - (x.get("cost") or 0) for x in sold) / hours),
+        "shop_margin_h": round(margin_h),
         "forum_votes_post": round(sum((p.get("likes") or 0) - (p.get("dislikes") or 0) for p in ours) / len(ours), 2)
         if ours else None,
-        "buyer_saved_deal": round(sum(rates) / len(rates), 4) if rates else None,
+        "buyer_saved_deal": round(saved_deal, 4) if saved_deal is not None else None,
         "buyer_dear_close": round(dear_paid / len(dear), 3) if len(dear) >= 5 else None,
         "buyer_secs_order": round(secs[len(secs) // 2], 1) if secs else None,
         "orders": len(orders),

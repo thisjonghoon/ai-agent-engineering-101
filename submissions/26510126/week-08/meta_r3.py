@@ -201,6 +201,9 @@ BUYER_GUARD = 0.2
 NUMBER_TRIALS = HERE / "logs" / "number_trials_r3.json"
 NUMBER_CHECK = 2 * 3600
 ADVICE = HERE / "advice_r3.json"     # notes from the supervisor (Claude, watching for the user): advice, not orders
+# the supervisor's lasting rules, apart from its passing notes: on 11/7-11/9 a rule given in a note (judge on paid sales)
+# fell out of the last-3 window within hours and was broken again
+STANDING = HERE / "standing_orders_r3.md"
 
 
 def advice(hours=24, n=3):
@@ -212,7 +215,11 @@ def advice(hours=24, n=3):
     notes = [x for x in notes if isinstance(x, dict) and x.get("t", 0) >= cut and isinstance(x.get("text"), str)][-n:]
     text = "\n".join(f"- {time.strftime('%m/%d %H:%M', time.localtime(x['t']))}: {x['text'][:600]}" for x in notes) \
         or "(none)"
-    return text + code_changes() + number_changes() + rivals() + edges()
+    try:
+        standing = STANDING.read_text(encoding="utf-8").strip() + "\n"
+    except OSError:
+        standing = ""
+    return standing + text + code_changes() + number_changes() + rivals() + edges()
 
 
 def edges():
@@ -318,7 +325,10 @@ def number_verdicts(now=None):
                  [x["change"] for x in judged if abs(x.get("t", 0) - t) < NUMBER_CHECK]
         margin, deals = metrics_r3.change("shop_margin_h", a, b), metrics_r3.change("shop_deals_h", a, b)
         what = ", ".join(f"{k} {v[0]} -> {v[1]}" for k, v in r["changes"].items())
-        verdict = (f"margin/h {a.get('shop_margin_h')} -> {b.get('shop_margin_h')} ({margin:+.0%})" if margin is not None
+        pts = metrics_r3.change("board_pts_h", a, b)
+        verdict = (f"board points/h {a.get('board_pts_h')} -> {b.get('board_pts_h')} ({pts:+.0%}), " if pts is not None
+                   else "") + \
+                  (f"margin/h {a.get('shop_margin_h')} -> {b.get('shop_margin_h')} ({margin:+.0%})" if margin is not None
                    else "margin/h not measurable") + \
                   (f", deals/h {a.get('shop_deals_h')} -> {b.get('shop_deals_h')} ({deals:+.0%})" if deals is not None else "") + \
                   f", {NUMBER_CHECK // 3600} h before vs after, outage {a.get('outage_min')}/{b.get('outage_min')} min" + \
@@ -329,6 +339,47 @@ def number_verdicts(now=None):
                                 "after": verdict, "verdict": verdict}, ensure_ascii=False) + "\n")
         out.append(f"{what}: {verdict}")
     NUMBER_TRIALS.write_text(json.dumps([r for r in rows if r not in due], ensure_ascii=False, indent=1), encoding="utf-8")
+    return out
+
+
+FAST_AFTER = 3600       # a number change is checked once an hour of paid sales has passed since it
+FAST_DROP = 0.5         # our share of the market's paid sales under half its share before the change reverts it
+
+
+def fast_guard(now=None):
+    """Revert a pending number change whose first hour cut our share of the market's paid sales by half or more, with
+    no outage. The user (11/9): the meta's misjudgments must be caught at once; the 06:43 bundle cut paid sales 65%
+    and ran 2.5 h because the 2 h verdict and the supervisor were the only checks. Share of the market, not raw
+    counts, so the night's lull does not trip it. Returns the lines it logged."""
+    now = now or time.time()
+    rows = read_json(NUMBER_TRIALS, [])
+    out, keep = [], []
+    for r in rows:
+        t = r["t"]
+        if not FAST_AFTER <= now - t < NUMBER_CHECK:
+            keep.append(r)
+            continue
+        ours_b, mkt_b = metrics_r3.paid_share(t - 2 * 3600, t)
+        ours_a, mkt_a = metrics_r3.paid_share(t, now)
+        down = metrics_r3.outage_secs(t, now, HERE) > 600
+        if down or ours_b < 20 or not mkt_b or not mkt_a or ours_a / mkt_a >= FAST_DROP * ours_b / mkt_b:
+            keep.append(r)
+            continue
+        s = read_json(STRATEGY, {})
+        for k, (old, new) in r["changes"].items():
+            if s.get(k) == new:
+                s[k] = old
+        STRATEGY.write_text(json.dumps(s, indent=1), encoding="utf-8")
+        what = ", ".join(f"{k} {v[1]} -> {v[0]}" for k, v in r["changes"].items())
+        why = (f"our share of the market's paid sales fell {ours_b / mkt_b:.2%} -> {ours_a / mkt_a:.2%} in the "
+               f"{(now - t) / 3600:.1f} h after the change ({ours_b} -> {ours_a} sales)")
+        with CODE_CHANGES.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"t": now, "commit": "-", "source": "inner loop (number)", "change": f"fast guard revert: {what}",
+                                "evidence": why, "metric": "paid_share", "verdict": f"reverted by the fast guard: {why}"},
+                               ensure_ascii=False) + "\n")
+        out.append(f"fast guard reverted {what}: {why}")
+    if out:
+        NUMBER_TRIALS.write_text(json.dumps(keep, ensure_ascii=False, indent=1), encoding="utf-8")
     return out
 
 
@@ -485,6 +536,10 @@ def seller_lines(since):
             price, cost, lp = int(m.group(3)), int(m.group(4)), int(m.group(5))
             out["price_list"].append(price / lp)
             out["margin"].append((price - cost) / cost if cost else 0)
+    # 11/9: "margin" came from DEAL lines, receipts signed, while the board pays on sales settled; it is now the margin
+    # over cost of the sales paid on the ledger in the same span (metrics_r3.settled_sales), one source for both
+    paid = metrics_r3.settled_sales(since, time.time())
+    out["margin"] = [(x["price"] - x["cost"]) / x["cost"] for x in paid if x.get("cost")]
     for k in ("price_list", "margin"):
         v = out[k]
         out[k] = round(sum(v) / len(v), 3) if v else None
@@ -705,6 +760,8 @@ def start_ab(ask, s):
 
 
 async def cycle():
+    for line in fast_guard():
+        harness.log("META", line)
     cur = current()
     hist = [json.loads(l) for l in HISTORY.read_text(encoding="utf-8").splitlines() if l.strip()] if HISTORY.exists() else []
     since = hist[-1]["time"] if hist else time.time() - EVERY

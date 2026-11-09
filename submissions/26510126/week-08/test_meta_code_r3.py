@@ -146,6 +146,27 @@ def main():
     case("levers: passing the next rivals on a term names the value needed and the ALL points it buys",
          saved[4][0][:2] == (1, 0.29) and saved[4][0][2] == round(0.5 * 1 / 3, 3), str(lv))
 
+    import meta_r3
+    fg = tmp / "fast"
+    fg.mkdir()
+    saved_paths = (meta_r3.NUMBER_TRIALS, meta_r3.STRATEGY, meta_r3.CODE_CHANGES, mc.metrics_r3.paid_share,
+                   mc.metrics_r3.outage_secs)
+    meta_r3.NUMBER_TRIALS, meta_r3.STRATEGY, meta_r3.CODE_CHANGES = fg / "trials.json", fg / "s.json", fg / "c.jsonl"
+    meta_r3.STRATEGY.write_text(json.dumps({"ask_frac": 0.85}))
+    meta_r3.NUMBER_TRIALS.write_text(json.dumps([{"t": now - 4000, "changes": {"ask_frac": [0.7, 0.85]}, "reason": "x"}]))
+    mc.metrics_r3.outage_secs = lambda *a, **k: 0
+    mc.metrics_r3.paid_share = lambda t0, t1, base=None: (120, 2400) if t1 <= now - 3999 else (25, 1300)
+    cut = meta_r3.fast_guard(now)
+    reverted = json.loads(meta_r3.STRATEGY.read_text())["ask_frac"] == 0.7 and json.loads(meta_r3.NUMBER_TRIALS.read_text()) == []
+    meta_r3.STRATEGY.write_text(json.dumps({"ask_frac": 0.85}))
+    meta_r3.NUMBER_TRIALS.write_text(json.dumps([{"t": now - 4000, "changes": {"ask_frac": [0.7, 0.85]}, "reason": "x"}]))
+    mc.metrics_r3.paid_share = lambda t0, t1, base=None: (120, 2400) if t1 <= now - 3999 else (60, 1300)
+    kept = not meta_r3.fast_guard(now) and json.loads(meta_r3.STRATEGY.read_text())["ask_frac"] == 0.85
+    (meta_r3.NUMBER_TRIALS, meta_r3.STRATEGY, meta_r3.CODE_CHANGES, mc.metrics_r3.paid_share,
+     mc.metrics_r3.outage_secs) = saved_paths
+    case("fast guard: a change whose first hour halves our share of the market's paid sales is reverted; "
+         "a smaller dip on a quiet market is kept", bool(cut) and reverted and kept, str(cut))
+
     r6 = {"metric": "buyer_saved_deal", "expected": 0.03}
     _, ab_why = mc.judge(dict(r6, ab_key="k"), {"buyer_saved_deal": 0.30}, {"buyer_saved_deal": 0.282})
     _, span_why = mc.judge(r6, {"buyer_saved_deal": 0.30}, {"buyer_saved_deal": 0.282})

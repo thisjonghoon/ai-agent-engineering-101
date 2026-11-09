@@ -22,7 +22,8 @@ HERE = Path(__file__).resolve().parent
 MARKET = "https://market.ourolabs.ai"
 OUT = HERE / ".market" / "backfill_r3.jsonl"
 STATE = HERE / ".market" / "backfill_r3.state.json"
-PAUSE = 3.0            # seconds between pages: one request at a time, about 0.2 a second (the reply takes 1-3.5 s)
+PAUSE = 3.0            # the first pause; after that twice the last reply's time, PAUSE_MIN..PAUSE_MAX, one request at
+PAUSE_MIN, PAUSE_MAX = 1.0, 10.0   # a time: fast while the shared server answers fast, slower as soon as it slows
 FROM_SEQ = 2_796_875   # 11/05 13:48, two hours and more before the first number verdict (11/05 16:32)
 
 
@@ -60,7 +61,9 @@ def fetch(start=None, stop=None):
     client, wait, pages = httpx.Client(timeout=60, headers={"User-Agent": "week08-backfill/1.0"}), PAUSE, 0
     while after < stop:
         try:
+            t0 = time.time()
             r = client.get(f"{MARKET}/api/ledger", params={"after": after})
+            took = time.time() - t0
             if r.status_code == 429 or r.status_code >= 500:
                 raise RuntimeError(f"HTTP {r.status_code}")
             page = [e for e in r.json() if e["seq"] > after]
@@ -75,11 +78,13 @@ def fetch(start=None, stop=None):
         rows = [x for x in map(keep, page) if x and x["seq"] < stop]
         with OUT.open("a", encoding="utf-8") as f:
             f.write("".join(json.dumps(x, ensure_ascii=False) + "\n" for x in rows))
-        after, wait, pages = page[-1]["seq"], PAUSE, pages + 1
+        after, pages = page[-1]["seq"], pages + 1
+        wait = min(max(2 * took, PAUSE_MIN), PAUSE_MAX)
         STATE.write_text(json.dumps({"after": after, "stop": stop, "t": time.time()}))
         if pages % 100 == 0:
-            log(f"{pages} pages, at seq {after} ({time.strftime('%m/%d %H:%M', time.localtime(page[-1]['ts']))})")
-        time.sleep(PAUSE)
+            log(f"{pages} pages, at seq {after} ({time.strftime('%m/%d %H:%M', time.localtime(page[-1]['ts']))}), "
+                f"last reply {took:.1f} s, pause {wait:.1f} s")
+        time.sleep(wait)
     log(f"done at seq {after}")
 
 

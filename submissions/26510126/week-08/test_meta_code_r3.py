@@ -54,6 +54,23 @@ def main():
     case("a lower-is-better metric that fell counts as better",
          not mc.judge({"metric": "shelf_refused_h"}, before, dict(before, shelf_refused_h=4))[1])
 
+    # 2b. before/after: shop numbers net of the market's own change, and the aim (board points/h) decides (11/9 4d10151)
+    sb = {"shop_margin_h": 412757, "shop_revenue_h": 2014600, "board_pts_h": 0.00195, "shop_deals_h": 32.7}
+    sa = {"shop_margin_h": 332056, "shop_revenue_h": 3841473, "board_pts_h": 0.00201, "shop_deals_h": 31.3}
+    rm = {"metric": "shop_margin_h", "expected": 0.1}
+    text, why = mc.judge(rm, sb, sa, (1.035, 1.048))
+    case("margin -20% with board points flat after the market's change is kept, and says so",
+         not why and "board points/h" in text and "net of the market" in text, (text, why))
+    _, why = mc.judge(rm, sb, dict(sa, board_pts_h=0.0015), (1.0, 1.0))
+    case("margin and board points both down past WORSE reverts", any("board_pts_h" in w for w in why), why)
+    _, why = mc.judge(rm, sb, dict(sb, shop_margin_h=600000, board_pts_h=0.0028), (1.6, 1.0))
+    case("a rush hour that lifts the whole market is no gain: +45% margin under x1.6 market value is -9%",
+         "-9%" in mc.judge(rm, sb, dict(sb, shop_margin_h=600000, board_pts_h=0.0028), (1.6, 1.0))[0] and not why)
+    _, why = mc.judge(rm, sb, dict(sb, shop_margin_h=300000, board_pts_h=0.0026), (1.0, 1.0))
+    case("the own metric alone does not revert while board points rose", not why, why)
+    _, why = mc.judge(rm, {"shop_margin_h": 400000}, {"shop_margin_h": 300000}, (1.0, 1.0))
+    case("with no board points to measure, the own metric still reverts", why == ["shop_margin_h -25%"], why)
+
     # 3. the engineer's answer: the JSON on its last line, after prose
     case("the hypothesis is read from the last JSON line",
          mc.last_json('I read buyer.py.\n{"hypothesis": "x", "metric": "buyer_paid_h"}')["metric"] == "buyer_paid_h")

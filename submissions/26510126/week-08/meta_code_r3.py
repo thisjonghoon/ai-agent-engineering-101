@@ -177,11 +177,40 @@ def deploy(files, src):
         os.replace(tmp, HERE / f)
 
 
-def judge(r, before, after):
-    """(verdict text, reasons to revert) for one change: its own metric, then the guards."""
+# 11/9: 4d10151 (deeper stock of hot 300k+ lines) was reverted at 11:15 for shop margin/h -20% over 3 h before and
+# after, while revenue/h went 2.0M -> 3.8M, board points/h +3% and our share of the market's paid value 0.38% -> 0.70%:
+# the engineer's own metric decided alone, and raw shop numbers before vs after read the hour of day. Before/after
+# shop numbers are now divided by the market's own change over the same hours (paid value for margin, revenue and
+# board points, paid count for deals), and the one aim (board points/h) decides when it can be measured
+BY_VALUE = ("shop_margin_h", "shop_revenue_h", "board_pts_h")
+BY_COUNT = ("shop_deals_h",)
+
+
+def market_adjust(after, market):
+    """`after` with its shop numbers divided by the market's after/before ratio (value, count); None ratios skip."""
+    rv, rn = market or (None, None)
+    out = dict(after)
+    for keys, ratio in ((BY_VALUE, rv), (BY_COUNT, rn)):
+        for k in keys:
+            if ratio and isinstance(out.get(k), (int, float)):
+                out[k] = out[k] / ratio
+    return out
+
+
+def judge(r, before, after, market=None):
+    """(verdict text, reasons to revert) for one change: the aim (board points/h) when measurable, else its own metric, then the guards.
+    `market`: (paid value, paid count) after over before for the market, for before/after verdicts."""
     why = []
+    if market:
+        after = market_adjust(after, market)
     own = metrics_r3.change(r.get("metric"), before, after) if r.get("metric") else None
-    if own is not None and own < -(WORSE_AB if r.get("ab_key") else WORSE):
+    aim = None if r.get("ab_key") else metrics_r3.change("board_pts_h", before, after)
+    if aim is not None and aim < -WORSE:
+        why.append(f"board_pts_h {aim:+.0%}")
+    # one aim: when board points/h can be measured they decide, the engineer's own metric is context; it reverts
+    # alone only when the aim cannot be measured (buyer-only numbers, A/B arms)
+    if own is not None and own < -(WORSE_AB if r.get("ab_key") else WORSE) and r.get("metric") != "board_pts_h" \
+            and aim is None:
         why.append(f"{r['metric']} {own:+.0%}")
     for g in ("buyer_paid_h", "shop_deals_h"):
         b, a = before.get(g), after.get(g)
@@ -190,6 +219,11 @@ def judge(r, before, after):
     expected = r.get("expected")
     text = (f"{r.get('metric')}: expected {expected:+.0%}, measured {own:+.0%}" if isinstance(expected, (int, float))
             and own is not None else f"{r.get('metric')}: {before.get(r.get('metric'))} -> {after.get(r.get('metric'))}")
+    if aim is not None:
+        text += f"; board points/h {aim:+.0%}"
+    if market:
+        text += "; shop numbers net of the market's own change" + (
+            f" (paid value x{market[0]:.2f}, count x{market[1]:.2f})" if all(market) else "")
     return text, why
 
 
@@ -212,7 +246,10 @@ def check():
         else:
             before = metrics_r3.window(r["t"] - SPAN, r["t"])
             after = metrics_r3.window(r["t"], r["t"] + SPAN)
-        text, why = judge(r, before, after)
+            ma, mb = metrics_r3.market_share(r["t"] - SPAN, r["t"]), metrics_r3.market_share(r["t"], r["t"] + SPAN)
+            market = (mb["market_value"] / ma["market_value"] if ma.get("market_value") else None,
+                      mb["market"] / ma["market"] if ma.get("market") else None)
+        text, why = judge(r, before, after, market if not r.get("ab_key") else None)
         text += (f" (A/B: same hours, {before.get('orders')} and {after.get('orders')} orders)" if r.get("ab_key")
                  else f" ({SPAN // 3600} h before against {SPAN // 3600} h after)")
         if why:

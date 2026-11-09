@@ -182,7 +182,7 @@ def market_share(t0, t1, base=HERE):
     settles = [e for e in entries if e.get("kind") == "settle" and t0 <= e.get("ts", 0) < t1]
     mkt_value = sum((e.get("data") or {}).get("amount") or 0 for e in settles)
     ours = settled_sales(t0, t1, base)
-    return {"ours": len(ours), "market": len(settles),
+    return {"ours": len(ours), "market": len(settles), "market_value": mkt_value,
             "share_n": round(len(ours) / len(settles), 4) if settles else None,
             "share_value": round(sum(x["price"] for x in ours) / mkt_value, 4) if mkt_value else None}
 

@@ -16,11 +16,14 @@ def case(name, ok, detail=""):
     print(("PASS " if ok else "FAIL ") + name + (f"  ({detail})" if detail and not ok else ""))
 
 
-def ledger(base, rows):
+def ledger(base, rows, early=True):
     (base / ".market").mkdir(parents=True, exist_ok=True)
     (base / "logs").mkdir(exist_ok=True)
     url = "https://ours.example"
     entries = [{"kind": "join", "ts": 0, "data": {"name": metrics_r3.ME, "role": "shop", "url": url}}]
+    # the cache is a continuous span: an early settle elsewhere so it reaches back past every window in a test
+    entries += [] if not early else [{"kind": "settle", "ts": min(r[0] for r in rows) - 30000, "data": {"shop": "https://far.example",
+                                                                                    "amount": 0, "unit": "u-far"}}]
     for i, (ts, shop, amount) in enumerate(rows):
         entries.append({"kind": "settle", "ts": ts, "data": {"shop": url if shop == "us" else "https://other.example",
                                                             "amount": amount, "unit": f"u-{i}"}})
@@ -56,6 +59,19 @@ def main():
     case("share by count", ms["ours"] == 1 and ms["market"] == 3 and abs(ms["share_n"] - 1 / 3) < 1e-3, str(ms))
     case("share by value", abs(ms["share_value"] - 100 / 2000) < 1e-3, str(ms))
     case("no market sales gives no share", metrics_r3.market_share(0, 1, tmp)["share_value"] is None)
+
+    # 2b. the 10-minute buckets: filed from the cache, then used once the cache no longer reaches back
+    tb = Path(tempfile.mkdtemp(prefix="meta-r3-b-"))
+    b0 = (int(time.time()) // 600 - 30) * 600           # 30 buckets ago, on a bucket edge
+    ledger(tb, [(b0 + 60, "us", 100), (b0 + 120, "x", 300), (b0 + 700, "x", 600), (b0 + 1300, "us", 50)])
+    added = metrics_r3.record_buckets(tb)
+    again = metrics_r3.record_buckets(tb)
+    case("closed buckets are filed once", added >= 3 and again == 0, (added, again))
+    ledger(tb, [(b0 + 9000, "x", 1)], early=False)                    # the cache has moved on: the early sales are gone from it
+    old = metrics_r3.market_share(b0, b0 + 1800, tb)
+    case("an old span is read from the buckets", old["ours"] == 2 and old["market"] == 4
+         and abs(old["share_value"] - 150 / 1050) < 1e-3, str(old))
+    case("a span neither covers gives no share", metrics_r3.market_share(b0 - 7200, b0, tb)["share_value"] is None)
 
     # 3. the 2 h verdict leads with the share, so the hour of day cancels out: we sold 3x more after (the morning
     # rush) but so did the market, so the share is flat even though raw counts tripled

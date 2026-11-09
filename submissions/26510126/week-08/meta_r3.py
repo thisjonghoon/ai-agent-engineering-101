@@ -219,7 +219,16 @@ def advice(hours=24, n=3):
         standing = STANDING.read_text(encoding="utf-8").strip() + "\n"
     except OSError:
         standing = ""
-    return standing + text + code_changes() + number_changes() + rivals() + edges()
+    return standing + text + code_changes() + number_changes() + number_memory() + rivals() + edges()
+
+
+def number_memory():
+    """Every number's past verdicts re-judged on the market share, or marked UNVERIFIED (rejudge_r3)."""
+    try:
+        import rejudge_r3
+        return rejudge_r3.memory_text(HERE)
+    except Exception as e:                              # a broken memory check must not cost the cycle
+        return f"\n(memory check failed: {type(e).__name__})"
 
 
 def edges():
@@ -250,8 +259,15 @@ def number_changes(n=6):
     wait = read_json(NUMBER_TRIALS, [])
     # 11/7 the team still called judged numbers "pending" for hours (ask_frac judged 15:49, "pending" at 16:50): a judged
     # row whose verdict names confounds is a verdict all the same, so each row now says which it is
+    try:
+        import rejudge_r3
+        again = json.loads((HERE / rejudge_r3.OUT).read_text(encoding="utf-8"))
+        recheck = lambda x: f" [re-judged: {rejudge_r3.note(again.get(rejudge_r3.key(x)))}]" \
+            if rejudge_r3.key(x) in again else ""
+    except Exception:
+        recheck = lambda x: ""
     out = [f"- JUDGED (decide now; confounds do not make it pending) {time.strftime('%m/%d %H:%M', time.localtime(x.get('t', 0)))} "
-           f"{x.get('change')}: {str(x.get('verdict'))[:220]}" for x in rows]
+           f"{x.get('change')}: {str(x.get('verdict'))[:220]}{recheck(x)}" for x in rows]
     out += [f"- PENDING {time.strftime('%m/%d %H:%M', time.localtime(x['t']))} "
             f"{', '.join(f'{k} {v[0]} -> {v[1]}' for k, v in x['changes'].items())}: verdict due "
             f"{time.strftime('%H:%M', time.localtime(x['t'] + NUMBER_CHECK))}" for x in wait]
@@ -795,6 +811,13 @@ def start_ab(ask, s):
 async def cycle():
     for line in fast_guard():
         harness.log("META", line)
+    try:                                                # file the closed 10-minute buckets, then re-judge old verdicts
+        import rejudge_r3
+        filed, again = metrics_r3.record_buckets(HERE), rejudge_r3.update(HERE)
+        if again:
+            harness.log("META", f"memory check: {again} past verdicts re-judged or marked unverified ({filed} buckets filed)")
+    except Exception as e:
+        harness.log("META", f"memory check failed: {type(e).__name__}: {e}")
     cur = current()
     hist = [json.loads(l) for l in HISTORY.read_text(encoding="utf-8").splitlines() if l.strip()] if HISTORY.exists() else []
     since = hist[-1]["time"] if hist else time.time() - EVERY

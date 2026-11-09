@@ -169,22 +169,81 @@ def paid_share(t0, t1, base=HERE):
     return len(settled_sales(t0, t1, base)), market
 
 
-def market_share(t0, t1, base=HERE):
-    """Our part of the market's paid sales in [t0, t1): by count and by value (settled amounts), from the ledger cache.
-    11/9: the 2 h number verdicts compared our raw margin/h before and after a change, so a change made at 06:00
-    looked good for the morning rush and one made at 22:00 bad for the night; the market's own sales over the same
-    hours divide that clock out. {"ours", "market", "share_n", "share_value"}, shares None with no market sales."""
-    base = Path(base)
+BUCKETS = Path("logs") / "market_buckets_r3.jsonl"
+BUCKET = 600
+# the ledger cache keeps only the last ~6 h of settles (11/9: first settle 05:36 at 11:40), so a 2 h verdict could
+# never be judged again later and the coder's 3 h before/after verdict, taken a few minutes past t + 3 h, lost the
+# start of its before-window. Each meta cycle files the closed 10-minute buckets here: ours and the market's paid
+# sales, count and value, and our margin
+
+
+def _settles(base):
     try:
-        entries = json.loads((base / ".market" / "ledger-recent.json").read_text(encoding="utf-8"))
+        entries = json.loads((Path(base) / ".market" / "ledger-recent.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        entries = []
-    settles = [e for e in entries if e.get("kind") == "settle" and t0 <= e.get("ts", 0) < t1]
-    mkt_value = sum((e.get("data") or {}).get("amount") or 0 for e in settles)
-    ours = settled_sales(t0, t1, base)
-    return {"ours": len(ours), "market": len(settles), "market_value": mkt_value,
-            "share_n": round(len(ours) / len(settles), 4) if settles else None,
-            "share_value": round(sum(x["price"] for x in ours) / mkt_value, 4) if mkt_value else None}
+        return []
+    return [e for e in entries if e.get("kind") == "settle"]
+
+
+def record_buckets(base=HERE, now=None):
+    """Append the closed 10-minute buckets the cache holds and the file lacks; returns how many were added."""
+    base, now = Path(base), now or time.time()
+    path = base / BUCKETS
+    done = {x.get("t") for x in jl(path)}
+    settles = _settles(base)
+    if not settles:
+        return 0
+    first = min(e["ts"] for e in settles)
+    todo = [b for b in range((int(first) // BUCKET + 1) * BUCKET, int(now) // BUCKET * BUCKET, BUCKET) if b not in done]
+    if not todo:
+        return 0
+    rows = {b: {"t": b, "ours_n": 0, "ours_value": 0, "ours_margin": 0, "mkt_n": 0, "mkt_value": 0} for b in todo}
+    for e in settles:
+        b = int(e["ts"]) // BUCKET * BUCKET
+        if b in rows:
+            rows[b]["mkt_n"] += 1
+            rows[b]["mkt_value"] += (e.get("data") or {}).get("amount") or 0
+    for x in settled_sales(todo[0], todo[-1] + BUCKET, base):
+        b = int(x["t"]) // BUCKET * BUCKET
+        if b in rows:
+            rows[b]["ours_n"] += 1
+            rows[b]["ours_value"] += x["price"]
+            rows[b]["ours_margin"] += x["price"] - (x.get("cost") or 0)
+    path.parent.mkdir(exist_ok=True)
+    with path.open("a", encoding="utf-8") as f:
+        for b in todo:
+            f.write(json.dumps(rows[b]) + "\n")
+    return len(todo)
+
+
+def shop_side(t0, t1, base=HERE):
+    """Ours and the market's paid sales in [t0, t1): from the ledger cache when it reaches back to t0, else from the
+    10-minute buckets (whole buckets inside the span, at least 90% of it). None when neither covers it."""
+    base = Path(base)
+    settles = _settles(base)
+    if settles and min(e["ts"] for e in settles) <= t0:
+        ours = settled_sales(t0, t1, base)
+        mkt = [e for e in settles if t0 <= e["ts"] < t1]
+        return {"ours_n": len(ours), "ours_value": sum(x["price"] for x in ours),
+                "ours_margin": sum(x["price"] - (x.get("cost") or 0) for x in ours), "mkt_n": len(mkt),
+                "mkt_value": sum((e.get("data") or {}).get("amount") or 0 for e in mkt), "from": "ledger"}
+    rows = [x for x in jl(base / BUCKETS) if t0 <= x.get("t", 0) and x["t"] + BUCKET <= t1]
+    if not rows or len({x["t"] for x in rows}) * BUCKET < 0.9 * (t1 - t0):
+        return None
+    out = {k: sum(x.get(k) or 0 for x in rows) for k in ("ours_n", "ours_value", "ours_margin", "mkt_n", "mkt_value")}
+    return dict(out, **{"from": "buckets"})
+
+
+def market_share(t0, t1, base=HERE):
+    """Our part of the market's paid sales in [t0, t1): by count and by value (settled amounts), from the ledger cache
+    or the 10-minute buckets (shop_side). 11/9: the 2 h number verdicts compared our raw margin/h before and after a
+    change, so a change made at 06:00 looked good for the morning rush and one made at 22:00 bad for the night; the
+    market's own sales over the same hours divide that clock out. Shares None with no market sales or no data."""
+    s = shop_side(t0, t1, base) or {}
+    n, v = s.get("mkt_n") or 0, s.get("mkt_value") or 0
+    return {"ours": s.get("ours_n", 0), "market": n, "market_value": v,
+            "share_n": round(s["ours_n"] / n, 4) if n else None,
+            "share_value": round(s["ours_value"] / v, 4) if v else None}
 
 
 def lever_prices(board=None, k=3):

@@ -293,3 +293,24 @@ something checkable to say); and the meta-harness and the A/B test change prices
 TODO from 11/3: settled deals (shop and buyer), Players rank, refused settlements quoted from `logs/market-kit.log`
 and `.market/payments.jsonl` (`python r3_results.py` prints them as Markdown), the A/B results (`python ab_r3.py`), and "값 다시 정하기" (`python reprice_dashboard.py`: opening ask and deal price before
 and after the budgets left the ledger).
+
+### 3.x What went wrong, and what each failure changed in the structure
+
+Draft, kept as it happened (11/6-11/9); every row is in `logs/code_changes_r3.jsonl` and the git history. The rank fell
+from 8th (11/6 17:57) to 22nd (11/9) while Book kept growing (85M to 133M): the failures below cost us relative speed,
+not money.
+
+| When | What went wrong | How it was found | What it changed |
+|---|---|---|---|
+| 11/4 17:57 - 11/7 09:38 (2.6 days; the damage fell mostly in the last ~15 h, after the stock cap was opened on 11/6 18:1x) | `shop_margin_h` and `shop_deals_h` counted receipts our seller signed, not sales paid. Buyers haggle with several shops and pay one: 300k+ goods were agreed 23 times and paid once (11/7 06:52-09:35), so margin/h read 2-4M while Book grew 0.7-0.9M an hour. The loops, and the supervisor, believed the inflated number. | Supervisor reconciled the metric with Book growth | Metrics count ledger settles (`101789f`); every shop verdict before it was flagged as judged on agreements |
+| 11/6 18:05 | The market began scoring the forum as the raw rating, not a percentile; rivals gained 0.1-0.15 in minutes, we fell 8th to 13th with no change of ours | Rank alert, then a diff of the board rows | Forum effort was rated down; points moved to shop and buyer saved |
+| 11/7 | Dear stock bought at surged cost (about 0.74 of list) could not sell at the market's paid median (0.70-0.73); our floors sat 1-5% above the buyers' last offers | Talks read against the ledger's paid prices | min_margin lowered (judged +36% margin/h), surge-aware restock tried twice |
+| 11/7 20:4x | 97 slow 300k+ units (51M) filled the stock cap, so restock bought nothing and the cheap shelves that sell ran down (1046 units to 584) | Stock composition by price band | Slow dear goods no longer count against the cap (`e143aad`, judged deals/h +63%) |
+| 11/7 10:41 - 11:05 | After a market outage the market listed our shop at a tunnel from before our last restart; buyers could not reach us | Talks opened fell 74 to 7 per 10 min | Kit restarted; the watch compares the listed URL with our tunnel |
+| 11/7-11/8 | The team held judged numbers as "pending" (a verdict naming confounds read as unfinished), lowered `clear_hours` to clear food *earlier* (the number works the other way), repeated `max_list` 900k to 600k after both directions had been judged | Supervisor reading each decision against the ledger | Verdict rows say JUDGED or PENDING (`b1e3a73`); the two numbers were set back with the ledger rows quoted |
+| 11/8 | Buyer A/B changes measuring -2% to -6% were all kept: the revert bar (15%) was sized for noisy before/after windows, not same-hour A/B | Reading the verdict ledger | A/B verdicts revert at -3% (`2270665`); the -6% change was reverted |
+| 11/9 06:43 - 09:2x | A playbook that won its A/B on margin *per talk opened* was adopted for goods and, untested, for food; paid sales fell 141 to 49 and revenue 20% over 2.5 h with margin flat | Supervisor, 2.5 h late | Bundle undone on paid-sales evidence; the watch now alerts when the last hour's paid sales fall under half the prior 3 h (backtest: would have fired at 07:45) |
+
+The supervisor made mistakes too: it relayed the inflated margin as a win before checking it against Book (11/7),
+read a 10-minute bucket that had only just begun (11/9 07:01) and undid an A/B-backed ask, restoring it 20 minutes
+later. The rule taken from both: reconcile a loop's metric with the board's own terms, and judge only closed windows.

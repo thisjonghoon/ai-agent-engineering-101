@@ -946,6 +946,9 @@ def start_ab(ask, s):
 async def cycle():
     for line in fast_guard():
         harness.log("META", line)
+    # the number verdicts first, so a slot freed this cycle shows free to the team asked below (11/9: judged after
+    # the team call, the freeing cycle still told everyone "busy" and lost 15 minutes each time)
+    judged = number_verdicts()
     try:                                                # file the closed 10-minute buckets, then re-judge old verdicts
         import rejudge_r3
         filed, again = metrics_r3.record_buckets(HERE), rejudge_r3.update(HERE)
@@ -1044,7 +1047,6 @@ async def cycle():
         team_changes = [f"review failed: {type(e).__name__}"]
     bp = (ans or {}).get("buyer_plan")
     buyer_changed = buyer_trial_verdict()
-    judged = number_verdicts()
     if isinstance(bp, dict):                            # the buyer's numbers, clamped to bounds and one step a cycle
         old = dict(BUYER_DEFAULTS, **{k: v for k, v in read_json(BUYER_PLAN, {}).items() if k in BUYER_BOUNDS})
         new = dict(old)

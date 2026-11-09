@@ -222,7 +222,11 @@ def judge(r, before, after, market=None):
         if b and a is not None and a < b * (1 - DROP):
             why.append(f"guard {g} {b} -> {a}")
     expected = r.get("expected")
-    text = (f"{r.get('metric')}: expected {expected:+.0%}, measured {own:+.0%}" if isinstance(expected, (int, float))
+    # both on one scale, + is better (11/9: "expected -5%, measured +13%" for buyer_secs_order read as a miss; the
+    # engineer wrote the raw change of a lower-is-better metric, change() signs it so + is better)
+    if isinstance(expected, (int, float)) and r.get("metric") in metrics_r3.LOWER_IS_BETTER and expected < 0:
+        expected = -expected
+    text = (f"{r.get('metric')}: expected {expected:+.0%}, measured {own:+.0%} (+ is better)" if isinstance(expected, (int, float))
             and own is not None else f"{r.get('metric')}: {before.get(r.get('metric'))} -> {after.get(r.get('metric'))}")
     if aim is not None:
         text += f"; {side.replace('_pts_h', ' points/h')} {aim:+.0%}"

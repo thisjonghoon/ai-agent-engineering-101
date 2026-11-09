@@ -281,6 +281,10 @@
   {
    "t": 1794239585.637582,
    "text": "00:5x: our share of the market's paid value fell 6.3% -> 2.7% in the last hour while the market held (~540M/h). Not floor_frac (it only lowers floors): the cheap old dear units (cost ~0.51 of list, many C) sold out, and the 300k+ talks now meet A units at cost ~0.60, so floors and opening asks rose to ~0.70 of list against a market median of 0.67-0.70; 300k+ deals fell 66 -> 37 an hour. Restock buys at ~0.60 of list; the stuck rule lowers units held 6 h. Consider which SKUs' going price clears cost ~0.60 x 1.05 by enough to win quotes."
+  },
+  {
+   "t": 1794242651.280246,
+   "text": "Read the floor_frac 0.67 -> 0.65 verdict (23:32, share -45%, 'no other shop number changed') as NOT causal: floor_frac only lowers a floor and the opening ask moves only where the floor binds, so it cannot cut sales. The same hours saw the cheap old 300k+ units sell out and the rest meet cost-based floors near the market median (00:5x note). Do not raise floor_frac or write a lesson on this verdict; it read the stock mix, which the verdict code does not see."
   }
  ]
 }

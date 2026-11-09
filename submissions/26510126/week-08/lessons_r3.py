@@ -67,10 +67,10 @@ def facts(area, base=HERE):
         elif src in ("meta (auto)", "supervisor", "data", "bug", "design", "measured failure", "user") and \
                 (any(f in (r.get("files") or []) or f in change for f in FILES[area]) or
                  (not r.get("files") and any(w in change for w in WORDS[area]))):
-            v = str(r.get("verdict") or r.get("after") or "no verdict")[:160]
+            v = str(r.get("verdict") or r.get("after") or "no verdict")[:240]
             if src == "meta (auto)" and not r.get("ab_key") and r["t"] < CODE_FIX_T and r.get("verdict"):
                 v += " [raw before/after, reads the hour of day: weak]"
-            out.append((r["t"], f"code [{src}] {change[:160]}: {v}"))
+            out.append((r["t"], f"code [{src}] {change[:240]}: {v}"))
     out.sort(key=lambda x: x[0])
     return [(f"F{i + 1}", t, f"{stamp(t)} {text}") for i, (t, text) in enumerate(out)]
 
@@ -89,7 +89,8 @@ reference the {title} reads every cycle, so they must be short, true to the reco
 The record (facts, oldest first; numbers re-judged on our share of the market's paid sales are VERIFIED, those judged
 before 11/9 11:13 on raw margin/h are UNVERIFIED because they read the hour of day; code changes carry their own
 verdicts; code verdicts marked "raw before/after" read the hour of day and are weak, A/B ones compare the same
-hours; a later supervisor row can overturn an earlier verdict):
+hours; in an A/B the arm named before "won" is the winner; a later row that undoes or corrects a change supersedes
+it, so never recommend a value a later row undid):
 {facts}
 
 The lessons now (may be empty or stale):

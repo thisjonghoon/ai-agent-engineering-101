@@ -142,13 +142,20 @@ def memory_text(base=HERE, per_key=3, max_chars=2500):
                 k, _, rest = part.partition(" ")
                 by.setdefault(k, []).append((r["t"], f"{time.strftime('%m/%d %H:%M', time.localtime(r['t']))} "
                                                      f"{rest}: {note(done.get(key(r)))}"))
+    # the value now, beside the past: on 11/9 12:06 the manager read the 06:43 bundle's ask_frac_food 0.7 -> 0.85 as
+    # the value now (a supervisor undo at 09:21 had set it back to 0.7) and raised it while meaning to lower it
+    try:
+        now_vals = json.loads((Path(base) / "strategy_r3.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        now_vals = {}
     lines = []
     for k, items in sorted(by.items(), key=lambda kv: -kv[1][-1][0]):
-        lines.append(f"- {k}: " + "; ".join(x for _, x in items[-per_key:]))
+        lines.append(f"- {k} (now {now_vals.get(k, '?')}): " + "; ".join(x for _, x in items[-per_key:]))
     head = ("\nYour numbers' past verdicts, re-judged (memory check): VERIFIED rows were judged again on our share of "
             "the market's paid sales over the same hours; UNVERIFIED rows were judged on raw margin/h before 11/9 "
             "11:13 and read the hour of day, so they are weak evidence, not a reason to hold a number "
-            "(\"judged in both directions\" on UNVERIFIED rows proves nothing):\n")
+            "(\"judged in both directions\" on UNVERIFIED rows proves nothing); \"now\" is the value in force, later "
+            "supervisor changes included:\n")
     out = head
     for line in lines:
         if len(out) + len(line) + 1 > max_chars:

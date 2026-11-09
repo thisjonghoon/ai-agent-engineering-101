@@ -270,5 +270,344 @@
     ]
    }
   ]
+ },
+ "sales": {
+  "t": 1794193652.187504,
+  "facts": 62,
+  "lessons": [
+   {
+    "rule": "Do not use fast concessions with few turns on goods (step 0.5, max_turns 3, the IKEA playbook). Keep the slower strategy playbook with more turns. This is the only A/B verdict in the record, and it was judged on the same hours.",
+    "evidence": [
+     "F6",
+     "F57",
+     "F60"
+    ],
+    "status": "verified",
+    "trap": "The IKEA arm made 8.8% margin over list and closed 17 of 31 deals; the strategy made 13.7% and closed 39 of 55 (p 0.953). The 11/09 06:43 bundle brought back st",
+    "when": [
+     "11/05 07:47",
+     "11/09 06:43",
+     "11/09 09:21"
+    ]
+   },
+   {
+    "rule": "Before reading a change's effect, check what else moved in the comparison window (stock_value, other knobs). A confounded window gives no verdict. Do not pair stock_value changes with ask changes.",
+    "evidence": [
+     "F8",
+     "F20",
+     "F27",
+     "F34",
+     "F44"
+    ],
+    "status": "verified",
+    "trap": "The -33% raw margin on ask_frac 0.85 -> 0.9 was read as a loss, but stock_value had been 34M in the prior window and went back to 30M, so it was confounded. Sev",
+    "when": [
+     "11/05 18:58",
+     "11/06 18:15",
+     "11/07 06:53",
+     "11/07 16:51",
+     "11/08 10:15"
+    ]
+   },
+   {
+    "rule": "Change one knob at a time and never ship an overhaul bundle. Judge each change on our share of paid sales, using an A/B on the same hours.",
+    "evidence": [
+     "F57",
+     "F58",
+     "F59",
+     "F60"
+    ],
+    "status": "unverified",
+    "trap": "The 11/09 06:43 bundle (ask, floors, min_margin, step, max_turns, food asks) showed raw margin +30% but had no share verdict. The supervisor then undid part of ",
+    "when": [
+     "11/09 06:43",
+     "11/09 07:02",
+     "11/09 07:21",
+     "11/09 09:21"
+    ]
+   },
+   {
+    "rule": "Do not treat raw margin/h from a parameter tweak as evidence. Only readings on our share of paid sales count, and an A/B is the way to get one.",
+    "evidence": [
+     "F14",
+     "F15",
+     "F16",
+     "F17",
+     "F28",
+     "F44",
+     "F45",
+     "F54",
+     "F55"
+    ],
+    "status": "unverified",
+    "trap": "Raw margin swung from -72% to +418% on small tweaks and flipped sign on reversals. ask_frac 0.9 -> 0.93 read -61% and back to 0.9 read +67%. clear_hours 20 -> 2",
+    "when": [
+     "11/06 00:31",
+     "11/06 00:32",
+     "11/06 03:11",
+     "11/06 05:35",
+     "11/07 09:58",
+     "11/08 10:15",
+     "11/08 10:33",
+     "11/09 00:52",
+     "11/09 03:20"
+    ]
+   },
+   {
+    "rule": "Stop flipping the same knob back and forth (ask_frac_food, clear_hours, max_turns, market_ask, clear_frac). Move one only with an A/B on the same hours and then leave it.",
+    "evidence": [
+     "F9",
+     "F10",
+     "F12",
+     "F24",
+     "F25",
+     "F37",
+     "F47",
+     "F48",
+     "F53",
+     "F54",
+     "F55",
+     "F56",
+     "F61"
+    ],
+    "status": "unverified",
+    "trap": "ask_frac_food went 0.72 -> 0.75 -> 0.8 -> 0.72 in one evening, max_turns 6 -> 7 -> 6 within 15 minutes, and clear_frac went 0.5 -> 0.6 -> 0.5 -> 0.6 (11/09 10:01 not re",
+    "when": [
+     "11/05 19:30",
+     "11/05 20:02",
+     "11/05 20:02",
+     "11/06 22:57",
+     "11/07 02:47",
+     "11/07 23:28",
+     "11/08 16:04",
+     "11/08 16:19",
+     "11/08 23:26",
+     "11/09 00:52",
+     "11/09 03:20",
+     "11/09 06:26",
+     "11/09 10:01"
+    ]
+   },
+   {
+    "rule": "Treat lower floors and lower min_margin as unproven. Test them by A/B before keeping them. The last state is floors back at 0.67 and min_margin back at 0.02.",
+    "evidence": [
+     "F33",
+     "F36",
+     "F39",
+     "F40",
+     "F43",
+     "F50",
+     "F60"
+    ],
+    "status": "unverified",
+    "trap": "min_margin cuts 0.1 -> 0.06 -> 0.04 -> 0.02 read +36%, +154% and +119% on raw margin, but that is the hour-of-day reading. The costco bundle that raised min_mar",
+    "when": [
+     "11/07 16:02",
+     "11/07 22:54",
+     "11/08 01:10",
+     "11/08 03:35",
+     "11/08 07:12",
+     "11/08 17:55",
+     "11/09 09:21"
+    ]
+   },
+   {
+    "rule": "Keep the rules as the seller's default haggler. Do not raise model_share (haiku haggling) without a share-based A/B.",
+    "evidence": [
+     "F1",
+     "F3"
+    ],
+    "status": "unverified",
+    "trap": "Even with the model shown what the rule would do, the model still lost, and model_share has been 0 since 11/04 10:00. This rests on an early verdict that was no",
+    "when": [
+     "11/03 21:02",
+     "11/04 09:31"
+    ]
+   },
+   {
+    "rule": "Treat code changes without a verdict as unmeasured: scout wait, b-fast single-call haggle, food shelf-life shipping, the kit v4 checkout workaround, and the open ask_frac_food 0.7 change (11/09 12:07). Check them against paid-sales share before bui",
+    "evidence": [
+     "F2",
+     "F4",
+     "F5",
+     "F62"
+    ],
+    "status": "unverified",
+    "trap": "They shipped with no verdict, so a later gain or drop in sales can be neither blamed on them nor ruled out. Stacking new changes on top makes it worse.",
+    "when": [
+     "11/03 21:14",
+     "11/04 12:33",
+     "11/04 13:58",
+     "11/09 12:07"
+    ]
+   }
+  ],
+  "history": [
+   {
+    "t": 1794193482.952838,
+    "lessons": [
+     {
+      "rule": "Keep the goods strategy playbook (ask_frac 0.85, floor_frac 0.72, min_margin 0.08, step 0.5) rather than the IKEA-style fast-concession playbook; restore the A/B-tested goods ask of 0.85 after any experiment.",
+      "evidence": [
+       "F6",
+       "F59"
+      ],
+      "status": "verified",
+      "trap": "The IKEA playbook conceded fast with fewer turns and got 8.8% margin and 17 of 31 deals versus 13.7% and 39 of 55 for the strategy; copying it again would lose ",
+      "when": [
+       "11/05 07:47",
+       "11/09 07:21"
+      ]
+     },
+     {
+      "rule": "Do not change several parameters in one step or bundle a big overhaul (ask, floors, min_margin, step, max_turns together); change one knob and judge it on our share of paid sales.",
+      "evidence": [
+       "F57",
+       "F58",
+       "F59",
+       "F60"
+      ],
+      "status": "contradicted",
+      "trap": "The 11/09 06:43 costco bundle showed raw margin +30%, but the supervisor first undid part of it (11/09 07:02), corrected that (11/09 07:21), then undid the whole bundle (11/09 09:21); ",
+      "when": [
+       "11/09 06:43",
+       "11/09 07:02",
+       "11/09 07:21",
+       "11/09 09:21"
+      ]
+     },
+     {
+      "rule": "Do not trust raw margin/h readings from parameter tweaks as evidence; only verdicts on our share of the market's paid sales count, and an A/B on the same hours is the way to get one.",
+      "evidence": [
+       "F7",
+       "F16",
+       "F17",
+       "F28",
+       "F44",
+       "F45",
+       "F54",
+       "F55"
+      ],
+      "status": "unverified",
+      "trap": "Raw margin swung from -72% to +418% on small tweaks and flipped sign on reversals (ask_frac 0.9 -> 0.93 gave -61%, back to 0.9 gave +67%; clear_frac 0.5 -> 0.6 ",
+      "when": [
+       "11/05 16:48",
+       "11/06 03:11",
+       "11/06 05:35",
+       "11/07 09:58",
+       "11/08 10:15",
+       "11/08 10:33",
+       "11/09 00:52",
+       "11/09 03:20"
+      ]
+     },
+     {
+      "rule": "Before reading a change's effect, check what else changed in the comparison window (stock_value, other knobs) and note it; a confounded window gives no verdict.",
+      "evidence": [
+       "F8",
+       "F20",
+       "F27",
+       "F34",
+       "F44"
+      ],
+      "status": "verified",
+      "trap": "The -33% margin on ask_frac 0.85 -> 0.9 was taken as a loss, but stock_value was 34M during the prior window and changed back to 30M, so the reading was confoun",
+      "when": [
+       "11/05 18:58",
+       "11/06 18:15",
+       "11/07 06:53",
+       "11/07 16:51",
+       "11/08 10:15"
+      ]
+     },
+     {
+      "rule": "Do not flip a knob back and forth hunting for a gain (ask_frac_food 0.72/0.75/0.8, clear_hours 16/20/24, max_turns 5/6/7, market_ask 0.9-1.05); these oscillations produced no verified result, so stop tuning them without an A/B.",
+      "evidence": [
+       "F9",
+       "F10",
+       "F12",
+       "F13",
+       "F14",
+       "F15",
+       "F24",
+       "F25",
+       "F37",
+       "F47",
+       "F48",
+       "F53",
+       "F56"
+      ],
+      "status": "unverified",
+      "trap": "Each step looked like +/- tens of percent on raw margin, yet the next step reversed it (e.g. clear_hours 20 -> 24 gave +23%, 24 -> 20 also gave +23%), so the se",
+      "when": [
+       "11/05 19:30",
+       "11/05 20:02",
+       "11/05 20:02",
+       "11/05 23:28",
+       "11/06 00:31",
+       "11/06 00:32",
+       "11/06 22:57",
+       "11/07 02:47",
+       "11/07 23:28",
+       "11/08 16:04",
+       "11/08 16:19",
+       "11/08 23:26",
+       "11/09 06:26"
+      ]
+     },
+     {
+      "rule": "Lowering floors and min_margin (min_margin 0.1 -> 0.06 -> 0.04 -> 0.02, floor_frac_food 0.7 -> 0.64) is unproven; test it by A/B before keeping it, since the readings are raw only.",
+      "evidence": [
+       "F33",
+       "F36",
+       "F39",
+       "F40",
+       "F43",
+       "F50",
+       "F60"
+      ],
+      "status": "unverified",
+      "trap": "Raw margin rose after min_margin cuts (+36%, +154%, +119%) but the later costco bundle with min_margin 0.14 was reverted to 0.02 without a verified reading eith",
+      "when": [
+       "11/07 16:02",
+       "11/07 22:54",
+       "11/08 01:10",
+       "11/08 03:35",
+       "11/08 07:12",
+       "11/08 17:55",
+       "11/09 09:21"
+      ]
+     },
+     {
+      "rule": "Seller-side model haggling (haiku via model_share) lost to the rules, so keep rules as the default and do not push model_share up without a share-based A/B.",
+      "evidence": [
+       "F1",
+       "F3"
+      ],
+      "status": "unverified",
+      "trap": "Letting the model see what the rule would do still lost and model_share dropped to 0 since 11/04 10:00; re-enabling it blindly would repeat the loss.",
+      "when": [
+       "11/03 21:02",
+       "11/04 09:31"
+      ]
+     },
+     {
+      "rule": "Code changes without a verdict (scout wait, b-fast single-call haggle, food shelf-life shipping, kit v4 checkout workaround) should be treated as unmeasured; check them against paid-sales share before building on them.",
+      "evidence": [
+       "F2",
+       "F4",
+       "F5"
+      ],
+      "status": "unverified",
+      "trap": "They were shipped with no verdict, so a later drop or gain in sales cannot be attributed to them or ruled out.",
+      "when": [
+       "11/03 21:14",
+       "11/04 12:33",
+       "11/04 13:58"
+      ]
+     }
+    ]
+   }
+  ]
  }
 }

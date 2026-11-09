@@ -59,9 +59,11 @@ def main():
          (again, redo))
     text = rejudge_r3.memory_text(base)
     case("the memory names each number with its status, newest numbers first",
-         "- dear_depth:" in text and "VERIFIED: this change raised" in text and "the raw verdict said the opposite" in text
+         "- dear_depth (" in text and "VERIFIED: this change raised" in text and "the raw verdict said the opposite" in text
          and text.index("- dear_depth") < text.index("- max_list") if "- max_list" in text else False, text)
     case("the memory tells the team UNVERIFIED rows are weak evidence", "weak evidence" in text)
+    (base / "strategy_r3.json").write_text(json.dumps({"dear_depth": 5}))
+    case("each number shows its value now", "- dear_depth (now 5):" in rejudge_r3.memory_text(base))
     case("the memory stays under its cap", len(rejudge_r3.memory_text(base, max_chars=300)) <= 300)
     print(f"{sum(RESULTS)}/{len(RESULTS)} passed")
     return all(RESULTS)

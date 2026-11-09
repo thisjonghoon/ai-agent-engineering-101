@@ -44,9 +44,22 @@ def main():
          and new["share"] == 2.0, new)
     case("a change whose 2 h have not run waits, a fast guard revert is no verdict", added == 2, added)
     case("a second pass adds nothing", rejudge_r3.update(base, now) == 0)
+    # data that reaches back later (the backfill's buckets) turns an UNVERIFIED row into a re-judged one
+    old_t = rows[0]["t"]
+    with (base / metrics_r3.BUCKETS).open("w") as f:     # a live bucket first, the backfilled older ones after it
+        f.write(json.dumps({"t": int(now) // 600 * 600 - 600, "ours_n": 0, "ours_value": 0, "ours_margin": 0,
+                            "mkt_n": 1, "mkt_value": 1}) + "\n")
+        for i, b0 in enumerate(range(int(old_t - 2 * 3600) // 600 * 600 - 600, int(old_t + 2 * 3600) + 600, 600)):
+            after = b0 >= old_t
+            f.write(json.dumps({"t": b0, "ours_n": 1, "ours_value": 30 if after else 10, "ours_margin": 3,
+                                "mkt_n": 10, "mkt_value": 1000}) + "\n")
+    again = rejudge_r3.update(base, now)
+    redo = json.loads((base / rejudge_r3.OUT).read_text()).get(rejudge_r3.key(rows[0]))
+    case("an UNVERIFIED row is re-judged once buckets reach back to it", again == 1 and redo["status"] != "unverified",
+         (again, redo))
     text = rejudge_r3.memory_text(base)
     case("the memory names each number with its status, newest numbers first",
-         "- dear_depth:" in text and "UNVERIFIED (raw margin +12%" in text and "VERIFIED reversed" in text
+         "- dear_depth:" in text and "VERIFIED: this change raised" in text and "the raw verdict said the opposite" in text
          and text.index("- dear_depth") < text.index("- max_list") if "- max_list" in text else False, text)
     case("the memory tells the team UNVERIFIED rows are weak evidence", "weak evidence" in text)
     case("the memory stays under its cap", len(rejudge_r3.memory_text(base, max_chars=300)) <= 300)

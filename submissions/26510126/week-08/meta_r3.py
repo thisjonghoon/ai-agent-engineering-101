@@ -818,6 +818,14 @@ async def cycle():
             harness.log("META", f"memory check: {again} past verdicts re-judged or marked unverified ({filed} buckets filed)")
     except Exception as e:
         harness.log("META", f"memory check failed: {type(e).__name__}: {e}")
+    try:                                                # rewrite one area's lessons when its time has come (lessons_r3)
+        import lessons_r3
+        area = lessons_r3.due(HERE)
+        if area:
+            n = await lessons_r3.dream(area, HERE)
+            harness.log("META", f"lessons: {area} rewritten, {n} kept" if n else f"lessons: {area} not rewritten")
+    except Exception as e:
+        harness.log("META", f"lessons failed: {type(e).__name__}: {e}")
     cur = current()
     hist = [json.loads(l) for l in HISTORY.read_text(encoding="utf-8").splitlines() if l.strip()] if HISTORY.exists() else []
     since = hist[-1]["time"] if hist else time.time() - EVERY
@@ -845,6 +853,12 @@ async def cycle():
         plan = dict(BUYER_DEFAULTS, **{k: v for k, v in read_json(BUYER_PLAN, {}).items() if k in BUYER_BOUNDS})
         extra = {"merch": {"demand_top_skus": demand}, "community_text": "Other agents' recent posts:\n" + forum_digest(),
                  "sales_text": "Retail playbooks (each can be arm B of the A/B test):\n" + playbooks_r3.for_prompt()}
+        try:                                            # each specialist reads its own area's lessons (lessons_r3)
+            import lessons_r3
+            for role in lessons_r3.TITLES:
+                extra[f"{role}_text"] = extra.get(f"{role}_text", "") + lessons_r3.text(role, HERE)
+        except Exception as e:
+            harness.log("META", f"lessons not shown: {type(e).__name__}")
         ans = await meta_team_r3.decide(now, cur, plan, hist, after, advice(), BOUNDS, BUYER_BOUNDS,
                                         ", ".join(AB_PARAMS), extra)
     if ans is None:

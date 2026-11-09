@@ -75,7 +75,8 @@ def judge(r, base=HERE):
 
 def earliest(base=HERE):
     """The earliest time any data reaches back to: the first bucket or the cache's first settle."""
-    ts = [x.get("t") for x in metrics_r3.jl(Path(base) / metrics_r3.BUCKETS)[:1]]
+    # all rows, not the first: the backfill appends older buckets after the ones filed live
+    ts = [min((x.get("t") for x in metrics_r3.jl(Path(base) / metrics_r3.BUCKETS) if x.get("t")), default=None)]
     ts += [min((e["ts"] for e in metrics_r3._settles(base)), default=None)]
     ts = [x for x in ts if x]
     return min(ts) if ts else None
@@ -93,11 +94,15 @@ def update(base=HERE, now=None):
     first, added = earliest(base), 0
     for r in rows(base):
         k = key(r)
-        if k in done or now - r["t"] < SPAN:
+        covered = bool(first) and r["t"] - SPAN >= first
+        # an UNVERIFIED row is tried again once data reaches back to it (11/9: the ledger backfill, backfill_r3.py)
+        if (k in done and not (done[k].get("status") == "unverified" and covered)) or now - r["t"] < SPAN:
             continue
-        res = judge(r, base) if first and r["t"] - SPAN >= first else None
-        if res is None and first and r["t"] - SPAN >= first:
+        res = judge(r, base) if covered else None
+        if res is None and covered:
             continue                                    # covered but not measurable yet (no market sales): retry
+        if res is None and k in done:
+            continue
         done[k] = res or {"status": "unverified", "orig": r.get("measured")}
         added += 1
     if added:
@@ -114,9 +119,14 @@ def note(res):
     raw = f"raw margin {o:+.0%}" if isinstance(o, (int, float)) else "raw verdict"
     if res["status"] == "unverified":
         return f"UNVERIFIED ({raw})"
-    return (f"VERIFIED {res['status']}: board points/h net of the market {res['net_pts']:+.0%}, " if res.get("net_pts")
-            is not None else f"VERIFIED {res['status']}: ") + \
-        (f"value share {res['share']:+.0%} " if res.get("share") is not None else "") + f"({raw}; {res['sales']} sales)"
+    # say what the change did, not "confirmed -20%": on 11/9 a model read "VERIFIED confirmed: board -20%" for
+    # dear_depth 5 -> 4 as "hold dear_depth at 4"
+    aim, what = res.get("aim"), "board points/h net of the market" if res.get("net_pts") is not None else "value share"
+    did = ("made no difference beyond noise" if res["status"] == "flat" else
+           f"{'raised' if aim > 0 else 'lowered'} {what} by {abs(aim):.0%}")
+    agree = {"confirmed": "; the raw verdict agreed", "reversed": "; the raw verdict said the opposite"}.get(res["status"], "")
+    return f"VERIFIED: this change {did}{agree} (value share {res['share']:+.0%}, {raw}; {res['sales']} sales)" \
+        if res.get("share") is not None else f"VERIFIED: this change {did}{agree} ({raw})"
 
 
 def memory_text(base=HERE, per_key=3, max_chars=2500):

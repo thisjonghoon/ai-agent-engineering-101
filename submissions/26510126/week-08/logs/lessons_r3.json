@@ -1,0 +1,274 @@
+{
+ "merch": {
+  "t": 1794193399.188879,
+  "facts": 87,
+  "lessons": [
+   {
+    "rule": "Do not add reserves, room tests, surge cut-offs, own-sales caps or score-based drops that cut hot 300k+ goods lines (sku_score at DEAR_HOT or more). Change those lines only by adding depth.",
+    "evidence": [
+     "F13",
+     "F26",
+     "F28",
+     "F42",
+     "F53",
+     "F64",
+     "F80"
+    ],
+    "status": "unverified",
+    "trap": "Every guard was expected to help (+10% to +15%) and was reverted: F13 -53%, F28 -24%, F42 -32% (deals 115.3 -> 67.7), F53 -30%, F64 -43% (deals 70.7 -> 40.3), F80 -36% (deals 80.7 -> 41.3). F26 sized ",
+    "when": [
+     "11/05 23:29",
+     "11/06 14:35",
+     "11/06 16:16",
+     "11/07 06:54",
+     "11/07 18:34",
+     "11/08 05:01",
+     "11/09 04:44"
+    ]
+   },
+   {
+    "rule": "Put the depth on goods that keep selling and keep slow or mid-priced SKUs small: non-hot 300k+ at 1 unit, 100-150k goods capped at 2, and hot cheap SKUs scaled by heat.",
+    "evidence": [
+     "F11",
+     "F14",
+     "F33",
+     "F38",
+     "F60"
+    ],
+    "status": "unverified",
+    "trap": "Each of these was kept, but only on raw before/after verdicts (for example F38 +107%, F14 +354%) that read the hour of day. They show the direction, not the size of the gain, so do not quote them as p",
+    "when": [
+     "11/05 21:54",
+     "11/06 01:05",
+     "11/06 19:38",
+     "11/07 03:21",
+     "11/08 01:27"
+    ]
+   },
+   {
+    "rule": "Free stock room from slow 300k+ units by sku_score (exclude them from the stock_value cap and goods_frac room, and stop slow lines once 40 are held). Never use an age-based exclusion.",
+    "evidence": [
+     "F50",
+     "F57",
+     "F66"
+    ],
+    "status": "unverified",
+    "trap": "The age-based version (F50, unsold over a day) was expected +20% and measured -29%, so it was reverted. The sku_score versions were kept (F57 deals +63%, F66 margin +252%), but on raw before/after onl",
+    "when": [
+     "11/07 14:59",
+     "11/07 22:06",
+     "11/08 08:33"
+    ]
+   },
+   {
+    "rule": "Do not lower stock_value. The cut from 65000000 to 60000000 hurt on the board's terms, so put it back toward 65000000. More stock earlier also raised deals and revenue.",
+    "evidence": [
+     "F85",
+     "F8"
+    ],
+    "status": "verified",
+    "trap": "F85 cut stock_value 65M -> 60M and lowered board points/h net of the market by 28% (value share +25% but raw margin -42%; 45/5245 -> 54/5298 sales). Value share alone looks like a gain and hides the l",
+    "when": [
+     "11/09 08:21",
+     "11/05 13:08"
+    ]
+   },
+   {
+    "rule": "Do not lower dear_depth. Going from 5 to 4 lowered board points, so return to 5 and do not change it in the same cycle as stock_value.",
+    "evidence": [
+     "F83",
+     "F81"
+    ],
+    "status": "verified",
+    "trap": "F83 (dear_depth 5 -> 4) lowered board points/h net of the market by 20% (value share +16%, raw margin -39%; 54/5304 -> 44/5273 sales). The earlier raw verdict on 4 -> 5 (F81, -49%) was timing noise an",
+    "when": [
+     "11/09 08:05",
+     "11/09 05:01"
+    ]
+   },
+   {
+    "rule": "The hot 300k+ heat cap is undecided: do not stack more depth changes on F86 or F87 until the supervisor's restore of 5x (20 units) and the 150-300k heat at 2x have been judged on share of paid sales.",
+    "evidence": [
+     "F84",
+     "F86",
+     "F87"
+    ],
+    "status": "unverified",
+    "trap": "Raising the cap from 3x to 5x (F84, expected +10%) measured -20% on raw before/after and was reverted. The supervisor then restored it (F86) with no verdict, and F87 adds more heat depth, so a new los",
+    "when": [
+     "11/09 08:06",
+     "11/09 11:18",
+     "11/09 11:33"
+    ]
+   },
+   {
+    "rule": "Treat the earlier number sweeps (max_list, stock_value, window_depth, sku_depth, ask_frac, breadth_lines and similar) as weak. Do not use them as a reason to move these numbers again.",
+    "evidence": [
+     "F61",
+     "F63",
+     "F65",
+     "F73",
+     "F76",
+     "F78",
+     "F81",
+     "F82"
+    ],
+    "status": "unverified",
+    "trap": "They were judged on raw margin, which reads the hour of day. max_list went 900k -> 600k -> 900k -> 600k and stock_value swung 70M -> 75M -> 70M -> 65M, with verdicts like -78% then +49% that mostly re",
+    "when": [
+     "11/08 01:58",
+     "11/08 04:43",
+     "11/08 07:43",
+     "11/08 18:44",
+     "11/08 21:51",
+     "11/09 02:00",
+     "11/09 05:01",
+     "11/09 05:35"
+    ]
+   },
+   {
+    "rule": "Do not count on the food shelf-life bar change (selling food categories need min(min_shelf_hours, 48)) to cut refusals. Check shelf_refused_h before building on it.",
+    "evidence": [
+     "F77"
+    ],
+    "status": "contradicted",
+    "trap": "It was kept, but shelf_refused_h was expected -30% and measured +21%, the wrong way. Assuming it worked would hide a refusal problem.",
+    "when": [
+     "11/09 01:10"
+    ]
+   }
+  ],
+  "history": [
+   {
+    "t": 1794193306.178695,
+    "lessons": [
+     {
+      "rule": "Do not add reserves, room tests, surge cut-offs or exclusions that cut hot 300k+ goods lines (sku_score at DEAR_HOT or more). Their buying drives deals and margin. Change those lines only by adding depth.",
+      "evidence": [
+       "F5",
+       "F16",
+       "F28",
+       "F39",
+       "F49",
+       "F65"
+      ],
+      "status": "verified",
+      "trap": "Each guard was expected to give +10% to +15% and was reverted: F5 -53%, F16 -24%, F28 -32% (deals 115.3 -> 67.7), F39 -30%, F49 -43% (deals 70.7 -> 40.3), F65 -36% (deals 80.7 -> 41.3).",
+      "when": [
+       "11/05 23:29",
+       "11/06 16:16",
+       "11/07 06:54",
+       "11/07 18:34",
+       "11/08 05:01",
+       "11/09 04:44"
+      ]
+     },
+     {
+      "rule": "Put depth on goods that keep selling and hold slow or mid-priced SKUs small. Scale hot 300k+ depth by heat but keep the clamp at 3x, with non-hot 300k+ at 1 unit and 100-150k goods capped at 2. Do not lift the heat cap further.",
+      "evidence": [
+       "F3",
+       "F6",
+       "F19",
+       "F24",
+       "F45",
+       "F69",
+       "F71"
+      ],
+      "status": "verified",
+      "trap": "Raising the heat cap from 3.0x to 5.0x (F69, expected +10%) measured -20% and was reverted. F71 extends heat scaling to 150-300k at 2x and has no verdict yet, so do not stack more depth changes on it ",
+      "when": [
+       "11/05 21:54",
+       "11/06 01:05",
+       "11/06 19:38",
+       "11/07 03:21",
+       "11/08 01:27",
+       "11/09 08:06",
+       "11/09 11:33"
+      ]
+     },
+     {
+      "rule": "Free stock room from slow 300k+ units by sku_score (exclude them from the stock_value cap and the goods_frac room) and stop buying more slow lines once about 40 are held. Do not use an age-based exclusion.",
+      "evidence": [
+       "F42",
+       "F51",
+       "F36"
+      ],
+      "status": "verified",
+      "trap": "The age-based version (F36, unsold over a day) was expected +20% and measured -29%, reverted. The sku_score version (F42) gave deals +63%.",
+      "when": [
+       "11/07 22:06",
+       "11/08 08:33",
+       "11/07 14:59"
+      ]
+     },
+     {
+      "rule": "Keep the category skip at 2x max_list, so the dear categories with a reference price near 1.4M+ get their nearest-to-ref. Do not drop above-2x SKUs because their score is low.",
+      "evidence": [
+       "F1",
+       "F65"
+      ],
+      "status": "verified",
+      "trap": "Dropping SKUs above 2x max_list only when sku_score is under DEAR_HOT (F65) measured -36% and halved deals, so it was reverted.",
+      "when": [
+       "11/05 03:02",
+       "11/09 04:44"
+      ]
+     },
+     {
+      "rule": "Hold dear_depth at 4 and stock_value at 60000000. Both were judged on our share of the market's paid sales, and value share rose after each move.",
+      "evidence": [
+       "F68",
+       "F70"
+      ],
+      "status": "verified",
+      "trap": "Raw margin fell (-39%, -42%) on both confirmed moves. Reading raw margin alone would have called them failures and undone the ones that gained share.",
+      "when": [
+       "11/09 08:05",
+       "11/09 08:21"
+      ]
+     },
+     {
+      "rule": "Treat earlier number sweeps on stock_value, max_list, sku_cap, breadth_lines, ask_frac and similar as weak. Do not use them as a reason to move these numbers again.",
+      "evidence": [
+       "F2",
+       "F8",
+       "F12",
+       "F25",
+       "F33",
+       "F46",
+       "F48",
+       "F50",
+       "F58",
+       "F61"
+      ],
+      "status": "unverified",
+      "trap": "These were judged on raw margin, which reads the hour of day. max_list went 600k -> 900k -> 600k and stock_value swung between 55M and 80M, with verdicts like -78% then +49% that mostly reflect timing",
+      "when": [
+       "11/05 16:32",
+       "11/06 08:25",
+       "11/06 12:46",
+       "11/07 04:29",
+       "11/07 12:23",
+       "11/08 01:58",
+       "11/08 04:43",
+       "11/08 07:43",
+       "11/08 18:44",
+       "11/08 21:51"
+      ]
+     },
+     {
+      "rule": "Do not count on the food shelf-life bar change (selling food categories need min(min_shelf_hours, 48)) to cut refusals.",
+      "evidence": [
+       "F62"
+      ],
+      "status": "contradicted",
+      "trap": "It was kept, but shelf_refused_h was expected -30% and measured +21%, the wrong way. Assuming it worked would hide a refusal problem.",
+      "when": [
+       "11/09 01:10"
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}

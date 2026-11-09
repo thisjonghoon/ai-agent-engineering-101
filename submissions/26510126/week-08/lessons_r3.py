@@ -1,0 +1,182 @@
+"""Each team area's lessons: one short reference the specialist reads, rewritten from the verdict ledger now and then.
+
+Until 11/9 a specialist saw the last 12 versions of its numbers and the last 6 number verdicts, so anything older was
+gone or passed on by word of mouth ("judged in both directions"). The memory study (Anthropic, components of agent
+memory, 2026) found the learning loop closed when the model kept one consolidated reference with each rule's evidence
+and whether it was verified, rewrote it between sessions, and fixed wrong notes against the record.
+
+  facts(area)   the record, by code: the area's number verdicts as re-judged (rejudge_r3: VERIFIED or UNVERIFIED),
+                the code changes to its files with their verdicts, the buyer's A/B verdicts. Each fact has an id.
+  dream(area)   a model (sonnet) rewrites the area's lessons from its old lessons and the facts: at most MAX lessons,
+                each a rule, the fact ids it rests on, a status (verified / unverified / contradicted) and a trap.
+                Code drops a lesson citing no fact or an unknown one, so no evidence is invented; the old version
+                goes into the history (where a rule came from and what it replaced).
+  text(area)    what the specialist reads, under MAX_CHARS.
+The meta cycle (meta_r3.cycle) dreams the most overdue area once its DREAM_EVERY has passed.
+"""
+import json
+import time
+from pathlib import Path
+
+import metrics_r3
+import rejudge_r3
+
+HERE = Path(__file__).resolve().parent
+OUT = Path("logs") / "lessons_r3.json"
+DREAM_EVERY = 3 * 3600
+MAX, MAX_CHARS, KEEP_HISTORY = 8, 3000, 10
+TITLES = {"sales": "head of sales", "merch": "head of merchandising", "buying": "head of buying",
+          "community": "community lead"}
+# supervisor and other hand-made rows name no files: their words place them (the 11/9 restore of 4d10151 was missed)
+WORDS = {"merch": ("restock", "stock", "dear_depth", "heat", "sku"), "buying": ("buyer", "C_CAP", "MAX_RAISE"),
+         "community": ("forum", "post"), "sales": ("seller", "ask_frac", "floor", "haggl")}
+# code verdicts before 46776c3 (11/9 11:17:58) compared raw shop numbers 3 h before and after: the hour of day
+CODE_FIX_T = 1794190678
+FILES = {"merch": ("restock_r3.py", "demand_r3.py", "prices_r3.py"), "buying": ("buyer_r3.py", "buyer.py"),
+         "community": ("forum_r3.py",), "sales": ("seller_r3.py",)}
+STATUSES = ("verified", "unverified", "contradicted")
+
+
+def merch_keys():
+    import meta_team_r3
+    return set(meta_team_r3.MERCH_KEYS)
+
+
+def stamp(t):
+    return time.strftime("%m/%d %H:%M", time.localtime(t or 0))
+
+
+def facts(area, base=HERE):
+    """[(id, t, text)] for the area, oldest first: its record as code and the re-judge read it."""
+    base = Path(base)
+    rows = metrics_r3.jl(base / rejudge_r3.CHANGES)
+    try:
+        again = json.loads((base / rejudge_r3.OUT).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        again = {}
+    merch, out = merch_keys(), []
+    for r in rows:
+        src, change = r.get("source"), str(r.get("change") or "")
+        if src == "inner loop (number)" and not change.startswith("fast guard"):
+            keys = {p.split(" ")[0] for p in change.split(", ") if " -> " in p}
+            mine = keys & merch if area == "merch" else keys - merch if area == "sales" else set()
+            if mine:
+                out.append((r["t"], f"number {change}: {rejudge_r3.note(again.get(rejudge_r3.key(r)))}"))
+        elif src == "inner loop (buyer A/B)" and area == "buying":
+            out.append((r["t"], f"buyer A/B {change}: {str(r.get('verdict'))[:160]}"))
+        elif src in ("meta (auto)", "supervisor", "data", "bug", "design", "measured failure", "user") and \
+                (any(f in (r.get("files") or []) or f in change for f in FILES[area]) or
+                 (not r.get("files") and any(w in change for w in WORDS[area]))):
+            v = str(r.get("verdict") or r.get("after") or "no verdict")[:160]
+            if src == "meta (auto)" and not r.get("ab_key") and r["t"] < CODE_FIX_T and r.get("verdict"):
+                v += " [raw before/after, reads the hour of day: weak]"
+            out.append((r["t"], f"code [{src}] {change[:160]}: {v}"))
+    out.sort(key=lambda x: x[0])
+    return [(f"F{i + 1}", t, f"{stamp(t)} {text}") for i, (t, text) in enumerate(out)]
+
+
+def load(base=HERE):
+    try:
+        return json.loads((Path(base) / OUT).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+DREAM = """You keep the lessons of the {title} of a shop-and-buyer agent team in an online market of AI agents
+(Round 3, until 11/17; the aim is board points: shop book, revenue and stars, buyer saved). The lessons are the one
+reference the {title} reads every cycle, so they must be short, true to the record and useful for the next change.
+
+The record (facts, oldest first; numbers re-judged on our share of the market's paid sales are VERIFIED, those judged
+before 11/9 11:13 on raw margin/h are UNVERIFIED because they read the hour of day; code changes carry their own
+verdicts; code verdicts marked "raw before/after" read the hour of day and are weak, A/B ones compare the same
+hours; a later supervisor row can overturn an earlier verdict):
+{facts}
+
+The lessons now (may be empty or stale):
+{lessons}
+
+Rewrite the lessons: at most {max}. Each lesson is a rule the {title} can act on, the ids of the facts it rests on,
+a status, and a trap (how acting on it went wrong, or would). Status: "verified" when it rests on VERIFIED facts or
+code verdicts measured on the board's terms; "unverified" when it rests only on UNVERIFIED facts (say so, they are
+weak); "contradicted" when newer facts point the other way (keep it so the trap is remembered). Quote only numbers
+that appear in the facts. Drop a lesson the facts no longer support; merge duplicates; prefer recent facts.
+Answer with JSON only: {{"lessons": [{{"rule": "...", "evidence": ["F3", "F9"], "status": "verified", "trap": "..."}}]}}"""
+
+
+def valid(lessons, ids):
+    """The model's lessons that cite only known facts, with a known status, at most MAX."""
+    out = []
+    for x in lessons if isinstance(lessons, list) else []:
+        if not isinstance(x, dict) or not isinstance(x.get("rule"), str) or not x["rule"].strip():
+            continue
+        ev = [e for e in x.get("evidence") or [] if isinstance(e, str)]
+        if not ev or any(e not in ids for e in ev) or x.get("status") not in STATUSES:
+            continue
+        out.append({"rule": x["rule"].strip()[:240], "evidence": ev, "status": x["status"],
+                    "trap": str(x.get("trap") or "")[:160]})
+    return out[:MAX]
+
+
+async def dream(area, base=HERE, ask=None, now=None):
+    """Rewrite the area's lessons once; returns how many lessons were kept, or None when the model gave nothing."""
+    import harness
+    ask = ask or harness.ask
+    base, now = Path(base), now or time.time()
+    fs = facts(area, base)
+    if not fs:
+        return None
+    shown = fs[-80:]                                    # the newest 80 facts: the prompt stays near 15,000 characters
+    data = load(base)
+    cur = data.get(area) or {}
+    prompt = DREAM.format(title=TITLES[area], max=MAX, facts="\n".join(f"{i}: {x}" for i, _, x in shown),
+                          lessons=json.dumps(cur.get("lessons") or [], ensure_ascii=False))
+    ans = await ask(prompt, model="sonnet", timeout=180, max_chars=30_000)
+    kept = valid((ans or {}).get("lessons"), {i for i, _, _ in shown})
+    if not kept:
+        return None
+    when = {i: t for i, t, _ in fs}
+    import re
+    for x in kept:                                      # the facts' times travel with a lesson; ids are renumbered
+        x["when"] = [stamp(when[e]) for e in x["evidence"]]
+        for k in ("rule", "trap"):                      # the specialist sees no ids: "F13 -53%" -> "11/05 23:29 -53%"
+            x[k] = re.sub(r"\bF(\d+)\b", lambda m: stamp(when[m.group(0)]) if m.group(0) in when else m.group(0), x[k])
+    history = (cur.get("history") or []) + ([{"t": cur["t"], "lessons": cur["lessons"]}] if cur.get("lessons") else [])
+    data[area] = {"t": now, "facts": len(fs), "lessons": kept, "history": history[-KEEP_HISTORY:]}
+    path = base / OUT
+    path.parent.mkdir(exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    tmp.replace(path)
+    return len(kept)
+
+
+def due(base=HERE, now=None):
+    """The most overdue area whose DREAM_EVERY has passed, or None."""
+    now, data = now or time.time(), load(base)
+    late = [(now - (data.get(a) or {}).get("t", 0), a) for a in TITLES]
+    late = [x for x in late if x[0] >= DREAM_EVERY]
+    return max(late)[1] if late else None
+
+
+def text(area, base=HERE):
+    """The area's lessons for its specialist, or "" before the first dream."""
+    cur = load(base).get(area) or {}
+    if not cur.get("lessons"):
+        return ""
+    out = (f"\nYour lessons (rewritten {stamp(cur['t'])} from the verdict ledger; verified rests on judged facts, "
+           f"unverified only on raw verdicts, contradicted was overturned and is kept for its trap):\n")
+    for x in cur["lessons"]:
+        line = f"- [{x['status']}] {x['rule']} (facts {', '.join(x.get('when') or [])}" + \
+               (f"; trap: {x['trap']}" if x.get("trap") else "") + ")\n"
+        if len(out) + len(line) > MAX_CHARS:
+            break
+        out += line
+    return out
+
+
+if __name__ == "__main__":
+    import asyncio
+    import sys
+    for a in (sys.argv[1:] or TITLES):
+        print(a, len(facts(a)), "facts;", asyncio.run(dream(a)), "lessons")
+        print(text(a))

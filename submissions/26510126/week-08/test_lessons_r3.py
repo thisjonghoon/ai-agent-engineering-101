@@ -1,0 +1,79 @@
+"""Tests for lessons_r3: the facts each area's lessons rest on, the check that drops lessons citing unknown facts, the
+history kept on a rewrite, and what the specialist reads. The model is a stub; files live in a temp folder."""
+import asyncio
+import json
+import tempfile
+import time
+from pathlib import Path
+
+import lessons_r3 as ls
+import rejudge_r3
+
+RESULTS = []
+
+
+def case(name, ok, detail=""):
+    RESULTS.append(bool(ok))
+    print(("PASS " if ok else "FAIL ") + name + (f"  ({detail})" if detail and not ok else ""))
+
+
+def main():
+    base = Path(tempfile.mkdtemp(prefix="lessons-"))
+    (base / "logs").mkdir()
+    t = 1794100000
+    rows = [{"t": t, "source": "inner loop (number)", "change": "dear_depth 5 -> 4", "measured": -0.39},
+            {"t": t + 10, "source": "inner loop (number)", "change": "ask_frac 0.7 -> 0.75", "measured": 0.1},
+            {"t": t + 20, "source": "meta (auto)", "change": "In `restock_r3.py`, the heat cap goes to 5x",
+             "files": ["restock_r3.py"], "verdict": "reverted (shop_margin_h -20%)"},
+            {"t": t + 30, "source": "supervisor", "change": "restore 4d10151: hot 300k+ lines stocked up to 5x again"},
+            {"t": t + 40, "source": "inner loop (buyer A/B)", "change": "buyer CAP 0.8 -> 0.75", "verdict": "kept"},
+            {"t": t + 50, "source": "inner loop (number)", "change": "fast guard revert: dear_depth 4 -> 5"}]
+    (base / rejudge_r3.CHANGES).write_text("".join(json.dumps(r) + "\n" for r in rows))
+    (base / rejudge_r3.OUT).write_text(json.dumps({rejudge_r3.key(rows[0]): {
+        "status": "confirmed", "aim": -0.2, "share": 0.16, "net_pts": -0.2, "orig": -0.39, "sales": "54/5304 -> 44/5273"}}))
+
+    merch, sales, buying = ls.facts("merch", base), ls.facts("sales", base), ls.facts("buying", base)
+    mt = " ".join(x[2] for x in merch)
+    case("merchandising gets its numbers, its code changes and the supervisor's restore", len(merch) == 3
+         and "dear_depth" in mt and "heat cap" in mt and "restore 4d10151" in mt, [x[2][:60] for x in merch])
+    case("a verified number says what the change did", "lowered board points/h net of the market by 20%" in mt, mt)
+    case("an old before/after code verdict is marked weak", "raw before/after" in mt, mt)
+    case("sales gets ask_frac only, buying its A/B, no area gets a fast guard revert",
+         len(sales) == 1 and "ask_frac" in sales[0][2] and len(buying) == 1 and "fast guard" not in mt)
+
+    ok = [{"rule": "r1", "evidence": ["F1"], "status": "verified", "trap": "t"},
+          {"rule": "r2", "evidence": ["F9"], "status": "verified"},          # an unknown fact
+          {"rule": "r3", "evidence": [], "status": "verified"},              # no fact
+          {"rule": "r4", "evidence": ["F2"], "status": "maybe"}]             # unknown status
+    case("only lessons citing known facts with a known status are kept",
+         [x["rule"] for x in ls.valid(ok, {"F1", "F2", "F3"})] == ["r1"])
+
+    calls = []
+
+    async def ask(prompt, **k):
+        calls.append(prompt)
+        return {"lessons": [{"rule": f"rule {len(calls)}", "evidence": ["F1", "F3"], "status": "verified",
+                             "trap": "F2 went -20%"}]}
+    n1 = asyncio.run(ls.dream("merch", base, ask=ask, now=t + 100))
+    n2 = asyncio.run(ls.dream("merch", base, ask=ask, now=t + 200))
+    cur = ls.load(base)["merch"]
+    case("a rewrite keeps the old version in the history", n1 == 1 and n2 == 1 and cur["lessons"][0]["rule"] == "rule 2"
+         and cur["history"][0]["lessons"][0]["rule"] == "rule 1", cur)
+    case("the prompt shows the facts and the lessons now", "F1:" in calls[1] and "rule 1" in calls[1])
+    case("a lesson carries its facts' times, and ids in its words become times",
+         len(cur["lessons"][0]["when"]) == 2 and cur["lessons"][0]["trap"].startswith(ls.stamp(t + 20)), cur["lessons"][0])
+    async def nothing(prompt, **k):
+        return {"lessons": [{"rule": "x", "evidence": ["F99"], "status": "verified"}]}
+    case("a dream with nothing valid leaves the lessons alone",
+         asyncio.run(ls.dream("merch", base, ask=nothing, now=t + 300)) is None and ls.load(base)["merch"]["t"] == t + 200)
+    txt = ls.text("merch", base)
+    case("the specialist reads its lessons with status and times", "[verified] rule 2" in txt and len(txt) <= ls.MAX_CHARS)
+    case("an area never dreamed reads nothing", ls.text("community", base) == "")
+    case("the most overdue area is dreamed next", ls.due(base, now=t + 200 + ls.DREAM_EVERY + 1) in
+         ("sales", "buying", "community") and ls.due(base, now=t + 200) in ("sales", "buying", "community"))
+    print(f"{sum(RESULTS)}/{len(RESULTS)} passed")
+    return all(RESULTS)
+
+
+if __name__ == "__main__":
+    raise SystemExit(0 if main() else 1)

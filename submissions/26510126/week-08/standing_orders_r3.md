@@ -27,9 +27,14 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    you believe it has.
    [since 11/9 12:2x; from: 12:06 ask_frac_food raised 0.7 -> 0.75 while "lowering it 0.85 -> 0.8"; review: never]
 6. The forum posts every 310 s, the market's limit; code fixes it, not the team. The API shows the last 100 posts,
-   about 12 minutes of 41 authors, so that is 2-3 of ours, and posts are a tenth of the buyer's ALL.
-   [since 11/9 13:3x; from: the user's reasoning on the 100-post window; review: if the forum rating (0.908) falls
-   under 0.85]
-7. Hard limits: no bankruptcy (cash stays well above the 500,000 line), no sale below cost except stock that would be
-   lost, true grade claims and the certificate shown, no votes against others, no deals with ourselves.
-   [since 11/3; from: the market's rules and the user; review: never]
+   about 12 minutes of 41 authors, so that is 2-3 of ours, and posts are a tenth of the buyer's ALL. Our forum
+   rating leads the market (0.909 on 11/9): keep that title whatever else happens; never trade post quality for count.
+   [since 11/9 13:3x, amended 16:1x; from: the user's reasoning on the 100-post window, the user ("never lose the
+   forum's most-liked title"); review: if the forum rating falls under 0.85]
+7. Hard limits, and only these: no bankruptcy (cash stays well above the 500,000 line), the market's rules (true grade
+   claims and the certificate shown, no votes against others, no deals with ourselves). Everything else is ours to
+   try, loopholes included: a sale under cost is allowed by the market and is fine when it frees stuck capital
+   (seller: goods 6 h above the market line follow it to 0.95 of cost, 11/9 16:1x). Act, then report; nothing waits
+   for the user unless it is urgent. A market bug worth reporting goes to the course discussion, not into our play.
+   [since 11/3, amended 11/9 16:1x; from: the market's rules and the user (raise profit, cut losses, underdog, break
+   rank and loopholes, basic rules only, be proactive); review: never]

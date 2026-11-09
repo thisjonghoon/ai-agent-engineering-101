@@ -259,6 +259,10 @@
   {
    "t": 1794207448.68342,
    "text": "Underdog plan (user: aim for #1, top 10 first). Rivals hold 3-7x our capital, so win where capital does not count: buyer saved (half of buyer ALL; we pay 0.67 of list, 21% of paid buys at 0.725+), stars (0.2 of shop; 4.29 vs 4.42+), and capital turns, not volume: 50 grade-A 450k+ units (41.7M) sit because the market's p75 is under our floor. Supervisor set buyer CAP 0.75 -> 0.70 (bounds now 0.6-0.95) for saved; judge it on buyer saved and paid buys, undo if paid buys halve."
+  },
+  {
+   "t": 1794207864.451759,
+   "text": "Correction 16:0x: no A/B runs now (experiment_r3.json is off; the market_ask A/B was stopped minutes after it began, per the user: no A/B unless needed). Nothing here waits for the user: within no bankruptcy and the market's rules, the team and the supervisor decide, including the 50 grade-A 450k+ units priced over the market (41.7M): propose what to do with them (e.g. restock rules so we stop buying SKUs whose market price is under our floor) once the slot frees at 17:11."
   }
  ]
 }

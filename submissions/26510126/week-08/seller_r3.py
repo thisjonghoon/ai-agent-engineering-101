@@ -86,6 +86,10 @@ STUCK_SECS = 1800
 KIT_LOG = HERE / "logs" / "market-kit.log"
 REFUSED = re.compile(r"checkout refused: unit (u-[0-9a-f]+) is not in stock")
 REFUSED_SECS = 7200
+# a unit refused again after its REFUSED_SECS is held for good (until a restart, which also frees the kit's sessions):
+# u-8766bea1baa3 (11/9 02:25, 05:23) and u-9eec9af868a3 (06:12, 09:33) came back after 2 h and were refused again.
+# Refusals closer than REFUSED_APART are one checkout retried, not a second refusal
+REFUSED_APART = 600
 OPEN_HOLD = 120     # seconds a negotiation keeps its unit before another buyer may be offered it
 MODEL_SLOTS = asyncio.Semaphore(3)    # model calls at once; a turn that finds them all busy is decided by the rules
 MODEL_TIMEOUT = 8                     # seconds (haiku answered in 3.7 s at the median, 5.3 s at p90, over 160k calls)
@@ -376,6 +380,7 @@ class Seller(AgentExecutor):
         # 30 minutes and was refused at checkout again each time
         self.held, self.stuck_once = set(), set()
         self.refused, self.log_pos, self.log_read = {}, None, 0.0
+        self.refusals = {}  # unit -> times of its refusals at checkout, REFUSED_APART apart (two: held for good)
 
     def agreed(self, unit, now=None):
         """Record a receipt signed for `unit`; returns a STUCK log line when the unit is set aside. A unit set aside
@@ -409,8 +414,15 @@ class Seller(AgentExecutor):
                 self.log_pos = f.tell()
         except OSError:
             return
-        for u in REFUSED.findall(text):
+        for u in set(REFUSED.findall(text)):
             self.refused[u] = now
+            seen = self.refusals.setdefault(u, [])
+            if not seen or now - seen[-1] >= REFUSED_APART:
+                seen.append(now)
+            if len(seen) >= 2 and u not in self.held:
+                self.held.add(u)
+                log(f"STUCK {u} refused at checkout {len(seen)} times, {(seen[-1] - seen[0]) / 60:.0f} min apart: "
+                    f"left out until a restart")
 
     def taken(self):
         now = time.time()

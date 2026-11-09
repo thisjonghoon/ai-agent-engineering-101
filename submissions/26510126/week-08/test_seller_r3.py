@@ -140,6 +140,16 @@ async def main():
         sel4.read_refusals(1061.0, log)
         check("a unit the kit's checkout refused is left out; old log lines and reads within a minute are skipped",
               early == {} and set(sel4.refused) == {"u-e8b8440"}, (early, sel4.refused))
+        with log.open("a") as f:                         # the same checkout retried 2 min later: still one refusal
+            f.write("12:02:00 [acp] checkout refused: unit u-e8b8440 is not in stock for this order\n")
+        sel4.read_refusals(1180.0, log)
+        retried = "u-e8b8440" in sel4.held
+        sel4.refused = {}                                # its REFUSED_SECS ran out, as they do
+        with log.open("a") as f:                         # offered again and refused again, hours later
+            f.write("15:00:00 [acp] checkout refused: unit u-e8b8440 is not in stock for this order\n")
+        sel4.read_refusals(1061.0 + 3 * 3600, log)
+        check("a unit refused again after its 2 h is held for good; a retry minutes later is not a second refusal",
+              not retried and "u-e8b8440" in sel4.held and "u-e8b8440" in sel4.taken(), (retried, sel4.held))
         check("an abandoned negotiation frees its unit", "u-x" not in held and "u-y" in held, sorted(held))
         os.environ["MARKET_DIR"] = str(md)
         seller_r3.MARKET_DIR = md

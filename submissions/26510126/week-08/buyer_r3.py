@@ -334,12 +334,18 @@ def accept_policy(order, receipt=None, lp=None):
     # list: 0.87 x 0.4 - 0.13 = 0.22 a deal against our mean 0.29; with a warranty the break is 0, so 0.35). 35 of
     # our 198 broken buys were not covered. A without a warranty breaks ~2%: still worth it. So B and C need the
     # 6 h break window covered; the C_CAP branch never ran (code_ab_r3.on is True with no trial) and is gone
-    warrantied = (r.get("warranty_hours") or 0) >= max(C_WARRANTY, BREAK_HOURS)
-    return {"cert": True, "grades": GOOD_GRADES + ["C"] if warrantied else ["A"]}
+    warrantied = (r.get("warranty_hours") or 0) >= BREAK_HOURS
+    # with "warranty_hours" the kit checks the CHECKOUT (the seller's copy), not our copy of the receipt (review)
+    return {"cert": True, "grades": GOOD_GRADES + ["C"], "warranty_hours": BREAK_HOURS} if warrantied else \
+        {"cert": True, "grades": ["A"]}
 
 
 GRADE_SAID = re.compile(r"\bgrade\s*:?\s*([ABC])\b|등급\s*:?\s*([ABC])\b", re.I)
 WARRANTY_SAID = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h|hours?|시간)\s*(?:of\s+)?(?:warranty|보증)", re.I)
+# any mention of a warranty, and a stated lack of one (11/9 review: "6-hour warranty", "three-day warranty" were
+# missed by WARRANTY_SAID, 43 of 68 mentions, and talks with shops that did warrant were ended)
+WARRANTY_ANY = re.compile(r"warrant|보증|refund", re.I)
+WARRANTY_NONE = re.compile(r"\b(?:no|without)\s+(?:a\s+)?warranty|warranty:\s*none|보증\s*(?:없|불가)", re.I)
 HOURS_SAID = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h|hours?|시간)\s*(?:of\s+)?(?:shelf[ -]life|left|남)", re.I)
 
 
@@ -353,8 +359,12 @@ def screen_for(order, lp=None):
         g = GRADE_SAID.search(text or "")
         grade = (g.group(1) or g.group(2)).upper() if g else None
         if grade in ("B", "C") and pol.get("grades"):
-            w = WARRANTY_SAID.search(text or "")
-            if w and float(w.group(1)) >= max(C_WARRANTY, BREAK_HOURS):
+            # a shop that also offers a grade A unit, or mentions a warranty at all, goes on: the checkout decides
+            # (accept_policy asks the seller's copy for a 6 h warranty); only a B/C with no word of one, or a stated
+            # lack of one, ends the talk
+            if any((m.group(1) or m.group(2) or "").upper() == "A" for m in GRADE_SAID.finditer(text or "")):
+                return None
+            if WARRANTY_ANY.search(text or "") and not WARRANTY_NONE.search(text or ""):
                 return None
             return f"the shop says grade {grade} with no {BREAK_HOURS} h warranty, we pay only for A or a warranted B/C"
         if grade and pol.get("grades") and grade not in pol["grades"]:
@@ -453,8 +463,8 @@ def opening_for(order, name, sku):
     if order.get("kind") == "food" and order.get("use_within_hours"):
         return opening + (f". I need it to last {order['use_within_hours']} hours: please ship a unit with at least "
                           f"{accept_policy(order)['min_hours_left']} hours of shelf life left, with the market's certificate.")
-    return opening + (". Please ship a grade A or B unit with the market's certificate; a grade C unit only with a "
-                      f"{C_WARRANTY} h warranty or at a refurbished price. A warranty is welcome.")
+    return opening + (". Please ship a grade A unit with the market's certificate, or a grade B or C unit with at least "
+                      f"a {BREAK_HOURS} h warranty (we pay for B or C only with one).")
 
 
 async def scout(order, cat, s, off, lp):

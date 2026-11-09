@@ -306,7 +306,9 @@ def lever_prices(board=None, k=3):
             out["saved_now"] = mine[term]
         if key == "stars":
             out["reviews_total"] = mine.get("reviews") or 0
-            out["stars_now"] = mine.get("stars")     # the raw mean a new review moves (shop_points_h)
+            # the change is measured against stars_rank too (review 16:5x: against the raw 4.57 the term came out 2.3x
+            # too large and outweighed book and revenue in a 2 h window)
+            out["stars_now"] = mine[f]
     return out
 
 

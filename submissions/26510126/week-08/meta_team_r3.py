@@ -205,7 +205,8 @@ async def specialist(role, now, cur, plan, hist, after, advice, bounds, buyer_bo
     vals = plan if role == "buying" else cur
     btxt = "\n".join(f"  {k}: [{lo}, {hi}] ({st}), now {vals.get(k)}" for k, (lo, hi, st) in keys.items()) or \
         ("  forum_weights: kinds best_value, freshness, pay_tips, fun, claims, weather, haggle (our_deals posts whenever"
-         " there are new deals), 0-3 each. The cadence is fixed by code at the market's limit (one post per 310 s).")
+         " there are new deals), 0-3 each. The cadence is fixed by code at the market's limit (one post per 310 s)."
+         " claims and haggle name or fault other shops and draw about one more dislike a post (11/9).")
     data = {k: now.get(k) for k in r["data"] if k in now}
     data.update(extra_data.get(role, {}))
     prompt = SPECIALIST.format(goal=GOAL, title=r["title"], task=r["task"], bounds=btxt,

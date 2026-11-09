@@ -21,7 +21,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 CLAIMS = HERE / "claims_r3.json"
 US = "thisjonghoon"
-FILES = (HERE / "standing_orders_r3.md",)
+FILES = (HERE / "standing_orders_r3.md",
+         Path("~/.claude/projects/-Users-hoon/memory/agent-market-claude-owns-structure.md").expanduser(),
+         Path("~/.claude/projects/-Users-hoon/memory/agent-market-ten-principles.md").expanduser())
 
 
 def _students(board):

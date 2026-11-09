@@ -143,8 +143,8 @@ warranty refunds the price), so surplus = list - price on every deal that holds.
 screened: that shop's own words failed our payment policy; shop_ended_talk; we_walked), the
 median gap to the ask in talks we lost, why the kit refused to pay, the market's goods break rate per grade, and the
 buyer's numbers now (plan). Set buyer_plan (any of {buyer_keys}) to win more deals that hold: CAP is the most we pay
-as a share of list; FOOD_MARGIN the shelf life we demand beyond use_within_hours; grade C goods are bought only with a C_WARRANTY-hour
-warranty; MAX_TRIES the
+as a share of list; FOOD_MARGIN the shelf life we demand beyond use_within_hours; grade B and C goods are bought only with a 6 h warranty
+(the break window), checked at checkout; MAX_TRIES the
 shops tried per order; MAX_RAISE how far one offer moves toward the ask; FIRM_GAP how close to an ask held twice we
 take it; SCOUTS how many shops the buyer team asks for a quote at once before the lead negotiates with the best
 (1 turns the team off). Bounds and steps: {buyer_bounds}. If the buyer needs something no number can do, say it in code_ideas.
@@ -184,10 +184,11 @@ Answer with JSON only: {{"strategy": {{...every key...}}, "playbook": "<the play
 # person, makes these fixes; code keeps every value inside its bounds.
 # C_CAP is gone (11/9 audit): code_ab_r3.on("ba9fd31c6b7c") is True with no trial on, so buyer_r3 never reaches its
 # C_CAP branch and a C without a warranty is always refused; a C_CAP trial held the only buyer trial slot on noise
+# C_WARRANTY too: buyer_r3 asks every B or C unit for the 6 h break window (BREAK_HOURS), so the knob changes nothing
 BUYER_BOUNDS = {"CAP": (0.75, 0.95, 0.05), "FOOD_MARGIN": (1.0, 1.3, 0.05),
-                "C_WARRANTY": (2, 6, 2), "MAX_TRIES": (2, 6, 1), "MAX_RAISE": (0.2, 0.7, 0.1), "FIRM_GAP": (0.0, 0.1, 0.02),
+                "MAX_TRIES": (2, 6, 1), "MAX_RAISE": (0.2, 0.7, 0.1), "FIRM_GAP": (0.0, 0.1, 0.02),
                 "SCOUTS": (1, 5, 1), "CLOSE_GAP": (0.0, 0.12, 0.02)}
-BUYER_DEFAULTS = {"CAP": 0.9, "FOOD_MARGIN": 1.1, "C_WARRANTY": 6, "MAX_TRIES": 3, "MAX_RAISE": 0.4,
+BUYER_DEFAULTS = {"CAP": 0.9, "FOOD_MARGIN": 1.1, "MAX_TRIES": 3, "MAX_RAISE": 0.4,
                   "FIRM_GAP": 0.05, "SCOUTS": 3, "CLOSE_GAP": 0.05}
 BUYER_PLAN = HERE / "buyer_plan_r3.json"
 # one buyer number on trial at a time: half the orders (by the order id's hash, as for a code trial) run its new value,
@@ -817,7 +818,10 @@ def snapshot(since):
         snap["forum_weights"] = forum_r3.plan()
     except Exception as e:
         snap["forum_ours"] = {"error": type(e).__name__}
-    snap["knob_reach"] = knob_reach()
+    try:
+        snap["knob_reach"] = knob_reach()
+    except Exception as e:
+        snap["knob_reach"] = {"error": type(e).__name__}
     try:                                    # each area's board terms and their trend (board_terms_r3, 11/9 16:4x)
         import board_terms_r3
         board_terms_r3.append()

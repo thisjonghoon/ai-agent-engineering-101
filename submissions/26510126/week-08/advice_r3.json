@@ -341,6 +341,10 @@
   {
    "t": 1794304368.155932,
    "text": "Supervisor 11/10 19:0x, leak audit #2 (6 h): (1) Book sat flat 11:52-18:45 (155.5M -> 155.4M) while revenue rose 55M: gross margin 4.1M, refunds 5.05M, storage 0.37M. On the board 1M of Book is worth ~50x 1M of revenue (next rival: +8M Book vs +277M revenue), so never trade Book for revenue; the stuck rule no longer goes under cost (stuck_frac floor 1.0, seller code). (2) 619 of 1,060 goods talks opened with ask0 equal to the floor, leaving a haggling buyer nothing to win; the heavy goods buyers (mjforge 490 goods buys, buyer-01 384, fair-furniture 341, kimauve 253) bought 0 from us in 6 h while 493 of our unfinished goods talks saw the same SKU sell elsewhere within 15 min at or above our floor. Candidate (sales): an A/B on an opening gap above the floor for goods, judged on goods paid value share. (3) Our buyer agreed then refused to pay 28 of 415 receipts (6.7%): shelf life 53, C to an A-only policy 40, no certificate 9 -- the accept policy is checked only after the haggle; candidate code idea for the buyer: ask grade/shelf/cert in the first message and screen before offering."
+  },
+  {
+   "t": 1794308035.973539,
+   "text": "Supervisor 11/10 20:0x: open_gap is now a shop number (seller: ask >= floor x (1 + open_gap), never over list; default 0 = old behaviour; bound 0-0.15). Since 18:52 no goods sale goes under cost (15 goods deals, 0 under cost, +0.95M margin) and Book rose 155.3M -> 156.0M in an hour, but our share of the market's settles fell 4.8% -> 2.4%. Candidate (sales), a per-negotiation A/B so the busy shop slot does not block it: goods open_gap 0 vs 0.06, judged on goods paid value share and margin per talk."
   }
  ]
 }

@@ -405,9 +405,10 @@ def prices(u, s):
         # what holding it to the end of the round would cost, so 7 days left allows ~0.93 of cost and the last day ~0.99.
         # 11/10 20:2x: at a hard 1.0 our 300k+ goods (cost a median 0.728 of list, the market paid ~0.70-0.72 for A) stopped
         # selling: 106 talks, 5 deals in an hour, and Book fell again 156.1M -> 155.6M
-        days_left = max(0.0, (ROUND_END - time.time()) / 86400)
-        keep = max(1.0 - storage_rate() * days_left, 0.9)
-        floor = min(floor, max(cost * keep, cap))   # only ever lowers (endgame/final ran above)
+        # 11/10 21:0x: the storage-aware 0.928 (20:22) was wrong. Storage is ~1% a day on all goods (~50k an hour on
+        # 128M), while each sale at 0.928 loses 7% of cost at once, and units at cost did keep selling: Book rose
+        # +0.6M/h at 1.0 (18:45-20:04) and fell -0.5M/h at 0.928 (20:04-20:52). Book counts unsold stock at cost: hold.
+        floor = min(floor, max(cost, cap))   # only ever lowers (endgame/final ran above); never under cost
     ask = max(min(lp * min(ask_frac, 1.0), cap or lp), floor)
     # room to haggle (11/10 audit #2: 619 of 1,060 goods talks opened at the floor, so a buyer that expects a concession
     # got none; the heavy goods buyers bought 0 from us in 6 h). open_gap 0 keeps the old ask; the meta tests > 0 by A/B

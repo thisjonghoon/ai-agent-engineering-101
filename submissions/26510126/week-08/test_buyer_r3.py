@@ -453,6 +453,15 @@ def main():
     got = [c[1]["name"] for c in buyer_r3.candidates(fo, food_shops, {"GS": {"list_price": 50000}}, [], {})]
     case("that short-shipping pair is left out for an order needing more hours", got == ["T"], str(got))
 
+    # 17b. a SKU whose shelf life cannot cover the hours ranks behind an adequate one, though it is 5x dearer (11/10: 415 of 1,000 unpaid talks)
+    sl_shops = [{"name": "Short", "url": "http://Short", "offers": [{"sku": "SL1", "qty": 1}]},
+                {"name": "Long", "url": "http://Long", "offers": [{"sku": "SL2", "qty": 1}]}]
+    sl_cat = {"SL1": {"list_price": 100000, "kind": "food", "shelf_hours": 20},
+              "SL2": {"list_price": 20000, "kind": "food", "shelf_hours": 500}}
+    so = {"kind": "food", "budget": 200000, "acceptable": ["SL1", "SL2"], "use_within_hours": 100}
+    got = [c[1]["name"] for c in buyer_r3.candidates(so, sl_shops, sl_cat, [], {})]
+    case("a food SKU with too short a shelf life ranks behind an adequate one", got == ["Long", "Short"], str(got))
+
     # 18. an ask within budget and within CLOSE_GAP of our last offer is taken, held or not (11/4: 86 talks lost to
     # shops that ended the talk 4.6% above our offer while their ask was inside our limit)
     async def close_harness(prompt, **kw):

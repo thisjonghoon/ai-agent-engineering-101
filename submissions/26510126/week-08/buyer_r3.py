@@ -345,7 +345,9 @@ def candidates(order, shops, cat, memory, claims):
             short =order.get("kind") == "food" and need and info.get("shelf_hours") and \
                 info["shelf_hours"] * B_SHARE < need * FOOD_MARGIN
             if short:
-                surplus *= 0.3                          # even a grade-B unit may not last: a last resort
+                # even a grade-B unit may not last: a last resort. Shelf-life refusals were 415 of the last 1,000 unpaid
+                # talks (119 within 2% of the hours needed) and 0.3 still picked them first, so 0.05 ranks them behind
+                surplus *= 0.05 if code_ab_r3.on("a9d6314e01de", order.get("order")) else 0.3
             wait = avoided(avoid, s["name"], sku, order)
             if wait and "shipped" in wait:
                 # the same pair shipped too short a unit again and again within the hour (11/4 15:47-16:18:

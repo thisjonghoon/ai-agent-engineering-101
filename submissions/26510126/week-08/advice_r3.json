@@ -357,6 +357,10 @@
   {
    "t": 1794347171.448737,
    "text": "Supervisor 11/11 07:0x, leak audit #6 (food): our food close rate fell 32.9% -> ~24% from 04:20 while the market's food settles held. Causes: food used one market line over all grades (fixed: food now uses its grade line), open_gap applied to food asks too (fixed: goods only), and A food bought at 0.70-0.76 of list cannot sell over cost (market A food 0.705). floor_frac_food multiplies list for every grade: at 0.58 our C food floor is 0.58 of list while the market pays 0.54-0.55 for C food (our C cost ~0.39). Do not raise floor_frac_food to 0.60; if anything, test 0.55 on food by A/B."
+  },
+  {
+   "t": 1794349770.2600162,
+   "text": "Supervisor 11/11 07:3x: open_gap is set back to 0 and should stay there. Two tests went the wrong way: 0.06 cut goods deals to 0 within the hour (fast guard reverted it at 00:59), and 0.03 was judged at 07:19 with value share -71%, margin/h -57%, shop points/h -29%, yet the cycle kept it. Buyers compare asks across shops (audit #6: leaving before any offer went 27% -> 49% when our first ask sat above the competing median). Do not propose open_gap > 0 again."
   }
  ]
 }

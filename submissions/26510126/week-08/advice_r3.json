@@ -349,6 +349,10 @@
   {
    "t": 1794309773.823998,
    "text": "Supervisor 11/10 20:3x, for merchandising: our 300k+ goods talks in the last hour had a median cost of 0.728 of list, while the market paid ~0.70-0.72 of list for A goods (0.62 B, 0.515 C). Bought at that cost, an A unit has almost no margin over the market price; Book only grows from margin. The stuck rule now lets a stuck unit go to (1 - storage x days left) of cost (~0.93 today) since holding it to the end costs the same in storage. Restock should not keep buying dear lines whose unit cost lands near or above what that SKU settles for: a candidate code idea is to skip or shallow a 300k+ line when the last supply cost of that SKU / list exceeds the SKU's market paid median / list."
+  },
+  {
+   "t": 1794315008.450846,
+   "text": "Supervisor 11/10 22:0x, leak audit #3 (Book, 6 h): margin +6.38M, refunds -1.0M, storage -0.31M. By segment: goods 300k+ A earned 1.8% (0.77M on 41.7M), B 15.4% (3.91M on ~25M), C 43%; food A 2.1%, food B/C much better. A goods are bought at a median 0.678 of list and the A market pays 0.71, so A has ~4 points of room; B is bought at 0.485 and sells at ~0.63. Market lines are now per grade (prices_r3 'sku|grade'). Next candidates: (1) after the open_gap A/B, an A/B of market_ask 0.9 vs 1.0 on goods judged on margin (the A cap is still 0.658 vs cost 0.680 at 0.9); (2) restock: favour lines whose expected margin per grade is positive; B 300k+ is our best earner and its stock is down to 19 units (38 sold in 6 h)."
   }
  ]
 }

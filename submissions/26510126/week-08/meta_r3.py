@@ -654,7 +654,7 @@ def team_records():
 
 TEAM = os.environ.get("META_TEAM", "1") != "0"   # 0: the single prompt, as before 11/4 12:40
 MODEL_PROMPT_SINCE = 1793752281   # 11/4 09:31 KST: the seller model sees the rule's move and both sides' record (43f0447)
-AB_PARAMS = ("market_ask", "ask_frac", "floor_frac", "min_margin", "step", "max_turns", "ask_frac_food", "floor_frac_food",
+AB_PARAMS = ("open_gap", "market_ask", "ask_frac", "floor_frac", "min_margin", "step", "max_turns", "ask_frac_food", "floor_frac_food",
              "fresh_premium", "clear_hours", "clear_frac")      # read per negotiation by the seller; warranty is not
 # tested this way because the A/B reward cannot see refunds
 

@@ -323,13 +323,40 @@ def gate(work):
         return changed, f"forbidden lines: {hit[:3]}"
     if len(added) > MAX_LINES:
         return changed, f"{len(added)} added lines, more than {MAX_LINES}"
+    # the suites that decide the gate stay outside the coder's reach except to add cases (Ouroboros / DGM, AX week-02:
+    # the acceptance check fixed outside EDIT, or the model only grades itself); a removed or edited line fails
+    for f in changed:
+        if f.startswith("test_") and (HERE / f).exists():
+            news = set((work / f).read_text(encoding="utf-8").splitlines())
+            gone = [x for x in (HERE / f).read_text(encoding="utf-8").splitlines() if x not in news]
+            if gone:
+                return changed, f"{f}: {len(gone)} existing test lines edited or removed (tests may only be added)"
     for t in TESTS:
         r = subprocess.run([str(PY), t], cwd=work, capture_output=True, text=True, timeout=600)
         last = (r.stdout.strip().splitlines() or ["?"])[-1]
         m = re.match(r"(\d+)/(\d+) passed", last)
         if r.returncode or not m or m.group(1) != m.group(2):
+            # the whole failure, not one line, for the next engineer (Meta-Harness Table 3: full traces beat summaries)
+            keep_failure(work, changed, t, r)
             return changed, f"{t}: {last[:80]}"
     return changed, None
+
+
+CANDIDATES = LOGS / "candidates"
+
+
+def keep_failure(work, changed, test, r):
+    """Save a gated candidate's diff and its failing suite's output, so the engineer sees why it failed, not only
+    that it did (11/8-11/10 the same forum change failed test_buyer_r3 three times; 63d96b4 showed the attempt line)."""
+    try:
+        CANDIDATES.mkdir(parents=True, exist_ok=True)
+        diff = "".join(subprocess.run(["diff", "-u", str(HERE / f), str(work / f)], capture_output=True,
+                                      text=True).stdout for f in changed)
+        out = (r.stdout or "")[-6000:] + "\n--- stderr ---\n" + (r.stderr or "")[-3000:]
+        (CANDIDATES / f"{work.name}.log").write_text(f"{test} failed\n\n=== diff ===\n{diff[:20000]}\n=== output ===\n{out}",
+                                                     encoding="utf-8")
+    except OSError:
+        pass
 
 
 def agent(prompt, work, tools):
@@ -398,6 +425,19 @@ def engineer_prompt():
     failed = "\n".join(f"- {time.strftime('%m/%d %H:%M', time.localtime(a.get('t', 0)))} {str(a.get('idea'))[:220]} -> "
                        f"{str(a.get('result'))[:120]}" for a in jl(ATTEMPTS)[-30:]
                        if str(a.get("result") or "").startswith("not deployed"))[-2400:] or "(none)"
+    # the two latest gated failures in full: why the suite failed, not only that it did
+    for f in sorted(CANDIDATES.glob("*.log"), key=lambda q: q.stat().st_mtime)[-2:] if CANDIDATES.exists() else []:
+        txt = f.read_text(encoding="utf-8", errors="replace")
+        failed += f"\n\n[{f.stem}] {txt.split(chr(10), 1)[0]}; output tail:\n" + txt.split("=== output ===", 1)[-1][-1500:]
+    # stated vs measured (Xiong et al. 2023, AX week-03: stated confidence runs above accuracy): how often past
+    # hypotheses moved their metric the way they expected
+    pairs = [m.groups() for x in jl(CHANGES) if x.get("source") == "meta (auto)"
+             for m in [re.search(r"expected ([+-]?[\d.]+)%, measured ([+-]?[\d.]+)%", str(x.get("verdict") or ""))] if m]
+    hit = sum(1 for e, m in pairs if (float(e) >= 0) == (float(m) > 0))
+    failed += (f"\n\nCalibration: of {len(pairs)} judged hypotheses, {hit} moved their metric the way they expected "
+               f"(median expected {sorted(float(e) for e, _ in pairs)[len(pairs) // 2]:+g}%, median measured "
+               f"{sorted(float(m) for _, m in pairs)[len(pairs) // 2]:+g}%). Expect less unless the traces show the "
+               f"mechanism directly." if pairs else "")
     return ENGINEER.format(gap=metrics_r3.gap_text(), metrics=", ".join(metrics_r3.METRICS), windows=windows,
                            ledger=ledger, failed=failed, ideas="\n".join(f"- {i[:300]}" for i in ideas[-6:]) or "(none)",
                            advice="\n".join(f"- {n.get('text', '')[:900]}" for n in advice[-3:]) or "(none)",

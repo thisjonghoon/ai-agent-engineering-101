@@ -22,6 +22,8 @@ ok = [("a true claim is ok", res["r"] == (6, "ok")),
       ("a claim whose text left the file is retired", res["g"][1] == "retired"),
       ("an unregistered rank is caught", claims_r3.loose(f.read_text(encoding="utf-8"), claims) == ["#2 of 9"]),
       ("the live claims parse", isinstance(claims_r3.load(), list) and all("metric" in c for c in claims_r3.load()))]
+ok.append(("reconcile flags the receipts-counted margin of 11/4-11/7 (18M vs Book 5M) and passes 11/10 (8.9M vs 7.1M)",
+           claims_r3.gap(18e6, 5e6) and not claims_r3.gap(8.9e6, 7.1e6)))
 for name, good in ok:
     print("PASS" if good else "FAIL", name)
 print(f"{sum(g for _, g in ok)}/{len(ok)} passed")

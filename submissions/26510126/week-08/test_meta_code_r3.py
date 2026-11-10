@@ -41,6 +41,29 @@ def main():
     case("a line touching the payment mandate is refused", "forbidden" in str(mc.gate(work)[1]))
     (work / "buyer_r3.py").write_text("A = 1\n" + "".join(f"v{i} = {i}\n" for i in range(mc.MAX_LINES + 1)))
     case("more than MAX_LINES added lines is refused", "added lines" in str(mc.gate(work)[1]))
+    (work / "buyer_r3.py").write_text("A = 1\n")
+    mc.ALLOWED = mc.ALLOWED | {"test_x.py"}
+    (live / "test_x.py").write_text("assert 1\nassert 2\n")
+    (work / "test_x.py").write_text("assert 1\nassert 2\nassert 3\n")
+    added_ok = mc.gate(work) == (["test_x.py"], None)
+    (work / "test_x.py").write_text("assert 1\n")
+    case("a suite may gain cases but not lose or edit them", added_ok and "tests may only be added" in str(mc.gate(work)[1]),
+         str(mc.gate(work)))
+    (work / "test_x.py").write_text("assert 1\nassert 2\n")
+    (work / "test_x.py").unlink(); (live / "test_x.py").unlink()
+    for d in (live, work):
+        (d / "t_fail.py").write_text("print('boom')\nprint('0/1 passed')\n")
+    mc.CANDIDATES = live / "candidates"
+    mc.TESTS = ["t_fail.py"]
+    (work / "buyer_r3.py").write_text("A = 2\n")
+    why = mc.gate(work)[1]
+    saved = list(mc.CANDIDATES.glob("*.log"))
+    case("a suite failure keeps the diff and the whole output for the next engineer",
+         "t_fail.py" in str(why) and saved and "boom" in saved[0].read_text() and "+A = 2" in saved[0].read_text(),
+         str((why, saved)))
+    mc.TESTS = []
+    (work / "t_fail.py").unlink(); (live / "t_fail.py").unlink()
+    (work / "buyer_r3.py").write_text("A = 1\n")
 
     # 2. the verdict: the change's own metric, then the guards
     before = {"buyer_close_rate": 0.6, "buyer_paid_h": 60, "shop_deals_h": 100, "shelf_refused_h": 8}

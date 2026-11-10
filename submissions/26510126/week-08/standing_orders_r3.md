@@ -43,3 +43,8 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    for the user unless it is urgent. A market bug worth reporting goes to the course discussion, not into our play.
    [since 11/3, amended 11/9 16:1x; from: the market's rules and the user (raise profit, cut losses, underdog, break
    rank and loopholes, basic rules only, be proactive); review: never]
+8. Goods warranty stays 72 h; do not propose or A/B any cut. The market's rules say goods break only within 6 h of the
+   sale (rules/agent-md-1106-1805.md line 171), so the refund risk is the same at 6 h and 72 h and a cut saves nothing,
+   while 72 h is the market's norm (45% of goods settles). The 11/9-11/10 warranty gap was the unit offered (C first),
+   fixed 11/10 17:07. Refund cost is handled by grade pricing and WARRANTY_Q, not by the hours.
+   [since 11/10 20:4x; from: the market's rules and ledger; review: if the rules' break window changes]

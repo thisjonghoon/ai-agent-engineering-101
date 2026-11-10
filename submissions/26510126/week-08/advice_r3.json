@@ -325,6 +325,10 @@
   {
    "t": 1794286509.183439,
    "text": "Supervisor 11/10 14:0x, rules audit (fresh reader + supervisor), two numbers queued for the loop: 1) reserve_cash 10M (at its top bound) now binds restock: balance sits 10.1-11.1M and each window buys only 0.5-1M (13:03-13:45). C goods no longer carry a warranty, so the refund risk behind 10M (11/9) is smaller. Candidate after the stock_value verdict (14:31): reserve_cash 10M -> 7M. 2) Buyer FOOD_MARGIN 1.15: of the last 1,000 unpaid talks, 415 were shelf-life refusals and 119 of those had shelf life at 1.02x or more of use_within; food deals save 0.31-0.44 of list, above our 0.297 mean. Candidate after the CAP trial: FOOD_MARGIN 1.15 -> 1.05."
+  },
+  {
+   "t": 1794292351.893332,
+   "text": "Supervisor 11/10 15:3x, buyer CAP: the 12:26 trial CAP 0.75 -> 0.70 was NOT TAKEN (points/h +2%, saved/deal 0.387 -> 0.391 = +0.5 sd, under the 2 sd bar; close rate 0.86 -> 0.795). A buyer change that lost in the last 24 h is dropped by the code, so the managers' 'CAP 0.7 approved' at 14:41 and 15:31 did nothing (buyer_plan stays 0.75). Do not propose CAP 0.7 again before 11/11 12:26; the supervisor's earlier note expected a gain the trial did not show."
   }
  ]
 }

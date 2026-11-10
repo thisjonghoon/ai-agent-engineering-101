@@ -44,6 +44,9 @@ import demand_r3
 HERE = Path(__file__).resolve().parent
 MARKET = "https://market.ourolabs.ai"
 STRATEGY = Path(os.environ.get("STRATEGY_FILE") or HERE / "strategy_r3.json")   # tests: the defaults, not the live file
+GOODS_MIX = {"A": 0.73, "B": 0.19, "C": 0.08}      # our goods supply by grade, 11/10 (A 73%, B 19%, C 9%)
+GRADE_COST = {"A": 0.663, "B": 0.536, "C": 0.349}   # supply cost / list by grade, 11/10 6 h
+REFUND = {"A": 0.03, "B": 0.13}                      # seller_r3.WARRANTY_Q: expected refunds under the 72 h warranty
 DEFAULTS = {"food_cash": 3_000_000, "dear_first": 1.0, "reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
             "goods_frac": 0.35, "food_first": 0.5,
             "depth": 3, "half_life_hours": 12, "stop_hours": 4, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540,
@@ -283,7 +286,41 @@ def main():
         # beds, bedding; average ticket 600-820k) and 0.2-0.7 billion of revenue; we sold 25 (21M), buying at most
         # 10 lines a window and one unit of a dear SKU a line, with 21M of cash idle. A window takes about 18 lines,
         # so up to `lines` of them, and a dear SKU (list 150,000 or more) gets `dear_depth` units: they sell in minutes
+        # expected margin of a goods line before buying it (11/11 leak audit #4: 21.1M of 82.2M bought in 6 h had an
+        # expected margin of 2% or less after refunds). Grade is drawn at supply, so the line's value is the grade mix
+        # of our goods supply times what the market pays for that SKU per grade (prices_r3 'sku|grade', else the
+        # category's), against the supply cost per grade times the SKU's surge. A line without enough market data passes.
+        try:
+            import prices_r3
+            lines = prices_r3.read(md)
+        except Exception:
+            lines = {}
+
+        own = defaultdict(list)                          # what we actually paid per SKU and grade, cost / list
+        for u in units:
+            if u.get("kind") == "goods" and u.get("list_price"):
+                own[(u["sku"], u.get("grade"))].append(u["cost"] / u["list_price"])
+
+        def expected_margin(c):
+            num = den = 0.0
+            for g, w in GOODS_MIX.items():
+                st = (lines.get("skus") or {}).get(f"{c['sku']}|{g}")
+                if not st or st.get("n", 0) < 3:
+                    cat = (lines.get("categories") or {}).get(f"{(c.get('category') or '').split('>')[-1]}|{g}") or {}
+                    st = cat.get("h24") or cat.get("h6")
+                    if not st or st.get("n", 0) < 10:
+                        return None
+                paid = own.get((c["sku"], g))
+                cost = (sorted(paid)[len(paid) // 2] if paid else GRADE_COST[g]) * surge.get(c["sku"], 1.0)
+                num += w * (st["median"] * (1 - REFUND.get(g, 0)) - cost)
+                den += w * cost
+            return num / den if den else None
+
         for prio, c, qty in ranked:
+            if c.get("kind") == "goods":
+                e = expected_margin(c)
+                if e is not None and e < s["min_margin"] + 0.01:     # 0.01 is about a day of storage
+                    continue
             if len(buy) >= s.get("lines", 18):
                 break
             if c.get("kind") == "goods" and c["list_price"] >= 150_000:

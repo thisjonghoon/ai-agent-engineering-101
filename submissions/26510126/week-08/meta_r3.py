@@ -948,7 +948,11 @@ def start_ab(ask, s):
     and a value inside the bounds that differs from the strategy's: arm A is the strategy's value, arm B the new one.
     Or a whole retail playbook ({"playbook": "costco", "kind": ...}): arm B carries every number of the playbook the
     seller reads per negotiation (clamped to the bounds), arm A the strategy's own, so a playbook is tried on live
-    buyers at the same hours instead of only being read about (11/4: 25 of 30 cycles leaned on no playbook)."""
+    buyers at the same hours instead of only being read about (11/4: 25 of 30 cycles leaned on no playbook).
+    A test already running is never replaced (11/10 22:33 the team re-asked for the running open_gap A/B and the new one
+    overwrote 2.5 h of talks at p 0.947); it ends by its own verdict."""
+    if ab_r3.experiment():
+        return None
     if isinstance(ask, dict) and ask.get("playbook") in playbooks_r3.PLAYBOOKS and ask.get("kind") in ("food", "goods"):
         b = {k: v for k, v in playbooks_r3.apply(ask["playbook"], s, BOUNDS).items()
              if k in AB_PARAMS and k in playbooks_r3.PLAYBOOKS[ask["playbook"]]["knobs"]}

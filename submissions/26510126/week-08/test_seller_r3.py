@@ -177,9 +177,10 @@ async def main():
         seller_r3.STRATEGY = md3 / "strat.json"
         plain = (seller_r3.find_unit("I want Sofa (GW)") or {}).get("unit")
         asked = (seller_r3.find_unit("I want Sofa (GW) with a warranty please") or {}).get("unit")
+        wants_c = (seller_r3.find_unit("I want Sofa (GW), grade C is fine") or {}).get("unit")
         seller_r3.STRATEGY = old_strat
         check("goods are offered A before C (and so a buyer asking for a warranty gets the warranted unit)",
-              plain == "u-a" and asked == "u-a", (plain, asked))
+              plain == "u-a" and asked == "u-a" and wants_c == "u-c", (plain, asked, wants_c))
         seller_r3.MARKET_DIR = md
         near = dict(UNITS[2], expires_at=time.time() + (0.80 * 168 + 0.5) * 3600)   # half an hour above the A line
         check("no grade claim within an hour of a line", seller_r3.grade_now(near)[2] is None, seller_r3.grade_now(near))

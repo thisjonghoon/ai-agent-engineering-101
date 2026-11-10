@@ -211,7 +211,10 @@ def main():
         surge = {x["sku"]: x.get("factor", 1.0) for x in inv.get("surge") or [] if isinstance(x, dict) and x.get("sku")}
         surged = {k for k, f in surge.items() if f > s.get("surge_max", 1.15)}
         catalog = {k: v for k, v in catalog.items() if k not in surged}
-        count, held = Counter(u["category"] for u in live), Counter(u["sku"] for u in live)
+        # held counts what sells: grade C goods are left out (11/10: most buyers' kits never pay for C, so a SKU holding
+        # C units stopped being restocked with A and buyers were offered only the C that goes unpaid)
+        count = Counter(u["category"] for u in live)
+        held = Counter(u["sku"] for u in live if not (u.get("kind") == "goods" and u.get("grade") == "C"))
         slow_held = sum(1 for u in live if slow_dead(u))
         by_cat = defaultdict(list)
         for sku, c in catalog.items():

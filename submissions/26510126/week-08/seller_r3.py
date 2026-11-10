@@ -259,7 +259,10 @@ def needed_hours(text):
     return max(hs, default=0)
 
 
-def pick(units, need):
+WANTS_C = re.compile(r"grade\s*C\b|\bC\s*grade|C급|리퍼|refurb|박스\s*훼손|open[- ]box", re.I)
+
+
+def pick(units, need, wants_c=False):
     """Among fitting units, the one to clear first (food that expires first, goods that arrived first), but for
     food only among those with the shelf life the buyer asked for; if none has it, the freshest: two 2-star reviews
     on 11/3 were for food that expired before the buyer's stated need while a fresher unit sat on our shelf."""
@@ -272,6 +275,8 @@ def pick(units, need):
     # goods: A, then B, then C, first-in within a grade (11/10, 6 h: A goods agreed 35, paid 30; C agreed 45, paid 7 --
     # most buyers' kits do not pay for C, and pick() had offered the oldest unit whatever its grade)
     rank = lambda u: {"A": 0, "B": 1, "C": 2}.get(u.get("grade"), 1) if u.get("kind") == "goods" else 0
+    if wants_c:                                  # a buyer who asks for grade C / refurbished gets C first
+        rank = lambda u: {"C": 0, "B": 1, "A": 2}.get(u.get("grade"), 1) if u.get("kind") == "goods" else 0
     return min(units, key=lambda u: (rank(u), u["expires_at"] or float("inf"), u["supplied_at"]))
 
 
@@ -299,8 +304,9 @@ def find_unit(text, taken=()):
         has = {u["sku"] for u in units if u.get("kind") == "goods" and u.get("grade") in WARRANTY_Q}
         units = [u for u in units if ok(u) or u["sku"] not in has]
     named = [u for u in units if u["sku"].lower() in want]
+    wants_c = bool(WANTS_C.search(text or ""))
     if named:
-        return pick(named, need)
+        return pick(named, need, wants_c)
     fit = [u for u in units if (u.get("name") or "").lower() in want
            or (u.get("category") or "").split(">")[-1].lower() in want]
     # asked by category only: the order takes SKUs at 0.5-1.5x a reference price we cannot see, so offer the unit
@@ -309,7 +315,7 @@ def find_unit(text, taken=()):
     off = lambda u: abs(u["list_price"] / med[u["category"]] - 1) if med.get(u.get("category")) else 0
     if need and fit:
         best = min(round(off(u), 1) for u in fit)
-        return pick([u for u in fit if round(off(u), 1) == best], need)
+        return pick([u for u in fit if round(off(u), 1) == best], need, wants_c)
     rank = lambda u: {"A": 0, "B": 1, "C": 2}.get(u.get("grade"), 1) if u.get("kind") == "goods" else 0
     return min(fit, key=lambda u: (round(off(u), 1), rank(u), u["expires_at"] or float("inf"), u["supplied_at"]),
                default=None)

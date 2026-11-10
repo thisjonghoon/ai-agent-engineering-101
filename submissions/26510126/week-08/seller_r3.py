@@ -287,6 +287,14 @@ def find_unit(text, taken=()):
     soon = time.time() + 60
     units = [u for u in inv.get("units", []) if u["grade"] != "expired" and u["unit"] not in taken
              and not (u.get("expires_at") and u["expires_at"] <= soon)]
+    # a buyer who asks for a warranty gets a unit we warrant when we hold one (11/10, 6 h: 300k+ talks that asked for
+    # a warranty closed 4.7% (33 of 697), 70% ending before any offer, against 23% for the rest; 83 of 294 of our
+    # 300k+ goods were grade C, which carries none, and the unit offered was simply the one that arrived first)
+    if WARRANTY_WORDS.search(text or "") and (read_json(STRATEGY, {}).get("warranty_hours") or 0) > 0:
+        ok = lambda u: u.get("kind") != "goods" or u.get("grade") in WARRANTY_Q
+        units = [u for u in units if ok(u)] + [u for u in units if not ok(u)]
+        has = {u["sku"] for u in units if u.get("kind") == "goods" and u.get("grade") in WARRANTY_Q}
+        units = [u for u in units if ok(u) or u["sku"] not in has]
     named = [u for u in units if u["sku"].lower() in want]
     if named:
         return pick(named, need)

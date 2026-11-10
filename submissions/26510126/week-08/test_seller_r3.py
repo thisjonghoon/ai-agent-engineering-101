@@ -166,6 +166,20 @@ async def main():
         seller_r3.MARKET_DIR = md2
         check("a unit within a minute of expiring is not offered (its settle would be refused)",
               seller_r3.find_unit("I want Old Kimchi (F2)") is None, dying["expires_at"] - time.time())
+        md3 = md / "warrant"
+        md3.mkdir(exist_ok=True)
+        sofa = {"sku": "GW", "name": "Sofa", "category": "G>sofa", "list_price": 900000, "kind": "goods", "cost": 500000,
+                "expires_at": None, "cert": "x"}
+        units3 = [dict(sofa, unit="u-c", grade="C", supplied_at=1), dict(sofa, unit="u-a", grade="A", supplied_at=2)]
+        (md3 / "inventory.json").write_text(json.dumps({"round": 3, "units": units3}), encoding="utf-8")
+        (md3 / "strat.json").write_text(json.dumps({"warranty_hours": 72}), encoding="utf-8")
+        seller_r3.MARKET_DIR, old_strat = md3, seller_r3.STRATEGY
+        seller_r3.STRATEGY = md3 / "strat.json"
+        plain = (seller_r3.find_unit("I want Sofa (GW)") or {}).get("unit")
+        asked = (seller_r3.find_unit("I want Sofa (GW) with a warranty please") or {}).get("unit")
+        seller_r3.STRATEGY = old_strat
+        check("a buyer asking for a warranty is offered the warranted unit; otherwise the one that arrived first",
+              plain == "u-c" and asked == "u-a", (plain, asked))
         seller_r3.MARKET_DIR = md
         near = dict(UNITS[2], expires_at=time.time() + (0.80 * 168 + 0.5) * 3600)   # half an hour above the A line
         check("no grade claim within an hour of a line", seller_r3.grade_now(near)[2] is None, seller_r3.grade_now(near))

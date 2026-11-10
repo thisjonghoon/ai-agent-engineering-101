@@ -15,7 +15,8 @@ supervisor's own claims.
   reconcile()      the loops' own shop metric against the board's Book over 6 h. 11/4-11/7 shop_margin_h counted
                    signed receipts, read 2-4M/h while Book grew 0.7-0.9M/h, and nobody saw it for 2.6 days (101789f);
                    every search on a metric is only as right as the metric (DSPy/GEPA, AX week-02/05). On 11/10 the
-                   6 h sums were 8.9M vs 7.1M; the bar is a gap over max(60% of the Book change, 5M).
+                   6 h sums were 8.9M vs 7.1M; the bar is a gap over max(60% of the Book change, 5M). window()
+                   gives margin per hour of uptime, so an hour with an outage reads a little high.
 
     python claims_r3.py           # prints every claim; exit 1 when one is STALE or a rank is unregistered
 """
@@ -120,12 +121,14 @@ def reconcile(hours=6):
     rows = [r for r in board_terms_r3.rows() if r.get("t", 0) >= now - hours * 3600 and r.get("book") is not None]
     if len(rows) < 2 or rows[-1]["t"] - rows[0]["t"] < (hours - 1) * 3600:
         return "ok reconcile: not enough board history yet"
-    span = (rows[-1]["t"] - rows[0]["t"]) / 3600
+    # whole hours on both sides: the margin is summed per hour, so the Book's end row is the last one inside them
+    span = int((rows[-1]["t"] - rows[0]["t"]) / 3600)
+    end = [r for r in rows if r["t"] <= rows[0]["t"] + span * 3600][-1]
     m = sum(metrics_r3.window(rows[0]["t"] + (h - 1) * 3600, rows[0]["t"] + h * 3600)["shop_margin_h"]
-            for h in range(1, int(span) + 1))
-    d = rows[-1]["book"] - rows[0]["book"]
+            for h in range(1, span + 1))
+    d = end["book"] - rows[0]["book"]
     status = "STALE" if gap(m, d) else "ok"
-    return (f"{status} reconcile: shop_margin_h summed {m / 1e6:.1f}M over {int(span)} h, the board's Book moved "
+    return (f"{status} reconcile: shop_margin_h summed {m / 1e6:.1f}M over {span} h, the board's Book moved "
             f"{d / 1e6:.1f}M" + (" (the loops' metric is not the board's: check what it counts)" if status == "STALE" else ""))
 
 

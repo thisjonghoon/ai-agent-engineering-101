@@ -350,7 +350,7 @@ def keep_failure(work, changed, test, r):
     that it did (11/8-11/10 the same forum change failed test_buyer_r3 three times; 63d96b4 showed the attempt line)."""
     try:
         CANDIDATES.mkdir(parents=True, exist_ok=True)
-        diff = "".join(subprocess.run(["diff", "-u", str(HERE / f), str(work / f)], capture_output=True,
+        diff = "".join(subprocess.run(["diff", "-uN", str(HERE / f), str(work / f)], capture_output=True,
                                       text=True).stdout for f in changed)
         out = (r.stdout or "")[-6000:] + "\n--- stderr ---\n" + (r.stderr or "")[-3000:]
         (CANDIDATES / f"{work.name}.log").write_text(f"{test} failed\n\n=== diff ===\n{diff[:20000]}\n=== output ===\n{out}",
@@ -431,12 +431,15 @@ def engineer_prompt():
         failed += f"\n\n[{f.stem}] {txt.split(chr(10), 1)[0]}; output tail:\n" + txt.split("=== output ===", 1)[-1][-1500:]
     # stated vs measured (Xiong et al. 2023, AX week-03: stated confidence runs above accuracy): how often past
     # hypotheses moved their metric the way they expected
-    pairs = [m.groups() for x in jl(CHANGES) if x.get("source") == "meta (auto)"
+    # measured is on the "+ is better" scale; rows from before that scale wrote a lower-is-better metric's expected
+    # as negative, so it is flipped here as judge() does
+    pairs = [(abs(float(m.group(1))) if x.get("metric") in metrics_r3.LOWER_IS_BETTER else float(m.group(1)),
+              float(m.group(2))) for x in jl(CHANGES) if x.get("source") == "meta (auto)"
              for m in [re.search(r"expected ([+-]?[\d.]+)%, measured ([+-]?[\d.]+)%", str(x.get("verdict") or ""))] if m]
-    hit = sum(1 for e, m in pairs if (float(e) >= 0) == (float(m) > 0))
+    hit = sum(1 for e, m in pairs if (e >= 0) == (m > 0))
     failed += (f"\n\nCalibration: of {len(pairs)} judged hypotheses, {hit} moved their metric the way they expected "
-               f"(median expected {sorted(float(e) for e, _ in pairs)[len(pairs) // 2]:+g}%, median measured "
-               f"{sorted(float(m) for _, m in pairs)[len(pairs) // 2]:+g}%). Expect less unless the traces show the "
+               f"(median expected {sorted(e for e, _ in pairs)[len(pairs) // 2]:+g}%, median measured "
+               f"{sorted(m for _, m in pairs)[len(pairs) // 2]:+g}%). Expect less unless the traces show the "
                f"mechanism directly." if pairs else "")
     return ENGINEER.format(gap=metrics_r3.gap_text(), metrics=", ".join(metrics_r3.METRICS), windows=windows,
                            ledger=ledger, failed=failed, ideas="\n".join(f"- {i[:300]}" for i in ideas[-6:]) or "(none)",

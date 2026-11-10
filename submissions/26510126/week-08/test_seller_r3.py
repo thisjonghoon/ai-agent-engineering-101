@@ -126,9 +126,12 @@ async def main():
         first = [sel3.agreed("u-s", t0), sel3.agreed("u-s", t0 + 60)]
         sel3.dealt["u-s"] = []                          # its 30 minutes ran out, as they do
         again = sel3.agreed("u-s", t0 + 4000)
-        check("a unit set aside once is held for good on its next single agreement",
-              first[0] is None and "30 min" in (first[1] or "") and "until a restart" in (again or "") and "u-s" in sel3.taken(),
-              (first, again, sorted(sel3.taken())))
+        sel3.parked["u-s"] = time.time() + 60
+        parked_now = "u-s" in sel3.taken()
+        sel3.parked["u-s"] = time.time() - 1
+        check("a unit set aside once is parked 2 h on its next single agreement, then offered again",
+              first[0] is None and "30 min" in (first[1] or "") and "2 h" in (again or "") and parked_now
+              and "u-s" not in sel3.taken() and "u-s" not in sel3.held, (first, again, sorted(sel3.taken())))
         sel4 = seller_r3.Seller()
         log = md / "kit.log"
         log.write_text("old line: checkout refused: unit u-0d1d is not in stock for this order\n")

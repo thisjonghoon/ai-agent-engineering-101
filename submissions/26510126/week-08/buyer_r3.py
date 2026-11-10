@@ -62,7 +62,8 @@ MAX_TRIES = 3        # shops tried per order when a negotiation ends without a d
 RETRY_UNTIL = 150    # seconds into the order after which no new shop is tried (the kit stops the buyer at 300 s)
 MAX_RAISE = 0.4      # each offer moves at most this share of the gap to the shop's ask
 SCOUTS = 3           # buyer team: shops asked for a first quote at once before one negotiation starts
-SCOUT_WAIT = 6       # seconds the scouts wait for quotes; a slower shop is left out of this order
+SCOUT_WAIT = 10      # seconds the scouts wait for quotes; a slower shop is tried after the quoted ones (11/10: at 6 s,
+                     # 2,732 slow drops; 1,715 of 2,210 scouted orders lost a shop and 230 got no quote at all)
 # The meta-harness tunes these numbers from how our buyer did (meta_r3.py BUYER_BOUNDS, the user on 11/4: the
 # harness should make such fixes, not a person); each run reads its plan, the defaults above when it has none.
 # shop/SKU pairs that just failed us (the meta-harness's code idea, 11/4: 422 of ~680 orders without a deal ended in
@@ -569,7 +570,9 @@ async def team(order, cat, cands):
             break
     lead = [c for _, c in sorted(quoted, key=lambda x: -x[0])]
     rest = [c for c in cands if c not in picked and (c[1]["name"], c[2]["sku"]) not in dropped]
-    return lead + rest
+    # a shop too slow for the scouts is still a shop: it goes last, not out (screened-out shops stay out)
+    slow = [c for c in picked if c not in lead and (c[1]["name"], c[2]["sku"]) not in dropped]
+    return lead + rest + slow
 
 
 async def scout_wave(order, cat, picked, dropped, quoted):
@@ -582,11 +585,13 @@ async def scout_wave(order, cat, picked, dropped, quoted):
             t.cancel()
     for c, q in zip(picked, quotes):
         why = screen_for(order, c[3])(q.get("text") or "") if q["state"] == "TASK_STATE_INPUT_REQUIRED" else None
+        if q["state"] == "slow":
+            log("SCOUT", f"{c[1]['name']} {c[2]['sku']}: no quote in {SCOUT_WAIT} s, tried after the quoted shops")
+            continue
         if q["state"] != "TASK_STATE_INPUT_REQUIRED" or isinstance(why, str):
             dropped.add((c[1]["name"], c[2]["sku"]))
             log("SCOUT", f"{c[1]['name']} {c[2]['sku']}: dropped ({why or q['state']})")
-            if q["state"] != "slow":
-                avoid_add(c[1]["name"], c[2]["sku"], why or q["state"], AVOID_SECS)
+            avoid_add(c[1]["name"], c[2]["sku"], why or q["state"], AVOID_SECS)
             continue
         cap = why["cap"] if isinstance(why, dict) else min(order["budget"], int(c[3] * CAP))
         ask = q.get("ask")

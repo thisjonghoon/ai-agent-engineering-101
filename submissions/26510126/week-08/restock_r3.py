@@ -308,7 +308,8 @@ def main():
                 # while 60M of cash sat idle: a cheap SKU that keeps selling (sku_score 6 or more) may hold twice sku_cap
                 # the same bar as DEAR_HOT: at 6 every SKU passed once settles fed sku_score, and on 11/6 goods at 30-100k
                 # grew from 138 to 320 units (10.5M, 20 h of stock at 15.7 sold an hour) while the stock cap was full
-                hot = c.get("kind") == "goods" and c["list_price"] < 100_000 and sku_score.get(c["sku"], 0) >= DEAR_HOT
+                # under 150k, not 100k (11/10): G75f11c19 (122,900, sku_score 679) held 0 at depth 2
+                hot = c.get("kind") == "goods" and c["list_price"] < 150_000 and sku_score.get(c["sku"], 0) >= DEAR_HOT
                 # 1h: <30k settled 1586 and 30-100k 631 an hour, we held 4.3% and 2.3% (7.5 h and 11 h of stock) with 26M idle:
                 # the multiplier grows with sku_score from 2x to 3x, as 300k+ depth does
                 mult = min(3.0, max(2.0, sku_score.get(c["sku"], 0) / DEAR_HOT)) if hot else 1
@@ -319,10 +320,11 @@ def main():
                 continue
             qty = min(int(qty), 20)    # the market takes 1-20 units a line: 24 was refused (400) 18 times on 11/4
             unit = c["list_price"] * EST_COST * surge.get(c["sku"], 1.0)
-            if c.get("kind") == "goods" and c["list_price"] >= 150_000:
-                qty = min(qty, int(min(spend, goods_room) // unit))     # what the room affords, not nothing
-                if qty <= 0:
-                    continue
+            # what the cash (and, for goods, the room) affords, not nothing: until 11/10 only 150k+ goods were cut down,
+            # so a 15-unit food line that did not fit whole was skipped (kimchi, apples, water, all sku_score 1,400+, held 0)
+            qty = min(qty, int((min(spend, goods_room) if c.get("kind") == "goods" else spend) // unit))
+            if qty <= 0:
+                continue
             cost = unit * qty
             if cost > spend or (c["kind"] == "goods" and cost > goods_room):
                 continue

@@ -192,6 +192,7 @@ BUYER_BOUNDS = {"CAP": (0.65, 0.95, 0.05), "FOOD_MARGIN": (1.0, 1.3, 0.05),
 BUYER_DEFAULTS = {"CAP": 0.9, "FOOD_MARGIN": 1.1, "MAX_TRIES": 3, "MAX_RAISE": 0.4,
                   "FIRM_GAP": 0.05, "SCOUTS": 3, "CLOSE_GAP": 0.05}
 BUYER_PLAN = HERE / "buyer_plan_r3.json"
+AB_HISTORY = HERE / "logs" / "ab_history_r3.jsonl"     # finished shop A/Bs: param, kind, arms, winner
 # one buyer number on trial at a time: half the orders (by the order id's hash, as for a code trial) run its new value,
 # and after BUYER_TRIAL_SECS the halves are compared over the same hours on surplus per order, with the close rate as
 # a guard; the winner goes into the plan and both the trial and its result into the ledger both loops read
@@ -953,6 +954,14 @@ def start_ab(ask, s):
     overwrote 2.5 h of talks at p 0.947); it ends by its own verdict."""
     if ab_r3.experiment():
         return None
+    # a test that lost or tied in the last 24 h is not run again with the same value (11/11 08:17 the team re-asked
+    # for floor_frac_food 0.55, which had just lost at p 0.019); the buyer trials have had this rule since 11/5
+    if isinstance(ask, dict) and ask.get("param"):
+        for h in jl(AB_HISTORY):
+            if (time.time() - h.get("t", 0) < 86400 and h.get("param") == ask.get("param")
+                    and h.get("kind") == ask.get("kind") and h.get("winner") in ("A", "tie")
+                    and (h.get("arms") or {}).get("B") == ask.get("value")):
+                return None
     if isinstance(ask, dict) and ask.get("playbook") in playbooks_r3.PLAYBOOKS and ask.get("kind") in ("food", "goods"):
         b = {k: v for k, v in playbooks_r3.apply(ask["playbook"], s, BOUNDS).items()
              if k in AB_PARAMS and k in playbooks_r3.PLAYBOOKS[ask["playbook"]]["knobs"]}
@@ -1067,6 +1076,10 @@ async def cycle():
                 s[k] = min(max(x, lo), hi)                 # the test's own evidence, not a step from now
         ab_done = dict(exp, on=False, result={"winner": win, "summary": now["ab"], "time": time.time()})
         ab_r3.EXPERIMENT.write_text(json.dumps(ab_done, ensure_ascii=False, indent=1), encoding="utf-8")
+    if ab_done:                                         # what each test settled, so a lost one is not rerun
+        with AB_HISTORY.open("a", encoding="utf-8") as f:
+            f.write(json.dumps({"t": time.time(), "id": ab_done["id"], "param": ab_done["param"], "kind": ab_done["kind"],
+                                "arms": ab_done["arms"], "winner": ab_done["result"]["winner"]}, ensure_ascii=False) + "\n")
     ab_new = None if exp else start_ab((ans or {}).get("ab"), s)
     team_changes = []
     try:                                                # promotion and replacement in both teams

@@ -81,8 +81,19 @@ DEAD_SECS = 3600
 # against a 229000 list) leaves that lowest ask as the pair's floor for an hour: the next order expects at least that.
 FLOOR_SECS = 3600
 SHELF_LEFT = re.compile(r"([\d.]+) h of shelf life left")
+# Skip deals that lower the board's saved term (the mean of (list - price) / list over deals + 100, with -1 for a deal
+# whose goods broke uncovered): while another shop is still to be tried, pay at most (1 - t) x list, t = min(SKIP_BELOW,
+# our board saved mean, logs/board_terms_r3.jsonl, else SAVED_GUESS). The last talk of an order keeps CAP. 0 = off.
+# Off by default (11/10, last 6 h): 56 of 364 paid deals (15%) saved 0.25-0.30 of list (mean 0.275, none under 0.25
+# with CAP 0.75), only 0.025 under the board mean 0.2997 with 2 of 718 paid deals broken uncovered in 12 h; over
+# 11,738 deals they lower saved by ~1e-4 per 6 h, less than the deals they bring (0.1 weight), and a CAP 0.70 trial
+# was not significant. The meta-harness can set it in buyer_plan_r3.json.
+SKIP_BELOW = 0.0
+SAVED_GUESS = 0.30   # our board saved mean when no board row is at hand (0.2996 on 11/10 20:00)
+BOARD_TERMS = HERE / "logs" / "board_terms_r3.jsonl"
 PLAN = Path(os.environ.get("BUYER_PLAN") or Path(__file__).resolve().parent / "buyer_plan_r3.json")
-PLAN_KEYS = ("CAP", "FOOD_MARGIN", "C_CAP", "C_WARRANTY", "MAX_TRIES", "MAX_RAISE", "FIRM_GAP", "SCOUTS", "CLOSE_GAP")
+PLAN_KEYS = ("CAP", "FOOD_MARGIN", "C_CAP", "C_WARRANTY", "MAX_TRIES", "MAX_RAISE", "FIRM_GAP", "SCOUTS", "CLOSE_GAP",
+             "SKIP_BELOW")
 
 
 def set_number(k, v):
@@ -108,6 +119,28 @@ def load_plan(order_id=None):
             isinstance(trial.get("B"), (int, float)) and code_ab_r3.arm(trial.get("key"), order_id) == "B":
         set_number(trial["param"], trial["B"])
     return plan
+
+
+def board_saved(path=None):
+    """Our buyer saved term from the last row of the board history (board_terms_r3.py), or SAVED_GUESS."""
+    try:
+        with open(path or BOARD_TERMS, "rb") as f:
+            f.seek(0, 2)
+            f.seek(max(0, f.tell() - 4096))
+            row = json.loads(f.read().decode("utf-8", "replace").strip().splitlines()[-1])
+        v = row.get("saved")
+        return float(v) if isinstance(v, (int, float)) and 0 < v < 1 else SAVED_GUESS
+    except (OSError, ValueError, IndexError, AttributeError):
+        return SAVED_GUESS
+
+
+def deal_limit(order, lp, more=False):
+    """The most we pay for this SKU: min(budget, CAP x list), and with SKIP_BELOW on while another shop is still to be
+    tried, no more than leaves min(SKIP_BELOW, board saved) of list."""
+    limit = min(order["budget"], int(lp * CAP))
+    if SKIP_BELOW > 0 and more:
+        limit = min(limit, int(lp * (1 - min(SKIP_BELOW, board_saved()))))
+    return limit
 
 
 def load(path, default):
@@ -244,6 +277,28 @@ def shop_record(name, memory, soft_breaks=False):
     return "; ".join(notes), banned, statistics.median(shares[-5:]) if shares else None
 
 
+CLAIMS_CACHE = MD / "ledger_claims_r3.json"   # not claims_r3.json (claims_r3.py's forum claims)
+CLAIMS_SECS = 120    # ledger_claims is reused this long: it read, filtered and rewrote the 64 MB six-hour ledger cache on
+                     # every order (1.4 s with no network, 11/10), for numbers over six hours that barely move in two minutes
+
+
+def cached_claims(cat=None, now=None):
+    """ledger_claims(cat), from CLAIMS_CACHE when it is under CLAIMS_SECS old."""
+    now = now or time.time()
+    c = load(CLAIMS_CACHE, {})
+    if isinstance(c, dict) and isinstance(c.get("claims"), dict) and 0 <= now - c.get("t", 0) < CLAIMS_SECS:
+        return {k: tuple(v) for k, v in c["claims"].items()}
+    claims = ledger_claims(cat)
+    if claims:
+        try:
+            tmp = CLAIMS_CACHE.with_name(f"{CLAIMS_CACHE.name}.{os.getpid()}.tmp")
+            tmp.write_text(json.dumps({"t": now, "claims": claims}), encoding="utf-8")
+            os.replace(tmp, CLAIMS_CACHE)
+        except OSError:
+            pass
+    return claims
+
+
 def ledger_claims(cat=None):
     """Per shop name: (settles, dishonest claims, median price as a share of list or None) from the market's ledger,
     the last six hours. The share is what the shop settled for with any buyer: a shop that sells cheap to others is
@@ -296,9 +351,16 @@ def candidates(order, shops, cat, memory, claims):
     need = order.get("use_within_hours")
     out, skipped = [], []
     avoid = avoid_load()
+    # our Round 3 lines per shop, read once: each shop and each offer scanned all of memory (79k lines on 11/10, 1.6 s
+    # of the 4.4 s between the kit starting the buyer and its first candidate line)
+    by_shop = {}
+    for m in memory:
+        if m.get("round") == 3 and m.get("shop"):
+            by_shop.setdefault(m["shop"], []).append(m)
     for s in shops:
         soft = code_ab_r3.on("a9b2ad097b35", order.get("order"))
-        note, banned, share = shop_record(s["name"], memory, soft_breaks=soft)
+        mine = by_shop.get(s["name"], [])
+        note, banned, share = shop_record(s["name"], mine, soft_breaks=soft)
         n, bad, market_share = (tuple(claims.get(s["name"], ())) + (0, 0, None))[:3]
         if n >= 5 and bad / n >= 0.3:
             banned = True
@@ -322,10 +384,14 @@ def candidates(order, shops, cat, memory, claims):
             limit = min(order["budget"], int(lp * CAP))
             p_deal = 1.0 if limit >= expect else (limit / expect) ** 4
             surplus = (lp - min(expect, limit)) * p_deal
+            # the factors below are risks a shop's quote does not answer (whether the kit pays, breaks, shelf life it
+            # does not state), so the scouts weigh quotes by them too (team(): 11/10, elm-street was quoted first and
+            # agreed 21 times in 29 h with 0 of 21 receipts paid, while this ranking had it at (1/22)^2)
+            risk = 1.0
             if code_ab_r3.on("6796c7e893b6", order.get("order")):
                 # 88 of 826 payments were refused (25620027 22 of 48, jiseokkk 21 of 79): an agreed deal the kit refuses
                 # is an order with no sale, so a shop that gets paid ranks above one that is only quoted lower
-                pays = [m for m in memory if m.get("kind") == "payment" and m.get("round") == 3 and m.get("shop") == s["name"]]
+                pays = [m for m in mine if m.get("kind") == "payment"]
                 # 12-13 of 100 agreed payments are refused for grade C or too little shelf life, all six seen from one
                 # shop: with the second trial on, act from 3 payments, on the last 20 only, and square the factor
                 second = code_ab_r3.on("0eb2c0ca6505", order.get("order"))
@@ -333,21 +399,21 @@ def candidates(order, shops, cat, memory, claims):
                     pays = pays[-20:]
                 if len(pays) >= (3 if second else 5):
                     paid = sum(1 for m in pays if m.get("paid"))
-                    surplus *= ((paid + 1) / (len(pays) + 1)) ** (2 if second else 1)
+                    risk *= ((paid + 1) / (len(pays) + 1)) ** (2 if second else 1)
             if soft:
                 # 219 goods broke, 20 in the last 12 h, and a break counts -1 on saved against ~0.29 a deal: instead of a
                 # ban at 2 uncovered breaks, weight the shop by its break rate over our last 30 buys from it
-                mine = [m for m in memory if m.get("round") == 3 and m.get("shop") == s["name"]]
                 kept = [m for m in mine if m.get("kind") == "settled"][-30:]
                 broke = [m for m in mine if m.get("kind") == "broken" and not m.get("covered")][-30:]
                 if kept:
-                    surplus *= max(0.1, 1 - 3.5 * len(broke) / len(kept))
+                    risk *= max(0.1, 1 - 3.5 * len(broke) / len(kept))
             short =order.get("kind") == "food" and need and info.get("shelf_hours") and \
                 info["shelf_hours"] * B_SHARE < need * FOOD_MARGIN
             if short:
                 # even a grade-B unit may not last: a last resort. Shelf-life refusals were 415 of the last 1,000 unpaid
                 # talks (119 within 2% of the hours needed) and 0.3 still picked them first, so 0.05 ranks them behind
-                surplus *= 0.05 if code_ab_r3.on("a9d6314e01de", order.get("order")) else 0.3
+                risk *= 0.05 if code_ab_r3.on("a9d6314e01de", order.get("order")) else 0.3
+            surplus *= risk
             wait = avoided(avoid, s["name"], sku, order)
             if wait and "shipped" in wait:
                 # the same pair shipped too short a unit again and again within the hour (11/4 15:47-16:18:
@@ -359,7 +425,7 @@ def candidates(order, shops, cat, memory, claims):
             if fav:
                 surplus *= FAVOR_BONUS                  # in the scouted set: a clearance is checked, not guessed
                 note += f"; clearing this at ~{fav:.0%} of list (tip)"
-            out.append((surplus, s, off, lp, note + ("; short shelf life for this order" if short else "")
+            out.append((surplus, s, {**off, "_risk": risk}, lp, note + ("; short shelf life for this order" if short else "")
                         + (f"; {wait}" if wait else "")))
     if skipped:
         log("GUARD", f"not offering shops caught lying about grades, selling goods that broke or shipping too short a unit lately: {sorted(set(skipped))}")
@@ -389,42 +455,89 @@ def accept_policy(order, receipt=None, lp=None):
         {"cert": True, "grades": ["A"]}
 
 
-GRADE_SAID = re.compile(r"\bgrade\s*:?\s*([ABC])\b|등급\s*:?\s*([ABC])\b", re.I)
+# the shop's own words for the unit's grade: "grade C", "Grade now A", "grade=C", "condition: B", "등급 B", and
+# yeonsong2's "(G1324bb95): C (near its date)" (11/10: 15 grade refusals of 23 talks at yeonsong2 said it that way)
+GRADE_SAID = re.compile(r"\b(?:grade|condition)\s*(?:now\s+|is\s+)?[:=]?\s*([ABC])\b|등급\s*:?\s*([ABC])\b"
+                        r"|\)\s*:\s*([ABC])\s*\(", re.I)
 WARRANTY_SAID = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h|hours?|시간)\s*(?:of\s+)?(?:warranty|보증)", re.I)
 # any mention of a warranty, and a stated lack of one (11/9 review: "6-hour warranty", "three-day warranty" were
-# missed by WARRANTY_SAID, 43 of 68 mentions, and talks with shops that did warrant were ended)
+# missed by WARRANTY_SAID, 43 of 68 mentions, and talks with shops that did warrant were ended). 11/10: ddolcom's
+# "sold as is, without a break warranty" and "No breakage warranty offered" passed as a mention of a warranty, and 44
+# grade-B/C receipts in 29 h went unpaid; "warranty 0 hours", "warranty_hours=0" are a lack of one too
 WARRANTY_ANY = re.compile(r"warrant|보증|refund", re.I)
-WARRANTY_NONE = re.compile(r"\b(?:no|without)\s+(?:a\s+)?warranty|warranty:\s*none|보증\s*(?:없|불가)", re.I)
+WARRANTY_NONE = re.compile(r"\b(?:no|without)\s+(?:\w+\s+){0,2}warrant|warranty:\s*none|보증\s*(?:없|불가)"
+                           r"|warranty(?:[_ ]hours)?\s*[:=]?\s*0+(?:\.0+)?(?!\.?\d)|(?<![\d.])0+(?:\.0+)?\s*(?:h|hours?)\s*(?:of\s+)?warranty",
+                           re.I)
 HOURS_SAID = re.compile(r"(\d+(?:\.\d+)?)\s*(?:h|hours?|시간)\s*(?:of\s+)?(?:shelf[ -]life|left|남)", re.I)
+# the number after the words: "Shelf life left 670.50 hours", "shelf_life_left=310.5"; and an expiry time:
+# kcwarni's "Expires at 2026-12-02T13:56:46+00:00" (536 h; 621 asked, unpaid 11/10 14:16)
+HOURS_AFTER = re.compile(r"shelf[ _-]?life[ _]left\s*[:=]?\s*(?:about\s+)?(\d+(?:\.\d+)?)", re.I)
+EXPIRES_SAID = re.compile(r"expir(?:es|y)\s*(?:at|on)?\s*:?\s*(\d{4}-\d\d-\d\d[T ]\d\d:\d\d(?::\d\d(?:\.\d+)?)?(?:Z|[+-]\d\d:?\d\d))", re.I)
+# a stated lack of the market's certificate (the kit pays only with one: elm-street, 21 receipts unpaid in 29 h)
+CERT_NONE = re.compile(r"\bno\s+(?:market(?:'s)?\s+)?certificate|without\s+(?:a\s+|the\s+)?(?:market(?:'s)?\s+)?certificate"
+                       r"|\bcert\s*[:=]\s*(?:false|none|no)\b|certificate\s*:\s*(?:none|no)\b|인증서?\s*(?:없|미)", re.I)
+# the kit grades food by the share of its shelf life left (market_kit.FOOD_GRADE_CUTS): A at 0.8 or more, B at 0.45
+# or more, C below. A shop that says B or C has told us the most hours it can have: under 0.8 or 0.45 x shelf_hours
+FOOD_UNDER = {"B": 0.8, "C": 0.45}
 
 
-def screen_for(order, lp=None):
-    """A check of the shop's own words against our payment policy (accept_policy): a grade or shelf life the shop
-    states that the kit would refuse to pay for ends the talk before a deal. On 11/3 six receipts went unpaid this way
-    (shelf life 138-338 h against 198-594 h asked, one grade C against A/B), each a result with no settle."""
+def said_grade(m):
+    return next((x for x in m.groups() if x), "").upper() or None
+
+
+def hours_said(text, now=None):
+    """Hours of shelf life left the shop states, or None."""
+    for rx in (HOURS_SAID, HOURS_AFTER):
+        h = rx.search(text)
+        if h:
+            return float(h.group(1))
+    e = EXPIRES_SAID.search(text)
+    if e:
+        try:
+            from datetime import datetime
+            return (datetime.fromisoformat(e.group(1).replace("Z", "+00:00")).timestamp() - (now or time.time())) / 3600
+        except ValueError:
+            return None
+    return None
+
+
+def screen_for(order, lp=None, shelf_hours=None):
+    """A check of the shop's own words against our payment policy (accept_policy): a grade, shelf life or missing
+    certificate the shop states that the kit would refuse to pay for ends the talk before a deal. On 11/3 six receipts
+    went unpaid this way (shelf life 138-338 h against 198-594 h asked, one grade C against A/B), each a result with no
+    settle. `shelf_hours` (the catalog's) turns a stated food grade into the most hours the unit can have left."""
     pol = accept_policy(order)
+    need = pol.get("min_hours_left")
 
     def screen(text):
-        g = GRADE_SAID.search(text or "")
-        grade = (g.group(1) or g.group(2)).upper() if g else None
+        text = text or ""
+        if pol.get("cert") and CERT_NONE.search(text):
+            return "the shop says the unit has no market certificate, we pay only with one"
+        g = GRADE_SAID.search(text)
+        grade = said_grade(g) if g else None
         if grade in ("B", "C") and pol.get("grades"):
             # a shop that also offers a grade A unit, or mentions a warranty at all, goes on: the checkout decides
             # (accept_policy asks the seller's copy for a 6 h warranty); only a B/C with no word of one, or a stated
             # lack of one, ends the talk
-            if any((m.group(1) or m.group(2) or "").upper() == "A" for m in GRADE_SAID.finditer(text or "")):
+            if any(said_grade(m) == "A" for m in GRADE_SAID.finditer(text)):
                 return None
             # a stated warranty shorter than the break window ends it now, not at checkout (dragonash: "3 h warranty")
-            w = WARRANTY_SAID.search(text or "")
+            w = WARRANTY_SAID.search(text)
             if w and float(w.group(1)) < BREAK_HOURS:
                 return f"the shop says grade {grade} with a {float(w.group(1)):g} h warranty, we pay for B/C only with {BREAK_HOURS} h"
-            if WARRANTY_ANY.search(text or "") and not WARRANTY_NONE.search(text or ""):
+            if WARRANTY_ANY.search(text) and not WARRANTY_NONE.search(text):
                 return None
             return f"the shop says grade {grade} with no {BREAK_HOURS} h warranty, we pay only for A or a warranted B/C"
         if grade and pol.get("grades") and grade not in pol["grades"]:
             return f"the shop says grade {grade}, we pay only for {'/'.join(pol['grades'])}"
-        h = HOURS_SAID.search(text or "")
-        if h and pol.get("min_hours_left") and float(h.group(1)) < pol["min_hours_left"]:
-            return f"the shop says {float(h.group(1)):.0f} h of shelf life left, we need {pol['min_hours_left']:.0f}"
+        if need:
+            h = hours_said(text)
+            if h is not None and h < need:
+                return f"the shop says {h:.0f} h of shelf life left, we need {need:.0f}"
+            under = FOOD_UNDER.get(grade)
+            if h is None and under and shelf_hours and under * shelf_hours < need:
+                return (f"the shop says grade {grade}, under {under:.0%} of the {shelf_hours:g} h shelf life left, "
+                        f"we need {need:.0f}")
         return None
     return screen
 
@@ -481,7 +594,7 @@ async def main(args, shops, memory, remember):
         log("PICK", f"order {order.get('order')} is already paid: no new talk")
         print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)
         return
-    cands = candidates(order, shops, cat, memory, ledger_claims(cat))
+    cands = candidates(order, shops, cat, memory, cached_claims(cat))
     if not cands:
         log("PICK", f"no listed shop has a SKU of {order.get('item')} we can buy")
         print(json.dumps({"shop": "", "receipt": None, "stars": None, "review": None}), flush=True)
@@ -494,7 +607,7 @@ async def main(args, shops, memory, remember):
     # (11/3 21:06-21:33: 30 of 69 talks ended that way, while three tries ended many orders)
     started, tried, talks, out = time.time(), set(), 0, None
     skus, quick_shops = {}, set()
-    for surplus, s, off, lp, note in cands:
+    for i, (surplus, s, off, lp, note) in enumerate(cands):
         # a shop that said "none in stock" for one SKU may still have another the order accepts: up to two SKUs a
         # shop, the second only after a quick reject (the meta-harness's code idea, 11/4: 714 of ~1,000 talks ended so)
         if (s["name"], off["sku"]) in tried or skus.get(s["name"], 0) >= (2 if s["name"] in quick_shops else 1) \
@@ -502,7 +615,8 @@ async def main(args, shops, memory, remember):
             continue
         tried.add((s["name"], off["sku"]))
         skus[s["name"]] = skus.get(s["name"], 0) + 1
-        out = await attempt(order, cat, s, off, lp, note, remember, rejects_after_two(s["name"], memory))
+        more = talks + 1 < MAX_TRIES and any(c[1]["name"] != s["name"] for c in cands[i + 1:])   # another shop to try
+        out = await attempt(order, cat, s, off, lp, note, remember, rejects_after_two(s["name"], memory), more=more)
         quick = out.pop("_quick", False)
         if out["receipt"]:
             break
@@ -517,12 +631,16 @@ async def main(args, shops, memory, remember):
 
 
 def opening_for(order, name, sku):
+    """The first message. It asks the shop to state the unit's grade and shelf life or warranty, which screen_for reads
+    before any offer (11/10, 29 h: 106 of 174 unpaid receipts came from talks where the shop never stated them)."""
     opening = f"I want to buy {name} ({sku})"
     if order.get("kind") == "food" and order.get("use_within_hours"):
         return opening + (f". I need it to last {order['use_within_hours']} hours: please ship a unit with at least "
-                          f"{accept_policy(order)['min_hours_left']} hours of shelf life left, with the market's certificate.")
+                          f"{accept_policy(order)['min_hours_left']} hours of shelf life left, with the market's certificate. "
+                          "Please state the unit's grade and its hours of shelf life left.")
     return opening + (". Please ship a grade A unit with the market's certificate, or a grade B or C unit with at least "
-                      f"a {BREAK_HOURS} h warranty (we pay for B or C only with one).")
+                      f"a {BREAK_HOURS} h warranty (we pay for B or C only with one). Please state the unit's grade and "
+                      "warranty hours.")
 
 
 async def scout(order, cat, s, off, lp):
@@ -586,7 +704,8 @@ async def scout_wave(order, cat, picked, dropped, quoted):
         if t not in done:
             t.cancel()
     for c, q in zip(picked, quotes):
-        why = screen_for(order, c[3])(q.get("text") or "") if q["state"] == "TASK_STATE_INPUT_REQUIRED" else None
+        shelf = (cat.get(c[2]["sku"]) or {}).get("shelf_hours")
+        why = screen_for(order, c[3], shelf)(q.get("text") or "") if q["state"] == "TASK_STATE_INPUT_REQUIRED" else None
         if q["state"] == "slow":
             log("SCOUT", f"{c[1]['name']} {c[2]['sku']}: no quote in {SCOUT_WAIT} s, tried after the quoted shops")
             continue
@@ -599,8 +718,11 @@ async def scout_wave(order, cat, picked, dropped, quoted):
         ask = q.get("ask")
         # what is left at the ask, weighed by the chance of getting there when the ask is above what we pay
         value = (c[3] - min(ask, cap)) * min(1.0, cap / ask) ** 4 if isinstance(ask, (int, float)) and ask > 0 else c[0]
+        risk = c[2].get("_risk", 1.0) if isinstance(ask, (int, float)) and ask > 0 else 1.0   # c[0] has it already
+        value *= risk
         quoted.append((value, c))
-        log("SCOUT", f"{c[1]['name']} {c[2]['sku']}: asks {ask} of list {c[3]} (surplus at the ask ~{value:.0f})")
+        log("SCOUT", f"{c[1]['name']} {c[2]['sku']}: asks {ask} of list {c[3]} (surplus at the ask ~{value:.0f}"
+                     + (f", x{risk:.2f} for the kit refusing, breaks or shelf life" if risk < 1 else "") + ")")
 
 
 def dead_pair(shop, sku, memory):
@@ -617,11 +739,12 @@ def rejects_after_two(name, memory):
                and len([a for a in m.get("asks") or [] if a is not None]) == 2 for m in memory) >= 3
 
 
-async def attempt(order, cat, s, off, lp, note, remember, take_second=False):
-    """One negotiation with one shop over one SKU; returns the result line for the kit."""
+async def attempt(order, cat, s, off, lp, note, remember, take_second=False, more=False):
+    """One negotiation with one shop over one SKU; returns the result line for the kit. `more`: another shop is still
+    to be tried for this order (deal_limit's SKIP_BELOW)."""
     # the catalog's name first: the name in a shop's offer is the shop's own text and goes into our prompt
     name, sku = harness.clip((cat.get(off["sku"]) or {}).get("name") or off.get("name") or off["sku"], 80), off["sku"]
-    limit = min(order["budget"], int(lp * CAP))
+    limit = deal_limit(order, lp, more)
     log("CHOOSE", f"{s['name']} {s['url']}: {name} ({sku}), list {lp}, paying at most {limit}")
     opening = opening_for(order, name, sku)
     try:                                                  # the buying team member this talk goes to (team_r3.py)
@@ -652,7 +775,8 @@ async def attempt(order, cat, s, off, lp, note, remember, take_second=False):
         log("TEAM", f"{member or 'no team'} haggles this one {json.dumps(style)}")
         result = await buyer.shop(s["url"], name, limit, memory=hint, max_raise=style.get("MAX_RAISE", MAX_RAISE),
                                   max_offers=MAX_OFFERS, plan=bool(style.get("PLAN")), take_second=take_second, close_gap=close_gap,
-                                  order_id=order.get("order"), opening=opening, screen=screen_for(order, lp))
+                                  order_id=order.get("order"), opening=opening,
+                                  screen=screen_for(order, lp, (cat.get(sku) or {}).get("shelf_hours")))
     except Exception as e:
         log("ERROR", f"trade with {s['name']} failed: {e!r}")
         result = {"state": "error", "asks": [], "offers": [], "error": type(e).__name__}

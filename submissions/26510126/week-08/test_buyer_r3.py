@@ -561,6 +561,81 @@ def main():
     trial.write_text("{}")
     buyer_r3.load_plan("o-1")
 
+    # 20. pre-screen (11/10): the shop's words the old screen missed, each from a receipt the kit then refused to pay
+    gs = buyer_r3.screen_for({"kind": "goods"}, 30000)
+    fs = buyer_r3.screen_for({"kind": "food", "use_within_hours": 540}, 25800, 720)       # needs 621 h
+    case("goods: 'without a break warranty', 'No breakage warranty', warranty 0 h, 'condition: B', '(sku): C (' end it",
+         all(isinstance(gs(t), str) for t in (
+             "커튼: asking 15633. Grade C (refurbished), market certificate included. Refurbished unit sold as is, without a break warranty.",
+             "방석 (G06f2c594). Grade B: damaged packaging. No breakage warranty offered. Market certificate included.",
+             "sku=G1, unit=u-1, grade=C, cert=true, warranty_hours=0. Asking 9000",
+             "Inventory condition: B. Confirm the certificate at checkout. Warranty: 0 hours.",
+             "견과 (G1324bb95): C (near its date), about 317 h of shelf life left, market certificate included."))
+         and gs("grade B (damaged box), certificate attached, with a 6-hour warranty. Asking 1566020") is None
+         and gs("Grade now A. Market certificate attached; warranty 0 hours.") is None
+         and gs("Inventory condition can change while negotiating. Asking 9000") is None, "")
+    expires = time.strftime("%Y-%m-%dT%H:%M:%S+00:00", time.gmtime(time.time() + 536 * 3600))
+    case("food: hours after the words, an expiry time, a stated grade under the hours we need, no certificate",
+         isinstance(fs("Shelf life left 536.10 hours. Asking 17000"), str)
+         and fs("Grade now A. Market certificate attached. Shelf life left 670.50 hours.") is None
+         and isinstance(fs("sku=G1, grade=C, cert=true, shelf_life_left=310.5): asking 9000"), str)
+         and "536 h" in (fs(f"Inventory condition: A. Expires at {expires}. Warranty: 0 hours.") or "")
+         and "grade C" in (fs("부대찌개, certified grade C: asking 11808.") or "")          # C: under 0.45 x 720 = 324 h
+         and "grade B" in (fs("부대찌개: grade B, certificate included. Asking 16000") or "")   # B: under 576 h
+         and buyer_r3.screen_for({"kind": "food", "use_within_hours": 100}, 25800, 720)("grade B. Asking 1") is None
+         and "certificate" in (fs("No certificate for this one, very fresh. Asking 9000") or "")
+         and fs("asking 52560. Very fresh, just in. Send your offer as a number.") is None,        # says nothing: unknown
+         str(fs("부대찌개, certified grade C: asking 11808.")))
+
+    # 21. the scouts weigh a quote by the risks it does not answer (11/10: elm-street quoted lowest, agreed 21 times in
+    # 29 h, and the kit refused all 21 receipts; the ranking had it at (1/22)^2 but the scouts sorted by quote alone)
+    o21 = {"order": "o-21", "kind": "food", "budget": 50000, "acceptable": ["R1"], "use_within_hours": 10}
+    cat21 = {"R1": {"list_price": 40000, "kind": "food", "shelf_hours": 720}}
+    shops21 = [{"name": n, "url": f"http://{n}", "offers": [{"sku": "R1", "qty": 3}]} for n in ("unpaid", "paid")]
+    mem21 = [{"kind": "payment", "round": 3, "shop": "unpaid", "paid": False, "reason": "not paying: no certificate"}] * 21 \
+        + [{"kind": "payment", "round": 3, "shop": "paid", "paid": True}] * 21
+    c21 = buyer_r3.candidates(o21, shops21, cat21, mem21, {})
+    asks21 = {"unpaid": 20000, "paid": 26000}
+
+    async def fake_scout(order, cat, s, off, lp):
+        return {"state": "TASK_STATE_INPUT_REQUIRED", "ask": asks21[s["name"]], "text": f"asking {asks21[s['name']]}"}
+    real_scout, buyer_r3.scout = buyer_r3.scout, fake_scout
+    dropped21, quoted21 = set(), []
+    asyncio.run(buyer_r3.scout_wave(o21, cat21, c21, dropped21, quoted21))
+    buyer_r3.scout = real_scout
+    lead21 = [c[1]["name"] for _, c in sorted(quoted21, key=lambda x: -x[0])]
+    case("a shop the kit never paid is not the lead on a lower quote; candidates carry the risk factor",
+         lead21 == ["paid", "unpaid"] and next(c for c in c21 if c[1]["name"] == "unpaid")[2]["_risk"] < 0.01,
+         str((lead21, [(c[1]["name"], round(c[2]["_risk"], 4)) for c in c21])))
+
+    # 22. the ledger claims are reused for CLAIMS_SECS instead of reading the six-hour ledger on every order
+    calls = []
+    real_lc = buyer_r3.ledger_claims
+    buyer_r3.ledger_claims = lambda cat=None: calls.append(1) or {"s": (5, 1, 0.6)}
+    buyer_r3.CLAIMS_CACHE.unlink(missing_ok=True)
+    t0 = time.time()
+    a = buyer_r3.cached_claims({}, now=t0)
+    b = buyer_r3.cached_claims({}, now=t0 + 60)
+    c = buyer_r3.cached_claims({}, now=t0 + buyer_r3.CLAIMS_SECS + 1)
+    buyer_r3.ledger_claims = real_lc
+    case("ledger claims: one read, reused within CLAIMS_SECS, read again after", len(calls) == 2 and a == b == c == {"s": (5, 1, 0.6)},
+         str((len(calls), a, b)))
+
+    # 23. SKIP_BELOW (off by default): while another shop is left, pay at most (1 - min(SKIP_BELOW, board saved)) x list
+    board = TMP / "board_terms_test.jsonl"
+    board.write_text(json.dumps({"saved": 0.2}) + "\n" + json.dumps({"saved": 0.2996}) + "\n")
+    real_board, buyer_r3.BOARD_TERMS = buyer_r3.BOARD_TERMS, board
+    o23 = {"budget": 200000}
+    off = buyer_r3.deal_limit(o23, 100000, more=True)
+    buyer_r3.SKIP_BELOW = 0.35
+    on_more, on_last = buyer_r3.deal_limit(o23, 100000, more=True), buyer_r3.deal_limit(o23, 100000, more=False)
+    buyer_r3.BOARD_TERMS = TMP / "no-such-file.jsonl"
+    guess = buyer_r3.deal_limit(o23, 100000, more=True)
+    buyer_r3.SKIP_BELOW, buyer_r3.BOARD_TERMS = 0.0, real_board
+    case("SKIP_BELOW: off keeps CAP; on, the board mean (or 0.30) sets the limit while another shop is left; last talk CAP",
+         off == int(100000 * buyer_r3.CAP) and on_more == int(100000 * (1 - 0.2996)) and on_last == int(100000 * buyer_r3.CAP)
+         and guess == int(100000 * (1 - buyer_r3.SAVED_GUESS)), str((off, on_more, on_last, guess)))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 

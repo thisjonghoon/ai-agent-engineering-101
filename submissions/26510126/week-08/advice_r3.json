@@ -297,6 +297,10 @@
   {
    "t": 1794269046.317097,
    "text": "Merchandising, 09:0x: cash 51.4M against a 10M reserve and stock 106.9M against the 130M cap: the stuck_hours releases (03:22, 08:53) brought back ~25M that restock cannot spend fast enough. A supply window lasts 3 minutes and the kit buys one line about every 10 s (about 10 lines a window), so more lines do not help; more units per line of the hot 300k+ SKUs (dear_depth) do. Candidate for the next free slot (after 09:19)."
+  },
+  {
+   "t": 1794275223.0953548,
+   "text": "Merchandising, 10:4x: the 4th and 5th hottest 300k+ SKUs are 다우닝 sofas we never hold: G00327e80 (list 2,246,800, sku_score 366, 175 market settles in 6 h at a median 0.70 of list) never got a supply line, and G24f5f979 (list 3,816,000, score 388, 133 settles at 0.66) is cut by max_list 1.2M x 2. Each sale is ~1.5-2.5M of revenue (revenue is 0.3 of shop ALL) with cash idle at 46M. Consider max_list and why G00327e80 never reaches a line."
   }
  ]
 }

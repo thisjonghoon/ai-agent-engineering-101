@@ -178,8 +178,8 @@ async def main():
         plain = (seller_r3.find_unit("I want Sofa (GW)") or {}).get("unit")
         asked = (seller_r3.find_unit("I want Sofa (GW) with a warranty please") or {}).get("unit")
         seller_r3.STRATEGY = old_strat
-        check("a buyer asking for a warranty is offered the warranted unit; otherwise the one that arrived first",
-              plain == "u-c" and asked == "u-a", (plain, asked))
+        check("goods are offered A before C (and so a buyer asking for a warranty gets the warranted unit)",
+              plain == "u-a" and asked == "u-a", (plain, asked))
         seller_r3.MARKET_DIR = md
         near = dict(UNITS[2], expires_at=time.time() + (0.80 * 168 + 0.5) * 3600)   # half an hour above the A line
         check("no grade claim within an hour of a line", seller_r3.grade_now(near)[2] is None, seller_r3.grade_now(near))
@@ -220,7 +220,8 @@ async def main():
         ev = [json.loads(l) for l in ab_r3.LOG.read_text().splitlines()]
         opened = [e for e in ev if e["event"] == "open"]
         ended = [e for e in ev if e["event"] == "deal"]
-        arm_ask = {"A": 95000, "B": 70000}
+        gb = seller_r3.DEFAULTS["grade_frac_b"]            # G3 is grade B: its list-based ask follows the B market
+        arm_ask = {"A": round(95000 * gb), "B": round(70000 * gb)}
         check("a negotiation draws an arm, asks with it and logs open and deal with the margin",
               r and len(opened) == 1 and opened[0]["ask"] == arm_ask[opened[0]["arm"]] and len(ended) == 1
               and ended[0]["reward"] == round((r["price"] - 50000) / 100000, 4) and r["price"] >= 55000,

@@ -64,7 +64,7 @@ NAME = "thisjonghoon"
 RESERVE = {"lamp": 100, "chair": 180, "bookshelf": 260}     # Rounds 0-2 have no stock: the week-07 items
 MARKET_DIR = Path(os.environ.get("MARKET_DIR", HERE / ".market"))
 STRATEGY = Path(os.environ.get("STRATEGY_FILE") or HERE / "strategy_r3.json")   # tests: the defaults, not the live file
-DEFAULTS = {"ask_frac": 0.95, "floor_frac": 0.78, "min_margin": 0.10, "step": 0.4,
+DEFAULTS = {"grade_frac_b": 0.92, "grade_frac_c": 0.76, "ask_frac": 0.95, "floor_frac": 0.78, "min_margin": 0.10, "step": 0.4,
             "clear_hours": 6, "clear_frac": 0.6, "warranty_hours": 0, "max_turns": 6,
             "endgame_hours": 24, "endgame_frac": 1.0, "final_hours": 6, "final_frac": 0.6,
             "ask_frac_food": 0.95, "floor_frac_food": 0.78, "fresh_premium": 0.10,
@@ -269,7 +269,10 @@ def pick(units, need):
         if not ok:
             return max(units, key=left)
         units = ok
-    return min(units, key=lambda u: (u["expires_at"] or float("inf"), u["supplied_at"]))
+    # goods: A, then B, then C, first-in within a grade (11/10, 6 h: A goods agreed 35, paid 30; C agreed 45, paid 7 --
+    # most buyers' kits do not pay for C, and pick() had offered the oldest unit whatever its grade)
+    rank = lambda u: {"A": 0, "B": 1, "C": 2}.get(u.get("grade"), 1) if u.get("kind") == "goods" else 0
+    return min(units, key=lambda u: (rank(u), u["expires_at"] or float("inf"), u["supplied_at"]))
 
 
 def find_unit(text, taken=()):
@@ -332,7 +335,16 @@ def market_cap(u, s):
         st = (c.get("h6") or c.get("h24")) if c else None
         if not st or st.get("n", 0) < 10:
             return None
-    return u["list_price"] * st["p75"] * k
+    return u["list_price"] * st["p75"] * k * grade_frac(u, s)
+
+
+def grade_frac(u, s):
+    """Goods of a lower grade are priced as the market prices them: on 11/10 the market's goods settled at a median
+    0.70 of list for A, 0.62 for B and 0.515 for C (0.675 overall), while ours priced every grade alike: our C goods
+    agreed at 0.63-0.64 and 38 of 45 such deals were never paid (32.9M in 6 h), A sold under the market."""
+    if u.get("kind") != "goods":
+        return 1.0
+    return {"B": s.get("grade_frac_b", 1.0), "C": s.get("grade_frac_c", 1.0)}.get(u.get("grade"), 1.0)
 
 
 def prices(u, s):
@@ -349,6 +361,7 @@ def prices(u, s):
         # full shelf life, as much less near the date (before the clearance rule below takes over)
         left = min(1.0, hours / shelf_hours(u["sku"]))
         ask_frac *= 1 + s["fresh_premium"] * (2 * left - 1)
+    lp = lp * grade_frac(u, s)                  # a lower grade's list-based ask and floor follow its market price
     floor = max(cost * (1 + s["min_margin"]), lp * min(floor_frac, ask_frac))
     cap = market_cap(u, s)
     if cap:                                     # follow the market down, never under cost + min_margin

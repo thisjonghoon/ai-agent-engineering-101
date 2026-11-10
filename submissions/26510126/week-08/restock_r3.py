@@ -46,7 +46,7 @@ MARKET = "https://market.ourolabs.ai"
 STRATEGY = Path(os.environ.get("STRATEGY_FILE") or HERE / "strategy_r3.json")   # tests: the defaults, not the live file
 DEFAULTS = {"food_cash": 3_000_000, "dear_first": 1.0, "reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
             "goods_frac": 0.35, "food_first": 0.5,
-            "depth": 3, "half_life_hours": 12, "stop_hours": 36, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540,
+            "depth": 3, "half_life_hours": 12, "stop_hours": 4, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540,
             "window_depth": 2.0, "order_weight": 1.0, "surge_max": 1.15,
             "dear_depth": 4, "lines": 18, "breadth_lines": 6, "sku_cap": 8}    # 2026-11-17 23:59 KST
 BANKRUPT_LINE = 500_000  # below this a shop may file, and the 5,000,000 it gets comes off profit
@@ -192,6 +192,8 @@ def main():
     spend_food = max(0, min(free * 0.5, s.get("food_cash", 3_000_000)))     # at most half: goods keep the rest
     spend_goods = min(free - spend_food, s["stock_value"] - stock)
     spend = max(spend_goods, 0) + spend_food
+    # 4 h, not 36 (11/10): Book counts unsold stock at cost, so stock bought late costs only storage (1% a day) and
+    # food that may expire; 36 h stopped all buying from 11/16 11:59 and dried up the last day and a half of revenue
     stopping = s["round_end"] and now > s["round_end"] - s["stop_hours"] * 3600
     buy, why = [], ""
     if window and window.get("open") is False:

@@ -47,13 +47,13 @@ EVERY = 15 * 60
 # 11/6 18:2x user: 'more aggressive' -> stock_value step 10M, max_list up to 3M (step 300k)
 # 11/6 18:1x stock_value 50M -> 90M: the team called the 50M cap binding (17:05) while 40M sat in cash; Book counts stock
 # at cost, so stock only costs score when it ages or breaks, and the top shops turn 1.5B of revenue to our 0.38B
-BOUNDS = {"ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min_margin": (0.02, 0.40, 0.04),
+BOUNDS = {"grade_frac_b": (0.80, 1.00, 0.04), "grade_frac_c": (0.60, 1.00, 0.04), "ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min_margin": (0.02, 0.40, 0.04),
           "step": (0.2, 0.7, 0.1), "clear_hours": (2, 24, 4), "clear_frac": (0.3, 1.0, 0.1),
           "warranty_hours": (0, 72, 12), "max_turns": (3, 8, 1),
           "reserve_cash": (700_000, 10_000_000, 1_000_000), "stock_value": (500_000, 250_000_000, 10_000_000),
           "max_list": (30_000, 3_000_000, 300_000), "dear_first": (0.0, 3.0, 0.5), "min_shelf_hours": (24, 720, 48), "depth": (1, 6, 1),
           "endgame_hours": (12, 24, 6), "endgame_frac": (1.0, 1.2, 0.1), "final_hours": (2, 12, 2),
-          "final_frac": (0.3, 1.0, 0.1), "ask_frac_food": (0.70, 1.00, 0.05), "floor_frac_food": (0.45, 0.95, 0.05),
+          "final_frac": (1.0, 1.0, 0.1), "ask_frac_food": (0.70, 1.00, 0.05), "floor_frac_food": (0.45, 0.95, 0.05),
           "fresh_premium": (0.0, 0.2, 0.05), "spread_low": (0.5, 0.9, 0.1), "spread_high": (1.1, 1.5, 0.1),
           "sku_depth": (1, 6, 1), "goods_frac": (0.1, 0.95, 0.1), "food_first": (0.0, 1.0, 0.25), "food_cash": (0, 10_000_000, 1_000_000),
           "goods_age_days": (2, 10, 1), "aged_margin": (0.0, 0.2, 0.03), "stuck_hours": (2, 12, 2), "window_depth": (1.0, 4.0, 0.5), "order_weight": (0.0, 3.0, 0.5),
@@ -72,9 +72,9 @@ Stay honest: true grade claims, the market's certificate shown, no votes against
 to clear stock that would otherwise be lost. `players` in the numbers below shows our rank and percentile, the
 leader and the gap, q00's rank, and the part with the most to gain; push the shop's part of that.
 
-You set the strategy of an online shop in a market of AI buyers. Profit is the shop's balance minus its
-starting capital at the end of the round, so stock that never sells is a loss; the shop is also ranked by revenue
-and by stars. The shop buys units (cost is 25-75% of list price, set by a random grade) and sells them by haggling.
+You set the strategy of an online shop in a market of AI buyers. The shop is ranked by Book (cash plus
+unsold stock counted at cost, so stock left at the end is not a loss, only its storage fee is), by revenue and by
+stars. The shop buys units (cost is 25-75% of list price, set by a random grade) and sells them by haggling.
 Food loses its grade as it ages and is thrown away at its date; goods pay 1% of cost a day in storage and some break
 after the sale (a warranty refunds the whole price from the shop). Buyers gain when they pay less than list price.
 
@@ -83,7 +83,8 @@ The strategy (numbers only; bounds are [low, high], max change per cycle in pare
 ask = list x ask_frac (food: ask_frac_food, scaled up to +/- fresh_premium by shelf life left).
 floor = max(cost x (1 + min_margin), list x floor_frac (food: floor_frac_food)). Each counter moves `step` of the way
 to the buyer's offer. Food with under clear_hours left (or grade C) may go down to cost x clear_frac. In the last endgame_hours of the
-round the floor drops to cost x endgame_frac, in the last final_hours to cost x final_frac (stock left at the end is lost).
+round the floor drops to cost x endgame_frac, in the last final_hours to cost x final_frac (kept at 1.0: Book counts unsold stock at cost, so selling under
+cost at the end only lowers Book).
 Restock keeps at most stock_value of stock at cost and never spends below reserve_cash (code also keeps 700,000, and
 1,000,000 while a warranty is on: below 500,000 a shop goes bankrupt and the 5,000,000 it gets comes off profit; more
 stock means more chances to sell but also more food that can expire and goods that pay storage); it skips goods listed above

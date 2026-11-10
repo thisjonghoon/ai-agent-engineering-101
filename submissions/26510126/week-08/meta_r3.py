@@ -47,7 +47,7 @@ EVERY = 15 * 60
 # 11/6 18:2x user: 'more aggressive' -> stock_value step 10M, max_list up to 3M (step 300k)
 # 11/6 18:1x stock_value 50M -> 90M: the team called the 50M cap binding (17:05) while 40M sat in cash; Book counts stock
 # at cost, so stock only costs score when it ages or breaks, and the top shops turn 1.5B of revenue to our 0.38B
-BOUNDS = {"grade_frac_b": (0.80, 1.00, 0.04), "grade_frac_c": (0.60, 1.00, 0.04), "ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min_margin": (0.02, 0.40, 0.04),
+BOUNDS = {"open_gap": (0.0, 0.15, 0.03), "grade_frac_b": (0.80, 1.00, 0.04), "grade_frac_c": (0.60, 1.00, 0.04), "ask_frac": (0.70, 1.00, 0.05), "floor_frac": (0.45, 0.95, 0.05), "min_margin": (0.02, 0.40, 0.04),
           "step": (0.2, 0.7, 0.1), "clear_hours": (2, 24, 4), "clear_frac": (0.3, 1.0, 0.1),
           "warranty_hours": (0, 72, 12), "max_turns": (3, 8, 1),
           "reserve_cash": (700_000, 10_000_000, 1_000_000), "stock_value": (500_000, 250_000_000, 10_000_000),

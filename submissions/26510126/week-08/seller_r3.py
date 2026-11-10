@@ -69,7 +69,7 @@ DEFAULTS = {"grade_frac_b": 0.92, "grade_frac_c": 0.76, "ask_frac": 0.95, "floor
             "endgame_hours": 24, "endgame_frac": 1.0, "final_hours": 6, "final_frac": 1.0,
             "ask_frac_food": 0.95, "floor_frac_food": 0.78, "fresh_premium": 0.10,
             "goods_age_days": 5, "aged_margin": 0.03, "model_share": 0.5, "market_ask": 1.0,
-            "stuck_hours": 6, "stuck_frac": 1.0}
+            "stuck_hours": 6, "stuck_frac": 1.0, "open_gap": 0.0}
 ROUND_END = 1794927540                                       # 2026-11-17 23:59 KST: stock left then is a loss
 OFFER = re.compile(r"(?<![A-Za-z0-9])\d[\d,]*(?![A-Za-z0-9])")   # a number on its own, not the digits of a SKU
 FOOD_CUTS = (0.80, 0.45)                                     # shelf life left: A at or above 80%, B at or above 45%
@@ -403,6 +403,10 @@ def prices(u, s):
         # loss on the term that counts most; at 0.95, 20 of 44 A goods since 17:08 sold under cost and Book sat flat for 7 h
         floor = min(floor, max(cost * max(s.get("stuck_frac", 1.0), 1.0), cap))   # only ever lowers (endgame/final ran above)
     ask = max(min(lp * min(ask_frac, 1.0), cap or lp), floor)
+    # room to haggle (11/10 audit #2: 619 of 1,060 goods talks opened at the floor, so a buyer that expects a concession
+    # got none; the heavy goods buyers bought 0 from us in 6 h). open_gap 0 keeps the old ask; the meta tests > 0 by A/B
+    if s.get("open_gap", 0) > 0:
+        ask = max(ask, min(floor * (1 + s["open_gap"]), u["list_price"]))     # never over list
     return int(round(ask)), int(round(min(floor, ask)))
 
 

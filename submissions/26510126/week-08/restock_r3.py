@@ -305,14 +305,17 @@ def main():
             num = den = 0.0
             for g, w in GOODS_MIX.items():
                 st = (lines.get("skus") or {}).get(f"{c['sku']}|{g}")
-                if not st or st.get("n", 0) < 3:
+                if g != "C" and (not st or st.get("n", 0) < 3):   # C needs no market line: it is valued at cost
                     cat = (lines.get("categories") or {}).get(f"{(c.get('category') or '').split('>')[-1]}|{g}") or {}
                     st = cat.get("h24") or cat.get("h6")
                     if not st or st.get("n", 0) < 10:
                         return None
                 paid = own.get((c["sku"], g))
                 cost = (sorted(paid)[len(paid) // 2] if paid else GRADE_COST[g]) * surge.get(c["sku"], 1.0)
-                num += w * (st["median"] * (1 - REFUND.get(g, 0)) - cost)
+                # C counted at cost (no margin): it sells rarely (11 of 94 dear C units in 6 h, 11/11 audit #5), so its
+                # market median inflated the mix and let A lines at -4%..+4% pass
+                value = cost if g == "C" else st["median"] * (1 - REFUND.get(g, 0))
+                num += w * (value - cost)
                 den += w * cost
             return num / den if den else None
 

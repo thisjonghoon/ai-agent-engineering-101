@@ -339,13 +339,16 @@ def market_cap(u, s):
     d = prices_r3.read(MARKET_DIR)
     g = u.get("grade") if u.get("kind") == "goods" and u.get("grade") in ("A", "B", "C") else None
     if g:                                       # the line for this grade first (11/10 audit #3), then all grades
+        # C goods open at the market's median, not p75 (11/11 audit #5: 94 dear C units, 32.9M, 11 sold in 6 h; their
+        # cost is 0.29-0.42 of list and the C median 0.44-0.63, so the median still leaves 30%+)
+        q = "median" if g == "C" else "p75"
         st = (d.get("skus") or {}).get(f"{u.get('sku')}|{g}")
         if st and st.get("n", 0) >= 5:
-            return u["list_price"] * st["p75"] * k
+            return u["list_price"] * st[q] * k
         c = (d.get("categories") or {}).get(f"{prices_r3.leaf(u.get('category'))}|{g}")
         st = (c.get("h6") or c.get("h24")) if c else None
         if st and st.get("n", 0) >= 10:
-            return u["list_price"] * st["p75"] * k
+            return u["list_price"] * st[q] * k
     st = (d.get("skus") or {}).get(u.get("sku"))
     if not st or st.get("n", 0) < 5:
         c = (d.get("categories") or {}).get(prices_r3.leaf(u.get("category")))

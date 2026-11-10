@@ -185,7 +185,7 @@ Answer with JSON only: {{"strategy": {{...every key...}}, "playbook": "<the play
 # C_CAP is gone (11/9 audit): code_ab_r3.on("ba9fd31c6b7c") is True with no trial on, so buyer_r3 never reaches its
 # C_CAP branch and a C without a warranty is always refused; a C_CAP trial held the only buyer trial slot on noise
 # C_WARRANTY too: buyer_r3 asks every B or C unit for the 6 h break window (BREAK_HOURS), so the knob changes nothing
-BUYER_BOUNDS = {"CAP": (0.75, 0.95, 0.05), "FOOD_MARGIN": (1.0, 1.3, 0.05),
+BUYER_BOUNDS = {"CAP": (0.65, 0.95, 0.05), "FOOD_MARGIN": (1.0, 1.3, 0.05),
                 "MAX_TRIES": (2, 6, 1), "MAX_RAISE": (0.2, 0.7, 0.1), "FIRM_GAP": (0.0, 0.1, 0.02),
                 "SCOUTS": (1, 5, 1), "CLOSE_GAP": (0.0, 0.12, 0.02)}
 BUYER_DEFAULTS = {"CAP": 0.9, "FOOD_MARGIN": 1.1, "MAX_TRIES": 3, "MAX_RAISE": 0.4,

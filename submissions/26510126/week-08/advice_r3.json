@@ -353,6 +353,10 @@
   {
    "t": 1794315008.450846,
    "text": "Supervisor 11/10 22:0x, leak audit #3 (Book, 6 h): margin +6.38M, refunds -1.0M, storage -0.31M. By segment: goods 300k+ A earned 1.8% (0.77M on 41.7M), B 15.4% (3.91M on ~25M), C 43%; food A 2.1%, food B/C much better. A goods are bought at a median 0.678 of list and the A market pays 0.71, so A has ~4 points of room; B is bought at 0.485 and sells at ~0.63. Market lines are now per grade (prices_r3 'sku|grade'). Next candidates: (1) after the open_gap A/B, an A/B of market_ask 0.9 vs 1.0 on goods judged on margin (the A cap is still 0.658 vs cost 0.680 at 0.9); (2) restock: favour lines whose expected margin per grade is positive; B 300k+ is our best earner and its stock is down to 19 units (38 sold in 6 h)."
+  },
+  {
+   "t": 1794347171.448737,
+   "text": "Supervisor 11/11 07:0x, leak audit #6 (food): our food close rate fell 32.9% -> ~24% from 04:20 while the market's food settles held. Causes: food used one market line over all grades (fixed: food now uses its grade line), open_gap applied to food asks too (fixed: goods only), and A food bought at 0.70-0.76 of list cannot sell over cost (market A food 0.705). floor_frac_food multiplies list for every grade: at 0.58 our C food floor is 0.58 of list while the market pays 0.54-0.55 for C food (our C cost ~0.39). Do not raise floor_frac_food to 0.60; if anything, test 0.55 on food by A/B."
   }
  ]
 }

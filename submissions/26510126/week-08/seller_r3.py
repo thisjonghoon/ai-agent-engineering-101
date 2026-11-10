@@ -337,11 +337,17 @@ def market_cap(u, s):
     if not k:
         return None
     d = prices_r3.read(MARKET_DIR)
-    g = u.get("grade") if u.get("kind") == "goods" and u.get("grade") in ("A", "B", "C") else None
+    # food too (11/11 audit #6): its grade is the shelf life left now (grade_now), and the market's food settles carry
+    # it; a line over all grades capped our B/C food above their market (C food p75 0.701 overall vs 0.617 for C)
+    if u.get("kind") == "goods":
+        g = u.get("grade") if u.get("grade") in ("A", "B", "C") else None
+    else:
+        g = grade_now(u)[0] if u.get("unit") else None
+        g = g if g in ("A", "B", "C") else None
     if g:                                       # the line for this grade first (11/10 audit #3), then all grades
         # C goods open at the market's median, not p75 (11/11 audit #5: 94 dear C units, 32.9M, 11 sold in 6 h; their
         # cost is 0.29-0.42 of list and the C median 0.44-0.63, so the median still leaves 30%+)
-        q = "median" if g == "C" else "p75"
+        q = "median" if g == "C" and u.get("kind") == "goods" else "p75"
         st = (d.get("skus") or {}).get(f"{u.get('sku')}|{g}")
         if st and st.get("n", 0) >= 5:
             return u["list_price"] * st[q] * k
@@ -427,7 +433,7 @@ def prices(u, s):
     ask = max(min(lp * min(ask_frac, 1.0), cap or lp), floor)
     # room to haggle (11/10 audit #2: 619 of 1,060 goods talks opened at the floor, so a buyer that expects a concession
     # got none; the heavy goods buyers bought 0 from us in 6 h). open_gap 0 keeps the old ask; the meta tests > 0 by A/B
-    if s.get("open_gap", 0) > 0:
+    if s.get("open_gap", 0) > 0 and u.get("kind") == "goods":    # goods only: food buyers compare asks (audit #6)
         ask = max(ask, min(floor * (1 + s["open_gap"]), u["list_price"]))     # never over list
     return int(round(ask)), int(round(min(floor, ask)))
 

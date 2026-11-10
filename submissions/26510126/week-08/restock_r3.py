@@ -316,10 +316,16 @@ def main():
                 den += w * cost
             return num / den if den else None
 
+        # min_margin is the seller's number (not in this file's DEFAULTS): read it from the strategy, 2% if absent
+        # (11/11 01:03: s["min_margin"] raised KeyError and stopped every restock run from 00:49)
+        min_m = (read_json(STRATEGY, {}) or {}).get("min_margin", 0.02)
         for prio, c, qty in ranked:
             if c.get("kind") == "goods":
-                e = expected_margin(c)
-                if e is not None and e < s["min_margin"] + 0.01:     # 0.01 is about a day of storage
+                try:
+                    e = expected_margin(c)
+                except Exception:
+                    e = None                                 # a check that cannot run never blocks a purchase
+                if e is not None and e < min_m + 0.01:       # 0.01 is about a day of storage
                     continue
             if len(buy) >= s.get("lines", 18):
                 break

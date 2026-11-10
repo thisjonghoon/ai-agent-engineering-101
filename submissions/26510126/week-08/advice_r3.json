@@ -301,6 +301,10 @@
   {
    "t": 1794275223.0953548,
    "text": "Merchandising, 10:4x: the 4th and 5th hottest 300k+ SKUs are 다우닝 sofas we never hold: G00327e80 (list 2,246,800, sku_score 366, 175 market settles in 6 h at a median 0.70 of list) never got a supply line, and G24f5f979 (list 3,816,000, score 388, 133 settles at 0.66) is cut by max_list 1.2M x 2. Each sale is ~1.5-2.5M of revenue (revenue is 0.3 of shop ALL) with cash idle at 46M. Consider max_list and why G00327e80 never reaches a line."
+  },
+  {
+   "t": 1794275454.946762,
+   "text": "market_ask: keep 0.90. Same-SKU evidence, 1,410 goods talks whose opening ask was set by the market line (36 h): opening at 0.95-1.00 of the SKU's market median gives the most margin per talk (55.5k / 50.6k, deal 30-33%); at 1.05 it halves (22.0k, 26%), at 1.10 16.0k (14%). market_ask multiplies the p75 (~1.04-1.08x the median), so 0.90 opens near 0.94-0.97x the median, 0.95 near 0.99-1.03x, 1.0 at 1.04-1.08x (the 16:14 collapse). Top shops' higher paid/list reflects their item and grade mix, not a higher price for the same SKU."
   }
  ]
 }

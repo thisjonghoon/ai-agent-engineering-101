@@ -627,6 +627,11 @@ async def main(args, shops, memory, remember):
                       DEAD_SECS if code_ab_r3.on("4583666882c6", order.get("order")) and dead_pair(s["name"], off["sku"], memory)
                       else AVOID_SECS)
     forum_r3.maybe_post(memory)
+    try:                                   # the shop's first move: answer wanted posts with our stock (wanted_r3)
+        import wanted_r3
+        wanted_r3.maybe_reply()
+    except Exception:
+        pass
     print(json.dumps(out, ensure_ascii=False), flush=True)
 
 

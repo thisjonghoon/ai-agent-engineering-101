@@ -317,6 +317,10 @@
   {
    "t": 1794281121.212076,
    "text": "Supervisor 11/10 12:3x, buyer CAP (bound now 0.65-0.95, was 0.75-0.95): saved is a running mean over all our deals (sum of surplus/list over deals+100), 0.2966 now, dragged by early deals. A new deal raises it only if its saving beats the mean, i.e. paid under ~0.70 of list; deals paid 0.70-0.75 lower it. Last 12 h (ledger settles x catalog list): our deals saved 0.374 each, 41% paid over 0.65; sergiobuilds (board saved 0.349) paid median 0.654, nkjunbc (0.391) takes 22% of its orders and pays median 0.51. Every past CAP step down won (0.85->0.8 11/08 14:39, 0.8->0.75 11/08 21:51). Candidate: a same-hours buyer trial CAP 0.75 -> 0.70, judged on saved/deal and deals/h together; 0.65 only if 0.70 wins."
+  },
+  {
+   "t": 1794281384.861592,
+   "text": "Supervisor 11/10 12:4x, why the hot sofas never get a line (mechanism, restock_r3): G00327e80 (list 2.25M, sku_score 381 >= DEAR_HOT) is in the 'best' lines, but a dear line's qty is cut to what goods_room affords (0.95 x stock_value - goods held at cost); with goods at ~124M of a 123.5M room there is not room for one unit (~1.3M), so the line is skipped. In the last 12 h yms979 bought 60 of it and sold 66; sergiobuilds bought 73 of G021aae64 (546k list) to our 25, holding 275M of goods to our 123M. max_list is not the limit; stock_value is. At the free slot after the stuck_hours verdict (~13:36): stock_value 130M -> 150M (the bound's top; cash ~35M, reserve 10M stays)."
   }
  ]
 }

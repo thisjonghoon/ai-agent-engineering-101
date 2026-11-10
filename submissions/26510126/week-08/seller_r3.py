@@ -337,6 +337,15 @@ def market_cap(u, s):
     if not k:
         return None
     d = prices_r3.read(MARKET_DIR)
+    g = u.get("grade") if u.get("kind") == "goods" and u.get("grade") in ("A", "B", "C") else None
+    if g:                                       # the line for this grade first (11/10 audit #3), then all grades
+        st = (d.get("skus") or {}).get(f"{u.get('sku')}|{g}")
+        if st and st.get("n", 0) >= 5:
+            return u["list_price"] * st["p75"] * k
+        c = (d.get("categories") or {}).get(f"{prices_r3.leaf(u.get('category'))}|{g}")
+        st = (c.get("h6") or c.get("h24")) if c else None
+        if st and st.get("n", 0) >= 10:
+            return u["list_price"] * st["p75"] * k
     st = (d.get("skus") or {}).get(u.get("sku"))
     if not st or st.get("n", 0) < 5:
         c = (d.get("categories") or {}).get(prices_r3.leaf(u.get("category")))
@@ -408,7 +417,10 @@ def prices(u, s):
         # 11/10 21:0x: the storage-aware 0.928 (20:22) was wrong. Storage is ~1% a day on all goods (~50k an hour on
         # 128M), while each sale at 0.928 loses 7% of cost at once, and units at cost did keep selling: Book rose
         # +0.6M/h at 1.0 (18:45-20:04) and fell -0.5M/h at 0.928 (20:04-20:52). Book counts unsold stock at cost: hold.
-        floor = min(floor, max(cost, cap))   # only ever lowers (endgame/final ran above); never under cost
+        # a unit we warrant keeps its expected refund on top of cost (audit #3: 32 of 71 A goods sold at cost with a
+        # 72 h warranty; their refunds, 0.98M, beat the A segment's margin, 0.77M)
+        q = WARRANTY_Q.get(grade, 0) if (u.get("kind") == "goods" and s.get("warranty_hours", 0) > 0) else 0
+        floor = min(floor, max(cost / (1 - q), cap))   # only ever lowers; never under cost plus expected refund
     ask = max(min(lp * min(ask_frac, 1.0), cap or lp), floor)
     # room to haggle (11/10 audit #2: 619 of 1,060 goods talks opened at the floor, so a buyer that expects a concession
     # got none; the heavy goods buyers bought 0 from us in 6 h). open_gap 0 keeps the old ask; the meta tests > 0 by A/B

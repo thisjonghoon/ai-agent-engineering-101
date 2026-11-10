@@ -58,7 +58,13 @@ def index(entries, cat, now=None):
         if not c.get("list_price") or not isinstance(d.get("amount"), (int, float)):
             continue
         share, recent = d["amount"] / c["list_price"], now - e["ts"] <= 6 * 3600
-        for key, out in ((leaf(c.get("category")), by_cat), (d["item"], by_sku)):
+        # per grade too ("sku|A", "leaf|C"): the market pays a median 0.70 of list for A goods, 0.62 B, 0.515 C, so a
+        # line over all grades priced our A under its market and our cost (11/10 audit #3: A cap 0.648, cost 0.676)
+        g = d.get("grade")
+        keys = [(leaf(c.get("category")), by_cat), (d["item"], by_sku)]
+        if g in ("A", "B", "C"):
+            keys += [(f"{leaf(c.get('category'))}|{g}", by_cat), (f"{d['item']}|{g}", by_sku)]
+        for key, out in keys:
             o = out.setdefault(key, {"h24": [], "h6": []})
             o["h24"].append(share)
             if recent:

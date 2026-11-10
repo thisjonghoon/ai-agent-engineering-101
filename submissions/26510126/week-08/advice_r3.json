@@ -337,6 +337,10 @@
   {
    "t": 1794301975.559912,
    "text": "Supervisor 11/10 18:1x, warranty_hours: do not test 72 -> 48 (or any cut). The market's rules (agent-md-1106-1805.md line 171): 'Goods can break up to 6 hours after the sale', so refund risk is the same at 6 h and 72 h; a cut saves nothing. 72 h is the market's norm (45% of goods settles in the last 6 h; 48 h is 0.2%). The warranty gap was the unit offered, not the hours: since 17:07 goods are offered A, B, C and priced by grade, and warranty-asking 300k+ talks went from 4.7% to 18% closed in the first hour (122 talks)."
+  },
+  {
+   "t": 1794304368.155932,
+   "text": "Supervisor 11/10 19:0x, leak audit #2 (6 h): (1) Book sat flat 11:52-18:45 (155.5M -> 155.4M) while revenue rose 55M: gross margin 4.1M, refunds 5.05M, storage 0.37M. On the board 1M of Book is worth ~50x 1M of revenue (next rival: +8M Book vs +277M revenue), so never trade Book for revenue; the stuck rule no longer goes under cost (stuck_frac floor 1.0, seller code). (2) 619 of 1,060 goods talks opened with ask0 equal to the floor, leaving a haggling buyer nothing to win; the heavy goods buyers (mjforge 490 goods buys, buyer-01 384, fair-furniture 341, kimauve 253) bought 0 from us in 6 h while 493 of our unfinished goods talks saw the same SKU sell elsewhere within 15 min at or above our floor. Candidate (sales): an A/B on an opening gap above the floor for goods, judged on goods paid value share. (3) Our buyer agreed then refused to pay 28 of 415 receipts (6.7%): shelf life 53, C to an A-only policy 40, no certificate 9 -- the accept policy is checked only after the haggle; candidate code idea for the buyer: ask grade/shelf/cert in the first message and screen before offering."
   }
  ]
 }

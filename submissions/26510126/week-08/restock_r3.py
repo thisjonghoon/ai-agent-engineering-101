@@ -44,7 +44,7 @@ import demand_r3
 HERE = Path(__file__).resolve().parent
 MARKET = "https://market.ourolabs.ai"
 STRATEGY = Path(os.environ.get("STRATEGY_FILE") or HERE / "strategy_r3.json")   # tests: the defaults, not the live file
-DEFAULTS = {"dear_first": 1.0, "reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
+DEFAULTS = {"food_cash": 3_000_000, "dear_first": 1.0, "reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
             "goods_frac": 0.35, "food_first": 0.5,
             "depth": 3, "half_life_hours": 12, "stop_hours": 36, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540,
             "window_depth": 2.0, "order_weight": 1.0, "surge_max": 1.15,
@@ -185,7 +185,13 @@ def main():
     stock = sum(u["cost"] for u in units if not slow_dead(u))
     warranty = (read_json(STRATEGY, {}).get("warranty_hours") or 0) > 0
     floor = max(s["reserve_cash"], line + CUSHION + (WARRANTY_CUSHION if warranty else 0))
-    spend = min(inv.get("balance", 0) - floor, s["stock_value"] - stock)
+    # food keeps its own slice of the cash, outside the stock cap (11/10: after the 12:41 stock_value lift a window spent
+    # 31M on beds, cash sat at the reserve and food restock stopped for 2 h; our food settles halved while the market's
+    # held; and stock_value counted food too, so capping goods at 130M blocked food as well). Goods may not touch it.
+    free = inv.get("balance", 0) - floor
+    spend_food = max(0, min(free * 0.5, s.get("food_cash", 3_000_000)))     # at most half: goods keep the rest
+    spend_goods = min(free - spend_food, s["stock_value"] - stock)
+    spend = max(spend_goods, 0) + spend_food
     stopping = s["round_end"] and now > s["round_end"] - s["stop_hours"] * 3600
     buy, why = [], ""
     if window and window.get("open") is False:
@@ -324,14 +330,18 @@ def main():
             # so a 15-unit food line that did not fit whole was skipped (kimchi, apples, water, all sku_score 1,400+, held 0)
             if unit <= 0:              # a catalog row with no list price: nothing to size
                 continue
-            qty = min(qty, int((min(spend, goods_room) if c.get("kind") == "goods" else spend) // unit))
+            budget = min(spend_goods, goods_room) if c.get("kind") == "goods" else spend_food
+            qty = min(qty, int(max(budget, 0) // unit))
             if qty <= 0:
                 continue
             cost = unit * qty
-            if cost > spend or (c["kind"] == "goods" and cost > goods_room):
+            if cost > budget:
                 continue
             if c["kind"] == "goods":
                 goods_room -= cost
+                spend_goods -= cost
+            else:
+                spend_food -= cost
             buy.append({"sku": c["sku"], "qty": qty})
             spend -= cost
         why = (f"{len(ranked)} SKUs short, buying {len(buy)} lines" + (f" (runs {gap:.0f} s apart: depth x{scale:.1f})" if scale > 1 else "")

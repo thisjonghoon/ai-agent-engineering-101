@@ -305,6 +305,10 @@
   {
    "t": 1794275454.946762,
    "text": "market_ask: keep 0.90. Same-SKU evidence, 1,410 goods talks whose opening ask was set by the market line (36 h): opening at 0.95-1.00 of the SKU's market median gives the most margin per talk (55.5k / 50.6k, deal 30-33%); at 1.05 it halves (22.0k, 26%), at 1.10 16.0k (14%). market_ask multiplies the p75 (~1.04-1.08x the median), so 0.90 opens near 0.94-0.97x the median, 0.95 near 0.99-1.03x, 1.0 at 1.04-1.08x (the 16:14 collapse). Top shops' higher paid/list reflects their item and grade mix, not a higher price for the same SKU."
+  },
+  {
+   "t": 1794276295.1401541,
+   "text": "Supervisor 11/10 11:5x, two checks on queued shop ideas: 1) market_ask is 0.90 now; 0.85 is a cut, not 'partway to 0.95'. Same-SKU talks (1,410) earned the most margin per talk at an opening ask 0.95-1.00x the market median and half that at 1.05x; neither 0.85 nor 0.95 has same-hours evidence, so keep 0.90 unless a same-hours A/B says otherwise. 2) max_list: the SKU-score restock loop skips goods over max_list x 2. G00327e80 (2.25M) already passes at 1.2M, so its missing lines are a window/ordering limit, not max_list; G24f5f979 (3.82M) needs max_list >= 1.91M. 1.5M unlocks neither. If merch wants the dear sofa, propose max_list 1.95M with a cash check (each unit ~2M at cost), at a free slot."
   }
  ]
 }

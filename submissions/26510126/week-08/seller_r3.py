@@ -70,7 +70,7 @@ DEFAULTS = {"grade_frac_b": 0.92, "grade_frac_c": 0.76, "ask_frac": 0.95, "floor
             "ask_frac_food": 0.95, "floor_frac_food": 0.78, "fresh_premium": 0.10,
             "goods_age_days": 5, "aged_margin": 0.03, "model_share": 0.5, "market_ask": 1.0,
             "stuck_hours": 6, "stuck_frac": 1.0, "open_gap": 0.0}
-ROUND_END = 1794927540                                       # 2026-11-17 23:59 KST: stock left then is a loss
+ROUND_END = 1794927540                                       # 2026-11-17 23:59 KST (Book counts stock left then at cost)
 OFFER = re.compile(r"(?<![A-Za-z0-9])\d[\d,]*(?![A-Za-z0-9])")   # a number on its own, not the digits of a SKU
 FOOD_CUTS = (0.80, 0.45)                                     # shelf life left: A at or above 80%, B at or above 45%
 RECENT_SOLD = 600   # seconds a unit we signed a receipt for is not offered again (60 until 11/4)
@@ -401,7 +401,13 @@ def prices(u, s):
         # never under cost (11/10 18:5x audit): 1M of Book is worth about 50x 1M of revenue on the board (passing the next
         # rival takes +8M of Book or +277M of revenue), and Book counts unsold stock at cost, so a sale under cost is a
         # loss on the term that counts most; at 0.95, 20 of 44 A goods since 17:08 sold under cost and Book sat flat for 7 h
-        floor = min(floor, max(cost * max(s.get("stuck_frac", 1.0), 1.0), cap))   # only ever lowers (endgame/final ran above)
+        # ...but holding costs storage too (1% of cost a day, storage_rate): a stuck unit may go under cost by at most
+        # what holding it to the end of the round would cost, so 7 days left allows ~0.93 of cost and the last day ~0.99.
+        # 11/10 20:2x: at a hard 1.0 our 300k+ goods (cost a median 0.728 of list, the market paid ~0.70-0.72 for A) stopped
+        # selling: 106 talks, 5 deals in an hour, and Book fell again 156.1M -> 155.6M
+        days_left = max(0.0, (ROUND_END - time.time()) / 86400)
+        keep = max(1.0 - storage_rate() * days_left, 0.9)
+        floor = min(floor, max(cost * keep, cap))   # only ever lowers (endgame/final ran above)
     ask = max(min(lp * min(ask_frac, 1.0), cap or lp), floor)
     # room to haggle (11/10 audit #2: 619 of 1,060 goods talks opened at the floor, so a buyer that expects a concession
     # got none; the heavy goods buyers bought 0 from us in 6 h). open_gap 0 keeps the old ask; the meta tests > 0 by A/B

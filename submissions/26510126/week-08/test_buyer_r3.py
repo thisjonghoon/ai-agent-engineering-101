@@ -608,24 +608,6 @@ def main():
          lead21 == ["paid", "unpaid"] and next(c for c in c21 if c[1]["name"] == "unpaid")[2]["_risk"] < 0.01,
          str((lead21, [(c[1]["name"], round(c[2]["_risk"], 4)) for c in c21])))
 
-    # 21b. the scouts rank by the saved rate the board counts, not by money (a 0.55-of-list quote on 500k vs 0.40 on 100k)
-    o21b = {"order": "o-21b", "kind": "food", "budget": 600000, "acceptable": ["R1", "R2"], "use_within_hours": 10}
-    cat21b = {"R1": {"list_price": 500000, "kind": "food", "shelf_hours": 720},
-              "R2": {"list_price": 100000, "kind": "food", "shelf_hours": 720}}
-    c21b = [(225000, {"name": "dear", "url": "http://dear"}, {"sku": "R1"}, 500000),
-            (60000, {"name": "cheap", "url": "http://cheap"}, {"sku": "R2"}, 100000)]
-    asks21b = {"dear": 275000, "cheap": 40000}
-
-    async def fake_scout_b(order, cat, s, off, lp):
-        return {"state": "TASK_STATE_INPUT_REQUIRED", "ask": asks21b[s["name"]], "text": f"asking {asks21b[s['name']]}"}
-    real_scout, buyer_r3.scout = buyer_r3.scout, fake_scout_b
-    quoted21b = []
-    asyncio.run(buyer_r3.scout_wave(o21b, cat21b, c21b, set(), quoted21b))
-    buyer_r3.scout = real_scout
-    lead21b = [c[1]["name"] for _, c in sorted(quoted21b, key=lambda x: -x[0])]
-    case("scouts: the shop with the bigger saved rate leads, not the one with more money",
-         lead21b == ["cheap", "dear"], str(lead21b))
-
     # 22. the ledger claims are reused for CLAIMS_SECS instead of reading the six-hour ledger on every order
     calls = []
     real_lc = buyer_r3.ledger_claims

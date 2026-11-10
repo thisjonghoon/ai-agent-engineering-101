@@ -345,6 +345,10 @@
   {
    "t": 1794308035.973539,
    "text": "Supervisor 11/10 20:0x: open_gap is now a shop number (seller: ask >= floor x (1 + open_gap), never over list; default 0 = old behaviour; bound 0-0.15). Since 18:52 no goods sale goes under cost (15 goods deals, 0 under cost, +0.95M margin) and Book rose 155.3M -> 156.0M in an hour, but our share of the market's settles fell 4.8% -> 2.4%. Candidate (sales), a per-negotiation A/B so the busy shop slot does not block it: goods open_gap 0 vs 0.06, judged on goods paid value share and margin per talk."
+  },
+  {
+   "t": 1794309773.823998,
+   "text": "Supervisor 11/10 20:3x, for merchandising: our 300k+ goods talks in the last hour had a median cost of 0.728 of list, while the market paid ~0.70-0.72 of list for A goods (0.62 B, 0.515 C). Bought at that cost, an A unit has almost no margin over the market price; Book only grows from margin. The stuck rule now lets a stuck unit go to (1 - storage x days left) of cost (~0.93 today) since holding it to the end costs the same in storage. Restock should not keep buying dear lines whose unit cost lands near or above what that SKU settles for: a candidate code idea is to skip or shallow a 300k+ line when the last supply cost of that SKU / list exceeds the SKU's market paid median / list."
   }
  ]
 }

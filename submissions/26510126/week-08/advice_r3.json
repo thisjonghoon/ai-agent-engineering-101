@@ -321,6 +321,10 @@
   {
    "t": 1794281384.861592,
    "text": "Supervisor 11/10 12:4x, why the hot sofas never get a line (mechanism, restock_r3): G00327e80 (list 2.25M, sku_score 381 >= DEAR_HOT) is in the 'best' lines, but a dear line's qty is cut to what goods_room affords (0.95 x stock_value - goods held at cost); with goods at ~124M of a 123.5M room there is not room for one unit (~1.3M), so the line is skipped. In the last 12 h yms979 bought 60 of it and sold 66; sergiobuilds bought 73 of G021aae64 (546k list) to our 25, holding 275M of goods to our 123M. max_list is not the limit; stock_value is. At the free slot after the stuck_hours verdict (~13:36): stock_value 130M -> 150M (the bound's top; cash ~35M, reserve 10M stays)."
+  },
+  {
+   "t": 1794286509.183439,
+   "text": "Supervisor 11/10 14:0x, rules audit (fresh reader + supervisor), two numbers queued for the loop: 1) reserve_cash 10M (at its top bound) now binds restock: balance sits 10.1-11.1M and each window buys only 0.5-1M (13:03-13:45). C goods no longer carry a warranty, so the refund risk behind 10M (11/9) is smaller. Candidate after the stock_value verdict (14:31): reserve_cash 10M -> 7M. 2) Buyer FOOD_MARGIN 1.15: of the last 1,000 unpaid talks, 415 were shelf-life refusals and 119 of those had shelf life at 1.02x or more of use_within; food deals save 0.31-0.44 of list, above our 0.297 mean. Candidate after the CAP trial: FOOD_MARGIN 1.15 -> 1.05."
   }
  ]
 }

@@ -725,8 +725,12 @@ async def scout_wave(order, cat, picked, dropped, quoted):
         value = (c[3] - min(ask, cap)) * min(1.0, cap / ask) ** 4 if isinstance(ask, (int, float)) and ask > 0 else c[0]
         risk = c[2].get("_risk", 1.0) if isinstance(ask, (int, float)) and ask > 0 else 1.0   # c[0] has it already
         value *= risk
+        if code_ab_r3.on("f2cbec104d27", order.get("order")):
+            # the board's buyer term is (list - price) / list per deal, not money: a 0.55-of-list quote on a 500k SKU
+            # must not beat 0.40 on a 100k one (30-100k orders saved 0.380, 300k+ 0.338)
+            value /= c[3]
         quoted.append((value, c))
-        log("SCOUT", f"{c[1]['name']} {c[2]['sku']}: asks {ask} of list {c[3]} (surplus at the ask ~{value:.0f}"
+        log("SCOUT", f"{c[1]['name']} {c[2]['sku']}: asks {ask} of list {c[3]} (surplus at the ask ~{value:.2f}"
                      + (f", x{risk:.2f} for the kit refusing, breaks or shelf life" if risk < 1 else "") + ")")
 
 

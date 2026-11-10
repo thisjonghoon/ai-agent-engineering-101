@@ -816,6 +816,23 @@ def standing():
     return out
 
 
+def warranty_close(hours=6):
+    """Goods talks of the last `hours`, by price band and whether the buyer asked for a warranty: talks, deals, close
+    rate, and the share that ended before any offer. 11/9 a gap (4% vs 41%) was fixed with a 72 h warranty and never
+    measured again; on 11/10 it was still 4.7% vs 23% on 697 warranty-asking 300k+ talks (73% of them)."""
+    rows = jl(HERE / "logs" / "talks_r3.jsonl")[-20000:]
+    now, out = time.time(), {}
+    for band, lo, hi in (("300k+", 300_000, float("inf")), ("under 300k", 0, 300_000)):
+        for ask in (True, False):
+            x = [r for r in rows if r.get("kind") == "goods" and r.get("event") and r.get("t", 0) > now - hours * 3600
+                 and lo <= (r.get("list_price") or 0) < hi and bool(r.get("warranty_ask")) == ask]
+            d = sum(1 for r in x if r["event"] == "deal")
+            out[f"{band}, {'asked' if ask else 'did not ask'} for a warranty"] = {
+                "talks": len(x), "deals": d, "close": round(d / len(x), 3) if x else None,
+                "gone_before_offer": round(sum(1 for r in x if not r.get("offers")) / len(x), 2) if x else None}
+    return out
+
+
 def snapshot(since):
     inv = read_json(MD / "inventory.json", {})
     units = inv.get("units", [])
@@ -836,6 +853,10 @@ def snapshot(since):
     snap.update(market_prices())
     snap.update(standing())
     snap["warranty_demand"] = demand_r3.warranty_demand()
+    try:
+        snap["warranty_close"] = warranty_close()
+    except Exception as e:
+        snap["warranty_close"] = {"error": type(e).__name__}
     snap["our_reviews"] = our_reviews()
     try:
         snap["teams"] = dict(team_r3.summary(), recent_changes=(team_r3.load().get("changes") or [])[-4:])

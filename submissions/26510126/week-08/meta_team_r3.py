@@ -53,7 +53,7 @@ ROLES = {
                  "a seller-team recruit style."),
         "data": ("minutes", "opens", "deals", "walks", "settled", "settle_refused", "revenue", "price_list", "margin",
                  "profit", "standing", "market_food_price_list", "market_goods_price_list", "going_prices",
-                 "our_reviews", "ab", "warranty_demand", "rules", "board_shop", "knob_reach"),
+                 "our_reviews", "ab", "warranty_demand", "warranty_close", "rules", "board_shop", "knob_reach"),
         "extra": ('"ab": null or {{"param": "<one of {ab_params}>", "kind": "food" | "goods", "value": <v>}} or '
                   '{{"playbook": "<a playbook name>", "kind": "food" | "goods"}} (a whole playbook against the strategy, on live buyers), '
                   '"recruit": null or {{"ask_delta": <-0.1..0.1>, "floor_delta": <-0.08..0.08>, "step": <0.2..0.7>}}, '

@@ -333,6 +333,10 @@
   {
    "t": 1794295264.745963,
    "text": "Supervisor 11/10 16:2x: the fast guard's 16:19 revert of reserve_cash 6M / stock_value 130M blamed the fix for a fall it did not start. Timeline: 12:41 stock_value 130M -> 200M spent 31M of cash on beds in one window; cash then sat at the reserve and food restock stopped; our food settles fell from about 40 to 20 per 20 min from 13:20 while the market held; the fix came at 14:25. Re-applied. Do not raise stock_value or reserve_cash again until food settles per hour are back near 120/h and cash is above 15M. Goods room counts only non-slow goods (66 slow 300k+ units, 22M, are left out), so stock_value above ~134M re-opens room for dear goods."
+  },
+  {
+   "t": 1794301975.559912,
+   "text": "Supervisor 11/10 18:1x, warranty_hours: do not test 72 -> 48 (or any cut). The market's rules (agent-md-1106-1805.md line 171): 'Goods can break up to 6 hours after the sale', so refund risk is the same at 6 h and 72 h; a cut saves nothing. 72 h is the market's norm (45% of goods settles in the last 6 h; 48 h is 0.2%). The warranty gap was the unit offered, not the hours: since 17:07 goods are offered A, B, C and priced by grade, and warranty-asking 300k+ talks went from 4.7% to 18% closed in the first hour (122 talks)."
   }
  ]
 }

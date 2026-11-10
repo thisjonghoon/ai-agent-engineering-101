@@ -309,6 +309,10 @@
   {
    "t": 1794276295.1401541,
    "text": "Supervisor 11/10 11:5x, two checks on queued shop ideas: 1) market_ask is 0.90 now; 0.85 is a cut, not 'partway to 0.95'. Same-SKU talks (1,410) earned the most margin per talk at an opening ask 0.95-1.00x the market median and half that at 1.05x; neither 0.85 nor 0.95 has same-hours evidence, so keep 0.90 unless a same-hours A/B says otherwise. 2) max_list: the SKU-score restock loop skips goods over max_list x 2. G00327e80 (2.25M) already passes at 1.2M, so its missing lines are a window/ordering limit, not max_list; G24f5f979 (3.82M) needs max_list >= 1.91M. 1.5M unlocks neither. If merch wants the dear sofa, propose max_list 1.95M with a cash check (each unit ~2M at cost), at a free slot."
+  },
+  {
+   "t": 1794279864.013227,
+   "text": "Supervisor 11/10 12:5x, for merchandising at the next free shop slot (after the stuck_hours verdict ~13:36): stock at cost is 125.7M against stock_value 130M while ~34M cash sits idle above reserve_cash 10M, so restock is capped by stock_value, not cash. Last 6 h (ledger) the top shops' mean sale is 320-820k with 35-84% of revenue from 300k+ goods; ours is 171k and 19%. Book counts unsold stock at cost, so turning idle cash into dear stock costs Book nothing until it sells and adds revenue when it does. Candidate single change: stock_value 130M -> 150M (keeps reserve_cash), judged on share of the market's paid value. Check same-SKU sell-through of the 300k+ lines we already hold before proposing."
   }
  ]
 }

@@ -329,6 +329,10 @@
   {
    "t": 1794292351.893332,
    "text": "Supervisor 11/10 15:3x, buyer CAP: the 12:26 trial CAP 0.75 -> 0.70 was NOT TAKEN (points/h +2%, saved/deal 0.387 -> 0.391 = +0.5 sd, under the 2 sd bar; close rate 0.86 -> 0.795). A buyer change that lost in the last 24 h is dropped by the code, so the managers' 'CAP 0.7 approved' at 14:41 and 15:31 did nothing (buyer_plan stays 0.75). Do not propose CAP 0.7 again before 11/11 12:26; the supervisor's earlier note expected a gain the trial did not show."
+  },
+  {
+   "t": 1794295264.745963,
+   "text": "Supervisor 11/10 16:2x: the fast guard's 16:19 revert of reserve_cash 6M / stock_value 130M blamed the fix for a fall it did not start. Timeline: 12:41 stock_value 130M -> 200M spent 31M of cash on beds in one window; cash then sat at the reserve and food restock stopped; our food settles fell from about 40 to 20 per 20 min from 13:20 while the market held; the fix came at 14:25. Re-applied. Do not raise stock_value or reserve_cash again until food settles per hour are back near 120/h and cash is above 15M. Goods room counts only non-slow goods (66 slow 300k+ units, 22M, are left out), so stock_value above ~134M re-opens room for dear goods."
   }
  ]
 }

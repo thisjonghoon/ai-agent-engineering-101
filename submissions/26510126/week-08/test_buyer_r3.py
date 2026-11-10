@@ -427,6 +427,19 @@ def main():
     case("a deal with no offer of ours (the first ask taken) still gets a review",
          buyer_r3.review({"state": "TASK_STATE_COMPLETED", "asks": [27000], "offers": []}, "X", 30000, None)[0] == 4)
 
+    import json as _j, tempfile as _t, time as _tm
+    _fav = Path(_t.mkdtemp()) / "favor.json"
+    _fav.write_text(_j.dumps({"shops": [{"shop": "D", "keywords": ["이불"], "share": 0.5, "until": _tm.time() + 60}]}))
+    _old, buyer_r3.FAVOR = buyer_r3.FAVOR, _fav
+    fshops = [{"name": "D", "url": "http://D", "offers": [{"sku": "Q", "qty": 1}]},
+              {"name": "E", "url": "http://E", "offers": [{"sku": "Q", "qty": 1}]}]
+    fo = {"kind": "goods", "budget": 200000, "acceptable": ["Q"]}
+    got = [c[1]["name"] for c in buyer_r3.candidates(fo, fshops, {"Q": {"list_price": 100000, "name": "극세사 이불"}}, [], {})]
+    case("a shop clearing an item (favor tip) is scouted first", got[0] == "D", str(got))
+    buyer_r3.FAVOR = _old
+    case("a B unit with a stated warranty under 6 h is screened out before the deal",
+         isinstance(buyer_r3.screen_for({"kind": "goods"}, 100000)("grade B, 3 h warranty. Asking 5"), str))
+
     # 17. a refused payment for short shelf life: that pair waits only for orders asking more hours than it shipped
     buyer_r3.avoid_add("S", "GS", "short shelf life", 3600, hours=200.0)
     av = buyer_r3.avoid_load()

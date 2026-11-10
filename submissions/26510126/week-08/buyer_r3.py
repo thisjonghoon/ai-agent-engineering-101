@@ -269,6 +269,26 @@ def ledger_claims(cat=None):
             for k, (n, bad) in out.items()}
 
 
+FAVOR = HERE / "favor_r3.json"   # shops clearing stock cheap: {"shops": [{"shop", "keywords", "share", "until", "why"}]}
+FAVOR_BONUS = 1.5
+
+
+def favored(shop, name, now=None):
+    """The price share a shop is clearing this item at (favor_r3.json: the user's or the supervisor's tip), or None.
+    11/10 10:4x: dragonash cleared bedding (pads, microfiber quilts, sofa pads, hotel bedding) near cost, 1,023 units of
+    one pad set, at 0.64 of list against the market's 0.69: a clearance tip has to reach the buyer's ranking."""
+    now = now or time.time()
+    try:
+        rows = json.loads(FAVOR.read_text(encoding="utf-8")).get("shops") or []
+    except (OSError, ValueError, AttributeError):
+        return None
+    for f in rows:
+        if isinstance(f, dict) and f.get("shop") == shop and now < f.get("until", 0) and \
+                any(k in (name or "") for k in f.get("keywords") or []):
+            return f.get("share")
+    return None
+
+
 def candidates(order, shops, cat, memory, claims):
     """(expected surplus, shop, offer, list price, note) for every listed offer that fits the order."""
     acceptable = set(order.get("acceptable") or [])
@@ -294,6 +314,9 @@ def candidates(order, shops, cat, memory, claims):
             # what we expect to pay there, and whether our limit reaches it: an expensive SKU whose shop floor sits
             # above our limit only looks like a big surplus (review, 11/2), so the chance of a deal weighs it
             expect = lp * (share or market_share or PRICE_GUESS)
+            fav = favored(s["name"], info.get("name"))
+            if fav:
+                expect = min(expect, lp * fav)
             expect = max(expect, (avoid.get(f"{s['name']}|{sku}|floor") or {}).get("floor", 0))
             limit = min(order["budget"], int(lp * CAP))
             p_deal = 1.0 if limit >= expect else (limit / expect) ** 4
@@ -330,6 +353,9 @@ def candidates(order, shops, cat, memory, claims):
                 continue
             if wait:
                 surplus *= 0.05                         # tried after every other pair, not dropped
+            if fav:
+                surplus *= FAVOR_BONUS                  # in the scouted set: a clearance is checked, not guessed
+                note += f"; clearing this at ~{fav:.0%} of list (tip)"
             out.append((surplus, s, off, lp, note + ("; short shelf life for this order" if short else "")
                         + (f"; {wait}" if wait else "")))
     if skipped:
@@ -384,6 +410,10 @@ def screen_for(order, lp=None):
             # lack of one, ends the talk
             if any((m.group(1) or m.group(2) or "").upper() == "A" for m in GRADE_SAID.finditer(text or "")):
                 return None
+            # a stated warranty shorter than the break window ends it now, not at checkout (dragonash: "3 h warranty")
+            w = WARRANTY_SAID.search(text or "")
+            if w and float(w.group(1)) < BREAK_HOURS:
+                return f"the shop says grade {grade} with a {float(w.group(1)):g} h warranty, we pay for B/C only with {BREAK_HOURS} h"
             if WARRANTY_ANY.search(text or "") and not WARRANTY_NONE.search(text or ""):
                 return None
             return f"the shop says grade {grade} with no {BREAK_HOURS} h warranty, we pay only for A or a warranted B/C"

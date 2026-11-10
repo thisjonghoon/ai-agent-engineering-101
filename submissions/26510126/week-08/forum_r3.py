@@ -48,7 +48,8 @@ EVERY = 360          # seconds between any two posts of ours: the market allows 
 DIGEST_EVERY = 3600  # a ledger claim check when our own deals give nothing new for an hour
 MIN_CLAIMS = 10
 MAX_REFS = 10
-FORMAT_EVERY = 360   # seconds before a drawn kind may follow when our own deals give nothing new
+FORMAT_EVERY = 310   # seconds before a drawn kind may follow when our own deals give nothing new; 360 overrode the plan's
+                     # every=310 (posts ran 6-9 min apart, 130 of 209 in 24 h drawn), so it now equals EVERY_MIN
 PLAN = HERE / "forum_plan_r3.json"
 EVERY_MIN, EVERY_MAX = 310, 1800   # the market allows a post per 5 minutes (+10 s for the kit's send loop); the user
                                    # (11/6) left the cadence to the meta-harness and the supervisor within this

@@ -131,6 +131,8 @@ def main():
     check("every() is the plan's cadence within EVERY_MIN..EVERY_MAX, EVERY when absent or not a number",
           got == [forum_r3.EVERY, forum_r3.EVERY_MIN, 600, forum_r3.EVERY_MAX, forum_r3.EVERY], got)
     forum_r3.PLAN = real_plan
+    check("the drawn-kind floor is the market's cadence, so the plan's every=310 is not overridden by a longer floor",
+          0 < forum_r3.FORMAT_EVERY <= forum_r3.EVERY_MIN, forum_r3.FORMAT_EVERY)
     print(f"\n{sum(ok)}/{len(ok)} passed")
 
 

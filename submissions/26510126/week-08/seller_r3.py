@@ -414,9 +414,10 @@ class Seller(AgentExecutor):
         now = now or time.time()
         self.sold[unit] = now
         self.dealt.setdefault(unit, []).append(now)
-        if unit in self.stuck_once and unit not in self.held and unit not in self.parked:
+        # stuck_once is kept: after its park the unit's next single agreement parks it again (its agreements come
+        # 40-80 min apart, so two within STUCK_SECS would not add up again)
+        if unit in self.stuck_once and unit not in self.held and self.parked.get(unit, 0) <= now:
             self.parked[unit] = now + PARK_SECS
-            self.stuck_once.discard(unit)
             return f"STUCK {unit} stuck again: left out for {PARK_SECS // 3600} h"
         if len(self.dealt[unit]) == STUCK_AFTER and unit not in self.stuck_once:
             self.stuck_once.add(unit)

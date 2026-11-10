@@ -322,6 +322,8 @@ def main():
             unit = c["list_price"] * EST_COST * surge.get(c["sku"], 1.0)
             # what the cash (and, for goods, the room) affords, not nothing: until 11/10 only 150k+ goods were cut down,
             # so a 15-unit food line that did not fit whole was skipped (kimchi, apples, water, all sku_score 1,400+, held 0)
+            if unit <= 0:              # a catalog row with no list price: nothing to size
+                continue
             qty = min(qty, int((min(spend, goods_room) if c.get("kind") == "goods" else spend) // unit))
             if qty <= 0:
                 continue

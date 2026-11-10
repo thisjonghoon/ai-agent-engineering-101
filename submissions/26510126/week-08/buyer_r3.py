@@ -209,7 +209,7 @@ def sync_kit_files(memory, remember):
 
 # ---------------------------------------------------------------- derived on read
 
-def shop_record(name, memory):
+def shop_record(name, memory, soft_breaks=False):
     """What our own Round 3 evidence says about a shop: (note, banned, price share of list or None)."""
     mine = [m for m in memory if m.get("round") == 3 and m.get("shop") == name]
     if not mine:
@@ -239,7 +239,7 @@ def shop_record(name, memory):
             moves.append(f"{asks[0] / m['list_price']:.0%}->{min(asks) / m['list_price']:.0%} {end}")
     if moves:
         notes.append("its asks in our last talks (first->lowest, of list): " + ", ".join(moves))
-    banned = len(lies) >= 2 or (len(lies) >= 1 and len(settled) <= 3) or len(broke) >= 2
+    banned = len(lies) >= 2 or (len(lies) >= 1 and len(settled) <= 3) or (len(broke) >= 2 and not soft_breaks)
     return "; ".join(notes), banned, statistics.median(shares[-5:]) if shares else None
 
 
@@ -276,7 +276,8 @@ def candidates(order, shops, cat, memory, claims):
     out, skipped = [], []
     avoid = avoid_load()
     for s in shops:
-        note, banned, share = shop_record(s["name"], memory)
+        soft = code_ab_r3.on("a9b2ad097b35", order.get("order"))
+        note, banned, share = shop_record(s["name"], memory, soft_breaks=soft)
         n, bad, market_share = (tuple(claims.get(s["name"], ())) + (0, 0, None))[:3]
         if n >= 5 and bad / n >= 0.3:
             banned = True
@@ -309,6 +310,14 @@ def candidates(order, shops, cat, memory, claims):
                 if len(pays) >= (3 if second else 5):
                     paid = sum(1 for m in pays if m.get("paid"))
                     surplus *= ((paid + 1) / (len(pays) + 1)) ** (2 if second else 1)
+            if soft:
+                # 219 goods broke, 20 in the last 12 h, and a break counts -1 on saved against ~0.29 a deal: instead of a
+                # ban at 2 uncovered breaks, weight the shop by its break rate over our last 30 buys from it
+                mine = [m for m in memory if m.get("round") == 3 and m.get("shop") == s["name"]]
+                kept = [m for m in mine if m.get("kind") == "settled"][-30:]
+                broke = [m for m in mine if m.get("kind") == "broken" and not m.get("covered")][-30:]
+                if kept:
+                    surplus *= max(0.1, 1 - 3.5 * len(broke) / len(kept))
             short =order.get("kind") == "food" and need and info.get("shelf_hours") and \
                 info["shelf_hours"] * B_SHARE < need * FOOD_MARGIN
             if short:

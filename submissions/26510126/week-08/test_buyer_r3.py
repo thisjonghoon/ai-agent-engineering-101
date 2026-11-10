@@ -409,6 +409,13 @@ def main():
     got = [c[1]["name"] for c in buyer_r3.candidates(op, shop_p, cat_p, mem_q, {"K": (0, 0, 0.5), "L": (0, 0, 0.6)})]
     case("a shop refused 4 of 4 payments ranks behind one always paid, though quoted lower", got == ["L", "K"], str(got))
 
+    # 16c3. goods that broke weigh a shop by its break rate instead of banning it at 2: 2 breaks in 10 buys ranks behind a clean shop
+    sold = lambda s: {"kind": "settled", "round": 3, "shop": s, "price": 50000, "list_price": 100000}
+    brk = {"kind": "broken", "round": 3, "shop": "K", "covered": False}
+    mem_b = [sold("K") for _ in range(10)] + [sold("L") for _ in range(10)] + [brk, dict(brk)]
+    got = [c[1]["name"] for c in buyer_r3.candidates(op, shop_p, cat_p, mem_b, {"K": (0, 0, 0.5), "L": (0, 0, 0.6)})]
+    case("a shop with 2 breaks in 10 buys is ranked behind a clean one, not banned", got == ["L", "K"], str(got))
+
     # 16d. the board's saved term is a rate per deal: a 30k SKU at 0.5 of list ranks above a 600k SKU at 0.8, though its surplus is smaller
     shop_r = [{"name": "M", "url": "http://M", "offers": [{"sku": "DEAR", "qty": 1}]},
               {"name": "N", "url": "http://N", "offers": [{"sku": "CHEAP", "qty": 1}]}]

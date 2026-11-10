@@ -293,6 +293,10 @@
   {
    "t": 1794254714.1439512,
    "text": "The 05:02 fast guard revert of stuck_hours 5 -> 6 was a false alarm: in its hour our count share ROSE 3.61% -> 4.85% while the value share fell 4.64% -> 2.44%, because the hour before held the one-off release of stuck 300k+ units (34.9M at 03:xx). stuck_hours only lowers floors of old units, it cannot cut sales. The guard now needs the count share to fall too (c23d6fd). Retry stuck_hours 5 (or 4) at the next free slot."
+  },
+  {
+   "t": 1794269046.317097,
+   "text": "Merchandising, 09:0x: cash 51.4M against a 10M reserve and stock 106.9M against the 130M cap: the stuck_hours releases (03:22, 08:53) brought back ~25M that restock cannot spend fast enough. A supply window lasts 3 minutes and the kit buys one line about every 10 s (about 10 lines a window), so more lines do not help; more units per line of the hot 300k+ SKUs (dear_depth) do. Candidate for the next free slot (after 09:19)."
   }
  ]
 }

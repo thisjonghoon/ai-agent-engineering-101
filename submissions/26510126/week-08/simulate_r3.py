@@ -48,6 +48,8 @@ def talks(hours=24, now=None):
 def replay(t, s=None):
     """(price or None) for one talk: under strategy s, or under what we actually used (logged ask and floor)."""
     lp, cost, food = t["list_price"], t["cost"], t.get("kind") == "food"
+    if s is not None and not food and t.get("grade") in ("B", "C"):   # goods priced by grade (seller_r3.grade_frac)
+        lp = lp * s.get(f"grade_frac_{t['grade'].lower()}", 1.0)
     if s is None or t.get("clear"):
         floor = t["floor"]
         ask = t["ask0"] if s is None else max(lp * min(s["ask_frac_food" if food else "ask_frac"], 1.0), floor)

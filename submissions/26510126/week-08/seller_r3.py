@@ -66,7 +66,7 @@ MARKET_DIR = Path(os.environ.get("MARKET_DIR", HERE / ".market"))
 STRATEGY = Path(os.environ.get("STRATEGY_FILE") or HERE / "strategy_r3.json")   # tests: the defaults, not the live file
 DEFAULTS = {"grade_frac_b": 0.92, "grade_frac_c": 0.76, "ask_frac": 0.95, "floor_frac": 0.78, "min_margin": 0.10, "step": 0.4,
             "clear_hours": 6, "clear_frac": 0.6, "warranty_hours": 0, "max_turns": 6,
-            "endgame_hours": 24, "endgame_frac": 1.0, "final_hours": 6, "final_frac": 0.6,
+            "endgame_hours": 24, "endgame_frac": 1.0, "final_hours": 6, "final_frac": 1.0,
             "ask_frac_food": 0.95, "floor_frac_food": 0.78, "fresh_premium": 0.10,
             "goods_age_days": 5, "aged_margin": 0.03, "model_share": 0.5, "market_ask": 1.0,
             "stuck_hours": 6, "stuck_frac": 0.95}
@@ -175,7 +175,7 @@ def ab_end(task_id, deal, event, reward=0.0, price=None):
             TALKS.parent.mkdir(exist_ok=True)
             with TALKS.open("a", encoding="utf-8") as f:
                 f.write(json.dumps({"t": round(time.time(), 1), "task": task_id[:8], "sku": u["sku"], "kind": u.get("kind"),
-                                    "list_price": u["list_price"], "cost": u["cost"], "ask0": deal.get("ask0"),
+                                    "list_price": u["list_price"], "grade": u.get("grade"), "cost": u["cost"], "ask0": deal.get("ask0"),
                                     "floor": deal["floor"], "clear": deal.get("clear"), "offers": deal["offers"],
                                     "turns": deal["turns"], "event": event, "price": price,
                                     "warranty_ask": deal.get("warranty_ask"), "model_on": deal.get("model_on", False),
@@ -310,7 +310,9 @@ def find_unit(text, taken=()):
     if need and fit:
         best = min(round(off(u), 1) for u in fit)
         return pick([u for u in fit if round(off(u), 1) == best], need)
-    return min(fit, key=lambda u: (round(off(u), 1), u["expires_at"] or float("inf"), u["supplied_at"]), default=None)
+    rank = lambda u: {"A": 0, "B": 1, "C": 2}.get(u.get("grade"), 1) if u.get("kind") == "goods" else 0
+    return min(fit, key=lambda u: (round(off(u), 1), rank(u), u["expires_at"] or float("inf"), u["supplied_at"]),
+               default=None)
 
 
 def storage_rate():
@@ -519,7 +521,7 @@ class Seller(AgentExecutor):
                     v = e["arms"][arm]               # one number, or a whole retail playbook's numbers
                     s, ab = dict(s, **(v if isinstance(v, dict) else {e["param"]: v})), (e["id"], arm)
             ask, floor = prices(u, s)
-            normal = max(u["cost"] * (1 + s["min_margin"]), u["list_price"] * min(
+            normal = max(u["cost"] * (1 + s["min_margin"]), u["list_price"] * grade_frac(u, s) * min(
                 s["floor_frac_food"] if u.get("kind") == "food" else s["floor_frac"], 1.0))
             deal = self.open[task.id] = {"unit": u, "ask": ask, "floor": floor, "offers": [], "turns": 0,
                                          "t": time.time(), "s": s if (ab or member) else None, "ab": ab, "ask0": ask,

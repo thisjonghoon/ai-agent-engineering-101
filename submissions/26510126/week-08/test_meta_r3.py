@@ -107,6 +107,7 @@ def main():
     case("with the slot busy no shop number moves", out == cur and set(held) == {"min_margin", "max_list"}, held)
     d = Path(tempfile.mkdtemp(prefix="meta-r3-busy-"))
     mr.NUMBER_TRIALS, mr.CODE_CHANGES = d / "trials.json", d / "changes.jsonl"
+    mr.PLAY_MODE = d / "play_mode.json"     # the live play mode (11/11 aggressive) must not decide the slot test
     mr.NUMBER_TRIALS.write_text("[]")
     mr.CODE_CHANGES.write_text(json.dumps({"t": 1, "source": "meta (auto)", "commit": "abc", "files": ["buyer_r3.py"]}) + "\n")
     free = mr.shop_busy()

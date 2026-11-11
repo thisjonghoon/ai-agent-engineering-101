@@ -188,9 +188,10 @@ Answer with JSON only: {{"strategy": {{...every key...}}, "playbook": "<the play
 # C_WARRANTY too: buyer_r3 asks every B or C unit for the 6 h break window (BREAK_HOURS), so the knob changes nothing
 BUYER_BOUNDS = {"CAP": (0.65, 0.95, 0.05), "FOOD_MARGIN": (1.0, 1.3, 0.05),
                 "MAX_TRIES": (2, 6, 1), "MAX_RAISE": (0.2, 0.7, 0.1), "FIRM_GAP": (0.0, 0.1, 0.02),
-                "SCOUTS": (1, 5, 1), "CLOSE_GAP": (0.0, 0.12, 0.02)}
+                "SCOUTS": (1, 5, 1), "CLOSE_GAP": (0.0, 0.12, 0.02),
+                "RAISE_GOODS": (0.5, 1.2, 0.1), "RAISE_FOOD": (0.8, 1.6, 0.1)}
 BUYER_DEFAULTS = {"CAP": 0.9, "FOOD_MARGIN": 1.1, "MAX_TRIES": 3, "MAX_RAISE": 0.4,
-                  "FIRM_GAP": 0.05, "SCOUTS": 3, "CLOSE_GAP": 0.05}
+                  "FIRM_GAP": 0.05, "SCOUTS": 3, "CLOSE_GAP": 0.05, "RAISE_GOODS": 0.8, "RAISE_FOOD": 1.2}
 BUYER_PLAN = HERE / "buyer_plan_r3.json"
 AB_HISTORY = HERE / "logs" / "ab_history_r3.jsonl"     # finished shop A/Bs: param, kind, arms, winner
 # one buyer number on trial at a time: half the orders (by the order id's hash, as for a code trial) run its new value,

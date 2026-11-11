@@ -61,6 +61,11 @@ MAX_OFFERS = 8
 MAX_TRIES = 3        # shops tried per order when a negotiation ends without a deal
 RETRY_UNTIL = 150    # seconds into the order after which no new shop is tried (the kit stops the buyer at 300 s)
 MAX_RAISE = 0.4      # each offer moves at most this share of the gap to the shop's ask
+# how far an offer may rise, by what we buy (11/11 13:2x, the user's plan: "Buyer 특성별 차별화, 가구 < 식품"): goods
+# shops concede far in haggling (rivals open at 0.74-0.80 of list on our dear SKUs and settle near 0.69), so goods rise
+# slower and keep that concession; food must be bought within its use window, so food rises faster and closes
+RAISE_GOODS = 0.8    # x the member's MAX_RAISE on goods
+RAISE_FOOD = 1.2     # x the member's MAX_RAISE on food
 SCOUTS = 3           # buyer team: shops asked for a first quote at once before one negotiation starts
 SCOUT_WAIT = 10      # seconds the scouts wait for quotes; a slower shop is tried after the quoted ones (11/10: at 6 s,
                      # 2,732 slow drops; 1,715 of 2,210 scouted orders lost a shop and 230 got no quote at all)
@@ -93,7 +98,7 @@ SAVED_GUESS = 0.30   # our board saved mean when no board row is at hand (0.2996
 BOARD_TERMS = HERE / "logs" / "board_terms_r3.jsonl"
 PLAN = Path(os.environ.get("BUYER_PLAN") or Path(__file__).resolve().parent / "buyer_plan_r3.json")
 PLAN_KEYS = ("CAP", "FOOD_MARGIN", "C_CAP", "C_WARRANTY", "MAX_TRIES", "MAX_RAISE", "FIRM_GAP", "SCOUTS", "CLOSE_GAP",
-             "SKIP_BELOW")
+             "SKIP_BELOW", "RAISE_GOODS", "RAISE_FOOD")
 
 
 def set_number(k, v):
@@ -778,7 +783,9 @@ async def attempt(order, cat, s, off, lp, note, remember, take_second=False, mor
     t0 = time.time()
     try:
         log("TEAM", f"{member or 'no team'} haggles this one {json.dumps(style)}")
-        result = await buyer.shop(s["url"], name, limit, memory=hint, max_raise=style.get("MAX_RAISE", MAX_RAISE),
+        raise_k = RAISE_FOOD if order.get("kind") == "food" else RAISE_GOODS
+        result = await buyer.shop(s["url"], name, limit, memory=hint,
+                                  max_raise=min(0.9, style.get("MAX_RAISE", MAX_RAISE) * raise_k),
                                   max_offers=MAX_OFFERS, plan=bool(style.get("PLAN")), take_second=take_second, close_gap=close_gap,
                                   order_id=order.get("order"), opening=opening,
                                   screen=screen_for(order, lp, (cat.get(sku) or {}).get("shelf_hours")))

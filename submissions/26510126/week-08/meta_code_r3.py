@@ -57,6 +57,31 @@ FORBIDDEN = re.compile(r"market_kit|checkout|mandate|private_key|\.pem|admin_tok
                        r"subprocess|os\.system|shutil\.rmtree|\brm\b|unlink\(|/api/supply|/api/settle|signing",
                        re.I)
 MAX_LINES = 150
+# new tools (11/11, the user: the toolbox may need a tool it does not have): tools_r3/<name>.py with its own
+# tools_r3/test_<name>.py (printing "N/N passed"), wired in from an ALLOWED file; their lines count separately
+TOOL_FILE = re.compile(r"tools_r3/(test_)?[a-z][a-z0-9_]*\.py")
+MAX_TOOL_LINES = 300
+TOOL_NOTE = (" - or, when no change to those files can do it, a NEW tool: tools_r3/<name>.py plus tools_r3/test_<name>.py "
+             "(plain asserts, last line 'N/N passed'), called from one of those files (e.g. restock_r3.py imports "
+             "tools_r3.<name>); up to 300 added lines in tools_r3/, wrapped in its code A/B flag like any change")
+
+
+def py_files(root):
+    """The .py files the gate and deploy look at: the folder's own and tools_r3/'s, as relative paths."""
+    out = [p.name for p in root.glob("*.py")]
+    out += [f"tools_r3/{p.name}" for p in (root / "tools_r3").glob("*.py")] if (root / "tools_r3").is_dir() else []
+    return sorted(out)
+
+
+def allowed(f):
+    return f in ALLOWED or bool(TOOL_FILE.fullmatch(f))
+
+
+def play_aggressive():
+    try:
+        return json.loads((HERE / "play_mode_r3.json").read_text(encoding="utf-8")).get("mode") == "aggressive"
+    except (OSError, ValueError):
+        return False
 BUILD_EVERY = 90 * 60
 MAX_PER_DAY = 16       # one every BUILD_EVERY at most; 8 held the loop idle 03:02-09:05 on 11/5 with every verdict in
 CHECK_AFTER = 60 * 60
@@ -176,9 +201,11 @@ def git(*args):
 
 def deploy(files, src):
     for f in files:
-        tmp = HERE / f".{f}.auto"
+        dst = HERE / f
+        dst.parent.mkdir(exist_ok=True)
+        tmp = dst.parent / f".{dst.name}.auto"
         shutil.copyfile(src / f, tmp)
-        os.replace(tmp, HERE / f)
+        os.replace(tmp, dst)
 
 
 # 11/9: 4d10151 (deeper stock of hot 300k+ lines) was reverted at 11:15 for shop margin/h -20% over 3 h before and
@@ -303,8 +330,8 @@ def check():
 
 
 def gate(work):
-    changed, added = [], []
-    for f in sorted(p.name for p in work.glob("*.py")):
+    changed, added, tool_added = [], [], []
+    for f in py_files(work):
         live = HERE / f
         new = (work / f).read_text(encoding="utf-8")
         old = live.read_text(encoding="utf-8") if live.exists() else ""
@@ -312,26 +339,32 @@ def gate(work):
             continue
         changed.append(f)
         olds = set(old.splitlines())
-        added += [x for x in new.splitlines() if x not in olds]
+        (tool_added if f.startswith("tools_r3/") else added).extend(x for x in new.splitlines() if x not in olds)
     if not changed:
         return [], "no change"
-    bad = [f for f in changed if f not in ALLOWED]
+    bad = [f for f in changed if not allowed(f)]
     if bad:
         return changed, f"files outside the allowed set: {bad}"
-    hit = [x.strip()[:80] for x in added if FORBIDDEN.search(x)]
+    hit = [x.strip()[:80] for x in added + tool_added if FORBIDDEN.search(x)]
     if hit:
         return changed, f"forbidden lines: {hit[:3]}"
     if len(added) > MAX_LINES:
         return changed, f"{len(added)} added lines, more than {MAX_LINES}"
+    if len(tool_added) > MAX_TOOL_LINES:
+        return changed, f"{len(tool_added)} added lines in tools_r3/, more than {MAX_TOOL_LINES}"
+    tools = [f for f in changed if f.startswith("tools_r3/") and not Path(f).name.startswith("test_")]
+    lone = [f for f in tools if f"tools_r3/test_{Path(f).name}" not in py_files(work)]
+    if lone:
+        return changed, f"a new tool needs its own test file: {lone}"
     # the suites that decide the gate stay outside the coder's reach except to add cases (Ouroboros / DGM, AX week-02:
     # the acceptance check fixed outside EDIT, or the model only grades itself); a removed or edited line fails
     for f in changed:
-        if f.startswith("test_") and (HERE / f).exists():
+        if Path(f).name.startswith("test_") and (HERE / f).exists():
             news = set((work / f).read_text(encoding="utf-8").splitlines())
             gone = [x for x in (HERE / f).read_text(encoding="utf-8").splitlines() if x not in news]
             if gone:
                 return changed, f"{f}: {len(gone)} existing test lines edited or removed (tests may only be added)"
-    for t in TESTS:
+    for t in TESTS + [f for f in py_files(work) if f.startswith("tools_r3/test_")]:
         r = subprocess.run([str(PY), t], cwd=work, capture_output=True, text=True, timeout=600)
         last = (r.stdout.strip().splitlines() or ["?"])[-1]
         m = re.match(r"(\d+)/(\d+) passed", last)
@@ -388,6 +421,8 @@ def copy_folder(work):
     for p in HERE.iterdir():
         if p.is_file() and (p.suffix == ".py" or (p.suffix == ".json" and p.stat().st_size < 200_000)):
             shutil.copy2(p, work / p.name)
+    if (HERE / "tools_r3").is_dir():
+        shutil.copytree(HERE / "tools_r3", work / "tools_r3", ignore=shutil.ignore_patterns("__pycache__"))
     (work / "logs").mkdir()
     (work / "traces").mkdir()
     for rel, n in TRACES.items():                       # the newest lines of each trace, read-only evidence
@@ -444,7 +479,7 @@ def engineer_prompt():
     return ENGINEER.format(gap=metrics_r3.gap_text(), metrics=", ".join(metrics_r3.METRICS), windows=windows,
                            ledger=ledger, failed=failed, ideas="\n".join(f"- {i[:300]}" for i in ideas[-6:]) or "(none)",
                            advice="\n".join(f"- {n.get('text', '')[:900]}" for n in advice[-3:]) or "(none)",
-                           allowed=", ".join(sorted(ALLOWED)), digest=area_digest())
+                           allowed=", ".join(sorted(ALLOWED)) + TOOL_NOTE, digest=area_digest())
 
 
 def build():
@@ -474,13 +509,13 @@ def build():
     row.update(key=key, idea=spec["hypothesis"][:400], spec=spec)
     log(f"hypothesis {key}: {spec['hypothesis'][:140]} (metric {spec['metric']}, expected {spec.get('expected')})")
     # the coder works in the copy; if it wrote to the live folder anyway, those files go back before the gate
-    snap = {p.name: p.read_bytes() for p in HERE.glob("*.py")}
-    said = agent(CODER.format(spec=json.dumps(spec, ensure_ascii=False, indent=1), allowed=", ".join(sorted(ALLOWED)),
+    snap = {f: (HERE / f).read_bytes() for f in py_files(HERE)}
+    said = agent(CODER.format(spec=json.dumps(spec, ensure_ascii=False, indent=1), allowed=", ".join(sorted(ALLOWED)) + TOOL_NOTE,
                               py=PY, key=key), work, f"Read,Edit,Write,Glob,Grep,Bash({PY} test_*)")
     row["agent"] = said.splitlines()[-1][:300] if said else ""
     strayed = [n for n, b in snap.items() if (HERE / n).read_bytes() != b]
     for n in strayed:
-        tmp = HERE / f".{n}.auto"
+        tmp = (HERE / n).parent / f".{Path(n).name}.auto"
         tmp.write_bytes(snap[n])
         os.replace(tmp, HERE / n)
     changed, why = gate(work)
@@ -495,7 +530,7 @@ def build():
         log(row["result"])
         return
     pending = json.loads(NUMBER_TRIALS.read_text(encoding="utf-8")) if NUMBER_TRIALS.exists() else []
-    if pending and set(changed) & SHOP_FILES:
+    if pending and set(changed) & SHOP_FILES and not play_aggressive():
         # shop changes run one at a time: a shop number is being judged, so a change to the shop's files waits (its
         # hours would mix with the number's); the attempt is logged and the engineer may try again later
         row["result"] = "not deployed: a shop number verdict is pending; shop files wait for it"

@@ -634,7 +634,8 @@ async def main(args, shops, memory, remember):
     forum_r3.maybe_post(memory)
     try:                                   # the shop's first move: answer wanted posts with our stock (wanted_r3)
         import wanted_r3
-        wanted_r3.maybe_reply()
+        if wanted_r3.maybe_reply() is None:
+            wanted_r3.maybe_ad()           # 11/11: slow stock advertised in busy categories, as the shop
     except Exception:
         pass
     print(json.dumps(out, ensure_ascii=False), flush=True)

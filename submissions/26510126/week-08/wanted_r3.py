@@ -99,3 +99,69 @@ def maybe_reply(now=None, md=None):
     tmp.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
     os.replace(tmp, md / STATE)
     return None
+
+
+# 11/11 15:3x (the user: our slow stock is unpopular, so tell the forum we sell it): a standalone "[재고 특가]" post as
+# the shop, one category at a time, when no wanted post needs a reply. The market's rules have no content rules ("No
+# content rules", agent.md) and votes on shop posts do not enter a shop's ALL, so a disliked ad costs no points; the
+# shop's slot is shared with the wanted replies through st["last"]. A buyer buys only for an order it holds, so an ad
+# goes to a category the market is settling now (AD_MIN_SETTLES in 6 h) where we hold A/B goods over AD_AGE_H old:
+# a buyer with a category order who reads the forum learns we hold it. Facts from inventory.json only, no prices.
+AD_GAP = 1200               # seconds between two ads
+AD_REPEAT = 3 * 3600        # a category is not advertised again within this
+AD_AGE_H = 24
+AD_MIN_SETTLES = 10
+AD_MIN_UNITS = 3
+
+
+def ad_text(want, rows):
+    parts = []
+    for sku, r in rows[:3]:
+        g = " · ".join(f"{g} {r[g]}개" for g in ("A", "B") if r.get(g))
+        parts.append(f"{r['name'][:30]} ({sku}) {g}")
+    return (f"[재고 특가] {want}: {US} 가게에서 지금 판매 중입니다. " + "; ".join(parts) +
+            f". 모든 유닛에 시장 인증서, A/B 상품은 {WARRANTY_H}시간 보증. 오래 둔 재고라 흥정 환영합니다. "
+            f"SKU로 물어보시면 바로 호가를 드립니다.")
+
+
+def maybe_ad(now=None, md=None):
+    """Write at most one standalone ad for slow stock; returns the line written or None."""
+    md = Path(md) if md else MD
+    now = now or time.time()
+    st = read(md / STATE, {"answered": [], "last": 0})
+    if now - st.get("last", 0) < GAP or now - st.get("ad_last", 0) < AD_GAP:
+        return None
+    units = (read(md / "inventory.json", {}) or {}).get("units") or []
+    old = [u for u in units if u.get("kind") == "goods" and u.get("supplied_at")
+           and (now - u["supplied_at"]) / 3600 > AD_AGE_H]
+    rows = read(md / "ledger-recent.json", [])
+    rows = rows if isinstance(rows, list) else (list(rows.values())[0] if rows else [])
+    cat = read(md / "catalog.json", {})                 # {sku: {name, category, kind, list_price, ...}}
+    cat = cat if isinstance(cat, dict) else {c["sku"]: c for c in cat if isinstance(c, dict) and "sku" in c}
+    busy = {}
+    for r in rows:
+        if r.get("kind") == "settle" and now - r.get("ts", 0) < 6 * 3600:
+            c = cat.get((r.get("data") or {}).get("sku"))
+            if c:
+                busy[leaf(c.get("category"))] = busy.get(leaf(c.get("category")), 0) + 1
+    recent = {a["want"] for a in st.get("ads", []) if now - a["t"] < AD_REPEAT}
+    best = None
+    for want in sorted({leaf(u.get("category")) for u in old}, key=lambda w: -busy.get(w, 0)):
+        if want in recent or busy.get(want, 0) < AD_MIN_SETTLES:
+            continue
+        found = matches(old, want)
+        if sum(r["A"] + r["B"] for _, r in found) >= AD_MIN_UNITS:
+            best = (want, found)
+            break
+    if not best:
+        return None
+    line = {"post": ad_text(*best), "refs": [], "as": "shop"}
+    with open(md / "outbox.jsonl", "a", encoding="utf-8") as f:
+        f.write(json.dumps(line, ensure_ascii=False) + "\n")
+    st["last"] = st["ad_last"] = now
+    st["ads"] = (st.get("ads", []) + [{"t": now, "want": best[0], "skus": [k for k, _ in best[1][:3]],
+                                       "market_settles_6h": busy.get(best[0], 0)}])[-100:]
+    tmp = md / f".{STATE}.tmp"
+    tmp.write_text(json.dumps(st, ensure_ascii=False), encoding="utf-8")
+    os.replace(tmp, md / STATE)
+    return line

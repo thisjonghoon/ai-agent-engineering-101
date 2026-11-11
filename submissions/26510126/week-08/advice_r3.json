@@ -382,6 +382,10 @@
   {
    "t": 1794372150.861136,
    "text": "Supervisor 11/11 13:4x, why goods_frac 0.7, stock_value 170M, max_list 1.2M, dear_depth 2, sku_depth 2, surge_max 1.05 (the user: follow the late riser sergiobuilds, #6 overall, Book 299.6M on 256M of stock). It buys dear goods broad and shallow: 29 lines, 88 units in 6 h, at most 3 of one SKU, at a median 0.576 of list; our deep lines (35 beds, 16 sofas, 7 a SKU) paid 0.674 after the market's surge, above the ~0.70 the market pays, so they could not sell at cost. Its shop sold 97.8M in 6 h (we ~30M), B and C 64% of it. The gap was depth and surge, not dear goods: keep the dear budget, buy it shallow, skip surged SKUs; the A-margin check in restock keeps only lines with margin. Judge it on Book and revenue over the next hours, not on one cycle."
+  },
+  {
+   "t": 1794374169.5301518,
+   "text": "Supervisor 11/11 14:1x, a correction for the team: the 14:13 drop (Players #22 -> #38, shop ALL 0.63 -> 0.35) was not a sales collapse. The kit restarted at 14:10 and, while it re-registered, the board showed our shop at the old tunnel URL with deals 0 and revenue 0 for about a minute (26 shops showed 0 deals then); it was back at 1.382 by 14:15. Paid sales were 133 in the hour to 14:03, above the 3 h mean (114). Do not credit or blame any number for that drop; the 13:42 shallow depth has not been judged yet."
   }
  ]
 }

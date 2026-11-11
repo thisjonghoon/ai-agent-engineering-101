@@ -45,10 +45,11 @@ HERE = Path(__file__).resolve().parent
 MARKET = "https://market.ourolabs.ai"
 STRATEGY = Path(os.environ.get("STRATEGY_FILE") or HERE / "strategy_r3.json")   # tests: the defaults, not the live file
 GOODS_MIX = {"A": 0.73, "B": 0.19, "C": 0.08}      # our goods supply by grade, 11/10 (A 73%, B 19%, C 9%)
-GRADE_COST = {"A": 0.663, "B": 0.536, "C": 0.349}   # supply cost / list by grade, 11/10 6 h
-REFUND = {"A": 0.03, "B": 0.06, "C": 0.18}           # expected refunds under the 72 h warranty: A as seller_r3.WARRANTY_Q; B and C
-# the market's measured break rates (B 5.5%, C 17.6%; ours C 1.2%), 11/11 21:4x audit #11: B at 0.13 read -1% when it
-# earns ~+7%. The seller's floors keep their own, safer WARRANTY_Q (C 0.35); this only values stock for restock.
+GRADE_COST = {"A": 0.70, "B": 0.536, "C": 0.349}    # supply cost / list by grade; A 0.663 (11/10) -> 0.70, the median of the
+# 300k+ A we bought 11/12 (audit #13: hot SKUs we hold none of were costed at 0.663 and passed at a loss)
+REFUND = {"A": 0.03, "B": 0.06, "C": 0.35}           # expected refunds under the 72 h warranty. B the market's 5.5% (audit #11).
+# C as seller_r3.WARRANTY_Q C 0.35: audit #11 set 0.18 from the market's 17.6%, but our own 300k+ C broke on 19 of 65
+# sales in 6 h (>=31.8%, 8.88M refunded of 27.98M, 11/12 audit #13), so 0.18 overvalued C and let losing lines pass.
 DEFAULTS = {"food_cash": 3_000_000, "dear_first": 1.0, "reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
             "goods_frac": 0.35, "food_first": 0.5,
             "depth": 3, "half_life_hours": 12, "stop_hours": 4, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540,

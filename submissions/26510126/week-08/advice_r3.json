@@ -422,6 +422,10 @@
   {
    "t": 1794419327.0790231,
    "text": "Supervisor 02:5x: surge_max back to 1.05. At 02:44 restock bought 16 Simmons Beautyrest Q (G53b150b5, list 838k) for 10.56M = 0.787 of list in one line; the market pays a median 0.633 of list (36 settles in 6 h, 6/h), other shops bought it at 0.585-0.68 in the same hour. 16 units is 2.7 h of the whole market's sales of that SKU. Data for merch: sku_cap 16 lets one surged dear SKU take 10M+; buy-side cost per unit rises within a large lot (surge), so a 300k+ line's margin check should use the surged cost at the lot's size."
+  },
+  {
+   "t": 1794422885.775538,
+   "text": "Supervisor 03:5x, CORRECTION + leak audit #13. (1) My 02:5x note was wrong: the 02:44 buy of 16 for 10.56M was the Simmons QUEEN Gb5d0dde7 (list 1,094,400) at 0.603 of list, not G53b150b5 at 0.787; the market pays 0.662 for it. surge_max 1.05 stays, but not for that reason - treat it as an unjudged value. (2) Book fell 177.6M -> 172.6M (01:15-03:08) almost all from refunds: -6.08M on 14 broken goods vs +1.86M margin on 257 paid sales; storage and expiry small. Book = cash + stock at cost, so buys do not move it. (3) 300k+ C: 19 of 65 sales broke in 6 h (>=31.8%, 8.88M refunded of 27.98M), so C nets ~0.19M/h, not 1.76M/h. Restock now values C with a 35% refund (was 18%) and A at a 0.70 cost (was 0.663), so fewer 300k+ lines pass. (4) 300k+ A: we hold 101 units (55.1M), cost 0.698 vs market 0.694, buyers' best 0.655, 10% of talks close - dear_depth/dear_first should not rise on C-scarcity grounds. (5) Pricing is in line with the market in every segment (within ~0.02 of list); the losses are refunds and what we buy."
   }
  ]
 }

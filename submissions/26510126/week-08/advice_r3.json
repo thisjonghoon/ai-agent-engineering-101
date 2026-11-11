@@ -370,6 +370,10 @@
   {
    "t": 1794364092.396478,
    "text": "Supervisor 11/11 11:3x, for merchandising (stock by band, last 6 h of ledger settles, inventory now): goods listed 150k+ hold 121.1M of our 143.6M stock at cost (84%) and earned 8.6M of revenue in 6 h; food holds 12.9M (9%) and earned 8.5M. Same revenue from a tenth of the capital: food turns its stock every ~9 h, 150k+ goods every ~124 h (2.3 sold an hour against 290 units, 108 older than 24 h, 96 of them grade C). 157 h are left in the round, so 150k+ stock already covers most of it at today's pace. Storage is 1% of cost a day (1.4M/day). Data, not an order: when the 11:39 stock_value verdict lands, weigh where the next won of restock goes by revenue and margin per won of capital per hour, not by the cap alone; a band whose cover exceeds the hours left adds storage, not sales. The dashboard's 재고 tab shows the bands live."
+  },
+  {
+   "t": 1794369387.744071,
+   "text": "Supervisor 11/11 12:5x, leak audit #8 (6 h to 12:43). Fixed in code (a22a3a3): goods now offer the cheapest unit of a SKU and grade first; restock checks grade A's margin alone and food lines' margin against the market median (16 of 56 food SKUs with data were bought at or above what the market pays). The clearance rule (154bba1, 11:56) moved 150k+ goods from 3 deals in 282 talks (6 h) to 17 in 82 (1 h) with Book +0.3M. For the team, data not an order: we hold 176 C goods (34.0M at cost, ~53M at the market's C median 0.55 of list) and 138 B (10.1M); 165 of the C and 134 of the B sit behind an A of the same SKU, so they got 6 and 27 talks in 6 h while the market sold 538 C and 1,127 B. B paid 9 of 9; C paid 7 of 45 on 11/10 (buyers' kits refuse C). Food A closes 6% (887 of 991 offered talks ended under our floor; buyers' last offers 0.588 of list, market paid 0.713). Restock should not buy more C goods, and B is the grade to lean on when an A is not needed."
   }
  ]
 }

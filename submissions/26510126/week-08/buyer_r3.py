@@ -728,7 +728,9 @@ async def scout_wave(order, cat, picked, dropped, quoted):
         cap = why["cap"] if isinstance(why, dict) else min(order["budget"], int(c[3] * CAP))
         ask = q.get("ask")
         # what is left at the ask, weighed by the chance of getting there when the ask is above what we pay
-        value = (c[3] - min(ask, cap)) * min(1.0, cap / ask) ** 4 if isinstance(ask, (int, float)) and ask > 0 else c[0]
+        # exponent 8, not 4: a first ask 1.1-1.5x the cap closed 23% of 367 talks (1.25x: 0.41 at 4, 0.17 at 8), within it 93% of 267
+        power = 8 if code_ab_r3.on("557d96311bff", order.get("order")) else 4
+        value = (c[3] - min(ask, cap)) * min(1.0, cap / ask) ** power if isinstance(ask, (int, float)) and ask > 0 else c[0]
         risk = c[2].get("_risk", 1.0) if isinstance(ask, (int, float)) and ask > 0 else 1.0   # c[0] has it already
         value *= risk
         quoted.append((value, c))

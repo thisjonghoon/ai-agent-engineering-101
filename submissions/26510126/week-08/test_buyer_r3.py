@@ -608,6 +608,18 @@ def main():
          lead21 == ["paid", "unpaid"] and next(c for c in c21 if c[1]["name"] == "unpaid")[2]["_risk"] < 0.01,
          str((lead21, [(c[1]["name"], round(c[2]["_risk"], 4)) for c in c21])))
 
+    # 21b. an over-cap quote is weighed by (cap/ask)**8 (first asks 1.25x the cap closed about 0.17 of talks), 4 off trial
+    cap21 = min(o21["budget"], int(40000 * buyer_r3.CAP))
+    asks21 = {"unpaid": int(cap21 * 1.25), "paid": int(cap21 * 1.25)}
+    buyer_r3.scout = fake_scout
+    q21b = []
+    asyncio.run(buyer_r3.scout_wave(o21, cat21, c21, set(), q21b))
+    buyer_r3.scout = real_scout
+    pw21 = 8 if buyer_r3.code_ab_r3.on("557d96311bff", o21["order"]) else 4
+    want21 = (40000 - cap21) * (cap21 / asks21["paid"]) ** pw21 * next(c for c in c21 if c[1]["name"] == "paid")[2]["_risk"]
+    case("an over-cap quote is weighed by (cap/ask)**8 in the scouted value",
+         any(abs(v - want21) < 1e-6 for v, c in q21b if c[1]["name"] == "paid"), str((pw21, want21, [v for v, _ in q21b])))
+
     # 22. the ledger claims are reused for CLAIMS_SECS instead of reading the six-hour ledger on every order
     calls = []
     real_lc = buyer_r3.ledger_claims

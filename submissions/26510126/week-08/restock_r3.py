@@ -380,7 +380,12 @@ def main():
                 # 6 h: the market sold 334-341 units of each top 300k+ SKU while we held 5-8, with 39.7M of cash idle: the
                 # depth grows with sku_score up to 5x dear_depth (goods_room and spend still bound it); 6 h: 300k+ settled
                 # 572 an hour and we got 2.8%, the top SKUs sold 158-398 units while we held 0-12, and the 3x cap (12) bound
+                # a SKU the market surged past 1.05x (surge_max drops only 1.15x) gets no heat: past 50 units an hour each unit
+                # costs 0.2% more, our dear goods cost a median 0.674 of list against 0.576 broad, and 300k+ sold at 0.62
+                # against a 0.57 cost, so a deep line bought into a surge costs more than its 5-point margin
                 heat = min(5.0 if c["list_price"] >= 300_000 else 2.0, max(1.0, sku_score.get(c["sku"], 0) / DEAR_HOT))
+                if surge.get(c["sku"], 1.0) > 1.05:
+                    heat = 1.0
                 # stock sat at its cap (69.5M of 70M) with 53.2M in 107 units of 300k+, about 65 of them non-hot SKUs bought at
                 # 2 while 8 best sellers sold 148-359 units each: a non-hot 300k+ SKU gets 1, the room goes to the hot ones
                 # and none once we hold 40 slow 300k+ units: 131 units of 300k+ (62.5M) sold 5.2 an hour, 1.0% of the market's

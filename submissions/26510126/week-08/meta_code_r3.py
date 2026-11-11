@@ -147,6 +147,11 @@ prices_r3.py count: changing what the code does with a number is a code change, 
 you skip, read the top area's files and say which of the counts above you checked and why none points to a code
 change (on 11/5 20:18 an engineer skipped the top area, stock, in 22 s without reading restock_r3.py).
 
+Read restock_r3.py in EVERY build, whatever area ranks first, and say in your answer what you checked there (11/11:
+three engineers in a row skipped it, "I did not open restock_r3.py", while stock was the shop's largest loss: our dear
+goods cost a median 0.674 of list after the market's surge on deep lines, against 0.576 for the #6 shop that buys
+broad and shallow, and the market pays ~0.70; how restock ranks, sizes and prices its lines is code, yours to fix).
+
 Not: a change already in the code or in the list above, a number the tuning team can set
 (it already moves those), anything about payments, keys or the seller.
 
@@ -527,6 +532,13 @@ def build():
     log("engineer reading the code and traces")
     said = agent(engineer_prompt(), work, "Read,Glob,Grep")
     spec = last_json(said)
+    # a skip that never read the stock code is asked once more (11/11: three skips in a row "did not open restock_r3.py")
+    if (not spec or spec.get("skip")) and (re.search(r"(did not|didn't|never) (open|read)[^.]{0,40}restock", said or "", re.I)
+                                           or "restock_r3" not in (said or "")):
+        log("engineer skipped without reading restock_r3.py: asked again")
+        said = agent(engineer_prompt() + "\n\nYour last answer skipped without reading restock_r3.py. Read it now, first, "
+                     "against the stock counts above, then answer in the same format.", work, "Read,Glob,Grep")
+        spec = last_json(said)
     row = {"t": time.time(), "secs": round(time.time() - t0), "work": str(work)}
     if not spec or spec.get("skip") or spec.get("metric") not in metrics_r3.METRICS or not spec.get("hypothesis"):
         row.update(key=f"engineer-{time.strftime('%m%d%H%M')}",

@@ -48,3 +48,8 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    while 72 h is the market's norm (45% of goods settles). The 11/9-11/10 warranty gap was the unit offered (C first),
    fixed 11/10 17:07. Refund cost is handled by grade pricing and WARRANTY_Q, not by the hours.
    [since 11/10 20:4x; from: the market's rules and ledger; review: if the rules' break window changes]
+9. Never move a number a second time in the same direction before its last change has a closed 2 h verdict. Evidence
+   for the next step must be measured at the value now in force, not at an older one (11/12 00:59 and 01:16: the food
+   floor 0.55->0.52->0.50 and ask_frac 0.72->0.77->0.80->0.85 stepped again citing audit data measured at the old
+   values; both reverted by the supervisor). A different number, or the opposite direction, is free in play mode.
+   [since 11/12 01:2x; from: the supervisor; review: never]

@@ -260,7 +260,9 @@ def needed_hours(text):
     return max(hs, default=0)
 
 
-WANTS_C = re.compile(r"grade\s*C\b|\bC\s*grade|C급|리퍼|refurb|박스\s*훼손|open[- ]box", re.I)
+# 박스 훼손 / open-box is grade B in the rules ("B 박스 훼손 or C 리퍼", agent.md): it asked for B and got C first until
+# leak audit #9 (11/11 15:5x)
+WANTS_C = re.compile(r"grade\s*C\b|\bC\s*grade|C급|리퍼|refurb", re.I)
 # a buyer who asks for grade A or a new unit (11/11 13:1x, for the C-first probe below)
 WANTS_A = re.compile(r"grade\s*A\b|\bA\s*grade|A급|새\s*(제품|상품)|brand[- ]new|미개봉|\bnew\b", re.I)
 C_FIRST_MIN = 3         # C units of a SKU held before its C goes first
@@ -295,7 +297,13 @@ def pick(units, need, wants_c=False, prefer_b=False):
     # cost a median 1.2x the cheapest, because first-in made the dear ones the oldest and so always first). A dear unit
     # left over still counts at cost in Book, and the clearance rule prices it to the market once it has sat
     cost_key = lambda u: (u.get("cost") or 0) if u.get("kind") == "goods" else 0
-    return min(units, key=lambda u: (rank(u), u["expires_at"] or float("inf"), cost_key(u), u["supplied_at"]))
+    # food: the earliest day of expiry first, and inside that day the cheapest unit (leak audit #9, 11/11 15:5x: a
+    # food unit at 0.765 of list, the earliest to expire, was offered 168 times for 1 deal while cheaper units of the
+    # same SKU waited; the market paid 0.585). A day's bucket keeps the expiry order that stops waste
+    day = lambda u: int(u["expires_at"] // 86400) if u.get("expires_at") else float("inf")
+    food_cost = lambda u: (u.get("cost") or 0) if u.get("kind") == "food" else 0
+    return min(units, key=lambda u: (rank(u), day(u), food_cost(u), u["expires_at"] or float("inf"), cost_key(u),
+                                     u["supplied_at"]))
 
 
 def find_unit(text, taken=()):

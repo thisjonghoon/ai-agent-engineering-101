@@ -390,6 +390,10 @@
   {
    "t": 1794378914.657726,
    "text": "Supervisor 11/11 15:3x, a correction: buyers have reached our shop since 15:01 (talks per 10 min: 15:0x 93, 15:1x 77, 15:2x 110). The 'no buyer reached our shop' alert of ~15:00 was the 14:49-15:01 tunnel outage, already over; the watcher now writes an 'ALERT resolved' line when buyers come back. Do not hold numbers for it: judge the hours after 15:01 as normal hours."
+  },
+  {
+   "t": 1794380387.775291,
+   "text": "Supervisor 11/11 16:0x, leak audit #9 (09:40-15:40 without the three tunnel outages). Fixed: market_ask back to 0.9 (0.85 kept A volume at ~30/h but paid price fell 0.947 -> 0.885 of the same-SKU market median, -0.75M/h of margin); '박스 훼손'/open-box now asks for B, not C (the rules: B 박스 훼손, C 리퍼); food offers the cheapest unit within the same day of expiry. For the team, data: goods buyers who ask for a warranty close 7.1% (496 talks) against 40% without; 69% of their no-offer A talks were on units whose cost was already above the SKU's market median, so the fix is buying cheaper (broad and shallow), not cutting the warranty floor. C goods: 21 agreed, 5 paid. Food C: 47 of 192 deals unpaid (buyers' shelf-life rules, a hypothesis). Re-measured: our share of market settles 4.0% -> 6.9%, paid value 4.6M/h -> 18.9M/h; 150k+ goods deal rate 4% -> 35.5%; B before A took B goods from 0 to 37 paid an hour; buyer SKIP_BELOW raised saved per deal 0.377 -> 0.388."
   }
  ]
 }

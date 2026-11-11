@@ -410,6 +410,10 @@
   {
    "t": 1794395043.649197,
    "text": "Supervisor 20:0x, data for verdicts: our shop was off the board 19:10-19:53 (43 min, 0 sales) because the named tunnel's slow card (1-2 s) failed the market's liveness read while 27-41 other shops were alive; back on a quick tunnel at 19:53, alive 19:55 with 21 talks/min. Every shop verdict window covering 18:48-19:55 is our outage, not a number's effect: judge pending rows (max_list, sku_depth, dear_first, dear_depth, window_depth, floor_frac_food 0.53) only on hours after 19:55. Last hour 44 paid sales (6.0M) vs 91/h (8.0M/h) over 3 h, all from the outage."
+  },
+  {
+   "t": 1794401489.656545,
+   "text": "Supervisor 21:5x, leak audit #11 (15:42-21:42, outages removed, 2,027 talks): (1) restock now values C at its market median less 18% and B with a 6% refund (market break rates), since 150k+ restock had stopped (3 units in 6 h while the market settles ~580/h) - watch the dear supply; (2) c_first back to 1 via supervise (C now pays 19/20); (3) data for sales, not applied: 52 of 70 150k+ A deals and 10 of 14 B closed at our opening ask, 28 of 44 A opened under the market median, food sells at 0.561 of list vs market 0.611 (119 of 267 food B deals closed exactly at the floor) - market_ask 0.95 is pending; if its verdict is clean, a goods/food market_ask of 1.0 is the next step. (4) clearance: with clear_age_hours 6 and a median A age of 23.7 h nearly all A opens at the market median; 20 of 21 cleared 150k+ A sold under cost (-258k in 6 h) while the 44 non-clearance A sales made +1.23M - consider clear_age_hours 24."
   }
  ]
 }

@@ -46,7 +46,9 @@ MARKET = "https://market.ourolabs.ai"
 STRATEGY = Path(os.environ.get("STRATEGY_FILE") or HERE / "strategy_r3.json")   # tests: the defaults, not the live file
 GOODS_MIX = {"A": 0.73, "B": 0.19, "C": 0.08}      # our goods supply by grade, 11/10 (A 73%, B 19%, C 9%)
 GRADE_COST = {"A": 0.663, "B": 0.536, "C": 0.349}   # supply cost / list by grade, 11/10 6 h
-REFUND = {"A": 0.03, "B": 0.13}                      # seller_r3.WARRANTY_Q: expected refunds under the 72 h warranty
+REFUND = {"A": 0.03, "B": 0.06, "C": 0.18}           # expected refunds under the 72 h warranty: A as seller_r3.WARRANTY_Q; B and C
+# the market's measured break rates (B 5.5%, C 17.6%; ours C 1.2%), 11/11 21:4x audit #11: B at 0.13 read -1% when it
+# earns ~+7%. The seller's floors keep their own, safer WARRANTY_Q (C 0.35); this only values stock for restock.
 DEFAULTS = {"food_cash": 3_000_000, "dear_first": 1.0, "reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
             "goods_frac": 0.35, "food_first": 0.5,
             "depth": 3, "half_life_hours": 12, "stop_hours": 4, "spread_low": 0.7, "spread_high": 1.3, "sku_depth": 3, "round_end": 1794927540,
@@ -311,16 +313,20 @@ def main():
             a_only = None
             for g, w in GOODS_MIX.items():
                 st = (lines.get("skus") or {}).get(f"{c['sku']}|{g}")
-                if g != "C" and (not st or st.get("n", 0) < 3):   # C needs no market line: it is valued at cost
+                if not st or st.get("n", 0) < 3:
                     cat = (lines.get("categories") or {}).get(f"{(c.get('category') or '').split('>')[-1]}|{g}") or {}
                     st = cat.get("h24") or cat.get("h6")
                     if not st or st.get("n", 0) < 10:
-                        return None
+                        if g != "C":
+                            return None
+                        st = None                                   # C without a market line: valued at cost
                 paid = own.get((c["sku"], g))
                 cost = (sorted(paid)[len(paid) // 2] if paid else GRADE_COST[g]) * surge.get(c["sku"], 1.0)
-                # C counted at cost (no margin): it sells rarely (11 of 94 dear C units in 6 h, 11/11 audit #5), so its
-                # market median inflated the mix and let A lines at -4%..+4% pass
-                value = cost if g == "C" else st["median"] * (1 - REFUND.get(g, 0))
+                # C was counted at cost while it went unpaid (11 of 94 dear C units in 6 h, 11/11 audit #5). Since C
+                # carries the warranty (audit #10) it is paid (19 of 20 deals, 0.539 of list on a cost of 0.339), so it
+                # is valued at its market median less REFUND C 0.35 (11/11 21:4x audit #11: 30 of the market's 40
+                # best-selling 150k+ SKUs failed the check and 150k+ restock had stopped: 3 units in 6 h)
+                value = cost if st is None else st["median"] * (1 - REFUND.get(g, 0))
                 num += w * (value - cost)
                 den += w * cost
                 if g == "A" and cost:

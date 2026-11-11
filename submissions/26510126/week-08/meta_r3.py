@@ -59,7 +59,7 @@ BOUNDS = {"open_gap": (0.0, 0.15, 0.03), "grade_frac_b": (0.80, 1.00, 0.04), "gr
           "goods_age_days": (2, 10, 1), "aged_margin": (0.0, 0.2, 0.03), "stuck_hours": (2, 12, 2), "clear_age_hours": (6, 48, 6), "c_first": (0, 1, 1), "window_depth": (1.0, 4.0, 0.5), "order_weight": (0.0, 3.0, 0.5),
           # the seller's haiku negotiator lost to the rule (11/4 10:00, 33 talks: 2,128 margin a talk against 3,207)
           # and its share kept drawing proposals; it stays off, a measured result rather than a live knob
-          "model_share": (0.0, 0.0, 0.0), "market_ask": (0.9, 1.3, 0.05),
+          "model_share": (0.0, 0.0, 0.0), "market_ask": (0.8, 1.3, 0.05),
           "surge_max": (1.0, 1.5, 0.05), "dear_depth": (1, 8, 1), "lines": (8, 20, 2),
           "breadth_lines": (0, 12, 2), "sku_cap": (3, 20, 2)}
 SETTLED = re.compile(r"\[acp\] settled .* at (\d+), ledger")         # our shop's sale the market settled

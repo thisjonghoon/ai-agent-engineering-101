@@ -364,7 +364,11 @@ def main():
                     e = expected_margin(c)
                 except Exception:
                     e = None                                 # a check that cannot run never blocks a purchase
-                if e is not None and (e[0] < min_m + 0.01 or (e[1] is not None and e[1] < min_m)):
+                # the A-only veto skips a hot 300k+ line (A is 8 of 40 sold at about 21k; 300k+ is 91% of gross margin
+                # and B and C sell 2.54M/h on C alone) when its mix margin passes: those SKUs were held at 0 units
+                hot_dear = (c["list_price"] >= 300_000 and sku_score.get(c["sku"], 0) >= DEAR_HOT
+                            and surge.get(c["sku"], 1.0) <= 1.05)
+                if e is not None and (e[0] < min_m + 0.01 or (e[1] is not None and e[1] < min_m and not (hot_dear and e[0] > 0))):
                     continue                                 # 0.01 is about a day of storage
             elif c.get("kind") == "food":
                 try:

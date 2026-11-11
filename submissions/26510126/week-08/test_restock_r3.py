@@ -433,4 +433,20 @@ q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["bu
 case("a 400,000 SKU held at 0.48 of list is sized at 192,000 a unit: 12 units from 2.3M of room (0.60 gave 9)",
      q.get("SB") == 12, q)
 restock_r3.strategy = real
+# the A-only margin veto no longer blocks a hot 300k+ line whose grade mix pays: A alone is -3% (median 0.66 of list
+# less refund against a 0.663 cost) but B and C lift the mix to 5%
+import prices_r3
+real_read = prices_r3.read
+prices_r3.read = lambda _md: {"skus": {f"SB|{g}": {"n": 20, "median": 400000 * m} for g, m in (("A", 0.66), ("B", 0.80), ("C", 0.50))}}
+restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=50_000_000, goods_frac=1.0, max_list=1_500_000, dear_depth=8)
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": []}), encoding="utf-8")
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SB": 1500}}),
+                                       encoding="utf-8")
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
+case("a hot 400,000 SKU with A alone at -3% but a 5% grade mix is bought (the A-only veto stood in the way)", q.get("SB", 0) > 0, q)
+prices_r3.read = real_read
+restock_r3.strategy = real
 print(f"\n{sum(ok)}/{len(ok)} passed")

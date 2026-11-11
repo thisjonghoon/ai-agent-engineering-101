@@ -328,15 +328,14 @@ def find_unit(text, taken=()):
     # list; totato2203-r3 43% C, most big buyers 10-27%). A buyer who names a 150k+ SKU and asks for neither a warranty
     # nor grade A/new is offered our C of it first when we hold C_FIRST_MIN or more. The seller cannot see who the
     # buyer is (text only), and C paid 7 of 45 on 11/10, so strategy c_first 0 turns it off
-    if named and not wants_c and (read_json(STRATEGY, {}).get("c_first", 1) or 0) >= 0.5 \
-            and not WARRANTY_WORDS.search(text or "") and not WANTS_A.search(text or ""):
+    plain = named and not wants_c and not WARRANTY_WORDS.search(text or "") and not WANTS_A.search(text or "")
+    if plain and (read_json(STRATEGY, {}).get("c_first", 1) or 0) >= 0.5:
         cs = [u for u in named if u.get("kind") == "goods" and u.get("grade") == "C" and u["list_price"] >= 150_000]
         wants_c = len(cs) >= C_FIRST_MIN
-        # 11/11 13:4x (the user: follow sergiobuilds, #6 overall, whose shop sold A 120 / B 144 / C 68 in 6 h while we
-        # hid B behind A: 138 B units, 27 talks in 6 h; B paid 9 of 9): with too few C, B goes before A for such a buyer
-        prefer_b = not wants_c
-    else:
-        prefer_b = False
+    # 11/11 13:4x (the user: follow a top-10 shop that sold A 120 / B 144 / C 68 in 6 h while we hid B behind A: 138 B
+    # units, 27 talks in 6 h; B paid 9 of 9): B goes before A for such a buyer. Kept apart from c_first, which was
+    # switched off at 14:0x (C agreed 11, paid 1 in an hour: buyers' kits refuse C without a warranty)
+    prefer_b = bool(plain) and not wants_c
     if named:
         return pick(named, need, wants_c, prefer_b)
     fit = [u for u in units if (u.get("name") or "").lower() in want

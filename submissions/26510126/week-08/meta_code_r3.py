@@ -150,8 +150,16 @@ change (on 11/5 20:18 an engineer skipped the top area, stock, in 22 s without r
 Not: a change already in the code or in the list above, a number the tuning team can set
 (it already moves those), anything about payments, keys or the seller.
 
+Change or new tool: most fixes change the existing files ("kind": "change"). When the toolbox lacks something no edit
+of those files can sensibly hold (a separate computation: a clearance planner, a rival-price tracker, a demand
+forecaster), propose a NEW tool instead ("kind": "tool"): name it, say what it computes, and which allowed file calls
+it. The tuning team and the supervisor ask for tools in their ideas and notes with lines that start "tool:"; weigh
+those requests like any other evidence (a request is not a verdict; the counts decide).
+
 Answer with one JSON object on the last line, nothing after it:
 {{"hypothesis": "<the change, one sentence>", "why": "<the counts from the traces that back it>",
+  "kind": "change" or "tool", "tool": "<snake_case name, only for a tool>", "plugs_into": "<the allowed file that calls
+  the tool, only for a tool>",
   "files": ["<file>"], "metric": "<one of the metric names>", "expected": <signed relative change, e.g. 0.1>,
   "term": "<the board term it serves>"}}
 or {{"skip": "<why no change is worth making now>"}}"""
@@ -177,6 +185,27 @@ Rules:
 - Run that test file with: {py} <test file>   and fix until it passes.
 - If it cannot be done safely in these files, change nothing and say why in one line.
 End with one line: CHANGED: <what you changed, in one sentence> or SKIPPED: <why>."""
+
+
+FORGE = """You are the tool maker (forge) of a trading agent's meta-harness (an online market of AI shops and buyers;
+the money is a classroom game). The engineer found that the toolbox lacks a tool and wrote this spec from the traces:
+
+{spec}
+
+Build it in this folder:
+- tools_r3/{tool}.py: the tool itself, plain functions with a docstring each (what it computes, from which files,
+  with the engineer's numbers). It reads files under .market/ or logs/ and returns values; it does not write files,
+  start processes, call the network or touch payments, checkout, mandates, keys, the kit or the seller.
+- tools_r3/test_{tool}.py: plain asserts on small inputs you build in the test, ending with a line that prints
+  "N/N passed" (N = the number of cases). It must run with: {py} tools_r3/test_{tool}.py
+- Wire it in from {plugs} (one of: {allowed}) with the smallest edit there: import it as
+  `from tools_r3 import {tool}`, and fall back to the old behaviour if the tool raises. When it acts per buyer order,
+  put the new behaviour behind  if code_ab_r3.on("{key}", <the order id>):  (import code_ab_r3).
+- Add one test case for the wiring to the matching test_*.py in the style of the cases there, and run it.
+- At most 300 added lines in tools_r3/ and 150 elsewhere. Honesty rules stay: never claim a grade, shelf life or price
+  that is not true, never pay above the budget.
+- If it cannot be done safely, change nothing and say why in one line.
+End with one line: CHANGED: <what you built and where it plugs in, in one sentence> or SKIPPED: <why>."""
 
 
 def jl(path):
@@ -507,13 +536,24 @@ def build():
         return
     key = hashlib.sha1(spec["hypothesis"][:120].lower().encode()).hexdigest()[:12]
     row.update(key=key, idea=spec["hypothesis"][:400], spec=spec)
-    log(f"hypothesis {key}: {spec['hypothesis'][:140]} (metric {spec['metric']}, expected {spec.get('expected')})")
+    forge = spec.get("kind") == "tool" and bool(re.fullmatch(r"[a-z][a-z0-9_]{2,40}", str(spec.get("tool") or "")))
+    log(f"{'tool ' + spec['tool'] + ' for the forge' if forge else 'hypothesis'} {key}: {spec['hypothesis'][:140]} "
+        f"(metric {spec['metric']}, expected {spec.get('expected')})")
     # the coder works in the copy; if it wrote to the live folder anyway, those files go back before the gate
     snap = {f: (HERE / f).read_bytes() for f in py_files(HERE)}
-    said = agent(CODER.format(spec=json.dumps(spec, ensure_ascii=False, indent=1), allowed=", ".join(sorted(ALLOWED)) + TOOL_NOTE,
-                              py=PY, key=key), work, f"Read,Edit,Write,Glob,Grep,Bash({PY} test_*)")
+    if forge:                                       # a new tool goes to the tool maker, not the coding hand
+        plugs = spec.get("plugs_into") if spec.get("plugs_into") in ALLOWED else "restock_r3.py"
+        said = agent(FORGE.format(spec=json.dumps(spec, ensure_ascii=False, indent=1), tool=spec["tool"], plugs=plugs,
+                                  allowed=", ".join(sorted(ALLOWED)), py=PY, key=key), work,
+                     f"Read,Edit,Write,Glob,Grep,Bash({PY} test_*),Bash({PY} tools_r3/test_*)")
+    else:
+        said = agent(CODER.format(spec=json.dumps(spec, ensure_ascii=False, indent=1), allowed=", ".join(sorted(ALLOWED)) + TOOL_NOTE,
+                                  py=PY, key=key), work, f"Read,Edit,Write,Glob,Grep,Bash({PY} test_*)")
     row["agent"] = said.splitlines()[-1][:300] if said else ""
     strayed = [n for n, b in snap.items() if (HERE / n).read_bytes() != b]
+    for n in set(py_files(HERE)) - set(snap):       # a file the agent created in the live folder goes to the Trash
+        shutil.move(str(HERE / n), str(Path.home() / ".Trash" / f"{Path(n).name}.{time.strftime('%m%d%H%M%S')}"))
+        strayed.append(n)
     for n in strayed:
         tmp = (HERE / n).parent / f".{Path(n).name}.auto"
         tmp.write_bytes(snap[n])
@@ -546,7 +586,7 @@ def build():
     what = row["agent"].split("CHANGED:", 1)[-1].strip() if "CHANGED:" in row["agent"] else spec["hypothesis"]
     c = git("commit", "-q", "-m", f"week-08: [auto] {what[:120]}\n\nThe engineer's hypothesis ({spec.get('term')}): "
             f"{spec['hypothesis'][:300]}\nWhy: {str(spec.get('why'))[:400]}\nMetric {spec['metric']}, expected "
-            f"{spec.get('expected')}; built by the coding agent, passed the gate (allowed files, no forbidden lines, "
+            f"{spec.get('expected')}; built by the {'tool maker (forge)' if forge else 'coding agent'}, passed the gate (allowed files, no forbidden lines, "
             f"all suites).")
     commit = git("rev-parse", "--short", "HEAD").stdout.strip() if c.returncode == 0 else "uncommitted"
     row["result"] = f"deployed {commit}"

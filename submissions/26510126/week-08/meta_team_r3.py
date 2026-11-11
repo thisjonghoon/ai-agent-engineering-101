@@ -119,7 +119,7 @@ How the last versions did (oldest first: what changed among your numbers, then t
 Notes from the supervisor who watches the team for the user (advice with evidence, not orders):
 {advice}
 
-Answer with JSON only: {{"proposal": {{"<key>": <value>, ...only the numbers you would change}}, {extra}"why": "<two sentences with the evidence>", "ideas": ["<up to 2: what no number can do, with evidence>"], "lessons_used": ["<ids of your lessons (L1, L2, ...) that shaped this answer, or none>"]}}"""
+Answer with JSON only: {{"proposal": {{"<key>": <value>, ...only the numbers you would change}}, {extra}"why": "<two sentences with the evidence>", "ideas": ["<up to 2: what no number can do, with evidence; start one with 'tool:' when our toolbox lacks a tool that would do it>"], "lessons_used": ["<ids of your lessons (L1, L2, ...) that shaped this answer, or none>"]}}"""
 COORDINATE = """{goal}
 
 You are the {title}. Shop and buyer strategies are set together, not apart (the user, 11/11): read what the other

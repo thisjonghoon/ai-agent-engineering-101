@@ -268,13 +268,20 @@ def pick(units, need, wants_c=False):
     on 11/3 were for food that expired before the buyer's stated need while a fresher unit sat on our shelf."""
     left = lambda u: (u["expires_at"] - time.time()) / 3600 if u.get("expires_at") else float("inf")
     if need and units and any(u.get("kind") == "food" for u in units):
-        ok = [u for u in units if left(u) >= need]
+        # a margin over the stated need first (11/11 audit #7: 26 four-star reviews for units at 1.0-1.27x the need,
+        # "barely enough"), then the bare need, then the freshest
+        ok = [u for u in units if left(u) >= need * 1.3] or [u for u in units if left(u) >= need]
         if not ok:
             return max(units, key=left)
         units = ok
     # goods: A, then B, then C, first-in within a grade (11/10, 6 h: A goods agreed 35, paid 30; C agreed 45, paid 7 --
     # most buyers' kits do not pay for C, and pick() had offered the oldest unit whatever its grade)
-    rank = lambda u: {"A": 0, "B": 1, "C": 2}.get(u.get("grade"), 1) if u.get("kind") == "goods" else 0
+    def rank(u):
+        if u.get("kind") == "goods":
+            return {"A": 0, "B": 1, "C": 2}.get(u.get("grade"), 1)
+        # food: grade C after A/B while it still has 72 h or more (C food averaged 4.43 stars vs 4.8 for A/B); a C unit
+        # nearer its date keeps going first, so it sells before it expires (an expired unit loses its whole cost)
+        return 1 if grade_now(u)[0] == "C" and left(u) >= 72 else 0
     if wants_c:                                  # a buyer who asks for grade C / refurbished gets C first
         rank = lambda u: {"C": 0, "B": 1, "A": 2}.get(u.get("grade"), 1) if u.get("kind") == "goods" else 0
     return min(units, key=lambda u: (rank(u), u["expires_at"] or float("inf"), u["supplied_at"]))

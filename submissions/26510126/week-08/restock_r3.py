@@ -297,12 +297,18 @@ def main():
             lines = {}
 
         own = defaultdict(list)                          # what we actually paid per SKU and grade, cost / list
+        own_food = defaultdict(list)
         for u in units:
             if u.get("kind") == "goods" and u.get("list_price"):
                 own[(u["sku"], u.get("grade"))].append(u["cost"] / u["list_price"])
+            elif u.get("kind") == "food" and u.get("list_price"):
+                own_food[u["sku"]].append(u["cost"] / u["list_price"])
 
         def expected_margin(c):
+            """(the grade mix's margin, grade A's alone) or None. A alone too (11/11 12:5x audit #3): pick() offers A
+            before B and C, so B and C rarely sell and their margin must not carry an A line that loses."""
             num = den = 0.0
+            a_only = None
             for g, w in GOODS_MIX.items():
                 st = (lines.get("skus") or {}).get(f"{c['sku']}|{g}")
                 if g != "C" and (not st or st.get("n", 0) < 3):   # C needs no market line: it is valued at cost
@@ -317,7 +323,20 @@ def main():
                 value = cost if g == "C" else st["median"] * (1 - REFUND.get(g, 0))
                 num += w * (value - cost)
                 den += w * cost
-            return num / den if den else None
+                if g == "A" and cost:
+                    a_only = (value - cost) / cost
+            return (num / den, a_only) if den else None
+
+        def food_margin(c):
+            """What we paid for this food SKU (median, times its surge) against the market's median for it, or None.
+            11/11 12:5x audit #4: food lines had no check; A food at 0.765 of list was offered 244 times and closed 1%
+            where the market paid 0.71 (519 talks on units over 0.75 of list closed 6)."""
+            paid = own_food.get(c["sku"])
+            st = (lines.get("skus") or {}).get(f"{c['sku']}|A") or (lines.get("skus") or {}).get(c["sku"])
+            if not paid or not st or st.get("n", 0) < 5 or not st.get("median"):
+                return None
+            cost = sorted(paid)[len(paid) // 2] * surge.get(c["sku"], 1.0)
+            return (st["median"] - cost) / cost if cost else None
 
         # min_margin is the seller's number (not in this file's DEFAULTS): read it from the strategy, 2% if absent
         # (11/11 01:03: s["min_margin"] raised KeyError and stopped every restock run from 00:49)
@@ -328,7 +347,14 @@ def main():
                     e = expected_margin(c)
                 except Exception:
                     e = None                                 # a check that cannot run never blocks a purchase
-                if e is not None and e < min_m + 0.01:       # 0.01 is about a day of storage
+                if e is not None and (e[0] < min_m + 0.01 or (e[1] is not None and e[1] < min_m)):
+                    continue                                 # 0.01 is about a day of storage
+            elif c.get("kind") == "food":
+                try:
+                    f = food_margin(c)
+                except Exception:
+                    f = None
+                if f is not None and f < min_m:
                     continue
             if len(buy) >= s.get("lines", 18):
                 break

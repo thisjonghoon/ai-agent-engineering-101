@@ -285,7 +285,12 @@ def pick(units, need, wants_c=False):
         return 1 if grade_now(u)[0] == "C" and left(u) >= 72 else 0
     if wants_c:                                  # a buyer who asks for grade C / refurbished gets C first
         rank = lambda u: {"C": 0, "B": 1, "A": 2}.get(u.get("grade"), 1) if u.get("kind") == "goods" else 0
-    return min(units, key=lambda u: (rank(u), u["expires_at"] or float("inf"), u["supplied_at"]))
+    # within a grade, goods go cheapest-cost first (11/11 12:5x audit: 349 A-goods talks lost to a last offer under
+    # our floor; in 189 a cheaper unit of the same SKU and grade sat in stock and would have cleared it; the talk's unit
+    # cost a median 1.2x the cheapest, because first-in made the dear ones the oldest and so always first). A dear unit
+    # left over still counts at cost in Book, and the clearance rule prices it to the market once it has sat
+    cost_key = lambda u: (u.get("cost") or 0) if u.get("kind") == "goods" else 0
+    return min(units, key=lambda u: (rank(u), u["expires_at"] or float("inf"), cost_key(u), u["supplied_at"]))
 
 
 def find_unit(text, taken=()):
@@ -325,7 +330,8 @@ def find_unit(text, taken=()):
         best = min(round(off(u), 1) for u in fit)
         return pick([u for u in fit if round(off(u), 1) == best], need, wants_c)
     rank = lambda u: {"A": 0, "B": 1, "C": 2}.get(u.get("grade"), 1) if u.get("kind") == "goods" else 0
-    return min(fit, key=lambda u: (round(off(u), 1), rank(u), u["expires_at"] or float("inf"), u["supplied_at"]),
+    return min(fit, key=lambda u: (round(off(u), 1), rank(u), u["expires_at"] or float("inf"),
+                                   (u.get("cost") or 0) if u.get("kind") == "goods" else 0, u["supplied_at"]),
                default=None)
 
 

@@ -69,7 +69,8 @@ DEFAULTS = {"grade_frac_b": 0.92, "grade_frac_c": 0.76, "ask_frac": 0.95, "floor
             "endgame_hours": 24, "endgame_frac": 1.0, "final_hours": 6, "final_frac": 1.0,
             "ask_frac_food": 0.95, "floor_frac_food": 0.78, "fresh_premium": 0.10,
             "goods_age_days": 5, "aged_margin": 0.03, "model_share": 0.5, "market_ask": 1.0,
-            "stuck_hours": 6, "stuck_frac": 1.0, "open_gap": 0.0}
+            "stuck_hours": 6, "stuck_frac": 1.0, "open_gap": 0.0,
+            "clear_age_hours": 12, "clear_min_list": 150_000, "clear_floor": 0.90}
 ROUND_END = 1794927540                                       # 2026-11-17 23:59 KST (Book counts stock left then at cost)
 OFFER = re.compile(r"(?<![A-Za-z0-9])\d[\d,]*(?![A-Za-z0-9])")   # a number on its own, not the digits of a SKU
 FOOD_CUTS = (0.80, 0.45)                                     # shelf life left: A at or above 80%, B at or above 45%
@@ -334,6 +335,19 @@ def storage_rate():
     return r if isinstance(r, (int, float)) and 0 < r < 1 else 0.01
 
 
+def market_median(u):
+    """What this SKU (this grade first) settled for lately at the median, as won; None without 5 settles. The going
+    price for clearance (11/11 12:1x: our old 150k+ units opened at 0.75 of list where the market paid 0.68-0.69 and
+    buyers offered 0.64-0.69: 278 of 282 talks ended before any offer)."""
+    d = prices_r3.read(MARKET_DIR)
+    g = u.get("grade") if u.get("grade") in ("A", "B", "C") else None
+    for key in ([f"{u.get('sku')}|{g}"] if g else []) + [u.get("sku")]:
+        st = (d.get("skus") or {}).get(key)
+        if st and st.get("n", 0) >= 5 and st.get("median"):
+            return u["list_price"] * st["median"]
+    return None
+
+
 def market_cap(u, s):
     """The highest opening ask the market bears for this unit: list x the 75th percentile of what this SKU settled for
     lately (5 settles or more), else its category's (10 or more), times market_ask; None without enough data or with
@@ -416,6 +430,7 @@ def prices(u, s):
     # a warranted unit never goes under its cost plus margin after the refunds we expect, whatever drop came above
     if u.get("kind") == "goods" and s["warranty_hours"] > 0 and grade in WARRANTY_Q:
         floor = max(floor, cost * (1 + s["min_margin"]) / (1 - WARRANTY_Q[grade]))
+    clearing = None
     # stuck goods (11/9 16:0x): 50 grade-A 450k+ units (41.7M of 125M stock) sat on floors above the market's p75 and
     # opened at the floor in 413 of 543 talks, closing 17% against 42% where the market line was above it. The market
     # allows a sale under cost (it costs the shop); the user: only bankruptcy and the rules are limits. Goods held
@@ -437,7 +452,27 @@ def prices(u, s):
         # 72 h warranty; their refunds, 0.98M, beat the A segment's margin, 0.77M)
         q = WARRANTY_Q.get(grade, 0) if (u.get("kind") == "goods" and s.get("warranty_hours", 0) > 0) else 0
         floor = min(floor, max(cost / (1 - q), cap))   # only ever lowers; never under cost plus expected refund
+    # 11/11 12:0x clearance (the user: clear the dear goods that have sat long, harder): a 150k+ unit held past
+    # clear_age_hours may go down to what holding it to the end would cost in storage (1 - storage x days left, never
+    # under clear_floor), plus its expected refund, and to the market's median when that is lower; it OPENS there.
+    # 11/11 12:1x: our old 150k+ units opened at 0.75 of list where the market paid 0.68-0.69 and buyers offered
+    # 0.64-0.69: 278 of 282 talks ended before any offer (buyers compare first asks across shops); our cost is ~0.73 of
+    # list, so they could not sell at cost. The 11/10 0.928 lost because it hit every stuck unit at once, units that
+    # still sold at cost included; this is only the old dear ones. The break-even rises to 1.0 as the end nears.
+    if u.get("kind") == "goods" and u.get("supplied_at") and u["list_price"] >= s.get("clear_min_list", 150_000) and \
+            (time.time() - u["supplied_at"]) / 3600 > s.get("clear_age_hours", 12):
+        q = WARRANTY_Q.get(grade, 0) if s.get("warranty_hours", 0) > 0 else 0
+        be = max(s.get("clear_floor", 0.90), 1 - storage_rate() * max(left, 0) / 24)
+        med = market_median(u)
+        # down to the market's median, never further (a C unit whose median is far above cost keeps its margin); with
+        # no median, to the storage break-even
+        bound = cost * s.get("clear_floor", 0.90) / (1 - q)
+        clear_to = max(bound, med) if med else max(bound, cost * be / (1 - q))
+        floor = min(floor, clear_to if med else max(clear_to, cap or clear_to))
+        clearing = max(med, floor) if med else None
     ask = max(min(lp * min(ask_frac, 1.0), cap or lp), floor)
+    if clearing:                                # clearance opens at the market's median (or the clearance floor)
+        ask = max(floor, min(ask, clearing))
     # room to haggle (11/10 audit #2: 619 of 1,060 goods talks opened at the floor, so a buyer that expects a concession
     # got none; the heavy goods buyers bought 0 from us in 6 h). open_gap 0 keeps the old ask; the meta tests > 0 by A/B
     if s.get("open_gap", 0) > 0 and u.get("kind") == "goods":    # goods only: food buyers compare asks (audit #6)

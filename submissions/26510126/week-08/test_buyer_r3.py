@@ -626,6 +626,7 @@ def main():
     board.write_text(json.dumps({"saved": 0.2}) + "\n" + json.dumps({"saved": 0.2996}) + "\n")
     real_board, buyer_r3.BOARD_TERMS = buyer_r3.BOARD_TERMS, board
     o23 = {"budget": 200000}
+    buyer_r3.SKIP_BELOW = 0.0               # "off" explicitly: the live default is on since 11/11 13:4x
     off = buyer_r3.deal_limit(o23, 100000, more=True)
     buyer_r3.SKIP_BELOW = 0.35
     on_more, on_last = buyer_r3.deal_limit(o23, 100000, more=True), buyer_r3.deal_limit(o23, 100000, more=False)

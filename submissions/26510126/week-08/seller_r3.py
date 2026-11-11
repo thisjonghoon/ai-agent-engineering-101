@@ -266,7 +266,7 @@ WANTS_A = re.compile(r"grade\s*A\b|\bA\s*grade|A급|새\s*(제품|상품)|brand[
 C_FIRST_MIN = 3         # C units of a SKU held before its C goes first
 
 
-def pick(units, need, wants_c=False):
+def pick(units, need, wants_c=False, prefer_b=False):
     """Among fitting units, the one to clear first (food that expires first, goods that arrived first), but for
     food only among those with the shelf life the buyer asked for; if none has it, the freshest: two 2-star reviews
     on 11/3 were for food that expired before the buyer's stated need while a fresher unit sat on our shelf."""
@@ -288,6 +288,8 @@ def pick(units, need, wants_c=False):
         return 1 if grade_now(u)[0] == "C" and left(u) >= 72 else 0
     if wants_c:                                  # a buyer who asks for grade C / refurbished gets C first
         rank = lambda u: {"C": 0, "B": 1, "A": 2}.get(u.get("grade"), 1) if u.get("kind") == "goods" else 0
+    elif prefer_b:                               # a buyer who asks no warranty and no grade A gets our B first
+        rank = lambda u: {"B": 0, "A": 1, "C": 2}.get(u.get("grade"), 1) if u.get("kind") == "goods" else 0
     # within a grade, goods go cheapest-cost first (11/11 12:5x audit: 349 A-goods talks lost to a last offer under
     # our floor; in 189 a cheaper unit of the same SKU and grade sat in stock and would have cleared it; the talk's unit
     # cost a median 1.2x the cheapest, because first-in made the dear ones the oldest and so always first). A dear unit
@@ -330,8 +332,13 @@ def find_unit(text, taken=()):
             and not WARRANTY_WORDS.search(text or "") and not WANTS_A.search(text or ""):
         cs = [u for u in named if u.get("kind") == "goods" and u.get("grade") == "C" and u["list_price"] >= 150_000]
         wants_c = len(cs) >= C_FIRST_MIN
+        # 11/11 13:4x (the user: follow sergiobuilds, #6 overall, whose shop sold A 120 / B 144 / C 68 in 6 h while we
+        # hid B behind A: 138 B units, 27 talks in 6 h; B paid 9 of 9): with too few C, B goes before A for such a buyer
+        prefer_b = not wants_c
+    else:
+        prefer_b = False
     if named:
-        return pick(named, need, wants_c)
+        return pick(named, need, wants_c, prefer_b)
     fit = [u for u in units if (u.get("name") or "").lower() in want
            or (u.get("category") or "").split(">")[-1].lower() in want]
     # asked by category only: the order takes SKUs at 0.5-1.5x a reference price we cannot see, so offer the unit

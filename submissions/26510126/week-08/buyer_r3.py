@@ -93,7 +93,7 @@ SHELF_LEFT = re.compile(r"([\d.]+) h of shelf life left")
 # with CAP 0.75), only 0.025 under the board mean 0.2997 with 2 of 718 paid deals broken uncovered in 12 h; over
 # 11,738 deals they lower saved by ~1e-4 per 6 h, less than the deals they bring (0.1 weight), and a CAP 0.70 trial
 # was not significant. The meta-harness can set it in buyer_plan_r3.json.
-SKIP_BELOW = 0.0
+SKIP_BELOW = 1.0     # 11/11 13:4x on: t = our board saved mean (see below)
 SAVED_GUESS = 0.30   # our board saved mean when no board row is at hand (0.2996 on 11/10 20:00)
 BOARD_TERMS = HERE / "logs" / "board_terms_r3.jsonl"
 PLAN = Path(os.environ.get("BUYER_PLAN") or Path(__file__).resolve().parent / "buyer_plan_r3.json")

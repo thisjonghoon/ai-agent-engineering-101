@@ -261,6 +261,9 @@ def needed_hours(text):
 
 
 WANTS_C = re.compile(r"grade\s*C\b|\bC\s*grade|C급|리퍼|refurb|박스\s*훼손|open[- ]box", re.I)
+# a buyer who asks for grade A or a new unit (11/11 13:1x, for the C-first probe below)
+WANTS_A = re.compile(r"grade\s*A\b|\bA\s*grade|A급|새\s*(제품|상품)|brand[- ]new|미개봉|\bnew\b", re.I)
+C_FIRST_MIN = 3         # C units of a SKU held before its C goes first
 
 
 def pick(units, need, wants_c=False):
@@ -318,6 +321,15 @@ def find_unit(text, taken=()):
         units = [u for u in units if ok(u) or u["sku"] not in has]
     named = [u for u in units if u["sku"].lower() in want]
     wants_c = bool(WANTS_C.search(text or ""))
+    # C-first probe (11/11 13:1x, the user: clear the C goods): we hold 96 C units of 150k+ goods (34M at cost, ~0.33
+    # of list) behind an A of the same SKU, so they got 6 talks in 6 h while the market settled 530 C goods (0.55 of
+    # list; totato2203-r3 43% C, most big buyers 10-27%). A buyer who names a 150k+ SKU and asks for neither a warranty
+    # nor grade A/new is offered our C of it first when we hold C_FIRST_MIN or more. The seller cannot see who the
+    # buyer is (text only), and C paid 7 of 45 on 11/10, so strategy c_first 0 turns it off
+    if named and not wants_c and (read_json(STRATEGY, {}).get("c_first", 1) or 0) >= 0.5 \
+            and not WARRANTY_WORDS.search(text or "") and not WANTS_A.search(text or ""):
+        cs = [u for u in named if u.get("kind") == "goods" and u.get("grade") == "C" and u["list_price"] >= 150_000]
+        wants_c = len(cs) >= C_FIRST_MIN
     if named:
         return pick(named, need, wants_c)
     fit = [u for u in units if (u.get("name") or "").lower() in want

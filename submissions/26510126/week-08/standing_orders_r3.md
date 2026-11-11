@@ -19,8 +19,8 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    A/B unless a change is risky and cannot be judged otherwise. The only limits are bankruptcy and the market's rules:
    using the rules to our advantage is allowed. Shop changes run one at a time: none while another is judged (code
    enforces it, the slot shows in the notes). Note: goods asks mostly sit on the warranty floor or on the market line
-   (list x p75 x market_ask); ask_frac set only 11 of 90 goods asks in the 13:2x A/B. Stuck goods (6 h above the
-   market line) now follow it to 0.95 of cost (16:1x), adding paid sales to any open verdict window.
+   (list x p75 x market_ask); ask_frac set only 11 of 90 goods asks in the 13:2x A/B. Stuck goods (strategy
+   stuck_hours above the market line; read the value in force) follow it down to cost, never under (11/10 final).
    [since 11/9 11:3x, amended 13:2x and 16:0x; from: the user (A/Bs stop unless needed, top 10 first, anything but
    bankruptcy or rule breaking), a review that found 87 of 90 verdict windows mixed; review: never (aim #1)]
 4. Read the rivals table and the edges table each cycle; the cheapest points are where a small move passes many rivals.

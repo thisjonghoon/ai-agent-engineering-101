@@ -394,6 +394,10 @@
   {
    "t": 1794380387.775291,
    "text": "Supervisor 11/11 16:0x, leak audit #9 (09:40-15:40 without the three tunnel outages). Fixed: market_ask back to 0.9 (0.85 kept A volume at ~30/h but paid price fell 0.947 -> 0.885 of the same-SKU market median, -0.75M/h of margin); '박스 훼손'/open-box now asks for B, not C (the rules: B 박스 훼손, C 리퍼); food offers the cheapest unit within the same day of expiry. For the team, data: goods buyers who ask for a warranty close 7.1% (496 talks) against 40% without; 69% of their no-offer A talks were on units whose cost was already above the SKU's market median, so the fix is buying cheaper (broad and shallow), not cutting the warranty floor. C goods: 21 agreed, 5 paid. Food C: 47 of 192 deals unpaid (buyers' shelf-life rules, a hypothesis). Re-measured: our share of market settles 4.0% -> 6.9%, paid value 4.6M/h -> 18.9M/h; 150k+ goods deal rate 4% -> 35.5%; B before A took B goods from 0 to 37 paid an hour; buyer SKIP_BELOW raised saved per deal 0.377 -> 0.388."
+  },
+  {
+   "t": 1794381856.863393,
+   "text": "Supervisor 11/11 16:2x: floor_frac_food back to 0.53. It went 0.58 -> 0.56 -> 0.53 -> 0.52 -> 0.51 -> 0.50 in six cycles, one step each 16 min, none measured: food margin per deal was 2,351 at 0.56-0.53 (337k/h), 1,371 at 0.53-0.52, 1,773 at 0.51 (289k/h); deals per hour did not rise enough to pay for the lower floor. Play mode lifts the slot, not the evidence: a number moves again in the same direction only after a closed 2 h window shows food margin per hour up at its current value."
   }
  ]
 }

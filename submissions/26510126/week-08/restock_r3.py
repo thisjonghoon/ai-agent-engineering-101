@@ -300,11 +300,14 @@ def main():
 
         own = defaultdict(list)                          # what we actually paid per SKU and grade, cost / list
         own_food = defaultdict(list)
+        sku_paid = defaultdict(list)                     # the same shares over all grades, to size a line
         for u in units:
             if u.get("kind") == "goods" and u.get("list_price"):
                 own[(u["sku"], u.get("grade"))].append(u["cost"] / u["list_price"])
+                sku_paid[u["sku"]].append(u["cost"] / u["list_price"])
             elif u.get("kind") == "food" and u.get("list_price"):
                 own_food[(u["sku"], u.get("grade"))].append(u["cost"] / u["list_price"])
+                sku_paid[u["sku"]].append(u["cost"] / u["list_price"])
 
         def expected_margin(c):
             """(the grade mix's margin, grade A's alone) or None. A alone too (11/11 12:5x audit #3): pick() offers A
@@ -428,7 +431,11 @@ def main():
             if qty <= 0:
                 continue
             qty = min(int(qty), 20)    # the market takes 1-20 units a line: 24 was refused (400) 18 times on 11/4
-            unit = c["list_price"] * EST_COST * surge.get(c["sku"], 1.0)
+            # 6 h: our 300k+ units cost 0.48 of list and <30k 0.48, not the flat 0.60, so qty and the goods_room/spend
+            # decrements overstated cost by 25% while 107.8M sat idle: the SKU's own median paid share, EST_COST if none held
+            paid = sku_paid.get(c["sku"])
+            share = sorted(paid)[len(paid) // 2] if paid else EST_COST
+            unit = c["list_price"] * share * surge.get(c["sku"], 1.0)
             # what the cash (and, for goods, the room) affords, not nothing: until 11/10 only 150k+ goods were cut down,
             # so a 15-unit food line that did not fit whole was skipped (kimchi, apples, water, all sku_score 1,400+, held 0)
             if unit <= 0:              # a catalog row with no list price: nothing to size

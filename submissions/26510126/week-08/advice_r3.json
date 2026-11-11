@@ -406,6 +406,10 @@
   {
    "t": 1794391484.307521,
    "text": "Supervisor 19:1x, data for verdicts: our shop got no buyers 18:48-19:00 (kit restart 18:50 for audit #10, tunnel guard restart 18:57) while the market itself was degraded (alive shops 55 -> 26, still 26 at 19:04). Pending shop verdicts whose window covers 18:48-19:00 (max_list 900k due 19:17, sku_depth 4 due 20:05, dear_first 2.5 / dear_depth 4 due 20:25) carry our own 12-min outage on top of the market's: treat a drop in our share there as MIXED, not as the change's effect. Paid sales are steady: 108 in the last hour (10.6M) vs 115/h (8.7M/h) over 3 h."
+  },
+  {
+   "t": 1794395043.649197,
+   "text": "Supervisor 20:0x, data for verdicts: our shop was off the board 19:10-19:53 (43 min, 0 sales) because the named tunnel's slow card (1-2 s) failed the market's liveness read while 27-41 other shops were alive; back on a quick tunnel at 19:53, alive 19:55 with 21 talks/min. Every shop verdict window covering 18:48-19:55 is our outage, not a number's effect: judge pending rows (max_list, sku_depth, dear_first, dear_depth, window_depth, floor_frac_food 0.53) only on hours after 19:55. Last hour 44 paid sales (6.0M) vs 91/h (8.0M/h) over 3 h, all from the outage."
   }
  ]
 }

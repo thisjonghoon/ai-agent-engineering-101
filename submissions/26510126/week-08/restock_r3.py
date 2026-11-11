@@ -302,7 +302,7 @@ def main():
             if u.get("kind") == "goods" and u.get("list_price"):
                 own[(u["sku"], u.get("grade"))].append(u["cost"] / u["list_price"])
             elif u.get("kind") == "food" and u.get("list_price"):
-                own_food[u["sku"]].append(u["cost"] / u["list_price"])
+                own_food[(u["sku"], u.get("grade"))].append(u["cost"] / u["list_price"])
 
         def expected_margin(c):
             """(the grade mix's margin, grade A's alone) or None. A alone too (11/11 12:5x audit #3): pick() offers A
@@ -327,16 +327,24 @@ def main():
                     a_only = (value - cost) / cost
             return (num / den, a_only) if den else None
 
+        FOOD_MIX = {"A": 0.25, "B": 0.50, "C": 0.25}   # food grades at supply (agent.md: A 25%, B 50%, C 25%)
+
         def food_margin(c):
-            """What we paid for this food SKU (median, times its surge) against the market's median for it, or None.
-            11/11 12:5x audit #4: food lines had no check; A food at 0.765 of list was offered 244 times and closed 1%
-            where the market paid 0.71 (519 talks on units over 0.75 of list closed 6)."""
-            paid = own_food.get(c["sku"])
-            st = (lines.get("skus") or {}).get(f"{c['sku']}|A") or (lines.get("skus") or {}).get(c["sku"])
-            if not paid or not st or st.get("n", 0) < 5 or not st.get("median"):
-                return None
-            cost = sorted(paid)[len(paid) // 2] * surge.get(c["sku"], 1.0)
-            return (st["median"] - cost) / cost if cost else None
+            """The expected margin of a food line over the grades supply draws: per grade, what we paid for this SKU
+            at that grade (median, times its surge) against the market's median for the SKU at that grade, weighted by
+            FOOD_MIX over the grades with data; None without any. 11/11 12:5x audit #4: food lines had no check.
+            Leak audit #10 (18:4x): the first check pooled our cost over all grades against the market's A median, so
+            a SKU whose A units cost 0.72 of list (market A 0.716) passed and food A closed 14% of 737 talks."""
+            num = den = 0.0
+            for g, w in FOOD_MIX.items():
+                paid = own_food.get((c["sku"], g))
+                st = (lines.get("skus") or {}).get(f"{c['sku']}|{g}")
+                if not paid or not st or st.get("n", 0) < 5 or not st.get("median"):
+                    continue
+                cost = sorted(paid)[len(paid) // 2] * surge.get(c["sku"], 1.0)
+                num += w * (st["median"] - cost)
+                den += w * cost
+            return num / den if den else None
 
         # min_margin is the seller's number (not in this file's DEFAULTS): read it from the strategy, 2% if absent
         # (11/11 01:03: s["min_margin"] raised KeyError and stopped every restock run from 00:49)

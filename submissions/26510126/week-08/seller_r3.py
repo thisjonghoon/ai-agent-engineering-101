@@ -99,7 +99,11 @@ REFUSED_APART = 600
 # the grades that carry a warranty and the share of their price we expect to refund (11/9 15:1x: with every grade
 # warranted from 13:41, 5 refunds came in 90 min, 4.78M, four of them grade C (3.23M on 8.8M of C sold); the market's
 # goods break, counted over the full 6 h after the sale, about A 3%, B 9-18%, C 29-40%). C is sold without one
-WARRANTY_Q = {"A": 0.03, "B": 0.13}
+# C carries a warranty too (leak audit #10, 11/11 18:4x): 47 C goods deals were agreed and 7 paid in 6 h (buyers' kits
+# refuse C without one; our own buyer refuses it too), 22 of the unpaid on one sofa we hold only as C. The market sells
+# 36% of its C goods with a warranty at 0.586 of list. Its ~35% expected refund goes into the floor, so a warranted C
+# still clears cost; standing order 8 (72 h) covers every grade now
+WARRANTY_Q = {"A": 0.03, "B": 0.13, "C": 0.35}
 OPEN_HOLD = 120     # seconds a negotiation keeps its unit before another buyer may be offered it
 MODEL_SLOTS = asyncio.Semaphore(3)    # model calls at once; a turn that finds them all busy is decided by the rules
 MODEL_TIMEOUT = 8                     # seconds (haiku answered in 3.7 s at the median, 5.3 s at p90, over 160k calls)

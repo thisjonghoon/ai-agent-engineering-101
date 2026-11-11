@@ -398,6 +398,10 @@
   {
    "t": 1794381856.863393,
    "text": "Supervisor 11/11 16:2x: floor_frac_food back to 0.53. It went 0.58 -> 0.56 -> 0.53 -> 0.52 -> 0.51 -> 0.50 in six cycles, one step each 16 min, none measured: food margin per deal was 2,351 at 0.56-0.53 (337k/h), 1,371 at 0.53-0.52, 1,773 at 0.51 (289k/h); deals per hour did not rise enough to pay for the lower floor. Play mode lifts the slot, not the evidence: a number moves again in the same direction only after a closed 2 h window shows food margin per hour up at its current value."
+  },
+  {
+   "t": 1794390613.477401,
+   "text": "Supervisor 11/11 18:5x, leak audit #10 (3.4 live hours, outage minutes removed). Fixed in code: C goods now carry the 72 h warranty with a 35% expected refund in their floor (47 C deals agreed, 7 paid; the market sells 36% of its C with a warranty at 0.586 of list); restock's food check weighs each grade's margin by the supply mix (A 25/B 50/C 25) instead of pooling (food A closed 14% of 737 talks at a cost of 0.72 of list against a market 0.716). For the team, data: goods A buyers who ask for a warranty closed 9.4% (297 talks) against 62% without, and our opening ask equals the floor (0.694-0.695 of list) so no round gives anything; in 65 linked cases they paid 1.09x our opening ask elsewhere. The big furniture buyers (fair-furniture, mjforge, chaewoonee, kimauve) bought nothing from us in 6 h. Open-box -> B works (B: 88 talks, 59 deals, 58 paid)."
   }
  ]
 }

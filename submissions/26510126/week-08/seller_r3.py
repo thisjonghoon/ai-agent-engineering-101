@@ -70,7 +70,9 @@ DEFAULTS = {"grade_frac_b": 0.92, "grade_frac_c": 0.76, "ask_frac": 0.95, "floor
             "ask_frac_food": 0.95, "floor_frac_food": 0.78, "fresh_premium": 0.10,
             "goods_age_days": 5, "aged_margin": 0.03, "model_share": 0.5, "market_ask": 1.0,
             "stuck_hours": 6, "stuck_frac": 1.0, "open_gap": 0.0,
-            "clear_age_hours": 12, "clear_min_list": 150_000, "clear_floor": 0.90}
+            "clear_age_hours": 12, "clear_min_list": 150_000, "clear_floor": 1.0}
+# clear_floor 0.90 -> 1.0 (11/12 audit #14): clearance took 300k+ A to 0.928 x cost; 17 of 58 such deals lost (-469k in
+# 6 h, 9 under cost). The stuck rule (11/10, Book A/B) is never under cost; clearance now stops at cost + expected refund.
 ROUND_END = 1794927540                                       # 2026-11-17 23:59 KST (Book counts stock left then at cost)
 OFFER = re.compile(r"(?<![A-Za-z0-9])\d[\d,]*(?![A-Za-z0-9])")   # a number on its own, not the digits of a SKU
 FOOD_CUTS = (0.80, 0.45)                                     # shelf life left: A at or above 80%, B at or above 45%

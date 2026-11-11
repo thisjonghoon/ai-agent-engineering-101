@@ -426,6 +426,10 @@
   {
    "t": 1794422885.775538,
    "text": "Supervisor 03:5x, CORRECTION + leak audit #13. (1) My 02:5x note was wrong: the 02:44 buy of 16 for 10.56M was the Simmons QUEEN Gb5d0dde7 (list 1,094,400) at 0.603 of list, not G53b150b5 at 0.787; the market pays 0.662 for it. surge_max 1.05 stays, but not for that reason - treat it as an unjudged value. (2) Book fell 177.6M -> 172.6M (01:15-03:08) almost all from refunds: -6.08M on 14 broken goods vs +1.86M margin on 257 paid sales; storage and expiry small. Book = cash + stock at cost, so buys do not move it. (3) 300k+ C: 19 of 65 sales broke in 6 h (>=31.8%, 8.88M refunded of 27.98M), so C nets ~0.19M/h, not 1.76M/h. Restock now values C with a 35% refund (was 18%) and A at a 0.70 cost (was 0.663), so fewer 300k+ lines pass. (4) 300k+ A: we hold 101 units (55.1M), cost 0.698 vs market 0.694, buyers' best 0.655, 10% of talks close - dear_depth/dear_first should not rise on C-scarcity grounds. (5) Pricing is in line with the market in every segment (within ~0.02 of list); the losses are refunds and what we buy."
+  },
+  {
+   "t": 1794433690.7013881,
+   "text": "Supervisor 07:0x, leak audit #14 (00:4x-06:4x, 4.55 h with talks). Applied: (1) restock costs grades at the measured supply cost (A 0.66, B 0.48, C 0.378 of list, 101 300k+ units 00-06 h) and never above it: held units are the dear leftovers since pick() sells the cheapest first; refunds A .03 B .13 C .35. Dear restock had fallen to 0 since 03 h while 10 of the market's top 25 300k+ SKUs would earn 3-10%; our share of 300k+ settles fell 16 -> 7/h. (2) seller clear_floor 0.90 -> 1.0: clearance no longer goes under cost + expected refund (17 of 58 300k+ A deals lost -469k). Data, not applied: all segments are net positive after expected refunds but thin (300k+ C ~+0.22M per 6 h after refunds); our C break rate this window is not above the market's (1 of 14 vs adj 0.33); food C pays on 71% of deals vs 91-92% for A/B; 518 units under 150k (6.77M) sit in SKUs with >137 h of stock - do not restock those."
   }
  ]
 }

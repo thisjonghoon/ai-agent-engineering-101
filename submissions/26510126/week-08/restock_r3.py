@@ -45,9 +45,10 @@ HERE = Path(__file__).resolve().parent
 MARKET = "https://market.ourolabs.ai"
 STRATEGY = Path(os.environ.get("STRATEGY_FILE") or HERE / "strategy_r3.json")   # tests: the defaults, not the live file
 GOODS_MIX = {"A": 0.73, "B": 0.19, "C": 0.08}      # our goods supply by grade, 11/10 (A 73%, B 19%, C 9%)
-GRADE_COST = {"A": 0.70, "B": 0.536, "C": 0.349}    # supply cost / list by grade; A 0.663 (11/10) -> 0.70, the median of the
-# 300k+ A we bought 11/12 (audit #13: hot SKUs we hold none of were costed at 0.663 and passed at a loss)
-REFUND = {"A": 0.03, "B": 0.06, "C": 0.35}           # expected refunds under the 72 h warranty. B the market's 5.5% (audit #11).
+GRADE_COST = {"A": 0.66, "B": 0.48, "C": 0.378}    # supply cost / list by grade: what 101 300k+ units cost us 11/12 00-06 h
+# (audit #14). Audit #13 had set A 0.70 from the units still HELD, which are the dear leftovers (pick() sells the
+# cheapest-cost unit first), and dear restock fell to 0 while 10 of the market's top 25 300k+ SKUs would earn 3-10%.
+REFUND = {"A": 0.03, "B": 0.13, "C": 0.35}           # expected refunds under the 72 h warranty. B as seller_r3.WARRANTY_Q (market adj. 15%, audit #14).
 # C as seller_r3.WARRANTY_Q C 0.35: audit #11 set 0.18 from the market's 17.6%, but our own 300k+ C broke on 19 of 65
 # sales in 6 h (>=31.8%, 8.88M refunded of 27.98M, 11/12 audit #13), so 0.18 overvalued C and let losing lines pass.
 DEFAULTS = {"food_cash": 3_000_000, "dear_first": 1.0, "reserve_cash": 1_500_000, "stock_value": 2_000_000, "max_list": 80_000, "min_shelf_hours": 96,
@@ -325,7 +326,9 @@ def main():
                             return None
                         st = None                                   # C without a market line: valued at cost
                 paid = own.get((c["sku"], g))
-                cost = (sorted(paid)[len(paid) // 2] if paid else GRADE_COST[g]) * surge.get(c["sku"], 1.0)
+                # held units are the leftovers of what we paid (the cheapest sell first), so they overstate the next
+                # unit's cost: never above the measured supply cost of the grade (audit #14)
+                cost = min(sorted(paid)[len(paid) // 2] if paid else GRADE_COST[g], GRADE_COST[g]) * surge.get(c["sku"], 1.0)
                 # C was counted at cost while it went unpaid (11 of 94 dear C units in 6 h, 11/11 audit #5). Since C
                 # carries the warranty (audit #10) it is paid (19 of 20 deals, 0.539 of list on a cost of 0.339), so it
                 # is valued at its market median less REFUND C 0.35 (11/11 21:4x audit #11: 30 of the market's 40

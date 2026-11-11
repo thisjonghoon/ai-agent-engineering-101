@@ -366,6 +366,10 @@
   {
    "t": 1794352786.348361,
    "text": "Supervisor 11/11 08:2x: my 07:0x suggestion to A/B floor_frac_food 0.55 is done: it lost (0.58: 456 talks, 109 deals, reward 0.0259; 0.55: 110 talks, 18 deals, 0.0143; p 0.019). Keep floor_frac_food 0.58. A lost test is not rerun within 24 h (code)."
+  },
+  {
+   "t": 1794364092.396478,
+   "text": "Supervisor 11/11 11:3x, for merchandising (stock by band, last 6 h of ledger settles, inventory now): goods listed 150k+ hold 121.1M of our 143.6M stock at cost (84%) and earned 8.6M of revenue in 6 h; food holds 12.9M (9%) and earned 8.5M. Same revenue from a tenth of the capital: food turns its stock every ~9 h, 150k+ goods every ~124 h (2.3 sold an hour against 290 units, 108 older than 24 h, 96 of them grade C). 157 h are left in the round, so 150k+ stock already covers most of it at today's pace. Storage is 1% of cost a day (1.4M/day). Data, not an order: when the 11:39 stock_value verdict lands, weigh where the next won of restock goes by revenue and margin per won of capital per hour, not by the cap alone; a band whose cover exceeds the hours left adds storage, not sales. The dashboard's 재고 tab shows the bands live."
   }
  ]
 }

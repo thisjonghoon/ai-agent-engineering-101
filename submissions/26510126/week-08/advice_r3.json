@@ -386,6 +386,10 @@
   {
    "t": 1794374169.5301518,
    "text": "Supervisor 11/11 14:1x, a correction for the team: the 14:13 drop (Players #22 -> #38, shop ALL 0.63 -> 0.35) was not a sales collapse. The kit restarted at 14:10 and, while it re-registered, the board showed our shop at the old tunnel URL with deals 0 and revenue 0 for about a minute (26 shops showed 0 deals then); it was back at 1.382 by 14:15. Paid sales were 133 in the hour to 14:03, above the 3 h mean (114). Do not credit or blame any number for that drop; the 13:42 shallow depth has not been judged yet."
+  },
+  {
+   "t": 1794378914.657726,
+   "text": "Supervisor 11/11 15:3x, a correction: buyers have reached our shop since 15:01 (talks per 10 min: 15:0x 93, 15:1x 77, 15:2x 110). The 'no buyer reached our shop' alert of ~15:00 was the 14:49-15:01 tunnel outage, already over; the watcher now writes an 'ALERT resolved' line when buyers come back. Do not hold numbers for it: judge the hours after 15:01 as normal hours."
   }
  ]
 }

@@ -230,7 +230,11 @@ def advice(hours=24, n=3):
     except OSError:
         standing = ""
     busy = shop_busy()
-    slot = ("\nShop change slot: busy (" + busy + "); shop numbers wait, buyer, forum and A/B moves do not." if busy else
+    slot = ("\nPlay mode: AGGRESSIVE until the round ends (the user, 11/11): no shop slot, no hold for pending "
+            "verdicts, no shop A/B. Change every shop number the evidence supports this cycle, in both areas; past "
+            "verdicts and lessons that say 'one at a time' or 'wait for the verdict' do not apply now. The fast guard "
+            "still reverts a cycle's changes that halve our share of the market's paid sales in their first hour."
+            if aggressive() else "\nShop change slot: busy (" + busy + "); shop numbers wait, buyer, forum and A/B moves do not." if busy else
             "\nShop change slot: FREE. Shop changes run one at a time so each verdict is clean; while it is free, pick "
             "the ONE shop number change worth most on the evidence (holding is the exception and needs evidence that "
             "every move would lose; a pending verdict is no reason, there is none).")
@@ -407,12 +411,23 @@ def number_record(changed, reason):
 
 
 SHOP_FILES = {"restock_r3.py", "demand_r3.py", "prices_r3.py", "seller_r3.py"}
+# play mode (the user, 11/11 11:4x, a week before the round ends: "a/b 꺼버리고 적극적으로 플레이"): with
+# {"mode": "aggressive"} in play_mode_r3.json there is no shop slot, no hold for pending verdicts and no new shop A/B;
+# every shop number the manager approves applies at once (bounds and steps still clamp), verdicts are still written as
+# information, and the fast guard still reverts a cycle's changes that halve our share in their first hour
+PLAY_MODE = HERE / "play_mode_r3.json"
+
+
+def aggressive():
+    return read_json(PLAY_MODE, {}).get("mode") == "aggressive"
 
 
 def shop_busy(now=None):
     """Why a new shop change must wait, or None. Shop changes run one at a time (11/9 review: 87 of 90 two-hour windows
     held another change, so no verdict was clean): a shop number waiting for its verdict, or a code change to the
     shop's files waiting for its own, holds the next one."""
+    if aggressive():
+        return None
     now = now or time.time()
     rows = read_json(NUMBER_TRIALS, [])
     if rows:
@@ -952,7 +967,7 @@ def start_ab(ask, s):
     buyers at the same hours instead of only being read about (11/4: 25 of 30 cycles leaned on no playbook).
     A test already running is never replaced (11/10 22:33 the team re-asked for the running open_gap A/B and the new one
     overwrote 2.5 h of talks at p 0.947); it ends by its own verdict."""
-    if ab_r3.experiment():
+    if ab_r3.experiment() or aggressive():
         return None
     # a test that lost or tied in the last 24 h is not run again with the same value (11/11 08:17 the team re-asked
     # for floor_frac_food 0.55, which had just lost at p 0.019); the buyer trials have had this rule since 11/5
@@ -1056,7 +1071,12 @@ async def cycle():
     new = (ans or {}).get("strategy") if isinstance((ans or {}).get("strategy"), dict) else None
     s = guard(new or {}, cur)
     busy = shop_busy()
-    s, held = one_shop_change(s, cur, list((new or {}).keys()), busy)
+    if aggressive():                                    # play mode: every approved shop number applies
+        held = {}
+        if s.get("floor_frac", 0) > s.get("ask_frac", 1):
+            s["floor_frac"] = s["ask_frac"]
+    else:
+        s, held = one_shop_change(s, cur, list((new or {}).keys()), busy)
     # receipts that never settle: the buyer's kit refused to pay (its accept policy: certificate, shelf life, grade,
     # warranty). We cannot see why from the shop, so when most of a busy window does not settle and we offer no
     # warranty, code tries a short one on grade-A goods; the harness sees the result next cycle and may undo it
@@ -1075,6 +1095,10 @@ async def cycle():
                 lo, hi, _ = BOUNDS[k]
                 s[k] = min(max(x, lo), hi)                 # the test's own evidence, not a step from now
         ab_done = dict(exp, on=False, result={"winner": win, "summary": now["ab"], "time": time.time()})
+        ab_r3.EXPERIMENT.write_text(json.dumps(ab_done, ensure_ascii=False, indent=1), encoding="utf-8")
+    if exp and not ab_done and aggressive():            # play mode: a running shop A/B stops, the strategy keeps its value
+        win = "stopped"
+        ab_done = dict(exp, on=False, result={"winner": "stopped", "summary": now.get("ab"), "time": time.time()})
         ab_r3.EXPERIMENT.write_text(json.dumps(ab_done, ensure_ascii=False, indent=1), encoding="utf-8")
     if ab_done:                                         # what each test settled, so a lost one is not rerun
         with AB_HISTORY.open("a", encoding="utf-8") as f:
@@ -1155,6 +1179,7 @@ async def cycle():
                                             if isinstance(x, str)]}, ensure_ascii=False) + "\n")
     harness.log("META", f"{'kept' if not changed else 'changed ' + json.dumps(changed)}: {(ans or {}).get('reason')}"
                 + ((f"; A/B {exp['id']} ended in a tie, the strategy keeps its value" if win == "tie" else
+                    f"; A/B {exp['id']} stopped (play mode aggressive), the strategy keeps its value" if win == "stopped" else
                     f"; A/B {exp['id']} won by {win} ({exp['param']} = {exp['arms'][win]})") if ab_done else "")
                 + (f"; A/B {ab_new['id']} started: {ab_new['param']} {ab_new['arms']}" if ab_new else "")
                 + "".join(f"; judged {j}" for j in judged)

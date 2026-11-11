@@ -14,11 +14,11 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    directions" verdicts, the backfilled re-judge (11/9); review: never]
 3. First priority: aim for first place among the students, the top 10 first (board {live:as_of}: rank
    {live:student_rank} of {live:students}, {live:student_total} against {live:rank10_total} for 10th; the gap is the
-   shop's book and revenue: more paid sales from the same capital, i.e. faster turns). Change a number for everyone when the paid-sales evidence is
-   clear and let the 2 h verdict and the fast guard (half our market share in the first hour reverts it) judge it; no
-   A/B unless a change is risky and cannot be judged otherwise. The only limits are bankruptcy and the market's rules:
-   using the rules to our advantage is allowed. Shop changes run one at a time: none while another is judged (code
-   enforces it, the slot shows in the notes). Note: goods asks mostly sit on the warranty floor or on the market line
+   shop's book and revenue: more paid sales from the same capital, i.e. faster turns). From 11/11 11:4x until the round ends (the user: play
+   aggressively, A/Bs off): change every shop number the evidence supports, in both areas, each cycle; no shop A/B;
+   the fast guard (half our market share in the first hour reverts that cycle's changes) is the only brake. The only limits are bankruptcy and the market's rules:
+   using the rules to our advantage is allowed. There is no shop change slot in play mode (play_mode_r3.json); 2 h verdicts are still written as
+   information. Note: goods asks mostly sit on the warranty floor or on the market line
    (list x p75 x market_ask); ask_frac set only 11 of 90 goods asks in the 13:2x A/B. Stuck goods (strategy
    stuck_hours above the market line; read the value in force) follow it down to cost, never under (11/10 final).
    [since 11/9 11:3x, amended 13:2x and 16:0x; from: the user (A/Bs stop unless needed, top 10 first, anything but
@@ -36,7 +36,7 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    [since 11/9 13:3x, amended 16:1x; from: the user's reasoning on the 100-post window, the user ("never lose the
    forum's most-liked title"); review: if the forum rating falls under 0.85]
 7. Hard limits, and only these: no bankruptcy (cash stays well above the 500,000 line), the market's rules (true grade
-   claims and the certificate shown, no deals with ourselves), and our own policy of no votes against others.
+   claims and the certificate shown), no deals with ourselves (a remark in class, not in the written rules), and our own policy of no votes against others.
    Everything else is ours to try, loopholes included. A sale under cost is allowed by the market, but Book counts
    unsold stock at cost, so selling under cost lowers Book at once: do it only to free stuck capital (the seller's
    stuck rule does), never as a general cut of min_margin, aged_margin or final_frac (keep final_frac 1.0). Act, then report; nothing waits

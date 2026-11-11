@@ -246,12 +246,31 @@ def advice(hours=24, n=3):
     # one budget for the whole block (memory study: a small injected layer; long instruction files lower adherence).
     # 11/9 17:3x it was ~16,000 characters before each specialist's own data; orders, notes, slot and bounds go whole,
     # the rest is cut to its share, newest kept for the logs, the head kept for the tables
-    out = standing + text + slot + bounds + fit(code_changes(), 1500, tail=True) + \
+    out = standing + text + slot + fit(recent_alerts(), 1500, tail=True) + bounds + fit(code_changes(), 1500, tail=True) + \
         fit(number_changes(), 1200, tail=True) + fit(number_memory(), 1600) + fit(rivals(), 1500) + fit(edges(), 1500)
     return out if len(out) <= ADVICE_MAX else out[:ADVICE_MAX] + "\n(cut to fit the prompt)"
 
 
 ADVICE_MAX = 14000
+# the watcher's alerts reach the team (11/11 13:4x, the user's plan: "실시간 이상치 대응 ... 에이전트 간 통신"): watch_r3
+# appends each ALERT line to logs/alerts_r3.jsonl; the team reads the last hour's, and an urgent one starts the next
+# cycle at once instead of after EVERY
+ALERTS = HERE / "logs" / "alerts_r3.jsonl"
+URGENT = re.compile(r"extreme|halv|no sale and no purchase|kit log idle|lost first place|rank fell|fast guard", re.I)
+EARLY_GAP = 300          # seconds between two early cycles at least
+
+
+def recent_alerts(mins=60, n=8):
+    cut = time.time() - mins * 60
+    rows = [x for x in jl(ALERTS) if isinstance(x, dict) and x.get("t", 0) >= cut][-n:]
+    return ("\nAlerts from the watcher in the last hour (newest last; an urgent one started this cycle early):\n" +
+            "\n".join(f"- {time.strftime('%H:%M', time.localtime(x['t']))} {str(x.get('text'))[:240]}" for x in rows)
+            if rows else "")
+
+
+def urgent_since(t):
+    return any(isinstance(x, dict) and x.get("t", 0) > t and URGENT.search(str(x.get("text")))
+               for x in jl(ALERTS)[-50:])
 
 
 def fit(block, n, tail=False):
@@ -1200,7 +1219,12 @@ async def main():
         if once:
             return
         code_run()
-        await asyncio.sleep(EVERY)
+        start, end = time.time(), time.time() + EVERY
+        while time.time() < end:                         # an urgent alert cuts the wait short (EARLY_GAP apart)
+            await asyncio.sleep(30)
+            if time.time() - start >= EARLY_GAP and urgent_since(start):
+                harness.log("META", "urgent alert from the watcher: cycle now")
+                break
 
 
 def code_run():

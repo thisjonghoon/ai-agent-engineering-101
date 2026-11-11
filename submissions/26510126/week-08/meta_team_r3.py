@@ -15,7 +15,9 @@ are; when every specialist fails, meta_r3.py falls back to its single prompt.
 import asyncio
 import json
 import os
+import re
 import time
+from pathlib import Path
 
 import harness
 
@@ -118,15 +120,31 @@ Notes from the supervisor who watches the team for the user (advice with evidenc
 {advice}
 
 Answer with JSON only: {{"proposal": {{"<key>": <value>, ...only the numbers you would change}}, {extra}"why": "<two sentences with the evidence>", "ideas": ["<up to 2: what no number can do, with evidence>"], "lessons_used": ["<ids of your lessons (L1, L2, ...) that shaped this answer, or none>"]}}"""
+COORDINATE = """{goal}
+
+You are the {title}. Shop and buyer strategies are set together, not apart (the user, 11/11): read what the other
+specialists proposed this cycle and what the other side of the market showed us, then revise your own proposal if theirs
+changes what is best, or keep it. Watch for moves that work against each other: sales cutting prices while
+merchandising buys dearer stock, restock buying what our seller cannot sell at the going price, our buyer paying more
+for a kind our shop sells below cost.
+
+Your first proposal: {mine}
+
+The other specialists' proposals:
+{others}
+
+What the other side of the market showed us in the last 2 h:
+{cross}
+
+Answer with JSON only: {{"proposal": {{"<key>": <value>, ...only the numbers you would change}}, "why": "<one sentence: what you changed after reading theirs, or why you kept it>"}}"""
+
 MANAGER = """{goal}
 
 You manage a team of four specialists who each proposed changes to their own numbers this cycle. Approve, trim or
 reject each proposal. Be bold (the user, 11/6 18:2x: "more aggressive"): we sit outside the top 10 with 11 days left,
 so approve changes in different areas in the same cycle; code judges each number 2 h before vs after on our share of
 the market's paid sales and names the others as confounds, so a verdict pending in one area is no reason to hold
-another, only to leave that one number alone. Shop changes run ONE at a time (the notes say whether the shop change
-slot is free): when it is free, approve the single shop number change worth most and list it first; code keeps only
-the first and holds the rest. A pending verdict is no reason to hold buyer, forum or A/B moves. Lean hardest where the most points are lost (the standing below). Bankruptcy and the market's rules are the
+another, only to leave that one number alone. {slot_rule} A pending verdict is no reason to hold buyer, forum or A/B moves. Lean hardest where the most points are lost (the standing below). Bankruptcy and the market's rules are the
 only hard limits, and the supervisor watches those. Resolve conflicts between proposals (for example, sales cutting
 prices while merchandising buys dearer stock). Our
 standing now (each part a percentile among shops or buyers):
@@ -145,6 +163,61 @@ Answer with JSON only: {{"strategy": {{"<shop key>": <value>, ...only approved c
 "forum_weights": {{...}} or {{}}, "recruits": {{"buyer": {{...}} or null, "seller": {{...}} or null}},
 "ab": null or {{"param": ..., "kind": ..., "value": ...}} or {{"playbook": ..., "kind": ...}}, "playbook": "<or none>", "code_ideas": ["<up to 2>"],
 "forum_ideas": ["<up to 3>"], "reason": "<one short sentence per proposal: approved, trimmed or rejected, and why>"}}"""
+
+
+def play_aggressive():
+    try:
+        return json.loads((Path(__file__).resolve().parent / "play_mode_r3.json").read_text(encoding="utf-8")).get(
+            "mode") == "aggressive"
+    except (OSError, ValueError):
+        return False
+
+
+def cross_market(hours=2):
+    """What each side of our market saw that the other side does not: the asks other shops opened with when our buyer
+    scouted them (kit log SCOUT lines), and the prices buyers offered our shop (talks), both as shares of list, by kind."""
+    here = Path(__file__).resolve().parent
+    since = time.time() - hours * 3600
+    out = {}
+    try:
+        with (here / "logs" / "market-kit.log").open("rb") as f:
+            f.seek(0, 2)
+            f.seek(max(0, f.tell() - 6_000_000))
+            text = f.read().decode("utf-8", "replace")
+        asks = [int(a) / int(l) for a, l in re.findall(r"SCOUT: \S+ G[0-9a-f]+: asks (\d+) of list (\d+)", text) if int(l)]
+        asks = sorted(x for x in asks if 0.05 < x < 1.5)
+        if asks:
+            out["rivals_first_ask_of_list"] = {"n": len(asks), "median": round(asks[len(asks) // 2], 3),
+                                               "p25": round(asks[len(asks) // 4], 3)}
+    except OSError:
+        pass
+    try:
+        rows = [json.loads(l) for l in (here / "logs" / "talks_r3.jsonl").read_text(encoding="utf-8").splitlines()[-20000:]]
+        for kind in ("food", "goods"):
+            rs = [r for r in rows if r.get("t", 0) >= since and r.get("kind") == kind and r.get("list_price")]
+            offers = sorted(max(r["offers"]) / r["list_price"] for r in rs
+                            if r.get("offers") and all(isinstance(o, (int, float)) for o in r["offers"]))
+            ask0 = sorted(r["ask0"] / r["list_price"] for r in rs if r.get("ask0"))
+            if rs:
+                out[f"our_shop_{kind}"] = {"talks": len(rs), "deals": sum(r.get("event") == "deal" for r in rs),
+                                           "our_first_ask_median": ask0 and round(ask0[len(ask0) // 2], 3),
+                                           "buyers_best_offer_median": offers and round(offers[len(offers) // 2], 3)}
+    except (OSError, ValueError):
+        pass
+    return out
+
+
+async def coordinate(role, mine, got, cross):
+    """One revision after reading the other specialists' proposals and the cross-market data; None keeps the first."""
+    others = "\n".join(f"- {ROLES[r]['title']}: " + json.dumps({k: (a or {}).get(k) for k in ("proposal", "why")},
+                                                                 ensure_ascii=False)
+                       for r, a in got.items() if r != role)
+    ans = await harness.ask(COORDINATE.format(goal=GOAL, title=ROLES[role]["title"],
+                                              mine=json.dumps({k: (mine or {}).get(k) for k in ("proposal", "why")},
+                                                              ensure_ascii=False),
+                                              others=others, cross=json.dumps(cross, ensure_ascii=False)),
+                            max_chars=20_000)
+    return role, ans if isinstance(ans, dict) and isinstance(ans.get("proposal"), dict) else None
 
 
 def role_keys(role, bounds, buyer_bounds):
@@ -226,6 +299,21 @@ async def decide(now, cur, plan, hist, after, advice, bounds, buyer_bounds, ab_p
     for role, ans in got.items():
         harness.log("TEAM", f"{role}: {json.dumps((ans or {}).get('proposal'), ensure_ascii=False)} - "
                             f"{harness.clip(str((ans or {}).get('why') or 'no answer'), 200)}")
+    # shop and buyer specialists read each other's drafts and the other side's data, then revise once (11/11 13:3x)
+    if os.environ.get("META_COORD", "1") != "0":
+        try:
+            cross = cross_market()
+            rev = dict(await asyncio.gather(*(coordinate(r, got[r], got, cross) for r in ("sales", "merch", "buying")
+                                              if got.get(r))))
+            for r, a in rev.items():
+                if a is None:
+                    continue
+                if a["proposal"] != (got[r] or {}).get("proposal"):
+                    harness.log("TEAM", f"{r} revised after the others: {json.dumps(a['proposal'], ensure_ascii=False)} - "
+                                        f"{harness.clip(str(a.get('why')), 200)}")
+                got[r] = dict(got[r], proposal=a["proposal"], why=f"{got[r].get('why')} | after the others: {a.get('why')}")
+        except Exception as e:
+            harness.log("TEAM", f"coordination skipped: {type(e).__name__}: {e}")
     try:                                    # which lessons each answer leaned on, for lessons_r3.evaluate (11/9)
         import lessons_r3
         lessons_r3.record_use(got, shown=extra_data.get("lessons_shown"))
@@ -252,8 +340,14 @@ async def decide(now, cur, plan, hist, after, advice, bounds, buyer_bounds, ab_p
         proposals += f"\n\nSecond opinion from a reviewer on another model ({who}; advice, weigh it):\n" + json.dumps(
             review, ensure_ascii=False)
     # the manager decides once a cycle: the larger model (sonnet), where judgment matters most; specialists use haiku
+    slot_rule = ("Play mode is AGGRESSIVE until the round ends (the user, 11/11): there is no shop slot; approve every "
+                 "shop number change the evidence supports, in both areas, this cycle." if play_aggressive() else
+                 "Shop changes run ONE at a time (the notes say whether the shop change slot is free): when it is free, "
+                 "approve the single shop number change worth most and list it first; code keeps only the first and "
+                 "holds the rest.")
     m = await harness.ask(MANAGER.format(goal=GOAL, standing=standing, hist=history(hist, after, ()), advice=advice,
-                                         proposals=proposals), model=MANAGER_MODEL, timeout=180, max_chars=40_000)
+                                         proposals=proposals, slot_rule=slot_rule), model=MANAGER_MODEL, timeout=180,
+                          max_chars=40_000)
     if isinstance(m, dict) and isinstance(m.get("strategy"), dict):
         m["team"] = {r: (a or {}).get("proposal") for r, a in got.items()}
         m["second_opinion"] = review

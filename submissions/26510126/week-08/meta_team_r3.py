@@ -306,7 +306,8 @@ async def decide(now, cur, plan, hist, after, advice, bounds, buyer_bounds, ab_p
             rev = dict(await asyncio.gather(*(coordinate(r, got[r], got, cross) for r in ("sales", "merch", "buying")
                                               if got.get(r))))
             for r, a in rev.items():
-                if a is None:
+                # an empty revision means "kept" (13:31 merch said it kept stock_value 120M and returned {}): keep the draft
+                if a is None or (not a["proposal"] and (got[r] or {}).get("proposal")):
                     continue
                 if a["proposal"] != (got[r] or {}).get("proposal"):
                     harness.log("TEAM", f"{r} revised after the others: {json.dumps(a['proposal'], ensure_ascii=False)} - "

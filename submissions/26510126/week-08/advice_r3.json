@@ -378,6 +378,10 @@
   {
    "t": 1794371546.915217,
    "text": "Supervisor 11/11 13:3x: the watcher's 'ALERT meta: min_margin ... under 6% over cost' lines in the alerts are a stale check (removed now); they are no evidence for min_margin. I set min_margin back to 0.02: floors come from the stuck and clearance rules (never under cost plus expected refund), and a higher min_margin raises every unit's floor and slows the clearance (150k+ goods closes went 1% -> 21% after 11:56). Alerts are facts to check, not orders."
+  },
+  {
+   "t": 1794372150.861136,
+   "text": "Supervisor 11/11 13:4x, why goods_frac 0.7, stock_value 170M, max_list 1.2M, dear_depth 2, sku_depth 2, surge_max 1.05 (the user: follow the late riser sergiobuilds, #6 overall, Book 299.6M on 256M of stock). It buys dear goods broad and shallow: 29 lines, 88 units in 6 h, at most 3 of one SKU, at a median 0.576 of list; our deep lines (35 beds, 16 sofas, 7 a SKU) paid 0.674 after the market's surge, above the ~0.70 the market pays, so they could not sell at cost. Its shop sold 97.8M in 6 h (we ~30M), B and C 64% of it. The gap was depth and surge, not dear goods: keep the dear budget, buy it shallow, skip surged SKUs; the A-margin check in restock keeps only lines with margin. Judge it on Book and revenue over the next hours, not on one cycle."
   }
  ]
 }

@@ -402,7 +402,9 @@ def main():
                 # a goods SKU nobody has bought (sku_score under 1: no market settle, no sale of ours lately) gets 1 unit
                 # to try, not the category's depth (11/11 15:1x: 216 of our 329 cheap goods over 24 h, 15 a SKU, were
                 # SKUs with no talk at our shop and no settle in the market in 6 h: a plant pot at 3,800, a mini mortar)
-                if c.get("kind") == "goods" and sku_score.get(c["sku"], 0) < 1:
+                # the bar is 3, not 1: once settles fed sku_score almost no SKU was under 1, and 464 units (47.6M, 42% of
+                # the stock) sat unsold over a day; a score of 1-3 is a few market settles and none of ours
+                if c.get("kind") == "goods" and sku_score.get(c["sku"], 0) < 3:
                     qty = min(qty, 1 - held[c["sku"]])
             if qty <= 0:
                 continue

@@ -292,6 +292,17 @@ case("a cheap SKU over DEAR_HOT (400) is bought up to 2x sku_cap, one under it (
      q.get("SH", 0) > q.get("SS", 0) and q.get("SH", 0) <= 2 * restock_r3.DEFAULTS["sku_cap"]
      and q.get("SS", 0) <= restock_r3.DEFAULTS["sku_cap"], q)
 restock_r3.strategy = real
+# 464 units (42% of the stock) sat unsold: a goods SKU at sku_score 2 (a few market settles, none of ours) gets 1 unit, one at 40 the depth
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {},
+                                                   "sku_score": {"SH": 2.0, "SS": 40.0}}), encoding="utf-8")
+restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=40_000_000, goods_frac=1.0, max_list=500_000)
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+res = json.loads(out.getvalue().splitlines()[-1])
+q = {b["sku"]: b["qty"] for b in res["buy"]}
+case("a goods SKU at sku_score 2 is held at 1 unit, one at 40 deeper", q.get("SH", 0) == 1 and q.get("SS", 0) > 1, q)
+restock_r3.strategy = real
 # a hot cheap goods SKU's cap grows with its heat up to 3x sku_cap (<30k: 1586 an hour settled, we held 4.3%)
 (md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {},
                                                    "sku_score": {"SH": 600.0, "SS": 40.0}}), encoding="utf-8")

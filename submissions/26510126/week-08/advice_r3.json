@@ -402,6 +402,10 @@
   {
    "t": 1794390613.477401,
    "text": "Supervisor 11/11 18:5x, leak audit #10 (3.4 live hours, outage minutes removed). Fixed in code: C goods now carry the 72 h warranty with a 35% expected refund in their floor (47 C deals agreed, 7 paid; the market sells 36% of its C with a warranty at 0.586 of list); restock's food check weighs each grade's margin by the supply mix (A 25/B 50/C 25) instead of pooling (food A closed 14% of 737 talks at a cost of 0.72 of list against a market 0.716). For the team, data: goods A buyers who ask for a warranty closed 9.4% (297 talks) against 62% without, and our opening ask equals the floor (0.694-0.695 of list) so no round gives anything; in 65 linked cases they paid 1.09x our opening ask elsewhere. The big furniture buyers (fair-furniture, mjforge, chaewoonee, kimauve) bought nothing from us in 6 h. Open-box -> B works (B: 88 talks, 59 deals, 58 paid)."
+  },
+  {
+   "t": 1794391484.307521,
+   "text": "Supervisor 19:1x, data for verdicts: our shop got no buyers 18:48-19:00 (kit restart 18:50 for audit #10, tunnel guard restart 18:57) while the market itself was degraded (alive shops 55 -> 26, still 26 at 19:04). Pending shop verdicts whose window covers 18:48-19:00 (max_list 900k due 19:17, sku_depth 4 due 20:05, dear_first 2.5 / dear_depth 4 due 20:25) carry our own 12-min outage on top of the market's: treat a drop in our share there as MIXED, not as the change's effect. Paid sales are steady: 108 in the last hour (10.6M) vs 115/h (8.7M/h) over 3 h."
   }
  ]
 }

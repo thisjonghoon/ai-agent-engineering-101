@@ -399,6 +399,11 @@ def main():
                 if hot:
                     qty = held[c["sku"]] + int(mult * qty)      # the planned depth times mult, held units included
                 qty = min(qty, int(min(cap, int(s.get("sku_cap", 8))) * mult) - held[c["sku"]])
+                # a goods SKU nobody has bought (sku_score under 1: no market settle, no sale of ours lately) gets 1 unit
+                # to try, not the category's depth (11/11 15:1x: 216 of our 329 cheap goods over 24 h, 15 a SKU, were
+                # SKUs with no talk at our shop and no settle in the market in 6 h: a plant pot at 3,800, a mini mortar)
+                if c.get("kind") == "goods" and sku_score.get(c["sku"], 0) < 1:
+                    qty = min(qty, 1 - held[c["sku"]])
             if qty <= 0:
                 continue
             qty = min(int(qty), 20)    # the market takes 1-20 units a line: 24 was refused (400) 18 times on 11/4

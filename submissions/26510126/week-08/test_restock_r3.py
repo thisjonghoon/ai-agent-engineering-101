@@ -314,6 +314,20 @@ res = json.loads(out.getvalue().splitlines()[-1])
 q = {b["sku"]: b["qty"] for b in res["buy"]}
 case("a goods SKU at sku_score 2 is held at 1 unit, one at 40 deeper", q.get("SH", 0) == 1 and q.get("SS", 0) > 1, q)
 restock_r3.strategy = real
+# 482 units (22.1M) sat unsold over a day: a not-hot goods SKU (score 40) holding a unit first seen 30 h ago is not refilled
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": [
+    {"unit": "U1", "sku": "SS", "category": "G>slow", "kind": "goods", "grade": "A", "cost": 20000}]}), encoding="utf-8")
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {},
+                                                   "sku_score": {"SH": 40.0, "SS": 40.0}, "first": {"U1": time.time() - 30 * 3600}}),
+                                       encoding="utf-8")
+restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=40_000_000, goods_frac=1.0, max_list=500_000)
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+res = json.loads(out.getvalue().splitlines()[-1])
+q = {b["sku"]: b["qty"] for b in res["buy"]}
+case("a not-hot goods SKU holding a unit unsold over 24 h gets no restock, one without gets some", q.get("SS", 0) == 0 and q.get("SH", 0) > 0, q)
+restock_r3.strategy = real
 # a hot cheap goods SKU's cap grows with its heat up to 3x sku_cap (<30k: 1586 an hour settled, we held 4.3%)
 (md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {},
                                                    "sku_score": {"SH": 600.0, "SS": 40.0}}), encoding="utf-8")

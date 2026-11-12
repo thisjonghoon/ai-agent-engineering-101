@@ -172,7 +172,9 @@ def main():
         score[u["category"]] += 2
         if u.get("sku"):
             sku_score[u["sku"]] += 2
-    st.update(score={k: v for k, v in score.items() if v > 0.05}, sku_score={k: v for k, v in sku_score.items() if v > 0.05},
+    # when each held unit was first seen: a unit that sat over 24 h tells the restock the SKU does not sell
+    first = {u["unit"]: (st.get("first") or {}).get(u["unit"], now) for u in units}
+    st.update(first=first, score={k: v for k, v in score.items() if v > 0.05}, sku_score={k: v for k, v in sku_score.items() if v > 0.05},
               seen=[{k: u.get(k) for k in ("unit", "sku", "category", "grade", "expires_at")} for u in units], t=now)
     # the hidden demand as it reaches us (demand_r3.py): orders our buyer got and requests to our shop, decayed over
     # two days; added for this run only (the log keeps them), so they do not compound with the settle scores
@@ -223,6 +225,7 @@ def main():
         count = Counter(u["category"] for u in live)
         held = Counter(u["sku"] for u in live if not (u.get("kind") == "goods" and u.get("grade") == "C"))
         slow_held = sum(1 for u in live if slow_dead(u))
+        stale = {u["sku"] for u in live if now - first[u["unit"]] > 24 * 3600}
         by_cat = defaultdict(list)
         for sku, c in catalog.items():
             by_cat[c["category"]].append(dict(c, sku=sku))
@@ -432,6 +435,10 @@ def main():
                 # the stock) sat unsold over a day; a score of 1-3 is a few market settles and none of ours
                 if c.get("kind") == "goods" and sku_score.get(c["sku"], 0) < 3:
                     qty = min(qty, 1 - held[c["sku"]])
+                # no refill of a not-hot goods SKU while one of its units sat unsold over 24 h (11/12: 482 units, 22.1M at
+                # cost, in 129 categories; 1,168 of them under 30k), a score of 3 or more still refilled them to sku_cap
+                if c.get("kind") == "goods" and not hot and c["sku"] in stale:
+                    qty = 0
             if qty <= 0:
                 continue
             qty = min(int(qty), 20)    # the market takes 1-20 units a line: 24 was refused (400) 18 times on 11/4

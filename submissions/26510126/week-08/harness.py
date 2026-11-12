@@ -83,7 +83,14 @@ async def ask(prompt, tries=2, model=None, timeout=TIMEOUT, max_chars=MAX_PROMPT
     return await fallback(prompt)
 
 
-FALLBACK = ["hermes", "--safe-mode", "--ignore-rules", "-z"]   # GPT through the user's ChatGPT plan
+# GPT through the user's ChatGPT plan, called with codex directly and the model pinned (11/12: Hermes followed its own
+# default model, so a change there changed our reviewer unseen); the user's config and AGENTS.md are left out
+GPT = ["codex", "exec", "-m", "gpt-6.1-sol", "--skip-git-repo-check", "-s", "read-only", "--ephemeral",
+       "--ignore-user-config", "-c", "project_doc_max_bytes=0"]
+# Copilot (Student plan: only Copilot Fusion, which picks the model and may pick Claude), a separate usage limit from
+# ChatGPT's, so it is the last fallback where any answer will do, never the second-opinion reviewer
+COPILOT = ["copilot", "-s", "--no-custom-instructions", "-p"]
+FALLBACK = [GPT, COPILOT]
 
 
 async def fallback(prompt, timeout=60):
@@ -92,14 +99,30 @@ async def fallback(prompt, timeout=60):
     HARNESS_FALLBACK=0 turns it off; returns None when GPT fails too."""
     if os.environ.get("HARNESS_FALLBACK", "1") == "0":
         return None
-    started = time.time()
+    for cmd in FALLBACK:
+        started = time.time()
+        out = await run_cli(cmd, prompt[:20000], timeout)
+        data = parse_json(out) if out else None
+        who = "GPT" if cmd is GPT else "Copilot"
+        log("HARNESS", f"fell back to {who}: {time.time() - started:.1f} s, {'an answer' if data else 'no answer'}"
+            if out is not None else f"fallback to {who} failed")
+        if data is not None:
+            return data
+    return None
+
+
+async def run_cli(cmd, prompt, timeout):
+    """stdout of one CLI call (stdin closed: codex reads a piped stdin as more prompt), or None on failure."""
+    proc = None
     try:
-        proc = await asyncio.create_subprocess_exec(*FALLBACK, prompt[:20000], cwd=EMPTY_DIR,
+        proc = await asyncio.create_subprocess_exec(*cmd, prompt, cwd=EMPTY_DIR, stdin=asyncio.subprocess.DEVNULL,
                                                     stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)
         out, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
+        return out.decode(errors="replace")
     except (OSError, asyncio.TimeoutError):
-        log("HARNESS", "fallback to GPT failed")
+        if proc is not None:
+            try:
+                proc.kill()
+            except Exception:
+                pass
         return None
-    data = parse_json(out.decode(errors="replace"))
-    log("HARNESS", f"fell back to GPT: {time.time() - started:.1f} s, {'an answer' if data else 'no answer'}")
-    return data

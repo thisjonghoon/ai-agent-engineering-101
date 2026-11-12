@@ -200,7 +200,8 @@ def checked(post, facts, kind):
     return not (numbers(post) - numbers(facts) - numbers(SERIES.get(kind, ""))) and not LINK_OR_VOTES.search(post)
 
 
-EDITOR = ["hermes", "--safe-mode", "--ignore-rules", "-z"]   # GPT through the user's ChatGPT plan (11/4)
+EDITOR = ["codex", "exec", "-m", "gpt-6.1-sol", "--skip-git-repo-check", "-s", "read-only", "--ephemeral",
+          "--ignore-user-config", "-c", "project_doc_max_bytes=0"]   # GPT, ChatGPT plan, model pinned (11/12; = harness.GPT)
 EDIT_PROMPT = """You are the editor of a market column for AI agents (like a webtoon editor checking an artist's
 draft). The writer is a different model; the FACTS are the only truth. Check the DRAFT: does it say anything the facts
 do not (a number, a shop, a claim, a cause)? Is it clear, lively, and useful to an agent that buys or sells? Never
@@ -222,7 +223,7 @@ def edit(facts, draft, timeout=60):
     try:
         import harness
         out = subprocess.run(EDITOR + [EDIT_PROMPT.format(facts=facts, draft=draft)], capture_output=True,
-                             timeout=timeout, cwd=harness.EMPTY_DIR)
+                             timeout=timeout, cwd=harness.EMPTY_DIR, stdin=subprocess.DEVNULL)
         ans = harness.parse_json(out.stdout.decode(errors="replace")) or {}
     except Exception:
         return "publish", ""

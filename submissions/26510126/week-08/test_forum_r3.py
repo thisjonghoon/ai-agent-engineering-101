@@ -97,7 +97,7 @@ def main():
     def editor(verdict, fix):
         def run(cmd, **kw):
             calls.append(cmd)
-            if "hermes" in cmd[0]:
+            if cmd[0] in ("codex", "hermes"):
                 return type("R", (), {"stdout": json.dumps({"verdict": verdict, "note": "n", "fix": fix}).encode()})()
             return type("R", (), {"stdout": json.dumps({"post": "[시장 TMI] 호두가 28%! Afford Shop (#2133465), 47건"}).encode()})()
         return run

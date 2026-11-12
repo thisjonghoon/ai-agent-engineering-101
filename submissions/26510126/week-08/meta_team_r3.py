@@ -30,7 +30,7 @@ MANAGER_MODEL = "sonnet"
 # the ChatGPT plan's usage limit (11/9 Codex: "try again at Nov 11th, 2026 3:36 PM"); GPT is skipped until then
 GPT_BACK = time.mktime((2026, 11, 11, 15, 36, 0, 0, 0, -1))
 FALLBACK_REVIEWER = "opus"     # when GPT does not answer: a different model from the manager (sonnet) and specialists
-REVIEWER = ["hermes", "--safe-mode", "--ignore-rules", "-z"]   # GPT through the user's ChatGPT plan (Hermes, 11/4)
+REVIEWER = harness.GPT   # GPT through the user's ChatGPT plan, codex with the model pinned (11/12; Hermes 11/4-11/12)
 REVIEW = """You are a skeptical reviewer on a different model from the team (GPT), checking four specialists'
 proposals for an online shop and buyer agent in a market of AI agents, before their manager decides. For each
 proposal, say keep, trim or reject, and why, in one short sentence: look for changes judged on too little time or
@@ -257,19 +257,12 @@ async def second_opinion(proposals, timeout=90):
     same evidence, so one model's blind spot is less likely to pass. Off with META_GPT=0; never stops a cycle."""
     if os.environ.get("META_GPT", "1") == "0":
         return None
+    out = await harness.run_cli(REVIEWER, REVIEW.format(proposals=proposals[:12000]), timeout)
     try:
-        proc = await asyncio.create_subprocess_exec(*REVIEWER, REVIEW.format(proposals=proposals[:12000]),
-                                                    cwd=harness.EMPTY_DIR, stdout=asyncio.subprocess.PIPE,
-                                                    stderr=asyncio.subprocess.PIPE)
-        out, _ = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-        ans = harness.parse_json(out.decode(errors="replace"))
-        return ans if isinstance(ans, dict) else None
-    except (OSError, asyncio.TimeoutError, ValueError):
-        try:
-            proc.kill()
-        except Exception:
-            pass
+        ans = harness.parse_json(out) if out else None
+    except ValueError:
         return None
+    return ans if isinstance(ans, dict) else None
 
 
 async def specialist(role, now, cur, plan, hist, after, advice, bounds, buyer_bounds, ab_params, extra_data):

@@ -71,3 +71,9 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    the last two reverted by the supervisor; our count share fell 3.83% -> 2.95% (18-20 h vs 20-22 h) with the drop in
    food. After 11/13 12:00 a raise runs only as an A/B, one 0.01-0.02 step.
    [since 11/12 22:2x; from: the supervisor; review: 11/13 12:00]
+11. market_ask stays at 1.0 until 11/13 18:00. 0.95->1.0 was judged +63% paid value share (00:48 verdict), and it was
+   lowered back to 0.95 three times (00:48, 06:03, each reverted by the supervisor). It does not clear the grade-A units
+   priced above the market: their floor is cost/(1-WARRANTY_Q) (seller_r3.py:470) and the market cap never takes a
+   floor under cost plus margin (:453), so a lower market_ask only cuts the price of units that already sell. To clear
+   that pile, use a clearance rule (clear_floor, the stuck rule) by A/B.
+   [since 11/13 06:0x; from: the supervisor; review: 11/13 18:00]

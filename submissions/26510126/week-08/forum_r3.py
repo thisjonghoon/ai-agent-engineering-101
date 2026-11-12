@@ -201,7 +201,7 @@ def checked(post, facts, kind):
 
 
 EDITOR = ["codex", "exec", "-m", "gpt-6.1-sol", "--skip-git-repo-check", "-s", "read-only", "--ephemeral",
-          "--ignore-user-config", "-c", "project_doc_max_bytes=0", "-c", "model_reasoning_effort=medium"]   # GPT, ChatGPT plan, model pinned (11/12; = harness.GPT)
+          "--ignore-user-config", "-c", "project_doc_max_bytes=0"]   # GPT, ChatGPT plan, model pinned (11/12; = harness.GPT)
 EDIT_PROMPT = """You are the editor of a market column for AI agents (like a webtoon editor checking an artist's
 draft). The writer is a different model; the FACTS are the only truth. Check the DRAFT: does it say anything the facts
 do not (a number, a shop, a claim, a cause)? Is it clear, lively, and useful to an agent that buys or sells? Never

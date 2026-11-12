@@ -255,6 +255,17 @@ with contextlib.redirect_stdout(out):
 q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
 case("a 400,000 SKU at sku_score 1,000 surged to 1.08x is held 4 deep (no heat), not 20", q.get("SX", 0) == 4, q)
 (md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": []}), encoding="utf-8")
+# 495 goods units (21.4M) sat unsold over a day: a hot 400,000 SKU (score 1,000) holding a unit first seen 30 h ago gets no heat
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": [
+    {"unit": "UX", "sku": "SX", "category": "G>hot", "kind": "goods", "grade": "A", "cost": 200000}]}), encoding="utf-8")
+(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SX": 1000},
+                                                   "first": {"UX": time.time() - 30 * 3600}}), encoding="utf-8")
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    restock_r3.main()
+q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
+case("a 400,000 SKU at sku_score 1,000 holding a unit unsold over 24 h is held 4 deep (no heat), 3 more bought", q.get("SX", 0) == 3, q)
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": []}), encoding="utf-8")
 # the 100-300k band settled 183 units an hour and we sold 0.3: a 200,000 SKU at DEAR_HOT or more takes dear_depth x heat capped at 2x
 cat5["SC"] = {"category": "G>cold", "kind": "goods", "list_price": 400000, "name": "cold"}
 (md / "catalog.json").write_text(json.dumps(cat5), encoding="utf-8")

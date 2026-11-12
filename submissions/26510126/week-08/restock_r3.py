@@ -400,7 +400,10 @@ def main():
                 # costs 0.2% more, our dear goods cost a median 0.674 of list against 0.576 broad, and 300k+ sold at 0.62
                 # against a 0.57 cost, so a deep line bought into a surge costs more than its 5-point margin
                 heat = min(5.0 if c["list_price"] >= 300_000 else 2.0, max(1.0, sku_score.get(c["sku"], 0) / DEAR_HOT))
-                if surge.get(c["sku"], 1.0) > 1.05:
+                # likewise a hot SKU with a unit of ours unsold over 24 h: 495 goods units (21.4M at cost) sat over a day, and
+                # G021aae64 had 20 bought and 0 sold, as heat follows the market's sku_score and not our own sales: it stays
+                # at dear_depth, the room and cash go to hot SKUs that sell at our price
+                if surge.get(c["sku"], 1.0) > 1.05 or c["sku"] in stale:
                     heat = 1.0
                 # stock sat at its cap (69.5M of 70M) with 53.2M in 107 units of 300k+, about 65 of them non-hot SKUs bought at
                 # 2 while 8 best sellers sold 148-359 units each: a non-hot 300k+ SKU gets 1, the room goes to the hot ones

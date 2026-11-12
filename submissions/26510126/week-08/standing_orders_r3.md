@@ -53,6 +53,12 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    market's 300k+ C paid 206 in 6 h, 103 of them with no warranty at 0.532 of list vs 0.542 with one; our C refunds were
    29% of C revenue vs the market's 7.5%, and 4.24M of 6.32M refunds in 6 h. Judge on Book (margin minus refunds over
    6 h after the sale), not on close rate. The hours stay 72 h for every warranted unit.
+   Widened (11/12 22:0x, supervisor, leak audit #19): the same A/B may cover ALL goods grades (A, B, C) as one trial, a
+   warranty only when the buyer's words ask for one. Evidence, last 6 h: refunds 3.52M against 5.41M gross margin, 2.90M
+   (82%) of them on deals whose buyer never asked; no price premium for it (our unasked A goods sold at 0.681 of list,
+   asked 0.665); the #1 revenue shop warrants about 3% of 645 goods and its unpaid rate is 11.9% (ours 9%). Some buyer
+   kits may require a warranty at checkout without saying so: the A/B must count unpaid receipts per arm, and Book
+   (margin minus refunds) decides.
 9. Never move a number a second time in the same direction before its last change has a closed 2 h verdict. Evidence
    for the next step must be measured at the value now in force, not at an older one (11/12 00:59 and 01:16: the food
    floor 0.55->0.52->0.50 and ask_frac 0.72->0.77->0.80->0.85 stepped again citing audit data measured at the old

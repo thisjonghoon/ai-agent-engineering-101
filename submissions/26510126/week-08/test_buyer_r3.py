@@ -53,6 +53,8 @@ market_intel.load_recent = lambda **kw: []       # no ledger: the test must not 
 
 async def scripted(prompt, **kw):
     """The harness: offers 50% of the ask, then 10 points more each round."""
+    if "about to haggle" in prompt:                     # plan mode (half the orders): the opening and the most we pay
+        return {"open": 15000, "most": 27000, "why": "test"}
     ask = int(re.search(r"The shop now asks (\d+)", prompt).group(1))
     n = int(re.search(r"offer number (\d+)", prompt).group(1))
     return {"action": "offer", "price": int(ask * (0.4 + 0.1 * n))}
@@ -578,6 +580,19 @@ def main():
          and 0.8 in seen.values() and 0.85 in seen.values(), str(sorted(set(seen.values()))))
     trial.write_text("{}")
     buyer_r3.load_plan("o-1")
+
+    # 24. plan mode (11/13): one model call fixes the opening and the most we pay, code concedes after that
+    plan_calls = []
+    async def planner(prompt, **kw):
+        plan_calls.append(prompt)
+        return {"open": 20000, "most": 36000, "why": "test"}
+    base_p, _ = fake_shop("Planner", 0.5)
+    harness.ask = planner
+    got = asyncio.run(buyer_r3.buyer.shop(base_p, "포기김치 5kg", 40000, opening="I want to buy 포기김치 5kg (F1)",
+                                         max_raise=0.4, order_id="o-plan", plan=True))
+    harness.ask = scripted
+    case("plan mode: a whole talk takes one model call",
+         len(plan_calls) == 1 and got.get("offers") and got["offers"][0] <= 40000, str((len(plan_calls), got.get("offers"))))
 
     # 20. pre-screen (11/10): the shop's words the old screen missed, each from a receipt the kit then refused to pay
     gs = buyer_r3.screen_for({"kind": "goods"}, 30000)

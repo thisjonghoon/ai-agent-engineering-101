@@ -819,13 +819,16 @@ async def attempt(order, cat, s, off, lp, note, remember, take_second=False, mor
     # because a counter within 12% of our 0.70 offer was taken at once, the market median is ~0.74, so close 6% apart there
     if lp >= 300000 and code_ab_r3.on("7f20fce51f03", order.get("order")):
         close_gap = 0.06
+    # 11/13: an order takes ~28 s and ~4.6 model calls, ~470 orders per 6 h against ~1,000 for the leaders; plan mode is one
+    # call, then code concedes (within-cap talks close 87% in a median 12 s), so half the orders run it, not only a PLAN style
+    plan = bool(style.get("PLAN")) or code_ab_r3.on("7e4b208ce50d", order.get("order"))
     t0 = time.time()
     try:
         log("TEAM", f"{member or 'no team'} haggles this one {json.dumps(style)}")
         raise_k = RAISE_FOOD if order.get("kind") == "food" else RAISE_GOODS
         result = await buyer.shop(s["url"], name, limit, memory=hint,
                                   max_raise=min(0.9, style.get("MAX_RAISE", MAX_RAISE) * raise_k),
-                                  max_offers=MAX_OFFERS, plan=bool(style.get("PLAN")), take_second=take_second, close_gap=close_gap,
+                                  max_offers=MAX_OFFERS, plan=plan, take_second=take_second, close_gap=close_gap,
                                   order_id=order.get("order"), opening=opening,
                                   screen=screen_for(order, lp, (cat.get(sku) or {}).get("shelf_hours")))
     except Exception as e:

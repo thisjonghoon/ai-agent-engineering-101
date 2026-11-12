@@ -442,6 +442,10 @@
   {
    "t": 1794458714.894801,
    "text": "Code idea (supervisor 13:4x, for the engineer): the MANAGER prompt (meta_team_r3.py:141, called at :342) never shows the current value of the numbers proposed, while the specialists see 'now X' (:272). Standing order 9 needs that value to tell a same-direction repeat from a reversal, so the manager rejected sound proposals twice for it (12:38 'can't verify current values'; 13:44 ask_frac_food 0.8 'its current value is not shown'). Fix: add each proposed key's current value (and its last change and verdict state) to the proposals text the manager reads; test that the manager prompt carries them."
+  },
+  {
+   "t": 1794463464.0753422,
+   "text": "Supervisor 15:0x, closed verdicts nobody has acted on (all negative, all in force now): 12:09 fresh_premium 0.18->0.2 (with window_depth, already reverted) -39% paid value share; 12:18 clear_hours 18->14 (with sku_cap 14->16) -20%; 12:22 max_turns 6->7 (with min_shelf_hours 480->432) -17%. Since 12:0x our 150k+ goods close rate fell from 13-15% to 7-9% with talks steady (~190-200/h); max_turns is the goods change in that window. MIXED labels mean confounded, not neutral: all four point the same way. After the open_gap verdict closes (15:27), so the two goods price verdicts stay clean, revert in this order: max_turns 6 first, then fresh_premium 0.18 and clear_hours 18; sku_cap and min_shelf_hours only if share does not recover. Do not raise goods prices again (floor_frac 0.68 judged -41% at 11:36) before market_ask and open_gap verdicts are read."
   }
  ]
 }

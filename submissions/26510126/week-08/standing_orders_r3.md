@@ -56,5 +56,8 @@ what it came from and when it is to be reviewed; a rule past its review conditio
 9. Never move a number a second time in the same direction before its last change has a closed 2 h verdict. Evidence
    for the next step must be measured at the value now in force, not at an older one (11/12 00:59 and 01:16: the food
    floor 0.55->0.52->0.50 and ask_frac 0.72->0.77->0.80->0.85 stepped again citing audit data measured at the old
-   values; both reverted by the supervisor). A different number, or the opposite direction, is free in play mode.
-   [since 11/12 01:2x; from: the supervisor; review: never]
+   values; both reverted by the supervisor). A different number, or the opposite direction, is free in play mode,
+   except a return to a value whose own verdict closed negative: that needs a new measurement taken after it (11/12:
+   floor_frac 0.68 (-41%) at 14:51, window_depth 2.8 (-39%) at 18:28 and clear_hours 14 (-20%) at 17:54 came back
+   on "the opposite direction is free"; the supervisor reverted the first two).
+   [since 11/12 01:2x, return clause 18:3x; from: the supervisor; review: never]

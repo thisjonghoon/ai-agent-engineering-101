@@ -48,6 +48,7 @@ GOODS_MIX = {"A": 0.73, "B": 0.19, "C": 0.08}      # our goods supply by grade, 
 GRADE_COST = {"A": 0.66, "B": 0.48, "C": 0.378}    # supply cost / list by grade: what 101 300k+ units cost us 11/12 00-06 h
 # (audit #14). Audit #13 had set A 0.70 from the units still HELD, which are the dear leftovers (pick() sells the
 # cheapest-cost unit first), and dear restock fell to 0 while 10 of the market's top 25 300k+ SKUs would earn 3-10%.
+A_HOLD = 0.07                                      # storage lost on an A unit that cannot sell at our floor: a week at 1% a day (audit #20)
 REFUND = {"A": 0.03, "B": 0.13, "C": 0.35}           # expected refunds under the 72 h warranty. B as seller_r3.WARRANTY_Q (market adj. 15%, audit #14).
 # C as seller_r3.WARRANTY_Q C 0.35: audit #11 set 0.18 from the market's 17.6%, but our own 300k+ C broke on 19 of 65
 # sales in 6 h (>=31.8%, 8.88M refunded of 27.98M, 11/12 audit #13), so 0.18 overvalued C and let losing lines pass.
@@ -314,6 +315,8 @@ def main():
                 own_food[(u["sku"], u.get("grade"))].append(u["cost"] / u["list_price"])
                 sku_paid[u["sku"]].append(u["cost"] / u["list_price"])
 
+        own_a = {k: v for (k, g), v in own.items() if g == "A"}   # our A cost shares per SKU
+
         def expected_margin(c):
             """(the grade mix's margin, grade A's alone) or None. A alone too (11/11 12:5x audit #3): pick() offers A
             before B and C, so B and C rarely sell and their margin must not carry an A line that loses."""
@@ -340,7 +343,16 @@ def main():
                 num += w * (value - cost)
                 den += w * cost
                 if g == "A" and cost:
-                    a_only = (value - cost) / cost
+                    # A is drawn at 0.55-0.75 of list (quartiles 0.62/0.667/0.702) against a market paying 0.67-0.70, so 39-60%
+                    # of the units cannot sell at our floor (leak audit #20: 148 A/B units, 77.4M, held above the market). Value
+                    # A over our own cost draws for the SKU (pooled A when it has under 4): a draw sells only when cost / 0.97
+                    # is at or below the market median, the rest is charged A_HOLD of its cost as storage
+                    draws = own_a.get(c["sku"]) if len(own_a.get(c["sku"], ())) >= 4 else [x for v in own_a.values() for x in v]
+                    if st is not None and draws:
+                        sv = [d * surge.get(c["sku"], 1.0) for d in draws]
+                        a_only = sum(((value - d) if d / 0.97 <= st["median"] else -A_HOLD * d) for d in sv) / sum(sv)
+                    else:
+                        a_only = (value - cost) / cost
             return (num / den, a_only) if den else None
 
         FOOD_MIX = {"A": 0.25, "B": 0.50, "C": 0.25}   # food grades at supply (agent.md: A 25%, B 50%, C 25%)

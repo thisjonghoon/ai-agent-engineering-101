@@ -458,4 +458,20 @@ q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["bu
 case("a 400,000 SKU held at 0.48 of list is sized at 192,000 a unit: 12 units from 2.3M of room (0.60 gave 9)",
      q.get("SB") == 12, q)
 restock_r3.strategy = real
+# A is valued over our own cost draws: 4 A units held at 0.85 of list cannot sell at a market median of 0.80, so the line stops
+# taking goods, where the one capped median cost (0.66) passed it at a 17% margin (leak audit #20)
+(md / "prices_r3.json").write_text(json.dumps({"skus": {f"SB|{g}": {"n": 10, "median": 0.80} for g in "ABC"}}), encoding="utf-8")
+heldA = [{"unit": f"a{i}", "sku": "SB", "category": "G>bed", "kind": "goods", "grade": "A", "cost": 340000,
+          "list_price": 400000, "supplied_at": NOW, "expires_at": None} for i in range(4)]                   # 0.85 of list
+qs = []
+for held in ([], heldA):
+    (md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": held}), encoding="utf-8")
+    restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=50_000_000, goods_frac=1.0, max_list=1_500_000, dear_depth=8)
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        restock_r3.main()
+    qs.append({b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}.get("SB", 0))
+restock_r3.strategy = real
+case("a line whose A draws (0.85 of list) sit above the market median 0.80 is skipped, with no A held it is bought",
+     qs[0] > 0 and qs[1] == 0, qs)
 print(f"\n{sum(ok)}/{len(ok)} passed")

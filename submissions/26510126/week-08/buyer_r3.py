@@ -96,7 +96,11 @@ SHELF_LEFT = re.compile(r"([\d.]+) h of shelf life left")
 SKIP_BELOW = 1.0     # 11/11 13:4x on: t = our board saved mean (see below)
 SAVED_GUESS = 0.30   # our board saved mean when no board row is at hand (0.2996 on 11/10 20:00; old scale)
 COST_GUESS = 0.60    # a unit's cost as a share of list, unknown to the buyer (patch 3.6 saved; see deal_limit)
-COST_GUESS_FOOD = 0.50   # food units cost 0.496 of list on average (leak audit #22, 192 deals in 6 h; goods 0.611)
+# food units cost 0.496 of list on average (leak audit #22), but 0.50 here cut food deals 58 -> 31 an hour (close 73% ->
+# 62%) while the market's food volume held (-7%): food A costs ~0.6+ and its good deals (0.68 of list scores ~0.84) were
+# lost with the bad ones, and the deals above the board mean that still count for saved fell. Back to the goods value
+# (11/13 08:0x); a grade-aware guess from the quoted grade is the better fix.
+COST_GUESS_FOOD = 0.60
 BOARD_TERMS = HERE / "logs" / "board_terms_r3.jsonl"
 PLAN = Path(os.environ.get("BUYER_PLAN") or Path(__file__).resolve().parent / "buyer_plan_r3.json")
 PLAN_KEYS = ("CAP", "FOOD_MARGIN", "C_CAP", "C_WARRANTY", "MAX_TRIES", "MAX_RAISE", "FIRM_GAP", "SCOUTS", "CLOSE_GAP",

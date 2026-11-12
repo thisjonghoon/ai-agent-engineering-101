@@ -655,9 +655,8 @@ def main():
     new_scale = buyer_r3.deal_limit(o23, 100000, more=False)
     food_scale = buyer_r3.deal_limit(dict(o23, kind="food"), 100000, more=False)
     buyer_r3.SKIP_BELOW, buyer_r3.BOARD_TERMS = 0.0, real_board
-    case("a food order's limit uses COST_GUESS_FOOD (audit #22): lower than goods",
-         food_scale == min(int(100000 * buyer_r3.CAP), int(100000 * (1 - 0.6927 * (1 - buyer_r3.COST_GUESS_FOOD))))
-         == int(100000 * (1 - 0.6927 * (1 - buyer_r3.COST_GUESS_FOOD))),
+    case("a food order's limit uses COST_GUESS_FOOD (audit #22)",
+         food_scale == min(int(100000 * buyer_r3.CAP), int(100000 * (1 - 0.6927 * (1 - buyer_r3.COST_GUESS_FOOD)))),
          str(food_scale))
     case("SKIP_BELOW: a board saved on the patch 3.6 scale (0.69) limits to list - t x (list - COST_GUESS x list), not 0.31",
          new_scale == min(int(100000 * buyer_r3.CAP), int(100000 * (1 - 0.6927 * (1 - buyer_r3.COST_GUESS)))) > 60000,

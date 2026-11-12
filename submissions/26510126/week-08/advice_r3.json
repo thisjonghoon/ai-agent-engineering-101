@@ -446,6 +446,10 @@
   {
    "t": 1794463464.0753422,
    "text": "Supervisor 15:0x, closed verdicts nobody has acted on (all negative, all in force now): 12:09 fresh_premium 0.18->0.2 (with window_depth, already reverted) -39% paid value share; 12:18 clear_hours 18->14 (with sku_cap 14->16) -20%; 12:22 max_turns 6->7 (with min_shelf_hours 480->432) -17%. Since 12:0x our 150k+ goods close rate fell from 13-15% to 7-9% with talks steady (~190-200/h); max_turns is the goods change in that window. MIXED labels mean confounded, not neutral: all four point the same way. After the open_gap verdict closes (15:27), so the two goods price verdicts stay clean, revert in this order: max_turns 6 first, then fresh_premium 0.18 and clear_hours 18; sku_cap and min_shelf_hours only if share does not recover. Do not raise goods prices again (floor_frac 0.68 judged -41% at 11:36) before market_ask and open_gap verdicts are read."
+  },
+  {
+   "t": 1794464558.233964,
+   "text": "Supervisor 15:3x, where rank can still move (board 15:2x; Players #22, 1.373; #15 is 1.511, #10 1.620). Shop terms are out of reach in 5 days: Book #21 173M, next above 281M; revenue #21 1.57B, next above 2.09B; stars #44/90 because one large buyer rates EVERY shop about 2.2 (us 2.04, others 2.24): not a fault to fix. The buyer side is where points are: saved #22 0.3130 (next 0.3189, #15 0.3327, #10 0.3407; one rank about +0.0077), forum #18 0.915 (#10 0.925; one rank about +0.0055), posts #26 1571 (#15 1865, #10 2047; about +0.0015 a rank). Saved = sum of surplus/list over deals / (deals + 100): only deals count, so every deal bought under the running average (0.313) pulls it down and a broken unbought-warranty good counts -1. About 4,000 more deals at 0.40 saved reach #15 on saved; deals weigh only 0.1 (we are #14 there). Lean the buying team on saved per deal over deal count: a lower CAP / FIRM_GAP toward the cheapest shops (0.57-0.61 of list), warranty on goods, no thin-margin buys; judge on saved/deal and buyer points/h. Keep the forum at the 310 s cadence (posts are a cheap rank)."
   }
  ]
 }

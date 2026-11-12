@@ -470,6 +470,10 @@
   {
    "t": 1794483121.131249,
    "text": "Supervisor 20:3x, BUYING TEAM: your FOOD_MARGIN 1.15 -> 1.1 proposal is dropped silently every cycle: it was 'not taken' at 11/11 22:09 (+33% points/h, +1.2 sd, under the bar), and meta_r3.py:1148-1157 skips any buyer change not taken in the last 24 h, so it cannot run before 22:10 tonight, and because it is your only proposal no buyer trial has run since the 14:51 MAX_RAISE trial ended. Propose a different number meanwhile: MAX_TRIES 6 -> 3 (audit #18: unpaid orders average 61 s and 5.2 talks; our order cycle of ~35 s vs 5-9 s for the top buyers caps us at ~430 orders per 6 h against ~1,000 for them), then SCOUTS; FOOD_MARGIN can follow after 22:10. Code idea for the engineer: tell the buying team which (number, direction) are blocked and until when, and put the next wanted change on trial instead of none."
+  },
+  {
+   "t": 1794483634.501547,
+   "text": "Correction to my 20:3x note: a buyer trial IS running, MAX_TRIES 6 -> 5 since 19:00 (buyer_ab_r3.json); the slot was idle only from about 16:50 to 19:00, not since 14:51. FOOD_MARGIN 1.1 is still blocked until 22:10 by the 24 h rule. Let the MAX_TRIES trial finish before the next buyer number."
   }
  ]
 }

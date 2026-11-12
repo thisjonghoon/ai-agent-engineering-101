@@ -478,6 +478,10 @@
   {
    "t": 1794487901.6007109,
    "text": "Leak audit #19 (21:5x-22:0x), for the ENGINEER first: 1) Goods warranty to buyers who never asked: refunds 3.52M in 6 h against 5.41M gross margin, 2.90M of them on unasked deals, no price premium. Standing order 8 now allows ONE code A/B over all goods grades: warranty only when WARRANTY_WORDS matches the buyer's text (seller_r3.py:536-538 attaches it to every goods unit; the WARRANTY_Q floor gross-up at :469-470 and :489-502 then applies only in the warranted arm); judge on Book and count unpaid receipts per arm. Build it after the running buyer A/B (92c5ed5d93af) ends; this replaces the C-only warranty A/B that was never built. 2) Grade C goods pile up: 145 units, 14.6M at cost, 2 sold in 6 h; restock_r3.py:224-226 leaves C out of `held`, so a SKU holding C keeps being refilled: cap C units held per SKU (code idea). 3) 48 h-shelf food expires (10 of 15 expired units in 5 h, about 0.6M/day): restock_r3.py:244-246 relaxes the shelf bar to 48 h for any category scoring 3+, whatever min_shelf_hours says: raise that bar to about 96 h (code idea). 4) Our buyer agrees deals the kit then refuses: 66 of 169 unpaid of the last 3,000 on shelf life (23 only because of FOOD_MARGIN; the buying team's 1.1 trial can run after 22:10) and 43 that screen_for (buyer_r3.py:524) should catch before haggling. 5) Stars: the 2-star buyer is 10.9% of our rated deals vs ~2% for the median shop; without it we would average 4.68 (near the top 5). Not a fault we can price away. Storage on goods is about 1.1M/day on 112M."
+  },
+  {
+   "t": 1794493524.097267,
+   "text": "Supervisor 23:2x: standing order 10 locks ONE number, floor_frac_food, until 11/13 12:00. Every other price number (ask_frac, ask_frac_food, floor_frac, market_ask, open_gap, fresh_premium, clear_*) stays open under orders 5 and 9 as before; the 23:25 sales note read it as 'pricing is locked'."
   }
  ]
 }

@@ -326,6 +326,10 @@ def main():
          "C" not in pol({"price": 60000}) and "C" not in pol({"price": 70000}) and "C" in pol({"price": 90000, "warranty_hours": 6})
          and "C" not in buyer_r3.accept_policy({"kind": "goods"})["grades"], str([pol({"price": 60000}), pol({"price": 70000})]))
 
+    case("a grade A above 0.68 of list with no warranty on the receipt needs the 6 h warranty; a cheap one does not",
+         buyer_r3.accept_policy({"kind": "goods"}, {"price": 90000}, 100000).get("warranty_hours") == buyer_r3.BREAK_HOURS
+         and "warranty_hours" not in buyer_r3.accept_policy({"kind": "goods"}, {"price": 60000}, 100000), "")
+
     # 12. the meta-harness's plan (buyer_plan_r3.json) sets the buyer's numbers; unknown keys are ignored
     buyer_r3.PLAN = TMP / "buyer_plan_r3.json"
     buyer_r3.PLAN.write_text(json.dumps({"C_CAP": 0.55, "MAX_TRIES": 4, "FIRM_GAP": 0.08, "bogus": 1}))

@@ -458,7 +458,12 @@ def accept_policy(order, receipt=None, lp=None):
     # our 198 broken buys were not covered. A without a warranty breaks ~2%: still worth it. So B and C need the
     # 6 h break window covered; the C_CAP branch never ran (code_ab_r3.on is True with no trial) and is gone
     warrantied = (r.get("warranty_hours") or 0) >= BREAK_HOURS
+    # leak audit #17: 34 unwarranted grade A deals in 24 h saved 0.271 against 0.324 warranted (board 0.313); our A broke
+    # 4.8% against 1.5% for the market and a break counts -1, so a dear A (above 0.68 of list) needs the 6 h warranty too
+    dear = lp and price and price > 0.68 * lp and code_ab_r3.on("7cc785db92f2", order.get("order"))
     # with "warranty_hours" the kit checks the CHECKOUT (the seller's copy), not our copy of the receipt (review)
+    if dear and not warrantied:
+        return {"cert": True, "grades": ["A"], "warranty_hours": BREAK_HOURS}
     return {"cert": True, "grades": GOOD_GRADES + ["C"], "warranty_hours": BREAK_HOURS} if warrantied else \
         {"cert": True, "grades": ["A"]}
 

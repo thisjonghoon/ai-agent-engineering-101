@@ -482,6 +482,10 @@
   {
    "t": 1794493524.097267,
    "text": "Supervisor 23:2x: standing order 10 locks ONE number, floor_frac_food, until 11/13 12:00. Every other price number (ask_frac, ask_frac_food, floor_frac, market_ask, open_gap, fresh_premium, clear_*) stays open under orders 5 and 9 as before; the 23:25 sales note read it as 'pricing is locked'."
+  },
+  {
+   "t": 1794494536.996385,
+   "text": "Code idea, raised in priority (supervisor 23:4x, for the engineer): give the manager and the specialists, for every shop number proposed, its full verdict history from logs/code_changes_r3.jsonl (each past value, direction, and closed verdict), not only the recent cycles. Today the supervisor reverted 6 changes that returned to values already judged: floor_frac 0.68 (-41%), window_depth 2.8 (-39%), floor_frac_food 0.56 and 0.57 (0.54 was -33%), and at 23:41 fresh_premium 0.15 ('no verdict history', but 0.15->0.18 was +33%) and dear_depth 7 (7->6 was +32%). Test: the manager prompt for a proposal of key k lists every closed verdict of k."
   }
  ]
 }

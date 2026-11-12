@@ -636,7 +636,13 @@ def main():
     on_more, on_last = buyer_r3.deal_limit(o23, 100000, more=True), buyer_r3.deal_limit(o23, 100000, more=False)
     buyer_r3.BOARD_TERMS = TMP / "no-such-file.jsonl"
     guess = buyer_r3.deal_limit(o23, 100000, more=True)
+    board.write_text(json.dumps({"saved": 0.6927}) + "\n")
+    buyer_r3.BOARD_TERMS, buyer_r3.SKIP_BELOW = board, 1.0     # the live value
+    new_scale = buyer_r3.deal_limit(o23, 100000, more=False)
     buyer_r3.SKIP_BELOW, buyer_r3.BOARD_TERMS = 0.0, real_board
+    case("SKIP_BELOW: a board saved on the patch 3.6 scale (0.69) limits to list - t x (list - COST_GUESS x list), not 0.31",
+         new_scale == min(int(100000 * buyer_r3.CAP), int(100000 * (1 - 0.6927 * (1 - buyer_r3.COST_GUESS)))) > 60000,
+         str((new_scale, buyer_r3.CAP)))
     case("SKIP_BELOW: off keeps CAP; on, the board mean (or 0.30) sets the limit, on the last talk too (audit #17)",
          off == int(100000 * buyer_r3.CAP) and on_more == int(100000 * (1 - 0.2996)) and on_last == on_more
          and guess == int(100000 * (1 - buyer_r3.SAVED_GUESS)), str((off, on_more, on_last, guess)))

@@ -647,6 +647,21 @@ def main():
          off == int(100000 * buyer_r3.CAP) and on_more == int(100000 * (1 - 0.2996)) and on_last == on_more
          and guess == int(100000 * (1 - buyer_r3.SAVED_GUESS)), str((off, on_more, on_last, guess)))
 
+    # 24. a shop asking over 1.1x its cap gets no retry while another shop asks within its cap (over-cap first asks closed
+    # 22% of 266 talks, within-cap 91% of 329)
+    cap24 = min(o21["budget"], int(40000 * buyer_r3.CAP))
+    asks21["unpaid"], asks21["paid"] = int(cap24 * 1.3), 20000
+    buyer_r3.scout = fake_scout
+    dropped24, quoted24 = set(), []
+    asyncio.run(buyer_r3.scout_wave(o21, cat21, c21, dropped24, quoted24))
+    asks21["paid"] = int(cap24 * 1.3)
+    dropped24b, quoted24b = set(), []
+    asyncio.run(buyer_r3.scout_wave(o21, cat21, c21, dropped24b, quoted24b))
+    buyer_r3.scout = real_scout
+    case("over-cap asks are dropped when a shop asks within its cap, kept when every shop asks over it",
+         [c[1]["name"] for _, c in quoted24] == ["paid"] and dropped24 == {("unpaid", "R1")}
+         and len(quoted24b) == 2 and not dropped24b, str((quoted24, dropped24, len(quoted24b))))
+
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")
     shutil.rmtree(TMP, ignore_errors=True)
 

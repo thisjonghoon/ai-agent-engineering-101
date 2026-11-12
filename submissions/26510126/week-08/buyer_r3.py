@@ -729,6 +729,7 @@ async def scout_wave(order, cat, picked, dropped, quoted):
     for t in tasks:
         if t not in done:
             t.cancel()
+    over = []
     for c, q in zip(picked, quotes):
         shelf = (cat.get(c[2]["sku"]) or {}).get("shelf_hours")
         why = screen_for(order, c[3], shelf)(q.get("text") or "") if q["state"] == "TASK_STATE_INPUT_REQUIRED" else None
@@ -747,8 +748,17 @@ async def scout_wave(order, cat, picked, dropped, quoted):
         risk = c[2].get("_risk", 1.0) if isinstance(ask, (int, float)) and ask > 0 else 1.0   # c[0] has it already
         value *= risk
         quoted.append((value, c))
+        if isinstance(ask, (int, float)) and ask > 1.1 * cap:
+            over.append((value, c))
         log("SCOUT", f"{c[1]['name']} {c[2]['sku']}: asks {ask} of list {c[3]} (surplus at the ask ~{value:.0f}"
                      + (f", x{risk:.2f} for the kit refusing, breaks or shelf life" if risk < 1 else "") + ")")
+    # first ask 1.1-1.5x cap closed 22% of 266 talks (85 min, median 13 s), repeated above-cap asks 0% of 192, within-cap
+    # asks 91% of 329: with a shop asking within its cap, the over-cap shops get no retry (order cycle ~35 s vs 5-9 s)
+    if over and len(over) < len(quoted) and code_ab_r3.on("92c5ed5d93af", order.get("order")):
+        for q in over:
+            quoted.remove(q)
+            dropped.add((q[1][1]["name"], q[1][2]["sku"]))
+        log("SCOUT", f"{len(over)} shops asking over 1.1x their cap left out: {len(quoted)} asking within it")
 
 
 def dead_pair(shop, sku, memory):

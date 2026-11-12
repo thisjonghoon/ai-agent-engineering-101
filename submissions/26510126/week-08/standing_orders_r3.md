@@ -67,3 +67,7 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    floor_frac 0.68 (-41%) at 14:51, window_depth 2.8 (-39%) at 18:28 and clear_hours 14 (-20%) at 17:54 came back
    on "the opposite direction is free"; the supervisor reverted the first two).
    [since 11/12 01:2x, return clause 18:3x; from: the supervisor; review: never]
+10. floor_frac_food stays at 0.52 until 11/13 12:00. Raised to 0.54 (11:19, judged -33%), 0.56 (20:23) and 0.57 (22:18),
+   the last two reverted by the supervisor; our count share fell 3.83% -> 2.95% (18-20 h vs 20-22 h) with the drop in
+   food. After 11/13 12:00 a raise runs only as an A/B, one 0.01-0.02 step.
+   [since 11/12 22:2x; from: the supervisor; review: 11/13 12:00]

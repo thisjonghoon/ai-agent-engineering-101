@@ -235,6 +235,10 @@ def sync_kit_files(memory, remember):
         g = re.search(r"grade ([ABC]), the policy accepts", p.get("reason") or "")
         if g and not p.get("paid") and shop and p.get("item"):
             avoid_add(shop, p["item"], f"sent grade {g.group(1)} without a warranty", GRADE_SECS)
+        # a unit the shop cannot hand over (checkout 409 "not in stock"; leak audit #21, 11/13: 16 of 61 unpaid in 14 h,
+        # one shop's unit refused 9 times): that pair waits an hour like a short shelf life
+        if not p.get("paid") and "not in stock" in (p.get("reason") or "") and shop and p.get("item"):
+            avoid_add(shop, p["item"], "unit not in stock at checkout", SHORT_SECS)
     seen_broken = {(m.get("name"), m.get("broke_at")) for m in memory if m.get("kind") == "broken"}
     for b in lines(MD / "broken.jsonl"):
         key = (b.get("name"), b.get("broke_at"))

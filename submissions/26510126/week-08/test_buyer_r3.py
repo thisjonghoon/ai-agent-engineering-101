@@ -206,6 +206,13 @@ def main():
     gav = next((v for k, v in buyer_r3.avoid_load().items() if k.endswith("|GC")), {})
     case("a shop that sent grade C without a warranty is skipped for that SKU a while",
          "grade C" in gav.get("why", "") and gav.get("until", 0) > time.time() + 3000, str(gav))
+    with open(MD / "payments.jsonl", "a") as f:
+        f.write(json.dumps({"order": "o-s", "shop": good, "item": "GN", "price": 9000, "paid": False,
+                            "reason": "checkout refused: 409 {\"error\":\"unit u-1 is not in stock for this order\"}"}) + "\n")
+    buyer_r3.sync_kit_files(market_buyer.load_memory(), market_buyer.remember)
+    nav = next((v for k, v in buyer_r3.avoid_load().items() if k.endswith("|GN")), {})
+    case("a shop whose unit was not in stock at checkout is skipped for that SKU an hour (audit #21)",
+         "not in stock" in nav.get("why", "") and nav.get("until", 0) > time.time() + 3000, str(nav))
 
     # 6. forum: the buyer run in case 2 already posted the liar-shop facts; within 5 minutes nothing more is sent,
     # and once 5 minutes have passed the next note covers only what is new (the o-1 deal, ledger #777)

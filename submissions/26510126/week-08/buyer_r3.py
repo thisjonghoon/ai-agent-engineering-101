@@ -96,6 +96,7 @@ SHELF_LEFT = re.compile(r"([\d.]+) h of shelf life left")
 SKIP_BELOW = 1.0     # 11/11 13:4x on: t = our board saved mean (see below)
 SAVED_GUESS = 0.30   # our board saved mean when no board row is at hand (0.2996 on 11/10 20:00; old scale)
 COST_GUESS = 0.60    # a unit's cost as a share of list, unknown to the buyer (patch 3.6 saved; see deal_limit)
+COST_GUESS_FOOD = 0.50   # food units cost 0.496 of list on average (leak audit #22, 192 deals in 6 h; goods 0.611)
 BOARD_TERMS = HERE / "logs" / "board_terms_r3.jsonl"
 PLAN = Path(os.environ.get("BUYER_PLAN") or Path(__file__).resolve().parent / "buyer_plan_r3.json")
 PLAN_KEYS = ("CAP", "FOOD_MARGIN", "C_CAP", "C_WARRANTY", "MAX_TRIES", "MAX_RAISE", "FIRM_GAP", "SCOUTS", "CLOSE_GAP",
@@ -153,7 +154,8 @@ def deal_limit(order, lp, more=False):
         # jumped 0.31 -> 0.69. Read as before, 0.69 left a limit of 0.31 of list and the buyer would have stopped. A
         # board value of 0.5 or more is on the new scale: the most to pay without lowering it is list - t x (list - cost),
         # with the unit's cost unknown to the buyer and taken as COST_GUESS of list (A 0.55-0.75, B 0.40-0.60: agent.md)
-        frac = (1 - t * (1 - COST_GUESS)) if t >= 0.5 else (1 - t)
+        cg = COST_GUESS_FOOD if order.get("kind") == "food" else COST_GUESS
+        frac = (1 - t * (1 - cg)) if t >= 0.5 else (1 - t)
         limit = min(limit, int(lp * frac))
     return limit
 
@@ -239,6 +241,9 @@ def sync_kit_files(memory, remember):
         # one shop's unit refused 9 times): that pair waits an hour like a short shelf life
         if not p.get("paid") and "not in stock" in (p.get("reason") or "") and shop and p.get("item"):
             avoid_add(shop, p["item"], "unit not in stock at checkout", SHORT_SECS)
+        # a receipt without the warranty the policy asks for (audit #22: 8 of 10 such refusals in 14 h were one pair)
+        if not p.get("paid") and re.search(r"warranty \d+ h, the policy asks", p.get("reason") or "") and shop and p.get("item"):
+            avoid_add(shop, p["item"], "sent no warranty", GRADE_SECS)
     seen_broken = {(m.get("name"), m.get("broke_at")) for m in memory if m.get("kind") == "broken"}
     for b in lines(MD / "broken.jsonl"):
         key = (b.get("name"), b.get("broke_at"))

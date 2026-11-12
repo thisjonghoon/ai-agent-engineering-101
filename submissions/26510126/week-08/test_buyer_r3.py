@@ -213,6 +213,13 @@ def main():
     nav = next((v for k, v in buyer_r3.avoid_load().items() if k.endswith("|GN")), {})
     case("a shop whose unit was not in stock at checkout is skipped for that SKU an hour (audit #21)",
          "not in stock" in nav.get("why", "") and nav.get("until", 0) > time.time() + 3000, str(nav))
+    with open(MD / "payments.jsonl", "a") as f:
+        f.write(json.dumps({"order": "o-w", "shop": good, "item": "GW", "price": 24062, "paid": False,
+                            "reason": "not paying: warranty 0 h, the policy asks for 6"}) + "\n")
+    buyer_r3.sync_kit_files(market_buyer.load_memory(), market_buyer.remember)
+    wav = next((v for k, v in buyer_r3.avoid_load().items() if k.endswith("|GW")), {})
+    case("a shop that sent no warranty is skipped for that SKU a while (audit #22)",
+         "no warranty" in wav.get("why", "") and wav.get("until", 0) > time.time() + 3000, str(wav))
 
     # 6. forum: the buyer run in case 2 already posted the liar-shop facts; within 5 minutes nothing more is sent,
     # and once 5 minutes have passed the next note covers only what is new (the o-1 deal, ledger #777)
@@ -646,7 +653,12 @@ def main():
     board.write_text(json.dumps({"saved": 0.6927}) + "\n")
     buyer_r3.BOARD_TERMS, buyer_r3.SKIP_BELOW = board, 1.0     # the live value
     new_scale = buyer_r3.deal_limit(o23, 100000, more=False)
+    food_scale = buyer_r3.deal_limit(dict(o23, kind="food"), 100000, more=False)
     buyer_r3.SKIP_BELOW, buyer_r3.BOARD_TERMS = 0.0, real_board
+    case("a food order's limit uses COST_GUESS_FOOD (audit #22): lower than goods",
+         food_scale == min(int(100000 * buyer_r3.CAP), int(100000 * (1 - 0.6927 * (1 - buyer_r3.COST_GUESS_FOOD))))
+         == int(100000 * (1 - 0.6927 * (1 - buyer_r3.COST_GUESS_FOOD))),
+         str(food_scale))
     case("SKIP_BELOW: a board saved on the patch 3.6 scale (0.69) limits to list - t x (list - COST_GUESS x list), not 0.31",
          new_scale == min(int(100000 * buyer_r3.CAP), int(100000 * (1 - 0.6927 * (1 - buyer_r3.COST_GUESS)))) > 60000,
          str((new_scale, buyer_r3.CAP)))

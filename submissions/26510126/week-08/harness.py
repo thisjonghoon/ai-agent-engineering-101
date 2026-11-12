@@ -86,7 +86,7 @@ async def ask(prompt, tries=2, model=None, timeout=TIMEOUT, max_chars=MAX_PROMPT
 # GPT through the user's ChatGPT plan, called with codex directly and the model pinned (11/12: Hermes followed its own
 # default model, so a change there changed our reviewer unseen); the user's config and AGENTS.md are left out
 GPT = ["codex", "exec", "-m", "gpt-6.1-sol", "--skip-git-repo-check", "-s", "read-only", "--ephemeral",
-       "--ignore-user-config", "-c", "project_doc_max_bytes=0"]
+       "--ignore-user-config", "-c", "project_doc_max_bytes=0", "-c", "model_reasoning_effort=medium"]
 # Copilot (Student plan: only Copilot Fusion, which picks the model and may pick Claude), a separate usage limit from
 # ChatGPT's, so it is the last fallback where any answer will do, never the second-opinion reviewer
 COPILOT = ["copilot", "-s", "--no-custom-instructions", "-p"]

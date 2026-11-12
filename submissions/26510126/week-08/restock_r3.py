@@ -318,10 +318,11 @@ def main():
         own_a = {k: v for (k, g), v in own.items() if g == "A"}   # our A cost shares per SKU
 
         def expected_margin(c):
-            """(the grade mix's margin, grade A's alone) or None. A alone too (11/11 12:5x audit #3): pick() offers A
+            """(the grade mix's margin, grade A's alone, the share of A draws that can sell) or None. A alone too (11/11 12:5x audit #3): pick() offers A
             before B and C, so B and C rarely sell and their margin must not carry an A line that loses."""
             num = den = 0.0
             a_only = None
+            sellable = 1.0
             for g, w in GOODS_MIX.items():
                 st = (lines.get("skus") or {}).get(f"{c['sku']}|{g}")
                 if not st or st.get("n", 0) < 3:
@@ -351,9 +352,11 @@ def main():
                     if st is not None and draws:
                         sv = [d * surge.get(c["sku"], 1.0) for d in draws]
                         a_only = sum(((value - d) if d / 0.97 <= st["median"] else -A_HOLD * d) for d in sv) / sum(sv)
+                        # the same draws size a dear line: 5 of the 6 A units bought after ee706d8 sit above the market
+                        sellable = sum(d / 0.97 <= st["median"] for d in sv) / len(sv)
                     else:
                         a_only = (value - cost) / cost
-            return (num / den, a_only) if den else None
+            return (num / den, a_only, sellable) if den else None
 
         FOOD_MIX = {"A": 0.25, "B": 0.50, "C": 0.25}   # food grades at supply (agent.md: A 25%, B 50%, C 25%)
 
@@ -423,6 +426,10 @@ def main():
                 # 532, and 323 units sat unsold over a day, while the lines went to a fresh slow SKU instead of the hot ones
                 slow = (0 if slow_held >= 40 else 1) if c["list_price"] >= 300_000 else 2
                 depth = int(int(s.get("dear_depth", 4)) * heat) if full else min(slow, int(s.get("dear_depth", 4)))
+                # leak audit #21: 208 A units (84.5M) sit above the market and the pile grows by 45% of each A buy, as a line
+                # that passes the average-margin check was bought whole: depth times the share of A draws that can sell
+                if e is not None and depth:
+                    depth = round(depth * e[2]) if e[2] <= 0 else max(1, round(depth * e[2]))
                 # the depth, not the SKU plan's qty: on 11/6 the market's best sellers (sku_score 600-1,500) planned 20
                 # units a line, 2.5-28M at cost, more than the goods room left, so each was skipped and cheap lines took
                 # the window; 4,379 units of 300k+ settled market-wide in 6 h, we held none of the top 12 and sold 6

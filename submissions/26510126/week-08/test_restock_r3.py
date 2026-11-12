@@ -474,4 +474,19 @@ for held in ([], heldA):
 restock_r3.strategy = real
 case("a line whose A draws (0.85 of list) sit above the market median 0.80 is skipped, with no A held it is bought",
      qs[0] > 0 and qs[1] == 0, qs)
+# a line with a quarter of its A draws above the market median is sized at 3/4 depth: 3 of 4 pooled draws (units of another SKU)
+# at 0.60 sell at 0.80, 1 at 0.85 does not
+mixed = [dict(heldA[i], sku="SX", cost=240000 if i < 3 else 340000) for i in range(4)]
+qs = []
+for held in ([], mixed):
+    (md / "prices_r3.json").write_text(json.dumps({"skus": {f"SB|{g}": {"n": 10, "median": 0.80} for g in "ABC"}}), encoding="utf-8")
+    (md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": held}), encoding="utf-8")
+    restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=500_000_000, goods_frac=1.0, max_list=1_500_000, dear_depth=2)
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        restock_r3.main()
+    qs.append({b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}.get("SB", 0))
+restock_r3.strategy = real
+case("a line with a quarter of its A draws above the market median is bought at 3/4 depth (10 units, 8)",
+     qs[-2] == 10 and qs[-1] == 8, qs[-2:])
 print(f"\n{sum(ok)}/{len(ok)} passed")

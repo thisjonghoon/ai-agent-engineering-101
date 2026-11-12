@@ -633,8 +633,8 @@ def main():
     buyer_r3.BOARD_TERMS = TMP / "no-such-file.jsonl"
     guess = buyer_r3.deal_limit(o23, 100000, more=True)
     buyer_r3.SKIP_BELOW, buyer_r3.BOARD_TERMS = 0.0, real_board
-    case("SKIP_BELOW: off keeps CAP; on, the board mean (or 0.30) sets the limit while another shop is left; last talk CAP",
-         off == int(100000 * buyer_r3.CAP) and on_more == int(100000 * (1 - 0.2996)) and on_last == int(100000 * buyer_r3.CAP)
+    case("SKIP_BELOW: off keeps CAP; on, the board mean (or 0.30) sets the limit, on the last talk too (audit #17)",
+         off == int(100000 * buyer_r3.CAP) and on_more == int(100000 * (1 - 0.2996)) and on_last == on_more
          and guess == int(100000 * (1 - buyer_r3.SAVED_GUESS)), str((off, on_more, on_last, guess)))
 
     print(f"\n{sum(RESULTS)}/{len(RESULTS)} passed")

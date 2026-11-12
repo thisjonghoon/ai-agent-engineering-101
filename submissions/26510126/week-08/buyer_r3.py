@@ -88,7 +88,7 @@ FLOOR_SECS = 3600
 SHELF_LEFT = re.compile(r"([\d.]+) h of shelf life left")
 # Skip deals that lower the board's saved term (the mean of (list - price) / list over deals + 100, with -1 for a deal
 # whose goods broke uncovered): while another shop is still to be tried, pay at most (1 - t) x list, t = min(SKIP_BELOW,
-# our board saved mean, logs/board_terms_r3.jsonl, else SAVED_GUESS). The last talk of an order keeps CAP. 0 = off.
+# our board saved mean, logs/board_terms_r3.jsonl, else SAVED_GUESS). Since 11/12 16:0x the last talk too. 0 = off.
 # Off by default (11/10, last 6 h): 56 of 364 paid deals (15%) saved 0.25-0.30 of list (mean 0.275, none under 0.25
 # with CAP 0.75), only 0.025 under the board mean 0.2997 with 2 of 718 paid deals broken uncovered in 12 h; over
 # 11,738 deals they lower saved by ~1e-4 per 6 h, less than the deals they bring (0.1 weight), and a CAP 0.70 trial
@@ -140,10 +140,13 @@ def board_saved(path=None):
 
 
 def deal_limit(order, lp, more=False):
-    """The most we pay for this SKU: min(budget, CAP x list), and with SKIP_BELOW on while another shop is still to be
-    tried, no more than leaves min(SKIP_BELOW, board saved) of list."""
+    """The most we pay for this SKU: min(budget, CAP x list), and with SKIP_BELOW on, no more than leaves
+    min(SKIP_BELOW, board saved) of list, on the last talk of an order too (11/12 leak audit #17: the last talk kept
+    CAP 0.75; in 24 h 69 deals paid over 0.687 of list at a mean surplus 0.282 while saved is the mean over deals only,
+    so each lowered it; saved ranks are about 0.001 apart (one rank ~0.008 buyer ALL) and deals weigh 0.1: ~+0.002
+    saved for ~365 fewer deals by 11/17). `more` is kept for callers; SKIP_BELOW 0 turns the limit off."""
     limit = min(order["budget"], int(lp * CAP))
-    if SKIP_BELOW > 0 and more:
+    if SKIP_BELOW > 0:
         limit = min(limit, int(lp * (1 - min(SKIP_BELOW, board_saved()))))
     return limit
 

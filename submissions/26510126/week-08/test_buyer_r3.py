@@ -679,6 +679,14 @@ def main():
     case("SKIP_BELOW: off keeps CAP; on, the board mean (or 0.30) sets the limit, on the last talk too (audit #17)",
          off == int(100000 * buyer_r3.CAP) and on_more == int(100000 * (1 - 0.2996)) and on_last == on_more
          and guess == int(100000 * (1 - buyer_r3.SAVED_GUESS)), str((off, on_more, on_last, guess)))
+    buyer_r3.BOARD_TERMS, buyer_r3.SKIP_BELOW = board, 1.0
+    lim_a, lim_b, lim_c = (buyer_r3.deal_limit(o23, 100000, grade=g) for g in "ABC")
+    cap_b = buyer_r3.screen_for(o23, 100000)("grade B, 6 h warranty. Asking 90000")
+    buyer_r3.SKIP_BELOW, buyer_r3.BOARD_TERMS = 0.0, real_board
+    case("a stated grade sets the cost guess (A 0.65, B 0.50, C 0.35); the screen caps a quoted B at its limit",
+         lim_a == int(100000 * (1 - 0.6927 * 0.35)) and lim_b == int(100000 * (1 - 0.6927 * 0.5)) > lim_c
+         and lim_c == int(100000 * (1 - 0.6927 * 0.65)) and lim_c < lim_b < lim_a
+         and isinstance(cap_b, dict) and cap_b["cap"] == lim_b, str((lim_a, lim_b, lim_c, cap_b)))
 
     # 24. a shop asking over 1.1x its cap gets no retry while another shop asks within its cap (over-cap first asks closed
     # 22% of 266 talks, within-cap 91% of 329)

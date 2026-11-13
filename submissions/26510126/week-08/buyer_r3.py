@@ -101,6 +101,10 @@ COST_GUESS = 0.60    # a unit's cost as a share of list, unknown to the buyer (p
 # lost with the bad ones, and the deals above the board mean that still count for saved fell. Back to the goods value
 # (11/13 08:0x); a grade-aware guess from the quoted grade is the better fix.
 COST_GUESS_FOOD = 0.60
+# Once the quote states a grade, the guess follows it (11/13: saved is the largest board loss, 0.2 points; deals at 0.65-0.75 of
+# list average 0.673, 45 of 79 under 0.70, buyers rank 33rd of 46; our own supply costs, restock_r3 GRADE_COST: A ~0.65, B
+# ~0.48-0.50, C ~0.38), so cheap B/C units stop being bought at prices that lower saved while good A keeps its limit.
+COST_GUESS_GRADE = {"A": 0.65, "B": 0.50, "C": 0.35}
 BOARD_TERMS = HERE / "logs" / "board_terms_r3.jsonl"
 PLAN = Path(os.environ.get("BUYER_PLAN") or Path(__file__).resolve().parent / "buyer_plan_r3.json")
 PLAN_KEYS = ("CAP", "FOOD_MARGIN", "C_CAP", "C_WARRANTY", "MAX_TRIES", "MAX_RAISE", "FIRM_GAP", "SCOUTS", "CLOSE_GAP",
@@ -145,7 +149,7 @@ def board_saved(path=None):
         return SAVED_GUESS
 
 
-def deal_limit(order, lp, more=False):
+def deal_limit(order, lp, more=False, grade=None):
     """The most we pay for this SKU: min(budget, CAP x list), and with SKIP_BELOW on, no more than leaves
     min(SKIP_BELOW, board saved) of list, on the last talk of an order too (11/12 leak audit #17: the last talk kept
     CAP 0.75; in 24 h 69 deals paid over 0.687 of list at a mean surplus 0.282 while saved is the mean over deals only,
@@ -159,6 +163,7 @@ def deal_limit(order, lp, more=False):
         # board value of 0.5 or more is on the new scale: the most to pay without lowering it is list - t x (list - cost),
         # with the unit's cost unknown to the buyer and taken as COST_GUESS of list (A 0.55-0.75, B 0.40-0.60: agent.md)
         cg = COST_GUESS_FOOD if order.get("kind") == "food" else COST_GUESS
+        cg = COST_GUESS_GRADE.get(grade, cg)      # a grade the quote states, else the flat guess
         frac = (1 - t * (1 - cg)) if t >= 0.5 else (1 - t)
         limit = min(limit, int(lp * frac))
     return limit
@@ -542,6 +547,12 @@ def screen_for(order, lp=None, shelf_hours=None):
     pol = accept_policy(order)
     need = pol.get("min_hours_left")
 
+    def graded(grade):
+        # a stated B/C costs less than the flat guess: cap the talk at the per-grade limit (COST_GUESS_GRADE)
+        if grade in ("B", "C") and lp and order.get("budget") and code_ab_r3.on("1109593c287d", order.get("order")):
+            return {"cap": deal_limit(order, lp, grade=grade), "why": f"grade {grade} costs less than the flat guess"}
+        return None
+
     def screen(text):
         text = text or ""
         if pol.get("cert") and CERT_NONE.search(text):
@@ -559,7 +570,7 @@ def screen_for(order, lp=None, shelf_hours=None):
             if w and float(w.group(1)) < BREAK_HOURS:
                 return f"the shop says grade {grade} with a {float(w.group(1)):g} h warranty, we pay for B/C only with {BREAK_HOURS} h"
             if WARRANTY_ANY.search(text) and not WARRANTY_NONE.search(text):
-                return None
+                return graded(grade)
             return f"the shop says grade {grade} with no {BREAK_HOURS} h warranty, we pay only for A or a warranted B/C"
         if grade and pol.get("grades") and grade not in pol["grades"]:
             return f"the shop says grade {grade}, we pay only for {'/'.join(pol['grades'])}"
@@ -571,7 +582,7 @@ def screen_for(order, lp=None, shelf_hours=None):
             if h is None and under and shelf_hours and under * shelf_hours < need:
                 return (f"the shop says grade {grade}, under {under:.0%} of the {shelf_hours:g} h shelf life left, "
                         f"we need {need:.0f}")
-        return None
+        return graded(grade)
     return screen
 
 

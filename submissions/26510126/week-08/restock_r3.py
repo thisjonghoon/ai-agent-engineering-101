@@ -277,9 +277,13 @@ def main():
         plans = {}                                           # sku -> (priority, entry, qty)
 
         def plan(prio, c, qty):
+            # the highest priority and the largest qty any entry gives a SKU: keeping only the top entry's qty let a
+            # category's spread entry (qty 1) replace the SKU's own line (leak audit #30: G0260b9fc prio 15,864 qty 1
+            # over its SKU line qty 9; 189 asks got 'none in stock' while it closed 34 of 62 talks)
             qty -= held[c["sku"]]
-            if qty > 0 and (c["sku"] not in plans or plans[c["sku"]][0] < prio):
-                plans[c["sku"]] = (prio, c, qty)
+            if qty > 0:
+                p0, c0, q0 = plans.get(c["sku"], (prio, c, 0))
+                plans[c["sku"]] = (prio, c, max(qty, q0)) if prio > p0 else (p0, c0, max(qty, q0))
 
         for d in demand:
             # the SKU to stock first: nearest the reference price our orders point to, else the category's median

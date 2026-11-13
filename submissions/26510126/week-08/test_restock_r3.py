@@ -14,6 +14,8 @@ from pathlib import Path
 import restock_r3
 
 restock_r3.STRATEGY = Path(tempfile.mkdtemp(prefix="restock-strategy-")) / "none.json"   # the defaults, not the live file
+_seed = restock_r3.a_hist_seed
+restock_r3.a_hist_seed = lambda now: {}   # the first a_hist reads the live talks log; the cases set their own units
 
 NOW = time.time()
 DEMAND = [{"item": "김치", "category": "식품>김치"}, {"item": "의자", "category": "가구>의자"},
@@ -496,6 +498,10 @@ case("a line whose A draws (0.85 of list) sit above the market median 0.80 is sk
 mixed = [dict(heldA[i], sku="SX", cost=240000 if i < 3 else 340000) for i in range(4)]
 qs = []
 for held in ([], mixed):
+    stf = md / "restock_state.json"           # the A draws bought in the case above stay in a_hist (48 h): start clean
+    stj = json.loads(stf.read_text(encoding="utf-8")) if stf.exists() else {}
+    stj.pop("a_hist", None)
+    stf.write_text(json.dumps(stj), encoding="utf-8")
     (md / "prices_r3.json").write_text(json.dumps({"skus": {f"SB|{g}": {"n": 10, "median": 0.80} for g in "ABC"}}), encoding="utf-8")
     (md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": held}), encoding="utf-8")
     restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=500_000_000, goods_frac=1.0, max_list=1_500_000, dear_depth=2)
@@ -545,4 +551,18 @@ for since in (7, 1):
 restock_r3.strategy = real
 case("a dear line holds at most the market's settles of the SKU in 6 h (2 of 40), once 6 h of history exists",
      qs[0] == 2 and qs[1] > 2, qs)
+
+# leak audit #29: the A cost draws keep sold units (a_hist, 48 h); the seed reads goods A talks, one per (sku, cost)
+td = Path(tempfile.mkdtemp(prefix="restock-seed-"))
+tn = time.time()
+rows = [{"t": tn - 3600, "sku": "S1", "kind": "goods", "grade": "A", "list_price": 100, "cost": 60},
+        {"t": tn - 1800, "sku": "S1", "kind": "goods", "grade": "A", "list_price": 100, "cost": 60},
+        {"t": tn - 600, "sku": "S1", "kind": "goods", "grade": "B", "list_price": 100, "cost": 50},
+        {"t": tn - 60 * 3600, "sku": "S2", "kind": "goods", "grade": "A", "list_price": 100, "cost": 70},
+        {"t": tn - 600, "sku": "F1", "kind": "food", "grade": "A", "list_price": 100, "cost": 65}]
+(td / "talks.jsonl").write_text("\n".join(json.dumps(r) for r in rows) + "\nnot json\n", encoding="utf-8")
+seeded = _seed(tn, path=td / "talks.jsonl")
+case("the a_hist seed keeps one goods A entry per (sku, cost) within 48 h, skipping B, food, old and bad lines",
+     list(seeded.values()) == [["S1", 0.6, tn - 1800]], seeded)
+case("the a_hist seed is empty when the talks log is missing", _seed(tn, path=td / "none.jsonl") == {})
 print(f"\n{sum(ok)}/{len(ok)} passed")

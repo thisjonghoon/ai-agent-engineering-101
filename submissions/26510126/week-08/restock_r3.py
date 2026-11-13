@@ -105,6 +105,27 @@ WANT = re.compile(r"구합니다|구해요|구함|삽니다|찾습니다|찾아�
                   re.I)
 
 
+def a_hist_seed(now, path=None, hours=48, tail=40_000_000):
+    """The first a_hist (restock state) from the seller's talks log: one entry per goods grade-A (sku, cost) seen in
+    talks over the last `hours`, as cost / list. Read once, when the state has none; {} if the log cannot be read."""
+    path = Path(path or os.environ.get("TALKS_FILE") or HERE / "logs" / "talks_r3.jsonl")
+    out = {}
+    try:
+        with open(path, "rb") as f:
+            f.seek(max(0, f.seek(0, 2) - tail))
+            for line in f:
+                try:
+                    t = json.loads(line)
+                except ValueError:
+                    continue
+                if (t.get("kind") == "goods" and t.get("grade") == "A" and t.get("list_price") and t.get("cost")
+                        and (t.get("t") or 0) > now - hours * 3600):
+                    out[f"talk:{t['sku']}:{t['cost']}"] = [t["sku"], round(t["cost"] / t["list_price"], 4), t["t"]]
+    except OSError:
+        return {}
+    return out
+
+
 def forum_wanted(md, demand, catalog, now, hours=6):
     """Categories that "wanted" posts of the last `hours` name (by category word, product name or SKU), with counts.
     Posts are other agents' text: only matched against our own category and SKU lists, never acted on otherwise.
@@ -180,7 +201,15 @@ def main():
             sku_score[u["sku"]] += 2
     # when each held unit was first seen: a unit that sat over 24 h tells the restock the SKU does not sell
     first = {u["unit"]: (st.get("first") or {}).get(u["unit"], now) for u in units}
-    st.update(first=first, settle_ts={k: v for k, v in settle_ts.items() if v},
+    # grade-A goods cost shares as bought (48 h), sold units included: the units still held are the dear leftovers
+    # (leak audit #29: held A median 0.733 of list vs 0.661 for the A units sold in 48 h), so drawing from inventory
+    # alone made every top SKU's sellable share 0 and no 150k+ line was bought after 11/14 00:22
+    a_hist = {k: v for k, v in (st.get("a_hist") or a_hist_seed(now)).items() if v[2] > now - 48 * 3600}
+    for u in units:
+        if u.get("kind") == "goods" and u.get("grade") == "A" and u.get("list_price") and u.get("cost"):
+            a_hist.pop(f"talk:{u['sku']}:{u['cost']}", None)     # the seed's copy of a held unit
+            a_hist[u["unit"]] = [u["sku"], round(u["cost"] / u["list_price"], 4), first[u["unit"]]]
+    st.update(first=first, a_hist=a_hist, settle_ts={k: v for k, v in settle_ts.items() if v},
  score={k: v for k, v in score.items() if v > 0.05}, sku_score={k: v for k, v in sku_score.items() if v > 0.05},
               seen=[{k: u.get(k) for k in ("unit", "sku", "category", "grade", "expires_at")} for u in units], t=now)
     # the hidden demand as it reaches us (demand_r3.py): orders our buyer got and requests to our shop, decayed over
@@ -330,7 +359,10 @@ def main():
                 own_food[(u["sku"], u.get("grade"))].append(u["cost"] / u["list_price"])
                 sku_paid[u["sku"]].append(u["cost"] / u["list_price"])
 
-        own_a = {k: v for (k, g), v in own.items() if g == "A"}   # our A cost shares per SKU
+        own_a = defaultdict(list)                        # our A cost shares per SKU, as bought (a_hist, 48 h)
+        for sku_a, share_a, _ in st["a_hist"].values():
+            own_a[sku_a].append(share_a)
+        own_a = dict(own_a)
 
         def expected_margin(c):
             """(the grade mix's margin, grade A's alone, the share of A draws that can sell) or None. A alone too (11/11 12:5x audit #3): pick() offers A

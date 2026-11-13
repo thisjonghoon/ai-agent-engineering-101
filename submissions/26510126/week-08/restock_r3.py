@@ -183,6 +183,11 @@ def main():
     for cat, w in order_w.items():
         score[cat] += s["order_weight"] * w
     for sku, w in ask_w.items():
+        # a dear SKU's asks are mostly the same buyers walking away from us again and again (leak audit #28, 11/14:
+        # sofa G04ee8423 had a settle score ~80 and asks ~680, so heat 3.8 bought 14 units the market sells ~1.2 an
+        # hour): for 150k+ goods the asks can at most double the settle score
+        if ((catalog.get(sku) or {}).get("list_price") or 0) >= 150_000:
+            w = min(w, sku_score.get(sku, 0.0) / max(s["order_weight"], 1e-9))
         sku_score[sku] += s["order_weight"] * w
     wanted = forum_wanted(md, demand, catalog, now)          # categories buyers asked for on the forum (not kept)
     for cat, n in wanted.items():
@@ -355,9 +360,11 @@ def main():
                     draws = own_a.get(c["sku"]) if len(own_a.get(c["sku"], ())) >= 4 else [x for v in own_a.values() for x in v]
                     if st is not None and draws:
                         sv = [d * surge.get(c["sku"], 1.0) for d in draws]
-                        a_only = sum(((value - d) if d / 0.97 <= st["median"] else -A_HOLD * d) for d in sv) / sum(sv)
+                        # the seller's floor is cost x (1 + min_margin) / (1 - WARRANTY_Q A) (seller_r3.py:470), not cost / 0.97
+                        fl = (1 + s.get("min_margin", 0.02)) / 0.97
+                        a_only = sum(((value - d) if d * fl <= st["median"] else -A_HOLD * d) for d in sv) / sum(sv)
                         # the same draws size a dear line: 5 of the 6 A units bought after ee706d8 sit above the market
-                        sellable = sum(d / 0.97 <= st["median"] for d in sv) / len(sv)
+                        sellable = sum(d * fl <= st["median"] for d in sv) / len(sv)
                     else:
                         a_only = (value - cost) / cost
             return (num / den, a_only, sellable) if den else None

@@ -67,11 +67,13 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    floor_frac 0.68 (-41%) at 14:51, window_depth 2.8 (-39%) at 18:28 and clear_hours 14 (-20%) at 17:54 came back
    on "the opposite direction is free"; the supervisor reverted the first two).
    [since 11/12 01:2x, return clause 18:3x; from: the supervisor; review: never]
-10. floor_frac_food stays at 0.52 until 11/13 12:00. Raised to 0.54 (11:19, judged -33%), 0.56 (20:23) and 0.57 (22:18),
+10. EXPIRED 11/13 12:00: floor_frac_food is no longer pinned at 0.52. What still applies: a raise runs only as an A/B,
+   one 0.01-0.02 step; a cut is a normal play-mode move under order 9. History: floor_frac_food stayed at 0.52 until 11/13 12:00. Raised to 0.54 (11:19, judged -33%), 0.56 (20:23) and 0.57 (22:18),
    the last two reverted by the supervisor; our count share fell 3.83% -> 2.95% (18-20 h vs 20-22 h) with the drop in
    food. After 11/13 12:00 a raise runs only as an A/B, one 0.01-0.02 step.
    [since 11/12 22:2x; from: the supervisor; review: 11/13 12:00]
-11. market_ask stays at 1.0 until 11/13 18:00. 0.95->1.0 was judged +63% paid value share (00:48 verdict), and it was
+11. EXPIRED 11/13 18:00: market_ask is no longer pinned (it is 1.03 since 11/13 18:09) and is a normal play-mode number
+   under order 9; its 1.0 verdict (+63%) is the evidence a return below 1.0 must beat. History: market_ask stayed at 1.0 until 11/13 18:00. 0.95->1.0 was judged +63% paid value share (00:48 verdict), and it was
    lowered back to 0.95 three times (00:48, 06:03, each reverted by the supervisor). It does not clear the grade-A units
    priced above the market: their floor is cost/(1-WARRANTY_Q) (seller_r3.py:470) and the market cap never takes a
    floor under cost plus margin (:453), so a lower market_ask only cuts the price of units that already sell. To clear

@@ -48,7 +48,7 @@ GOODS_MIX = {"A": 0.73, "B": 0.19, "C": 0.08}      # our goods supply by grade, 
 GRADE_COST = {"A": 0.66, "B": 0.48, "C": 0.378}    # supply cost / list by grade: what 101 300k+ units cost us 11/12 00-06 h
 # (audit #14). Audit #13 had set A 0.70 from the units still HELD, which are the dear leftovers (pick() sells the
 # cheapest-cost unit first), and dear restock fell to 0 while 10 of the market's top 25 300k+ SKUs would earn 3-10%.
-A_HOLD = 0.07                                      # storage lost on an A unit that cannot sell at our floor: a week at 1% a day (audit #20)
+A_HOLD = 0.037                                     # storage lost on an A unit that cannot sell at our floor: 3.7 days left at 1% a day (audit #30; a week was 0.07)
 REFUND = {"A": 0.03, "B": 0.13, "C": 0.35}           # expected refunds under the 72 h warranty. B as seller_r3.WARRANTY_Q (market adj. 15%, audit #14).
 # C as seller_r3.WARRANTY_Q C 0.35: audit #11 set 0.18 from the market's 17.6%, but our own 300k+ C broke on 19 of 65
 # sales in 6 h (>=31.8%, 8.88M refunded of 27.98M, 11/12 audit #13), so 0.18 overvalued C and let losing lines pass.

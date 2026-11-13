@@ -565,4 +565,7 @@ seeded = _seed(tn, path=td / "talks.jsonl")
 case("the a_hist seed keeps one goods A entry per (sku, cost) within 48 h, skipping B, food, old and bad lines",
      list(seeded.values()) == [["S1", 0.6, tn - 1800]], seeded)
 case("the a_hist seed is empty when the talks log is missing", _seed(tn, path=td / "none.jsonl") == {})
+
+# leak audit #30: an A unit that cannot sell has about 3.7 days left, so its storage charge is 0.037 of cost, not a week's 0.07
+case("the A_HOLD storage charge is 3.7 days at 1% a day (0.037)", abs(restock_r3.A_HOLD - 0.037) < 1e-9, restock_r3.A_HOLD)
 print(f"\n{sum(ok)}/{len(ok)} passed")

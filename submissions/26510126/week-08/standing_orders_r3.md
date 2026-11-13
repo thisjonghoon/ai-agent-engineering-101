@@ -77,3 +77,7 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    floor under cost plus margin (:453), so a lower market_ask only cuts the price of units that already sell. To clear
    that pile, use a clearance rule (clear_floor, the stuck rule) by A/B.
    [since 11/13 06:0x; from: the supervisor; review: 11/13 18:00]
+12. window_depth stays at 2.0 or more for the rest of the round. 2.0->1.5 at 11/13 16:30 was reverted by the fast guard
+   at 17:34, and the restock bought at 1.5 left food short (our food share 3.6% for two hours vs 4.5-5.8% around it);
+   it was tried again at 21:26 and reverted by the supervisor.
+   [since 11/13 21:3x; from: the supervisor and the fast guard; review: never]

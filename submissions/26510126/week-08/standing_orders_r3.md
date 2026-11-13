@@ -81,3 +81,7 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    at 17:34, and the restock bought at 1.5 left food short (our food share 3.6% for two hours vs 4.5-5.8% around it);
    it was tried again at 21:26 and reverted by the supervisor.
    [since 11/13 21:3x; from: the supervisor and the fast guard; review: never]
+13. sku_depth stays at 3 or more for the rest of the round. 3->2 at 11/13 07:57 let the best-selling food run out (our
+   food share 5.1% -> 3.3% in 3 h); 2->3 at 10:04 closed at +31% paid count share; 3->2 was tried again 11/14 02:25 and
+   reverted by the supervisor. (Note: market_ask is 1.03 since 11/13 18:09, not 1.0.)
+   [since 11/14 02:3x; from: the supervisor; review: never]

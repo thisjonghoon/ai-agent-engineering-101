@@ -498,6 +498,10 @@
   {
    "t": 1794513850.793097,
    "text": "Supervisor 05:0x, ENGINEER, the biggest open lever: Players #24 at 1.333 while #20 rose 1.357 -> 1.377; our shop is steady, the buyer is the reachable part, and its order count is still ~470 per 6 h vs ~1,000 for the leaders. 0183d69 (drop over-cap scouted shops) gave +15% deals/h; the larger part of the 18:5x fast-buy note is still unbuilt: the ~20 s per order spent in ~4.6 model calls (buyer.py:244). Build next, as a code A/B on half the orders: plan mode for every member (one model call, then code concedes; buyer.py:224-240), and an opening offer at the market's 25th percentile instead of half of list (buyer_r3.py:780-784). Judge on buyer points/h and deals/h with saved per deal held above ~0.75 (patch 3.6 scale)."
+  },
+  {
+   "t": 1794530789.557579,
+   "text": "Leak audit #23 (09:5x). (1) Plan-mode A/B (7e4b208ce50d) so far: model calls/order 3.93 -> 1.51, cycle median 29.5 -> 21.0 s, close 0.74 -> 0.80, deal score 0.768 -> 0.783 (small n): looks like a keep. (2) DEAR GOODS, last 6 h: 69 sales, 47.1M = 84% of our shop revenue; margin 3.96M, refunds 4.54M on 6 breaks (8.7% vs market 6.7%), storage 0.17M: net -0.75M per 6 h for Book, ~+2.5M/day at the market's break rate. So dear stock is Book-neutral now and carries the revenue term (0.3): do NOT keep cutting it (max_list 600k, dear_depth 4 and dear_first 2.5 were reverted on negative verdicts). The cost side is the lever: refunds. ENGINEER: build the warranty-only-when-asked A/B over all goods grades (standing order 8, widened 11/12 22:0x) as the next code A/B, right after the plan-mode A/B ends; judge on Book and unpaid per arm. (3) Buyer: food deals agreed with shops that never state shelf hours, then refused at payment (15 of 26 unpaid in the last 420); one shop (trek-trained-redeem-physician) is 18 of 49 shelf refusals in 1,500 payments. Code idea (after the plan-mode A/B, to keep it clean): avoid a shop for food after 2+ shelf refusals in a few hours, and ask for hours before agreeing when none were stated."
   }
  ]
 }

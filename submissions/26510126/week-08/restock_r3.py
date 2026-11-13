@@ -446,8 +446,10 @@ def main():
                 hot = c.get("kind") == "goods" and c["list_price"] < 150_000 and sku_score.get(c["sku"], 0) >= DEAR_HOT
                 # 1h: <30k settled 1586 and 30-100k 631 an hour, we held 4.3% and 2.3% (7.5 h and 11 h of stock) with 26M idle:
                 # the multiplier grows with sku_score from 2x to 3x, as 300k+ depth does
-                mult = min(3.0, max(2.0, sku_score.get(c["sku"], 0) / DEAR_HOT)) if hot else 1
-                if hot:
+                # no multiplier while a unit of the SKU sat unsold over 24 h (654 goods units, 50.4M at cost, sat over a day;
+                # 815 of 1,238 units under 30k, a margin of 1,263 a unit): the stale unit is not refilled to hot depth
+                mult = min(3.0, max(2.0, sku_score.get(c["sku"], 0) / DEAR_HOT)) if hot and c["sku"] not in stale else 1
+                if mult > 1:
                     qty = held[c["sku"]] + int(mult * qty)      # the planned depth times mult, held units included
                 qty = min(qty, int(min(cap, int(s.get("sku_cap", 8))) * mult) - held[c["sku"]])
                 # a goods SKU nobody has bought (sku_score under 1: no market settle, no sale of ours lately) gets 1 unit

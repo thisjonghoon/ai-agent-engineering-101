@@ -510,6 +510,10 @@
   {
    "t": 1794552301.5055501,
    "text": "Leak audit #25 (15:5x), ENGINEER, high priority: (1) the buyer A/B verdicts are scored on the pre-patch-3.6 scale: metrics_r3.window (lines ~391-394) rates a deal by (list - price)/list, but the board's saved is (list - price)/(list - unit cost) since 11/12 17:4x. Same-unit changes move both the same way, but any trial that shifts the grade mix (cheap-cost C vs A) is judged wrong. Fix: score paid deals by the 3.6 formula using the unit's cost from .market/ledger-recent.json supply rows (units[] with total/qty) matched by the settle's unit id, falling back to the old rate only when no cost is known; add a test. (2) The per-grade cost A/B 1109593c287d so far (13:13-15:35, ~63 scored deals per arm): old arm mean score 0.849, sum of (score - 0.70) +9.09; new arm 0.823, +8.02; grade C settles fell 32 -> 14 because the C guess 0.35 is wrong: our C units actually cost ~0.50 of list (0.41-0.61), A ~0.57, B ~0.49-0.53. Do not change it mid-trial; if it is kept, set COST_GUESS_GRADE C to 0.50 (and A to ~0.57) right after the verdict."
+  },
+  {
+   "t": 1794554069.484232,
+   "text": "Correction to my 15:5x note (audit #25): do NOT raise COST_GUESS_GRADE C to 0.50 or A to 0.57. Those 'measured' costs were supply-lot averages (lot total/qty), and a lot mixes grades, so every grade comes out ~0.5-0.6. agent.md gives goods costs by grade: A 0.55-0.75, B 0.40-0.60, C 0.25-0.45; the current 0.65/0.50/0.35 are the right midpoints. The same lot-average flaw inflated the audit's scores for C deals, so the new arm passing fewer C deals over 0.545 of list is likely correct. Still valid: the verdict metric (metrics_r3.window) uses the pre-3.6 scale; when it is fixed, a lot-average cost is not a unit cost either, so score by the grade's midpoint cost unless a per-unit cost is known."
   }
  ]
 }

@@ -72,7 +72,7 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    the last two reverted by the supervisor; our count share fell 3.83% -> 2.95% (18-20 h vs 20-22 h) with the drop in
    food. After 11/13 12:00 a raise runs only as an A/B, one 0.01-0.02 step.
    [since 11/12 22:2x; from: the supervisor; review: 11/13 12:00]
-11. EXPIRED 11/13 18:00: market_ask is no longer pinned (it is 1.03 since 11/13 18:09) and is a normal play-mode number
+11. EXPIRED 11/13 18:00: market_ask is no longer pinned (read its value now from the bounds list, not from this file) and is a normal play-mode number
    under order 9; its 1.0 verdict (+63%) is the evidence a return below 1.0 must beat. History: market_ask stayed at 1.0 until 11/13 18:00. 0.95->1.0 was judged +63% paid value share (00:48 verdict), and it was
    lowered back to 0.95 three times (00:48, 06:03, each reverted by the supervisor). It does not clear the grade-A units
    priced above the market: their floor is cost/(1-WARRANTY_Q) (seller_r3.py:470) and the market cap never takes a
@@ -85,7 +85,7 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    [since 11/13 21:3x; from: the supervisor and the fast guard; review: never]
 13. sku_depth stays at 3 or more for the rest of the round. 3->2 at 11/13 07:57 let the best-selling food run out (our
    food share 5.1% -> 3.3% in 3 h); 2->3 at 10:04 closed at +31% paid count share; 3->2 was tried again 11/14 02:25 and
-   reverted by the supervisor. (Note: market_ask is 1.03 since 11/13 18:09, not 1.0.)
+   reverted by the supervisor.
    [since 11/14 02:3x; from: the supervisor; review: never]
 14. Values whose own verdict closed negative (order 9's return clause applies: returning to one needs a new
    measurement taken after it, cited with its window). Check this list before proposing any of these numbers:

@@ -87,3 +87,10 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    food share 5.1% -> 3.3% in 3 h); 2->3 at 10:04 closed at +31% paid count share; 3->2 was tried again 11/14 02:25 and
    reverted by the supervisor. (Note: market_ask is 1.03 since 11/13 18:09, not 1.0.)
    [since 11/14 02:3x; from: the supervisor; review: never]
+14. Values whose own verdict closed negative (order 9's return clause applies: returning to one needs a new
+   measurement taken after it, cited with its window). Check this list before proposing any of these numbers:
+   dear_depth 4 (11/13), dear_first 2.5 (11/13), max_list 600k (11/12-13), floor_frac 0.68 (11/12, -41%),
+   window_depth 2.8 (11/12, -39%) and 1.5 (11/13, fast guard), clear_hours 14 (11/12, -20%), sku_depth 2 (11/13),
+   floor_frac_food 0.54 (11/12, -33%), market_ask 0.95 (11/13, 1.0 judged +63%). dear_depth 5->4 at 11/14 04:38 was
+   proposed as "a different number from past moves" and reverted by the supervisor for this reason.
+   [since 11/14 04:4x; from: the supervisor; review: never]

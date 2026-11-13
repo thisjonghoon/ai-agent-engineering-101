@@ -529,4 +529,20 @@ for age in (1, 30):
 restock_r3.strategy = real
 case("10 goods units held 30 h count at half cost in goods_room: 2 hot 400,000 units bought, held fresh 1",
      qs[0] == 1 and qs[1] == 2, qs)
+# the market settled 2 of SB in 6 h: a hot line (sku_score 1500, depth 8 x 5) is capped at 2 once 6 h of settles are kept,
+# and not capped while the history is younger than 6 h
+qs = []
+(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": []}), encoding="utf-8")
+for since in (7, 1):
+    (md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SB": 1500},
+                                                       "settle_since": time.time() - since * 3600,
+                                                       "settle_ts": {"SB": [time.time() - 3600, time.time() - 7200]}}), encoding="utf-8")
+    restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=500_000_000, goods_frac=1.0, max_list=1_500_000, dear_depth=8)
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        restock_r3.main()
+    qs.append({b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}.get("SB", 0))
+restock_r3.strategy = real
+case("a dear line holds at most the market's settles of the SKU in 6 h (2 of 40), once 6 h of history exists",
+     qs[0] == 2 and qs[1] > 2, qs)
 print(f"\n{sum(ok)}/{len(ok)} passed")

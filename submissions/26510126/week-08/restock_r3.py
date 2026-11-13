@@ -159,12 +159,17 @@ def main():
     score = defaultdict(float, {k: v * decay for k, v in st.get("score", {}).items()})
     sku_score = defaultdict(float, {k: v * decay for k, v in st.get("sku_score", {}).items()})
     settles, st["after"] = ledger_settles(st.get("after", 0))
+    # settle times of each 150k+ SKU over the last 6 h, for the dear-line depth cap; history counts once 6 h of it was kept
+    settle_ts = defaultdict(list, {k: [x for x in v if x > now - 6 * 3600] for k, v in st.get("settle_ts", {}).items()})
+    st["settle_since"] = st.get("settle_since", now)
     for e in settles:
         sku = e["data"].get("item")
         cat = (catalog.get(sku) or {}).get("category")
         if cat:
             score[cat] += 1
             sku_score[sku] += 1
+            if (catalog.get(sku) or {}).get("list_price", 0) >= 150_000 and e.get("ts"):
+                settle_ts[sku].append(e["ts"])
     units = inv.get("units", [])
     have = {u["unit"]: u for u in units}
     sold = [u for u in st.get("seen", []) if u["unit"] not in have and u.get("grade") != "expired"
@@ -175,7 +180,8 @@ def main():
             sku_score[u["sku"]] += 2
     # when each held unit was first seen: a unit that sat over 24 h tells the restock the SKU does not sell
     first = {u["unit"]: (st.get("first") or {}).get(u["unit"], now) for u in units}
-    st.update(first=first, score={k: v for k, v in score.items() if v > 0.05}, sku_score={k: v for k, v in sku_score.items() if v > 0.05},
+    st.update(first=first, settle_ts={k: v for k, v in settle_ts.items() if v},
+ score={k: v for k, v in score.items() if v > 0.05}, sku_score={k: v for k, v in sku_score.items() if v > 0.05},
               seen=[{k: u.get(k) for k in ("unit", "sku", "category", "grade", "expires_at")} for u in units], t=now)
     # the hidden demand as it reaches us (demand_r3.py): orders our buyer got and requests to our shop, decayed over
     # two days; added for this run only (the log keeps them), so they do not compound with the settle scores
@@ -444,6 +450,10 @@ def main():
                 # the depth, not the SKU plan's qty: on 11/6 the market's best sellers (sku_score 600-1,500) planned 20
                 # units a line, 2.5-28M at cost, more than the goods room left, so each was skipped and cheap lines took
                 # the window; 4,379 units of 300k+ settled market-wide in 6 h, we held none of the top 12 and sold 6
+                # one line took 14 sofas (G04ee8423) at 0.638 of list while the whole market sold 7 in 6 h: at about 4% margin
+                # a line holds no more than the market's settles of that SKU in 6 h (once 6 h of settles are kept)
+                if depth and now - st["settle_since"] >= 6 * 3600:
+                    depth = min(depth, max(1, math.ceil(len(settle_ts.get(c["sku"], [])))))
                 qty = depth - held[c["sku"]]
             else:                     # a cheap SKU no deeper than sku_cap: 22-24 of one blanket sat in stock on 11/5
                 # 6 h: the 100-300k band sold 1.0 an hour with 46 units held (46 h of stock) while 300k+ sold 6.0 an hour

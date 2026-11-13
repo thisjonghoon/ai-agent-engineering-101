@@ -506,4 +506,27 @@ for held in ([], mixed):
 restock_r3.strategy = real
 case("a line with a quarter of its A draws above the market median is bought at 3/4 depth (10 units, 8)",
      qs[-2] == 10 and qs[-1] == 8, qs[-2:])
+# stale goods (held over 24 h) count at half their cost in goods_room: 10 units at 60,000 held 30 h leave room for 2 hot 400,000
+# units (700k of 1M), held fresh only 1 (400k)
+(md / "catalog.json").write_text(json.dumps({"SB": {"category": "G>bed", "kind": "goods", "list_price": 400000, "name": "bed"},
+                                             "SX": {"category": "G>mug", "kind": "goods", "list_price": 100000, "name": "mug"}}),
+                                 encoding="utf-8")
+(md / "demand.json").write_text(json.dumps([{"item": "bed", "category": "G>bed", "kind": "goods", "median_price": 400000}]),
+                                encoding="utf-8")
+(md / "prices_r3.json").write_text(json.dumps({"skus": {}}), encoding="utf-8")
+pile = [{"unit": f"x{i}", "sku": "SX", "category": "G>mug", "kind": "goods", "grade": "B", "cost": 60000,
+         "list_price": 100000, "supplied_at": NOW, "expires_at": None} for i in range(10)]
+qs = []
+for age in (1, 30):
+    (md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 40_000_000, "units": pile}), encoding="utf-8")
+    (md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30, "score": {}, "sku_score": {"SB": 1500},
+                                                       "first": {u["unit"]: time.time() - age * 3600 for u in pile}}), encoding="utf-8")
+    restock_r3.strategy = lambda: dict(real(), reserve_cash=0, stock_value=1_000_000, goods_frac=1.0, max_list=1_500_000, dear_depth=8)
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        restock_r3.main()
+    qs.append({b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}.get("SB", 0))
+restock_r3.strategy = real
+case("10 goods units held 30 h count at half cost in goods_room: 2 hot 400,000 units bought, held fresh 1",
+     qs[0] == 1 and qs[1] == 2, qs)
 print(f"\n{sum(ok)}/{len(ok)} passed")

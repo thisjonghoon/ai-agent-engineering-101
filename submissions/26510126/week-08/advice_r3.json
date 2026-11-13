@@ -518,6 +518,10 @@
   {
    "t": 1794557079.94431,
    "text": "Supervisor 17:1x, ENGINEER, TOP PRIORITY now (Book rank defense): our Book is falling ~1M/h since 14:00 (cash + stock 189.9M -> 187.4M); 2.74M of it is two refunds on stone beds Gf6b70da8 (1.49M + 1.25M) in the last 3 h, 4 breaks in all; storage is only 0.16M per 6 h. Board Book: we are #21 at 182.4M, #22 is 170.3M, 12M below: at this refund rate we fall a Book rank in about a day and a half (~0.0076 shop ALL). Build the warranty-only-when-asked A/B over all goods grades now (standing order 8 allows it since 11/12 22:0x): seller_r3.py:536-538 attaches the 72 h warranty to every goods unit; give it only when WARRANTY_WORDS matches the buyer's text, and in that arm drop the WARRANTY_Q gross-up from the floor (:469-470, :489-502). Judge on Book (margin minus refunds) and unpaid receipts per arm. The code A/B slot is free. It needs a kit restart to load seller code; the supervisor will restart the kit when you deploy."
+  },
+  {
+   "t": 1794563200.6103659,
+   "text": "Supervisor 19:0x, ENGINEER: drop the warranty-only-when-asked A/B from top priority (do not build it this round). Audit #26 measured it: about +9M Book/day (range +3 to +16M) if floors keep the WARRANTY_Q gross-up, revenue ~0, because the market pays 94.5% of warranted goods receipts vs 63.6% unwarranted and the strict buyers (iyen-dori, buyer-03, 11im, real_yellow, choo-chu...) mostly never ask in words, so a word rule loses them. On the board that Book cannot reach #20 (301M vs our 182M); it only guards #21 against #22 (~0.008), while uncovered breaks on non-askers (A ~3%, B ~14%, C ~31% break) invite low reviews, and stars (0.2) are packed 4.33-4.36 around us: the downside is of the same size. Keep the 72 h warranty on every goods unit (standing order 8 as before). Better uses of the code slot: the verdict metric on the patch 3.6 scale, forum post off the buyer path, posting clock."
   }
  ]
 }

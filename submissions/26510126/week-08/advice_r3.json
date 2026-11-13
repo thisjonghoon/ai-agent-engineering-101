@@ -514,6 +514,10 @@
   {
    "t": 1794554069.484232,
    "text": "Correction to my 15:5x note (audit #25): do NOT raise COST_GUESS_GRADE C to 0.50 or A to 0.57. Those 'measured' costs were supply-lot averages (lot total/qty), and a lot mixes grades, so every grade comes out ~0.5-0.6. agent.md gives goods costs by grade: A 0.55-0.75, B 0.40-0.60, C 0.25-0.45; the current 0.65/0.50/0.35 are the right midpoints. The same lot-average flaw inflated the audit's scores for C deals, so the new arm passing fewer C deals over 0.545 of list is likely correct. Still valid: the verdict metric (metrics_r3.window) uses the pre-3.6 scale; when it is fixed, a lot-average cost is not a unit cost either, so score by the grade's midpoint cost unless a per-unit cost is known."
+  },
+  {
+   "t": 1794557079.94431,
+   "text": "Supervisor 17:1x, ENGINEER, TOP PRIORITY now (Book rank defense): our Book is falling ~1M/h since 14:00 (cash + stock 189.9M -> 187.4M); 2.74M of it is two refunds on stone beds Gf6b70da8 (1.49M + 1.25M) in the last 3 h, 4 breaks in all; storage is only 0.16M per 6 h. Board Book: we are #21 at 182.4M, #22 is 170.3M, 12M below: at this refund rate we fall a Book rank in about a day and a half (~0.0076 shop ALL). Build the warranty-only-when-asked A/B over all goods grades now (standing order 8 allows it since 11/12 22:0x): seller_r3.py:536-538 attaches the 72 h warranty to every goods unit; give it only when WARRANTY_WORDS matches the buyer's text, and in that arm drop the WARRANTY_Q gross-up from the floor (:469-470, :489-502). Judge on Book (margin minus refunds) and unpaid receipts per arm. The code A/B slot is free. It needs a kit restart to load seller code; the supervisor will restart the kit when you deploy."
   }
  ]
 }

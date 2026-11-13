@@ -526,6 +526,10 @@
   {
    "t": 1794573964.555151,
    "text": "Leak audit #27 (22:0x). MERCHANDISING: stop lowering min_shelf_hours. Across 408 (15:42-17:53) -> 360 -> 312 our food sales/h stayed 95-98 while our share of the market's food fell 4.2% -> 4.1% -> 4.0%, and the share of food talks the buyer left because our best unit had fewer hours than it needed rose 8.6% -> 9.6% -> 10.9%; 115 held food units (1.1M) are too short for most orders. No gain shown, failures creeping: going back to 360-408 is supported; do not go under 312. ENGINEER (code idea): restock judges food by the catalog shelf_hours, but units arrive partly aged (our held food had a median 66% of shelf_hours left on arrival, bottom 10% <= 30%, per agent.md grades A >= 80%, B >= 45%, C less); apply min_shelf_hours to expected life on arrival (~0.6 x shelf_hours) and skip SKUs whose category need is near it (e.g. 36 side-dish units bought at 21:04 arrived with 28-164 h vs a median need of 84 h). Stars: ours 4.57 vs market 4.58-4.61 (29th of 48); the sub-4 reviews are mostly rule-based raters (2-star buyer, grade C raters, pre-check 3-star reviews); 3 genuine short-shelf complaints."
+  },
+  {
+   "t": 1794581205.768908,
+   "text": "Supervisor 23:5x, ENGINEER (code idea, restock sizing): at 23:44 restock bought 14 units of sofa G04ee8423 (list 1.624M) for 14.5M = 0.638 of list, while the whole market sold this SKU 7 times in 6 h at 0.663 of list (A 3, B 2, C 2): two days of the entire market's demand in one line at ~4% margin, with the A cost draw putting part of it above the market price (the 11/13 afternoon stone-bed refunds came from such a line). Cap a dear line's quantity by the market's own sell rate for that SKU (e.g. at most ~6 h of market settles, or our expected share of them to the round's end), and require the margin after the grade's refund rate to be clearly positive before buying a whole dear line."
   }
  ]
 }

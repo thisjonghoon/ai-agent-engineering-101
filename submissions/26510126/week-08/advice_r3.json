@@ -522,6 +522,10 @@
   {
    "t": 1794563200.6103659,
    "text": "Supervisor 19:0x, ENGINEER: drop the warranty-only-when-asked A/B from top priority (do not build it this round). Audit #26 measured it: about +9M Book/day (range +3 to +16M) if floors keep the WARRANTY_Q gross-up, revenue ~0, because the market pays 94.5% of warranted goods receipts vs 63.6% unwarranted and the strict buyers (iyen-dori, buyer-03, 11im, real_yellow, choo-chu...) mostly never ask in words, so a word rule loses them. On the board that Book cannot reach #20 (301M vs our 182M); it only guards #21 against #22 (~0.008), while uncovered breaks on non-askers (A ~3%, B ~14%, C ~31% break) invite low reviews, and stars (0.2) are packed 4.33-4.36 around us: the downside is of the same size. Keep the 72 h warranty on every goods unit (standing order 8 as before). Better uses of the code slot: the verdict metric on the patch 3.6 scale, forum post off the buyer path, posting clock."
+  },
+  {
+   "t": 1794573964.555151,
+   "text": "Leak audit #27 (22:0x). MERCHANDISING: stop lowering min_shelf_hours. Across 408 (15:42-17:53) -> 360 -> 312 our food sales/h stayed 95-98 while our share of the market's food fell 4.2% -> 4.1% -> 4.0%, and the share of food talks the buyer left because our best unit had fewer hours than it needed rose 8.6% -> 9.6% -> 10.9%; 115 held food units (1.1M) are too short for most orders. No gain shown, failures creeping: going back to 360-408 is supported; do not go under 312. ENGINEER (code idea): restock judges food by the catalog shelf_hours, but units arrive partly aged (our held food had a median 66% of shelf_hours left on arrival, bottom 10% <= 30%, per agent.md grades A >= 80%, B >= 45%, C less); apply min_shelf_hours to expected life on arrival (~0.6 x shelf_hours) and skip SKUs whose category need is near it (e.g. 36 side-dish units bought at 21:04 arrived with 28-164 h vs a median need of 84 h). Stars: ours 4.57 vs market 4.58-4.61 (29th of 48); the sub-4 reviews are mostly rule-based raters (2-star buyer, grade C raters, pre-check 3-star reviews); 3 genuine short-shelf complaints."
   }
  ]
 }

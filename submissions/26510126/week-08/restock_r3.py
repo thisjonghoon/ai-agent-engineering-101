@@ -476,6 +476,20 @@ def main():
         # min_margin is the seller's number (not in this file's DEFAULTS): read it from the strategy, 2% if absent
         # (11/11 01:03: s["min_margin"] raised KeyError and stopped every restock run from 00:49)
         min_m = (read_json(STRATEGY, {}) or {}).get("min_margin", 0.02)
+        # the market's top food seller (sku_score 399) sat 16th of 20 bought: a window completes 11-17 lines and lines past
+        # the 15th succeed 6% or less, and SKU lines (1.5 x sku_score) never beat the ~16,000 category entries. Hot food
+        # that keeps 48 h and passes food_margin goes right after the 300k+ best sellers
+        def hot_food(p):
+            c = p[1]
+            if c.get("kind") != "food" or sku_score.get(c.get("sku"), 0) < DEAR_HOT or (c.get("shelf_hours") or 0) < 48:
+                return False
+            try:
+                f = food_margin(c)
+            except Exception:
+                f = None
+            return f is None or f >= min_m
+        ranked = ([p for p in ranked if p in best] + [p for p in ranked if p not in best and hot_food(p)]
+                  + [p for p in ranked if p not in best and not hot_food(p)])
         for prio, c, qty in ranked:
             if c.get("kind") == "goods":
                 try:

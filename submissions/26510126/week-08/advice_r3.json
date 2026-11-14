@@ -582,6 +582,10 @@
   {
    "t": 1794652126.734348,
    "text": "Supervisor 19:3x: verdicts that overlap 15:50-17:50 carry the 8615b70 dear-gate fix (revenue 8.9M -> 20.7M/h, value share 1.7% -> 4.7%) and those over 12:45-15:45 carry the dear stock-out; treat both sets as UNATTRIBUTABLE for every number: order_weight 1.5->2.0 (+213%), market_ask 1.05->1.0 (+212%), and the -28% to -73% margin verdicts of 12:00-15:45. order_weight 2.0->2.5 at 19:28 stepped on the +213% one and was reverted by the supervisor."
+  },
+  {
+   "t": 1794660580.4575639,
+   "text": "Leak audit #35 (22:0x, 15:27-21:27: 5,820 talks, 1,105 deals, paid margin ~14.0M per 6 h). ENGINEER: do NOT build the 'stale 300k+ depth 2' cap (tried twice, 17:50 no-op and 21:09 no change): replayed on the last 6 h it would have cut ~8 units of which 7 sold (~0.8M margin forgone) to avoid ~1.2M tied and 37k storage, a net loss. The rebuys it targets were SKUs whose stale unit was grade C, which restock's held count leaves out. SELLER (needs a kit restart, supervisor's call; held for now): the batch (extra turns for rising buyers, no floor in the walk message, stray-number parsing, short-life food, C over 24 h clearing to the C median) is worth ~+230k per 6 h (1.6% of margin), mostly the extra turns (~100k) and the C clearance (~110k, one-off, 97 C units 5.36M over 24 h). New: the refund constants WARRANTY_Q / REFUND (A 0.03, B 0.13, C 0.35) run 2-5x the measured refunds (market 6 h: A 1.3%, B 2.3%, C 6.4% of sale price; ours A 1.7%, B 6.2%); they set the floor in 632 of 1,673 A talks and 55 of 151 B talks, ~+175k per 6 h from 17 A/B units whose best offer cleared a measured-refund floor, and the C 0.35 is why C floors sit at 1.54-1.57x cost above the market C median (138 C goods held, 10.19M). Restock's own REFUND C 0.35 in expected_margin likewise undervalues C."
   }
  ]
 }

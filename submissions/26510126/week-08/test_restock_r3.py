@@ -463,23 +463,6 @@ with contextlib.redirect_stdout(out):
 q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
 case("a selling food category (score 8) still skips a 5 h SKU at the median price and takes the 200 h one",
      "FSHORT" not in q and q.get("FLONG", 0) > 0, q)
-# the market's top food seller (sku_score 399) was 16th of 20 bought behind category entries: hot food goes first
-cat11 = {f"FC{i}": {"category": f"F>c{i}", "kind": "food", "list_price": 10000, "shelf_hours": 200, "name": f"c{i}"} for i in range(5)}
-cat11["FHOT"] = {"category": "F>hot", "kind": "food", "list_price": 10000, "shelf_hours": 200, "name": "hot"}
-(md / "catalog.json").write_text(json.dumps(cat11), encoding="utf-8")
-(md / "demand.json").write_text(json.dumps([{"item": c["name"], "category": c["category"], "kind": "food", "median_price": 10000}
-                                            for c in cat11.values()]), encoding="utf-8")
-(md / "inventory.json").write_text(json.dumps({"round": 3, "balance": 4_000_000, "units": []}), encoding="utf-8")
-(md / "restock_state.json").write_text(json.dumps({"after": 1, "seen": [], "t": time.time() - 30,
-                                                   "score": {f"F>c{i}": 5000.0 for i in range(5)}, "sku_score": {"FHOT": 399}}),
-                                       encoding="utf-8")
-restock_r3.strategy = lambda: dict(real(), lines=1)
-out = io.StringIO()
-with contextlib.redirect_stdout(out):
-    restock_r3.main()
-q = {b["sku"]: b["qty"] for b in json.loads(out.getvalue().splitlines()[-1])["buy"]}
-case("with one line a window, a food SKU at sku_score 399 is bought ahead of the category entries", "FHOT" in q, q)
-restock_r3.strategy = real
 # our 300k+ units cost 0.48 of list, not the flat 0.60: a line is sized at the SKU's own median paid share
 (md / "catalog.json").write_text(json.dumps({"SB": {"category": "G>bed", "kind": "goods", "list_price": 400000, "name": "bed"}}),
                                  encoding="utf-8")

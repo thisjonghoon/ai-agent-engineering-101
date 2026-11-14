@@ -91,7 +91,8 @@ what it came from and when it is to be reviewed; a rule past its review conditio
    measurement taken after it, cited with its window). Check this list before proposing any of these numbers:
    dear_depth 4 (11/13), dear_first 2.5 (11/13), max_list 600k (11/12-13), floor_frac 0.68 (11/12, -41%), sku_depth 4 (11/13), sku_cap 18 (11/13, -21% paid share),
    window_depth 2.8 (11/12, -39%) and 1.5 (11/13, fast guard), clear_hours 14 (11/12, -20%), sku_depth 2 (11/13),
-   floor_frac_food 0.54 (11/12, -33%), market_ask 0.95 (11/13, 1.0 judged +63%). dear_depth 5->4 at 11/14 04:38 was
+   floor_frac_food 0.54 (11/12, -33%), market_ask 0.95 (11/13, 1.0 judged +63%), fresh_premium 0.15 (11/12, 0.15->0.18 judged +33%)
+   and 0.2 (11/12, -39%), max_turns 7 (11/12, -17%). dear_depth 5->4 at 11/14 04:38 was
    proposed as "a different number from past moves" and reverted by the supervisor for this reason.
-   sku_depth 3->4 at 11/14 06:52 was reverted for the same reason.
+   sku_depth 3->4 at 11/14 06:52 and fresh_premium 0.18->0.15 at 10:13 were reverted for the same reason.
    [since 11/14 04:4x; from: the supervisor; review: never]

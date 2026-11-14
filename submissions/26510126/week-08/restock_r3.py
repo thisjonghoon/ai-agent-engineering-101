@@ -472,8 +472,14 @@ def main():
                 # of list vs market 0.66-0.69)
                 mine = deals_mine.get(f"{c['sku']}|{g}") or []
                 med = None if st is None else st["median"]
+                sell_at = med                                   # the price the A sellable test holds a draw against
                 if med is not None and len(mine) >= 3:
-                    med = max(med, sorted(x[0] for x in mine)[len(mine) // 2])
+                    mine_sorted = sorted(x[0] for x in mine)
+                    med = max(med, mine_sorted[len(mine_sorted) // 2])
+                    # our deals exist only above our floor, so their median runs high: the sellable test takes their
+                    # lower quartile (leak audit #34: 18 of 47 dear units bought after 8615b70, 10.75M, sit with a floor
+                    # above our own median sale price; A at cost 0.70+ closed 6.6% of talks, under 0.66 closed 44%)
+                    sell_at = max(sell_at, mine_sorted[len(mine_sorted) // 4])
                 value = cost if st is None else med * (1 - REFUND.get(g, 0))
                 num += w * (value - cost)
                 den += w * cost
@@ -487,9 +493,9 @@ def main():
                         sv = [d * surge.get(c["sku"], 1.0) for d in draws]
                         # the seller's floor is cost x (1 + min_margin) / (1 - WARRANTY_Q A) (seller_r3.py:470), not cost / 0.97
                         fl = (1 + s.get("min_margin", 0.02)) / 0.97
-                        a_only = sum(((value - d) if d * fl <= med else -A_HOLD * d) for d in sv) / sum(sv)
+                        a_only = sum(((value - d) if d * fl <= sell_at else -A_HOLD * d) for d in sv) / sum(sv)
                         # the same draws size a dear line: 5 of the 6 A units bought after ee706d8 sit above the market
-                        sellable = sum(d * fl <= med for d in sv) / len(sv)
+                        sellable = sum(d * fl <= sell_at for d in sv) / len(sv)
                     else:
                         a_only = (value - cost) / cost
             return (num / den, a_only, sellable) if den else None

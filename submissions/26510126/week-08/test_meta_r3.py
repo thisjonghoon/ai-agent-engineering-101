@@ -129,6 +129,27 @@ def main():
     case("a strategy file is written whole", json.loads(w.read_text()) == {"ask_frac": 0.7}
          and not w.with_suffix(".tmp").exists())
     print(f"{sum(RESULTS)}/{len(RESULTS)} passed")
+    # order 9 in code (11/14): the team's own same-direction step within 2 h is held; the opposite direction, a
+    # supervisor row, or a step older than 2 h is not
+    real = mr.NUMBER_TRIALS
+    tmp = Path(tempfile.mkdtemp(prefix="o9-")) / "trials.json"
+    t0 = time.time()
+    tmp.write_text(json.dumps([
+        {"t": t0 - 3 * 3600, "changes": {"clear_hours": [14, 12]}, "reason": "team"},
+        {"t": t0 - 3000, "changes": {"food_first": [0.25, 0.5]}, "reason": "team"},
+        {"t": t0 - 2000, "changes": {"max_list": [800000, 900000]}, "reason": "team"},
+        {"t": t0 - 1000, "changes": {"max_list": [1200000, 900000]}, "reason": "supervisor: order 9"}]))
+    mr.NUMBER_TRIALS = tmp
+    try:
+        c9 = {"food_first": 0.5, "max_list": 900000, "clear_hours": 12, "ask_frac": 0.8, "floor_frac": 0.66}
+        out, held = mr.order9_hold(dict(c9, food_first=0.75, max_list=1000000, clear_hours=10), c9, now_t=t0)
+        case("order 9: the team's second same-direction step within 2 h is held, past a supervisor revert",
+             out["food_first"] == 0.5 and out["max_list"] == 900000 and set(held) == {"food_first", "max_list"}, held)
+        case("order 9: a step whose last team move is over 2 h old goes through", out["clear_hours"] == 10, out)
+        out, held = mr.order9_hold(dict(c9, food_first=0.25), c9, now_t=t0)
+        case("order 9: the opposite direction goes through", out["food_first"] == 0.25 and not held, held)
+    finally:
+        mr.NUMBER_TRIALS = real
     return all(RESULTS)
 
 

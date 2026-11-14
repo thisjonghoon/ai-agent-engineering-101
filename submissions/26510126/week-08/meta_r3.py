@@ -423,6 +423,37 @@ def write_json(path, obj):
     os.replace(tmp, path)
 
 
+def order9_hold(s, cur, now_t=None, hours=2):
+    """Standing order 9 in code: a number the team itself moved in the last `hours` does not move again in the same
+    direction (its verdict is not closed). Supervisor rows ('supervisor: ...') do not count as the team's move.
+    11/14 the team stepped a number twice before its verdict five times (food_first 05:28 and 14:08, max_list 09:40,
+    clear_hours 11:18), each reverted by hand. Returns (s, {key: (wanted, kept)} held back)."""
+    rows = read_json(NUMBER_TRIALS, [])
+    now_t = now_t or time.time()
+    held = {}
+    for k in list(s):
+        if k not in BOUNDS or not isinstance(s[k], (int, float)) or s[k] == cur.get(k):
+            continue
+        d = s[k] - cur[k]
+        for r in reversed(rows if isinstance(rows, list) else []):
+            if not isinstance(r, dict) or now_t - (r.get("t") or 0) > hours * 3600:
+                break
+            ch = (r.get("changes") or {}).get(k)
+            if not ch or str(r.get("reason", "")).startswith("supervisor"):
+                continue
+            try:
+                same = (float(ch[1]) - float(ch[0])) * d > 0
+            except (TypeError, ValueError, IndexError):
+                same = False
+            if same:
+                held[k] = (s[k], cur[k])
+                s[k] = cur[k]
+            break
+    if s.get("floor_frac", 0) > s.get("ask_frac", 1):
+        s["floor_frac"] = s["ask_frac"]
+    return s, held
+
+
 def number_record(changed, reason):
     """Queue the shop numbers this cycle changed for a verdict NUMBER_CHECK later."""
     rows = read_json(NUMBER_TRIALS, [])
@@ -1090,6 +1121,7 @@ async def cycle():
                                 max_chars=60_000)
     new = (ans or {}).get("strategy") if isinstance((ans or {}).get("strategy"), dict) else None
     s = guard(new or {}, cur)
+    s, held9 = order9_hold(s, cur)
     busy = shop_busy()
     if aggressive():                                    # play mode: every approved shop number applies
         held = {}
@@ -1204,7 +1236,9 @@ async def cycle():
                 + (f"; A/B {ab_new['id']} started: {ab_new['param']} {ab_new['arms']}" if ab_new else "")
                 + "".join(f"; judged {j}" for j in judged)
                 + (f"; held back ({'shop change slot busy: ' + busy if busy else 'one shop number at a time'}): "
-                   f"{json.dumps(held)}" if held else ""))
+                   f"{json.dumps(held)}" if held else "")
+                + (f"; held back (order 9: a second step in the same direction before its 2 h verdict): "
+                   f"{json.dumps(held9)}" if held9 else ""))
 
 
 async def main():

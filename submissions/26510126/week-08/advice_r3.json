@@ -578,6 +578,10 @@
   {
    "t": 1794649762.7772229,
    "text": "Leak audit #34 (18:5x). 8615b70 (dear gate at our own prices) since 15:40: 168 dear units bought, 136 sold; bought = sold every hour after the 15h one-time fill; 47 held, all under 3 h old. Refined at 18:5x: the A sellable test now uses the lower quartile of our own agreed prices (our deals exist only above our floor): 18 of the 47 held units (10.75M) have a floor above our own median sale price. Food expiry is small (9 units, 81k in 5 h) and did not rise after min_shelf_hours 264: food lines in a selling category use a 48 h bar anyway (restock_r3.py ~367), so min_shelf_hours barely binds. DATA for the ENGINEER, seller batch (kit restart): grade C goods cannot clear: 125 C held (8.03M), 99 over 24 h (median 81 h), 30 (6.22M) with a floor above the market's C median; the C floor is cost x (1+min_margin)/(1-WARRANTY_Q C 0.35) = 1.54x cost (seller_r3.py:470) and the stuck (:492) and clearance (:507) rules keep the same 1/0.65, so a C unit never goes lower; the market's measured C refund share is ~0.25. Let C held over 24 h clear down to the market C median (not under cost). Also: restock leaves C out of the held count (~333), so C keeps arriving at ~8% of goods buys. Food A: cost 0.722 of list vs market A 0.689; 98 of 162 food A deals at 1.03x cost or less (122k margin on 2.55M): small."
+  },
+  {
+   "t": 1794652126.734348,
+   "text": "Supervisor 19:3x: verdicts that overlap 15:50-17:50 carry the 8615b70 dear-gate fix (revenue 8.9M -> 20.7M/h, value share 1.7% -> 4.7%) and those over 12:45-15:45 carry the dear stock-out; treat both sets as UNATTRIBUTABLE for every number: order_weight 1.5->2.0 (+213%), market_ask 1.05->1.0 (+212%), and the -28% to -73% margin verdicts of 12:00-15:45. order_weight 2.0->2.5 at 19:28 stepped on the +213% one and was reverted by the supervisor."
   }
  ]
 }

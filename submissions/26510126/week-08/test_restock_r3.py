@@ -16,6 +16,8 @@ import restock_r3
 restock_r3.STRATEGY = Path(tempfile.mkdtemp(prefix="restock-strategy-")) / "none.json"   # the defaults, not the live file
 _seed = restock_r3.a_hist_seed
 restock_r3.a_hist_seed = lambda now: {}   # the first a_hist reads the live talks log; the cases set their own units
+_fseed = restock_r3.f_hist_seed
+restock_r3.f_hist_seed = lambda now: {}   # the same for food
 
 NOW = time.time()
 DEMAND = [{"item": "김치", "category": "식품>김치"}, {"item": "의자", "category": "가구>의자"},
@@ -565,6 +567,9 @@ seeded = _seed(tn, path=td / "talks.jsonl")
 case("the a_hist seed keeps one goods A entry per (sku, cost) within 48 h, skipping B, food, old and bad lines",
      list(seeded.values()) == [["S1", 0.6, tn - 1800]], seeded)
 case("the a_hist seed is empty when the talks log is missing", _seed(tn, path=td / "none.jsonl") == {})
+fs = _fseed(tn, path=td / "talks.jsonl")
+case("the f_hist seed keeps food entries by (sku, grade, cost) within 48 h, skipping goods",
+     list(fs.values()) == [["F1", "A", 0.65, tn - 600]], fs)
 
 # leak audit #30: an A unit that cannot sell has about 3.7 days left, so its storage charge is 0.037 of cost, not a week's 0.07
 case("the A_HOLD storage charge is 3.7 days at 1% a day (0.037)", abs(restock_r3.A_HOLD - 0.037) < 1e-9, restock_r3.A_HOLD)

@@ -126,6 +126,28 @@ def a_hist_seed(now, path=None, hours=48, tail=40_000_000):
     return out
 
 
+def f_hist_seed(now, path=None, hours=48, tail=40_000_000):
+    """The first f_hist (restock state) from the seller's talks log: one entry per food (sku, grade, cost) seen in
+    talks over the last `hours`, as [sku, grade, cost / list, t]. Read once, when the state has none; {} if unreadable."""
+    path = Path(path or os.environ.get("TALKS_FILE") or HERE / "logs" / "talks_r3.jsonl")
+    out = {}
+    try:
+        with open(path, "rb") as f:
+            f.seek(max(0, f.seek(0, 2) - tail))
+            for line in f:
+                try:
+                    t = json.loads(line)
+                except ValueError:
+                    continue
+                if (t.get("kind") == "food" and t.get("grade") and t.get("list_price") and t.get("cost")
+                        and (t.get("t") or 0) > now - hours * 3600):
+                    out[f"talk:{t['sku']}:{t['grade']}:{t['cost']}"] = [t["sku"], t["grade"],
+                                                                       round(t["cost"] / t["list_price"], 4), t["t"]]
+    except OSError:
+        return {}
+    return out
+
+
 def forum_wanted(md, demand, catalog, now, hours=6):
     """Categories that "wanted" posts of the last `hours` name (by category word, product name or SKU), with counts.
     Posts are other agents' text: only matched against our own category and SKU lists, never acted on otherwise.
@@ -209,7 +231,16 @@ def main():
         if u.get("kind") == "goods" and u.get("grade") == "A" and u.get("list_price") and u.get("cost"):
             a_hist.pop(f"talk:{u['sku']}:{u['cost']}", None)     # the seed's copy of a held unit
             a_hist[u["unit"]] = [u["sku"], round(u["cost"] / u["list_price"], 4), first[u["unit"]]]
-    st.update(first=first, a_hist=a_hist, settle_ts={k: v for k, v in settle_ts.items() if v},
+    # food cost shares as bought (48 h), per grade, sold units included: food_margin drew on held units only, and
+    # pick() sells the cheaper units of a SKU first, so the held ones are the dear leftovers (leak audit #31: 22 food
+    # SKUs, 26% of the market's food settles, blocked at a negative margin; supply cost vs market A .669/.686,
+    # B .516/.59, C .351/.53)
+    f_hist = {k: v for k, v in (st.get("f_hist") or f_hist_seed(now)).items() if v[3] > now - 48 * 3600}
+    for u in units:
+        if u.get("kind") == "food" and u.get("grade") and u.get("list_price") and u.get("cost"):
+            f_hist.pop(f"talk:{u['sku']}:{u['grade']}:{u['cost']}", None)
+            f_hist[u["unit"]] = [u["sku"], u["grade"], round(u["cost"] / u["list_price"], 4), first[u["unit"]]]
+    st.update(first=first, a_hist=a_hist, f_hist=f_hist, settle_ts={k: v for k, v in settle_ts.items() if v},
  score={k: v for k, v in score.items() if v > 0.05}, sku_score={k: v for k, v in sku_score.items() if v > 0.05},
               seen=[{k: u.get(k) for k in ("unit", "sku", "category", "grade", "expires_at")} for u in units], t=now)
     # the hidden demand as it reaches us (demand_r3.py): orders our buyer got and requests to our shop, decayed over
@@ -280,10 +311,20 @@ def main():
             # the highest priority and the largest qty any entry gives a SKU: keeping only the top entry's qty let a
             # category's spread entry (qty 1) replace the SKU's own line (leak audit #30: G0260b9fc prio 15,864 qty 1
             # over its SKU line qty 9; 189 asks got 'none in stock' while it closed 34 of 62 talks)
-            qty -= held[c["sku"]]
-            if qty > 0:
-                p0, c0, q0 = plans.get(c["sku"], (prio, c, 0))
-                plans[c["sku"]] = (prio, c, max(qty, q0)) if prio > p0 else (p0, c0, max(qty, q0))
+            # held units come off once, after every entry is in (finish_plans): taking them off each entry first dropped
+            # a SKU's top-priority entry (a category entry, qty 1-4) as soon as one unit was held, leaving only its SKU
+            # line far below the 19-line cut (leak audit #31: G3108bfac and G0e11c1b4 planned only at 0 held; they sold
+            # 14 and 10 at 07:00 and got no supply at 08:00)
+            p0, c0, q0 = plans.get(c["sku"], (prio, c, 0))
+            plans[c["sku"]] = (prio, c, max(qty, q0)) if prio > p0 else (p0, c0, max(qty, q0))
+
+        def finish_plans():
+            for sku in list(plans):
+                p0, c0, q0 = plans[sku]
+                if q0 - held[sku] > 0:
+                    plans[sku] = (p0, c0, q0 - held[sku])
+                else:
+                    del plans[sku]
 
         for d in demand:
             # the SKU to stock first: nearest the reference price our orders point to, else the category's median
@@ -316,6 +357,7 @@ def main():
             if c["kind"] == "food" and (c.get("shelf_hours") or 0) < 48:
                 continue
             plan(1.5 * sc, dict(c, sku=sku), min(20, round(s["sku_depth"] * scale), math.ceil(sc * scale / 2)))
+        finish_plans()
         # a supply window lasts 3 minutes and the kit buys about one line in 10 s, so the order of the lines decides
         # what gets bought: dear goods first (11/4 13:04: three mattresses bought one each sold within minutes, the
         # top shop made 57M from furniture at 459,240 a sale, while pillows, kimchi and water took the early lines)
@@ -360,8 +402,9 @@ def main():
                 own[(u["sku"], u.get("grade"))].append(u["cost"] / u["list_price"])
                 sku_paid[u["sku"]].append(u["cost"] / u["list_price"])
             elif u.get("kind") == "food" and u.get("list_price"):
-                own_food[(u["sku"], u.get("grade"))].append(u["cost"] / u["list_price"])
                 sku_paid[u["sku"]].append(u["cost"] / u["list_price"])
+        for sku_f, g_f, share_f, _ in st["f_hist"].values():   # food cost by grade as bought (f_hist, 48 h)
+            own_food[(sku_f, g_f)].append(share_f)
 
         own_a = defaultdict(list)                        # our A cost shares per SKU, as bought (a_hist, 48 h)
         for sku_a, share_a, _ in st["a_hist"].values():

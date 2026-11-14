@@ -18,6 +18,8 @@ _seed = restock_r3.a_hist_seed
 restock_r3.a_hist_seed = lambda now: {}   # the first a_hist reads the live talks log; the cases set their own units
 _fseed = restock_r3.f_hist_seed
 restock_r3.f_hist_seed = lambda now: {}   # the same for food
+_deals = restock_r3.our_deals
+restock_r3.our_deals = lambda st, now: st.setdefault("deals", {})   # no live talks log in the cases
 
 NOW = time.time()
 DEMAND = [{"item": "김치", "category": "식품>김치"}, {"item": "의자", "category": "가구>의자"},
@@ -587,6 +589,20 @@ case("the a_hist seed is empty when the talks log is missing", _seed(tn, path=td
 fs = _fseed(tn, path=td / "talks.jsonl")
 case("the f_hist seed keeps food entries by (sku, grade, cost) within 48 h, skipping goods",
      list(fs.values()) == [["F1", "A", 0.65, tn - 600]], fs)
+# leak audit #32: our agreed goods prices per sku|grade over 24 h, read incrementally from the talks log
+rowsd = [{"t": tn - 600, "sku": "S1", "kind": "goods", "grade": "A", "list_price": 100, "price": 74, "event": "deal"},
+         {"t": tn - 500, "sku": "S1", "kind": "goods", "grade": "A", "list_price": 100, "price": 70, "event": "walk"},
+         {"t": tn - 30 * 3600, "sku": "S1", "kind": "goods", "grade": "A", "list_price": 100, "price": 60, "event": "deal"},
+         {"t": tn - 400, "sku": "F1", "kind": "food", "grade": "A", "list_price": 100, "price": 60, "event": "deal"}]
+(td / "deals.jsonl").write_text("\n".join(json.dumps(r) for r in rowsd) + "\n", encoding="utf-8")
+std = {}
+got = _deals(std, tn, path=td / "deals.jsonl")
+pos1 = std.get("talks_pos")
+with open(td / "deals.jsonl", "a", encoding="utf-8") as f:
+    f.write(json.dumps({"t": tn - 10, "sku": "S1", "kind": "goods", "grade": "A", "list_price": 100, "price": 76, "event": "deal"}) + "\n")
+got2 = _deals(std, tn, path=td / "deals.jsonl")
+case("our_deals keeps goods deals within 24 h and reads only new lines on the next run",
+     got.get("S1|A") == [[0.74, tn - 600]] and "F1|A" not in got and pos1 and [x[0] for x in got2["S1|A"]] == [0.74, 0.76], (got, got2))
 
 # leak audit #30: an A unit that cannot sell has about 3.7 days left, so its storage charge is 0.037 of cost, not a week's 0.07
 case("the A_HOLD storage charge is 3.7 days at 1% a day (0.037)", abs(restock_r3.A_HOLD - 0.037) < 1e-9, restock_r3.A_HOLD)

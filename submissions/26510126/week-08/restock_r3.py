@@ -126,6 +126,36 @@ def a_hist_seed(now, path=None, hours=48, tail=40_000_000):
     return out
 
 
+def our_deals(st, now, path=None, hours=24, first_tail=12_000_000):
+    """Our own agreed goods prices as a share of list, per "sku|grade", over the last `hours` (restock state "deals"):
+    reads the talks log from where the last run stopped (st["talks_pos"]); the first run reads the last `first_tail`
+    bytes. Leak audit #32: our 300k+ A sold at a median 0.737 of list against market A medians of 0.66-0.69, so a gate
+    valued at the market median turned down the lines that earned (2.78M in 6 h from 5 SKUs never refilled)."""
+    path = Path(path or os.environ.get("TALKS_FILE") or HERE / "logs" / "talks_r3.jsonl")
+    deals = {k: [x for x in v if x[1] > now - hours * 3600] for k, v in (st.get("deals") or {}).items()}
+    try:
+        with open(path, "rb") as f:
+            end = f.seek(0, 2)
+            pos = st.get("talks_pos")
+            pos = max(0, end - first_tail) if pos is None or pos > end else pos
+            f.seek(pos)
+            if pos and pos == max(0, end - first_tail):
+                f.readline()                                        # a partial first line
+            for line in f:
+                try:
+                    t = json.loads(line)
+                except ValueError:
+                    continue
+                if (t.get("event") == "deal" and t.get("kind") == "goods" and t.get("price") and t.get("list_price")
+                        and t.get("grade") and (t.get("t") or 0) > now - hours * 3600):
+                    deals.setdefault(f"{t['sku']}|{t['grade']}", []).append([round(t["price"] / t["list_price"], 4), t["t"]])
+            st["talks_pos"] = f.tell()
+    except OSError:
+        pass
+    st["deals"] = {k: v for k, v in deals.items() if v}
+    return st["deals"]
+
+
 def f_hist_seed(now, path=None, hours=48, tail=40_000_000):
     """The first f_hist (restock state) from the seller's talks log: one entry per food (sku, grade, cost) seen in
     talks over the last `hours`, as [sku, grade, cost / list, t]. Read once, when the state has none; {} if unreadable."""
@@ -240,6 +270,7 @@ def main():
         if u.get("kind") == "food" and u.get("grade") and u.get("list_price") and u.get("cost"):
             f_hist.pop(f"talk:{u['sku']}:{u['grade']}:{u['cost']}", None)
             f_hist[u["unit"]] = [u["sku"], u["grade"], round(u["cost"] / u["list_price"], 4), first[u["unit"]]]
+    our_deals(st, now)
     st.update(first=first, a_hist=a_hist, f_hist=f_hist, settle_ts={k: v for k, v in settle_ts.items() if v},
  score={k: v for k, v in score.items() if v > 0.05}, sku_score={k: v for k, v in sku_score.items() if v > 0.05},
               seen=[{k: u.get(k) for k in ("unit", "sku", "category", "grade", "expires_at")} for u in units], t=now)
@@ -411,6 +442,8 @@ def main():
             own_a[sku_a].append(share_a)
         own_a = dict(own_a)
 
+        deals_mine = st.get("deals") or {}                  # our agreed goods prices (our_deals), read before st is reused below
+
         def expected_margin(c):
             """(the grade mix's margin, grade A's alone, the share of A draws that can sell) or None. A alone too (11/11 12:5x audit #3): pick() offers A
             before B and C, so B and C rarely sell and their margin must not carry an A line that loses."""
@@ -434,7 +467,14 @@ def main():
                 # carries the warranty (audit #10) it is paid (19 of 20 deals, 0.539 of list on a cost of 0.339), so it
                 # is valued at its market median less REFUND C 0.35 (11/11 21:4x audit #11: 30 of the market's 40
                 # best-selling 150k+ SKUs failed the check and 150k+ restock had stopped: 3 units in 6 h)
-                value = cost if st is None else st["median"] * (1 - REFUND.get(g, 0))
+                # the price a unit of ours fetches: the market's median, or our own median agreed price for the SKU and
+                # grade over 24 h when we have 3 or more deals and it is higher (leak audit #32: our 300k+ A at 0.737
+                # of list vs market 0.66-0.69)
+                mine = deals_mine.get(f"{c['sku']}|{g}") or []
+                med = None if st is None else st["median"]
+                if med is not None and len(mine) >= 3:
+                    med = max(med, sorted(x[0] for x in mine)[len(mine) // 2])
+                value = cost if st is None else med * (1 - REFUND.get(g, 0))
                 num += w * (value - cost)
                 den += w * cost
                 if g == "A" and cost:
@@ -447,9 +487,9 @@ def main():
                         sv = [d * surge.get(c["sku"], 1.0) for d in draws]
                         # the seller's floor is cost x (1 + min_margin) / (1 - WARRANTY_Q A) (seller_r3.py:470), not cost / 0.97
                         fl = (1 + s.get("min_margin", 0.02)) / 0.97
-                        a_only = sum(((value - d) if d * fl <= st["median"] else -A_HOLD * d) for d in sv) / sum(sv)
+                        a_only = sum(((value - d) if d * fl <= med else -A_HOLD * d) for d in sv) / sum(sv)
                         # the same draws size a dear line: 5 of the 6 A units bought after ee706d8 sit above the market
-                        sellable = sum(d * fl <= st["median"] for d in sv) / len(sv)
+                        sellable = sum(d * fl <= med for d in sv) / len(sv)
                     else:
                         a_only = (value - cost) / cost
             return (num / den, a_only, sellable) if den else None
@@ -547,6 +587,12 @@ def main():
                 # a line holds no more than the market's settles of that SKU in 6 h (once 6 h of settles are kept)
                 if depth and now - st["settle_since"] >= 6 * 3600:
                     depth = min(depth, max(1, math.ceil(len(settle_ts.get(c["sku"], [])))))
+                # a line valued at our own agreed price (our_deals) holds about 6 h of our own deals of the SKU: in a dry
+                # run the own-price gate opened 9 dear lines, 58 units (~25M) in one window, 10-11 deep on SKUs we agree
+                # on 2-3 times in 6 h
+                own_n = sum(len(v) for k, v in deals_mine.items() if k.split("|")[0] == c["sku"])
+                if depth and own_n:
+                    depth = min(depth, max(2, math.ceil(own_n / 4)))
                 qty = depth - held[c["sku"]]
             else:                     # a cheap SKU no deeper than sku_cap: 22-24 of one blanket sat in stock on 11/5
                 # 6 h: the 100-300k band sold 1.0 an hour with 46 units held (46 h of stock) while 300k+ sold 6.0 an hour

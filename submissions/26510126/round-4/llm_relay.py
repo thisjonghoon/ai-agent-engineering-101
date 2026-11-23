@@ -21,6 +21,7 @@ request's model "claude-<alias>", else sonnet), RELAY_GPT_MODEL (gpt-6.1-sol), R
 """
 import json
 import os
+import signal
 import subprocess
 import tempfile
 import threading
@@ -57,15 +58,24 @@ def transcript(messages):
 
 def run(cmd, timeout, stdin_text=None):
     """stdout of one CLI call, or raise with the reason."""
+    # its own process group, so a timeout ends the CLI's children too (11/23 test: a timed-out codex left its child
+    # running after the wrapper was killed)
+    p = subprocess.Popen(cmd, stdin=subprocess.PIPE if stdin_text is not None else subprocess.DEVNULL,
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd=EMPTY, env=ENV,
+                         start_new_session=True)
     try:
-        p = subprocess.run(cmd, input=stdin_text, capture_output=True, text=True, timeout=timeout, cwd=EMPTY, env=ENV,
-                           stdin=None if stdin_text is not None else subprocess.DEVNULL)
+        out, err = p.communicate(stdin_text, timeout=timeout)
     except subprocess.TimeoutExpired:
+        try:
+            os.killpg(p.pid, signal.SIGKILL)
+        except OSError:
+            pass
+        p.communicate()
         # the exception's text holds the whole command, prompt included; the log keeps no prompt (11/23 test)
         raise RuntimeError(f"{cmd[0]} did not answer within {timeout:.0f} s") from None
-    out = p.stdout.strip()
+    out = (out or "").strip()
     if p.returncode != 0 or not out:
-        raise RuntimeError(f"exit {p.returncode}: {(p.stderr or p.stdout).strip()[:300]}")
+        raise RuntimeError(f"exit {p.returncode}: {(err or out).strip()[:300]}")
     return out
 
 

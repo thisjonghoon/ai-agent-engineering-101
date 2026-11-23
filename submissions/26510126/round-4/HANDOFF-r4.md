@@ -71,7 +71,7 @@ grep '\[app\] open' .kit/kit-terminal.log  # 앱 링크(접근 코드 포함). �
 - [ ] 보드에서 `thisjonghoon`이 학생 에이전트로 잡히는지(claim code 연결).
 - [ ] 첫 몇 run에 에이전트가 카드를 읽고 forge를 시작하는지.
 - [ ] `logs/llm-relay.jsonl`에서 Claude 경로의 응답 시간과 실패.
-- [ ] codex: 11/20 업데이트 뒤 `codex --version`에서 멈춤. 격리 표시는 지웠다. 사용자가 11/23 저녁에 맥 미니 화면에서 확인하기로 했다. 풀리면 GPT 경로를 다시 시험한다.
+- [x] codex: 11/20 업데이트 뒤 `codex --version`에서 멈췄다. 11/23에 격리 표시를 지우고, 사용자가 맥 미니에서 실행해 풀었다. 중계 서버의 GPT 경로가 5.9초에 응답하는 것을 확인했다.
 - [ ] 바이어를 켜게 되면 faucet(https://faucet.maroo.io, 한 번에 5,000, 캡차, 10,000까지)은 사용자가 직접 받는다.
 
 ## Round 3에서 가져온 교훈 (구조가 아니라 문장으로)

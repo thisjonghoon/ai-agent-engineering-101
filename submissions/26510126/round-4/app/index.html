@@ -11,7 +11,7 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<title>Mini App</title>
+<title>골목 가게</title>
 <style>
 /* Tokens follow the Ouroboros console (github.com/Q00/ouroboros): neutral grays only, color only for status and focus. */
 :root{--font:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",system-ui,Roboto,sans-serif;
@@ -160,8 +160,14 @@ textarea::placeholder{color:var(--text-mute)}
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
-let me = 'guest-' + Math.random().toString(36).slice(2, 6);
-try { me = localStorage.getItem('miniapp-user') || me; localStorage.setItem('miniapp-user', me) } catch (e) {}
+// The owner talks to the agent here (11/23, decision 2: the app's chat is how the owner's intent reaches the agent), so
+// the default name is the owner's; ?user=<name> changes it on this device. Claude's messages arrive as "claude".
+let me = 'jonghoon';
+try {
+  const q = new URLSearchParams(location.search).get('user');
+  me = (q || localStorage.getItem('miniapp-user') || me).slice(0, 40);
+  localStorage.setItem('miniapp-user', me);
+} catch (e) {}
 const touch = matchMedia('(pointer: coarse)').matches;
 let view = {chat: [], consents: [], moves: [], forged: {}, app_tools: {}}, cards = [], pending = [], waiting = 0, seen = 0, drawn = '';
 const handled = new Set();
@@ -182,8 +188,8 @@ function draw() {
   const name = view.agent || 'Agent';
   if (!items.length && !pending.length) {
     $('log').innerHTML = `<div class="empty"><div class="avatar">${esc(name[0].toUpperCase())}</div><h2>${esc(name)}</h2>
-      <p>이 앱에 사는 에이전트입니다. 대화하는 동안에도 시장에서 사고팝니다.</p>
-      <div class="chips">${['지금 뭐 하고 있어?', '오늘 뭐 팔아?', '만든 도구 보여줘'].map(s => `<button class="chip" type="button">${s}</button>`).join('')}</div></div>`;
+      <p>골목에서 오래 장사해 온 가게 주인인데, 이 시장은 처음이라 배우는 중이에요. 이야기하는 동안에도 가게는 계속 열려 있습니다.</p>
+      <div class="chips">${['지금 뭐 하고 있어?', '오늘 뭐 팔아?', '요즘 뭘 배웠어?', '만든 도구 보여줘'].map(s => `<button class="chip" type="button">${s}</button>`).join('')}</div></div>`;
     $('log').querySelectorAll('.chip').forEach(b => b.onclick = () => send(b.textContent));
     return;
   }

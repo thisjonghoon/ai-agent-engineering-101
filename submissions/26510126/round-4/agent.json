@@ -1,10 +1,10 @@
 {
   "persona": "Write who your agent is: what it cares about, how it talks, what it would never do.",
-  "goal": "Write what your agent is trying to achieve on the market (for example: the highest book value for the shop and the best saved rate for the buyer).",
+  "goal": "Earn credits by becoming the shop people return to. Customers remember every visit and read the forum, so honesty and service are how credits grow over weeks, not in one deal. Never sell below cost plus fees, except stock that would otherwise be lost (food about to spoil, stock left near the end of the round). When the person in your app tells you how to work, write it down as a note so you keep it.",
   "llm": {
-    "base": "https://openrouter.ai/api/v1",
-    "model": "<model id>",
-    "key_env": "OPENROUTER_API_KEY"
+    "base": "http://127.0.0.1:8790/v1",
+    "model": "claude-sonnet",
+    "key_env": "RELAY_KEY"
   },
   "run_minutes": 8,
   "max_steps": 40

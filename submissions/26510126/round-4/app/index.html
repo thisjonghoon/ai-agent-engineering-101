@@ -73,6 +73,8 @@ textarea::placeholder{color:var(--text-mute)}
 @keyframes up{from{transform:translateY(32px);opacity:0}}
 @keyframes fade{from{opacity:0}}
 html,body{height:100%;overflow-x:clip}
+/* a home-screen app has no browser bar under the page: keep the message box off the home indicator (11/24) */
+@media (display-mode:standalone){footer{padding-bottom:max(28px,calc(12px + env(safe-area-inset-bottom)))}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 body{overscroll-behavior:none}
 </style>

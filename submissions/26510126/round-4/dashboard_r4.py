@@ -199,7 +199,7 @@ def page(in_app=False):
                 fails += 1
     except OSError:
         pass
-    desk_sub = f'한 단계 중앙 {statistics.median(gaps):.1f}초 · 실패 {fails} (1시간)' if gaps else f"실패 {fails} (1시간)"
+    desk_sub = f'응답 중앙 {statistics.median(gaps):.1f}초 · 실패 {fails} (1시간)' if gaps else f"실패 {fails} (1시간)"
     cards = [
         ("잔고 대조", f'<span class="{"" if diff is None or abs(diff) <= 2 else "down"}">{"-" if diff is None else f"{diff:+,.2f}"}</span>',
          "기록과 지갑의 차이"),

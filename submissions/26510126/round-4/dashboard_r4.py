@@ -116,6 +116,29 @@ def spark(points, w=320, h=64):
             f'<div class="axis"><span>{hm(t0)}</span><span>{lo:,.1f} ~ {hi:,.1f}</span><span>{hm(t1)}</span></div>')
 
 
+RANKS = KIT / "rank.jsonl"                              # the shop's rank over time, for the ▲▼ beside it
+
+
+def rank_trend(now, rank, s_rank):
+    """Append the rank when it changes (at most once a minute) and compare the student rank with an hour ago."""
+    try:
+        rows = [json.loads(l) for l in RANKS.read_text(encoding="utf-8").splitlines() if l.strip()]
+    except (OSError, ValueError):
+        rows = []
+    if s_rank and (not rows or rows[-1].get("s_rank") != s_rank or now - rows[-1]["ts"] > 600):
+        with open(RANKS, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": int(now), "rank": rank, "s_rank": s_rank}) + "\n")
+        rows.append({"ts": now, "rank": rank, "s_rank": s_rank})
+    old = [r for r in rows if r["ts"] <= now - 3600]
+    if not s_rank or not old:
+        return ""
+    moved = old[-1]["s_rank"] - s_rank                  # positive: climbed
+    if moved == 0:
+        return '<span class="num">— (1시간)</span>'
+    return (f'<span><span class="{"up" if moved > 0 else "down"} num">{"▲" if moved > 0 else "▼"}{abs(moved)}</span>'
+            '<span class="num"> (1시간)</span></span>')
+
+
 def lst(rows, empty="아직 없습니다."):
     """rows: (main html, small html); a .list like the activity sheet's."""
     if not rows:
@@ -138,6 +161,7 @@ def page(in_app=False):
     ranked = sum(1 for x in b.get("shops", []) if x.get("rank"))   # the board ranks every shop, the market's own too
     s_ranks = sorted(x.get("rank") for x in students if x.get("rank"))
     s_rank = s_ranks.index(me["rank"]) + 1 if me.get("rank") in s_ranks else None
+    trend = rank_trend(now, me.get("rank"), s_rank)
     try:
         st = json.loads((KIT / "watch-state.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -181,7 +205,9 @@ def page(in_app=False):
             f'<div class="big">{E(f"{bal:,.1f}") if bal is not None else "-"} <small>tOKRW</small></div>'
             + (f'<div class="sub {"up" if d >= 0 else "down"}">시작 대비 <span class="num">{d:+,.1f} ({d / START_TOKRW:+.1%})</span></div>' if d is not None else "")
             + f'</div><div class="right"><div class="label">보드 순위</div><div class="big">{E(str(me.get("rank") or "-"))}'
-            f' <small>/ {ranked}</small></div><div class="sub">학생 중 <span class="num">{s_rank or "-"} / {len(s_ranks)}</span></div></div></div>'
+            f' <small>/ {ranked}</small></div></div></div>'
+            f'<div class="rankline"><b>학생 <span class="num">{s_rank or "-"}</span>위</b>'
+            f'{f"<span>상위 <span class=num>{s_rank / len(s_ranks):.0%}</span></span>" if s_rank and s_ranks else ""}{trend}</div>'
             f'<div class="trend">{spark(pts)}</div></section>')
 
     diff = recon.get("diff")

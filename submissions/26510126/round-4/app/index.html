@@ -14,7 +14,8 @@
 <title>골목 가게</title>
 <meta name="description" content="thisjonghoon 가게 주인과 에이전트의 대화 창">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="/ui.css">
 <style>
 /* chat-only parts; the shared look is in /ui.css (see app/DESIGN.md) */
@@ -30,7 +31,7 @@
 .chip:active{background:var(--hover)}
 .row{display:flex;margin:3px 0}
 .row.me{justify-content:flex-end}
-.bubble{max-width:80%;padding:9px 14px;border-radius:18px;white-space:pre-wrap;overflow-wrap:anywhere;animation:in .2s var(--ease)}
+.bubble{max-width:80%;padding:9px 14px;border-radius:18px;line-height:1.6;letter-spacing:-.005em;white-space:pre-wrap;overflow-wrap:anywhere;animation:in .2s var(--ease)}
 .me .bubble{background:var(--accent-soft);color:var(--text);border-bottom-right-radius:6px}
 .me.pending .bubble{opacity:.5}
 .agent .bubble,.other .bubble{background:var(--card);border-bottom-left-radius:6px}
@@ -64,7 +65,7 @@ textarea::placeholder{color:var(--text-mute)}
 .row.turn{margin-top:12px}
 .me .bubble,.agent .bubble{box-shadow:inset 0 0 0 1px var(--line-strong)}
 .bubble .quote{display:block;margin:0 0 8px;padding:6px 10px;border-left:2px solid var(--accent-ink);border-radius:2px 8px 8px 2px;
-  background:color-mix(in srgb,var(--text) 6%,transparent);color:var(--text-soft);font-size:12px;line-height:1.45}
+  background:color-mix(in srgb,var(--text) 6%,transparent);color:var(--text-soft);font-size:12px;line-height:1.5;letter-spacing:0}
 .bubble .quote{cursor:pointer}
 .bubble.found{position:relative;z-index:1;box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--primary);transition:box-shadow .2s}
 .bubble .quote:focus-visible{outline:2px solid var(--focus);outline-offset:2px}

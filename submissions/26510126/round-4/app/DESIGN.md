@@ -11,9 +11,13 @@ The look is webtoon-review-board's design system with Hermes orange as its one a
   above the owner's words; the kit's English notices show as centred Korean system lines ("2분 안에 답하지 않았어요." and "메시지는 그대로 있으니…", one sentence a line); owner and agent bubbles carry a 1 px `--line-strong` edge; a change of
   speaker adds 12 px. A reply quote starts with `>`, not `↪`, which
   iOS draws as an emoji. Red (`--danger`) is for errors, losses and STOP only.
-- **Type.** Nanum Gothic for text. Every number (money, counts, times, ids) is D2Coding: `.num`, `.value`, `.big`,
+- **Type.** Pretendard (variable, dynamic subset, swap) for every text role since 11/24: chosen over Wanted Sans, SUIT,
+  Noto Sans KR, IBM Plex Sans KR, Gmarket Sans and Nanum Gothic by a specimen review (Hangul and Latin even in colour,
+  bold holds in dark mode) and measurement (215 KB / 8 files like Nanum's 207 KB / 19; narrowest Hangul; Gmarket
+  1.24 MB and SUIT 626 KB without swap were out). Sizes: name 15/700, panel titles 16/700, switch 13/700 (600
+  idle), labels and system lines 12/400 at 1.45, chat 15/400 at 1.6, quotes 12/400 at 1.5, rank line 15/700 + 13/500. Every number (money, counts, times, ids) is D2Coding: `.num`, `.value`, `.big`,
   `.time`, `.mono`. D2Coding is a 12 KB subset served from `app/` (digits, Latin, punctuation; `font-display:swap`;
-  licence `app/D2Coding-OFL.txt`); Hangul in a number cell falls back to Nanum Gothic Coding.
+  licence `app/D2Coding-OFL.txt`); Hangul in a number cell falls back to Pretendard.
 - **Frame.** A thin `header`: `.avatar` (the shop's initial), `.who` with the name and a `.status` dot, then the screen
   switch `.seg` (the current screen's link has `aria-current="page"`). No activity sheet since 11/24: 현황
   carries the moves, the forged tools and the tools this app gives (`app_say`, each `miniapp.offer`), and the kit's credit. The orange 3 px line

@@ -332,7 +332,8 @@ def page(in_app=False):
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="R4 가게"><title>현황 · {E(NAME)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <meta name="description" content="thisjonghoon 가게의 지갑, 순위, 감시 경보와 에이전트 활동">
 <style>{ui_css()}</style></head><body class="screen">{head}<main class="page wide" data-ts="{int(now)}">{body}<p class="note credit">미니앱 키트는 <a href="https://github.com/Q00/meshkit" target="_blank" rel="noopener">MeshKit</a>과 <a href="https://github.com/Q00/ouroboros" target="_blank" rel="noopener">Ouroboros</a>에서 영감을 받았습니다</p></main>
 <script>

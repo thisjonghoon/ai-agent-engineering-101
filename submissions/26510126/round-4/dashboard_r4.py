@@ -37,45 +37,6 @@ START_TOKRW = 5000.0
 EARLY_END = 1795777200            # 11/27 19:00 KST: the end of the early 72 hours
 E = html.escape
 
-# webtoon-review-board's design system (paper, ink, one accent, red for errors only), with Hermes orange as the accent and D2Coding for numbers
-CSS = """
-:root{--paper:#f4f5f6;--sheet:#fff;--ink:#111214;--muted:#6b7178;--rule:#e3e5e8;--chip:#eef0f2;
---accent:#f37021;--on-accent:#0a0a0a;--accent-ink:#b4490c;--accent-soft:#fdeee4;--danger:#e5342f;--danger-soft:#fdecec;
---display:"Nanum Gothic","Apple SD Gothic Neo",sans-serif;--body:"Nanum Gothic","Apple SD Gothic Neo",sans-serif;
---mono:"D2 coding","D2Coding","Nanum Gothic Coding",ui-monospace,Menlo,monospace;color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0e0f10;--sheet:#18191b;--ink:#f1f2f3;--muted:#9a9fa6;
---rule:#2a2c30;--chip:#24262a;--accent:#f37021;--on-accent:#0a0a0a;--accent-ink:#ff9a57;--accent-soft:#3a2112;
---danger:#ff5a52;--danger-soft:#3a1a19;color-scheme:dark}}
-:root[data-theme="dark"]{--paper:#0e0f10;--sheet:#18191b;--ink:#f1f2f3;--muted:#9a9fa6;--rule:#2a2c30;--chip:#24262a;
---accent:#f37021;--on-accent:#0a0a0a;--accent-ink:#ff9a57;--accent-soft:#3a2112;--danger:#ff5a52;--danger-soft:#3a1a19;color-scheme:dark}
-*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6}
-.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
-.top{padding-top:max(20px,env(safe-area-inset-top));padding-bottom:6px;border-bottom:3px solid var(--accent)}
-.top-row{display:flex;justify-content:space-between;align-items:flex-end;gap:6px 12px;flex-wrap:wrap;padding-bottom:10px}.top-row>*{min-width:0}
-.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted)}
-h1{font-family:var(--display);font-size:30px;line-height:1.2;margin:2px 0 0;font-weight:800}
-h2{font-family:var(--display);font-size:17px;margin:0 0 10px}
-.role{font-size:12px;border:1px solid var(--rule);border-radius:999px;padding:1px 9px;color:var(--muted);font-family:var(--mono)}
-.main>*{min-width:0;max-width:100%}.main{display:flex;flex-direction:column;gap:14px;padding-block:16px 80px}
-section{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:16px;min-width:0}
-.hero{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:inset 4px 0 0 var(--accent)}
-.hero>div{flex:1 1 150px;min-width:0}.right{text-align:right}
-.big{font-family:var(--mono);font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.25}
-.big small{font-family:var(--body);font-size:13px;color:var(--muted);font-weight:400}
-.dim{color:var(--muted);font-size:13px}.up{color:var(--accent-ink);font-weight:700}.down{color:var(--danger);font-weight:700}
-.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;background:none;border:0;padding:0}
-@media (max-width:420px){.grid{grid-template-columns:1fr}}
-.card{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;min-width:0}
-.card>div:nth-child(2){font-family:var(--mono);font-variant-numeric:tabular-nums}
-.item{padding:9px 0;border-top:1px solid var(--rule);overflow-wrap:anywhere}.item:first-of-type{border-top:0;padding-top:0}
-.tag{font-size:12px;border-radius:999px;padding:1px 9px;background:var(--chip);color:var(--muted)}
-.tag.stop{background:var(--danger-soft);color:var(--danger)}.tag.alert{background:var(--accent-soft);color:var(--accent-ink)}
-.tag.ok{background:var(--accent-soft);color:var(--accent-ink)}
-.spark{width:100%;height:64px;color:var(--accent);display:block}.row{display:flex;justify-content:space-between;font-family:var(--mono)}
-b{font-weight:700}
-.back{display:inline-block;margin:0 0 8px;font-size:14px;font-weight:700;color:var(--accent-ink);text-decoration:none}
-"""
 
 
 def code():
@@ -145,14 +106,21 @@ def clip(s, n):
 
 def spark(points, w=320, h=64):
     if len(points) < 2:
-        return '<p class="dim">기록이 더 쌓이면 그래프가 나옵니다</p>'
+        return '<p class="none">기록이 더 쌓이면 그래프가 나옵니다</p>'
     t0, t1 = points[0][0], points[-1][0]
     lo, hi = min(v for _, v in points), max(v for _, v in points)
     span, tspan = (hi - lo) or 1, (t1 - t0) or 1
     xy = " ".join(f"{(t - t0) / tspan * w:.1f},{h - 4 - (v - lo) / span * (h - 8):.1f}" for t, v in points)
     return (f'<svg viewBox="0 0 {w} {h}" class="spark" role="img" aria-label="지갑 추이">'
             f'<polyline points="{xy}" fill="none" stroke="currentColor" stroke-width="2"/></svg>'
-            f'<div class="row dim"><span>{hm(t0)}</span><span>{lo:,.1f} ~ {hi:,.1f}</span><span>{hm(t1)}</span></div>')
+            f'<div class="axis"><span>{hm(t0)}</span><span>{lo:,.1f} ~ {hi:,.1f}</span><span>{hm(t1)}</span></div>')
+
+
+def lst(rows, empty="아직 없습니다."):
+    """rows: (main html, small html); a .list like the activity sheet's."""
+    if not rows:
+        return f'<div class="none">{empty}</div>'
+    return '<div class="list">' + "".join(f"<div>{a}{f'<small>{b}</small>' if b else ''}</div>" for a, b in rows) + "</div>"
 
 
 def page(in_app=False):
@@ -165,19 +133,16 @@ def page(in_app=False):
     if len(pts) > 300:
         pts = pts[:: len(pts) // 300 + 1] + [pts[-1]]
     b = board()
-    students = [s for s in b.get("shops", []) if s.get("student")]
-    me = next((s for s in b.get("shops", []) if s.get("name") == NAME), {})
-    ranked = sum(1 for s in b.get("shops", []) if s.get("rank"))   # the board ranks every shop, the market's own too
-    s_rank = (sorted(s.get("rank") for s in students if s.get("rank")).index(me["rank"]) + 1
-              if me.get("rank") and me.get("student") else None)
-    s_ranked = sum(1 for s in students if s.get("rank"))
+    students = [x for x in b.get("shops", []) if x.get("student")]
+    me = next((x for x in b.get("shops", []) if x.get("name") == NAME), {})
+    ranked = sum(1 for x in b.get("shops", []) if x.get("rank"))   # the board ranks every shop, the market's own too
+    s_ranks = sorted(x.get("rank") for x in students if x.get("rank"))
+    s_rank = s_ranks.index(me["rank"]) + 1 if me.get("rank") in s_ranks else None
     try:
         st = json.loads((KIT / "watch-state.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         st = {}
-    recon = st.get("recon") or {}
-    watch_age = now - st.get("last_pass", 0)
-
+    recon, watch_age = st.get("recon") or {}, now - st.get("last_pass", 0)
     alerts = jsonl("watch-r4.jsonl", 12)[::-1]
     relay = [e for e in jsonl("llm-relay.jsonl", 400) if now - e.get("ts", 0) <= 3600]
     ok = [e for e in relay if e.get("ok")]
@@ -191,97 +156,86 @@ def page(in_app=False):
     react = jsonl("react.jsonl", 15)[::-1]
     says = jsonl("app.jsonl", 5)[::-1]
     nudges = jsonl("nudges.jsonl", 5)[::-1]
+    sales = [e for e in jsonl("ledger.jsonl") if e.get("kind") == "settle"]
     left = EARLY_END - now
+    alive = watch_age < 180
 
+    seg = ('<nav class="seg" aria-label="화면"><a href="/">채팅</a><a href="/dashboard.html" aria-current="page">현황</a></nav>'
+           if in_app else '<span class="btn">현황</span>')
+    head = (f'<header><div class="avatar">{E(NAME[:1].upper())}</div><div class="who"><b>{E(NAME)}</b>'
+            f'<div class="status {"on" if alive else "off"}"><span class="dot"></span><span>'
+            f'{"감시 정상" if alive else "감시 멈춤?"} · {E(time.strftime("%H:%M:%S"))}</span></div></div>{seg}</header>')
     h = []
-    h.append('<section class="hero">')
-    h.append(f'<div><div class="dim">가게 지갑</div><div class="big">{E(f"{bal:,.1f}") if bal is not None else "-"}'
-             f' <small>tOKRW</small></div>')
-    if bal is not None:
-        d = bal - START_TOKRW
-        h.append(f'<div class="{"up" if d >= 0 else "down"}">시작 대비 {d:+,.1f} ({d / START_TOKRW:+.1%})</div>')
-    h.append('</div><div class="right">')
-    h.append(f'<div class="dim">보드 순위</div><div class="big">{E(str(me.get("rank") or "-"))}'
-             f' <small>/ {ranked}곳</small></div><div class="dim">학생 중 {s_rank or "-"}위 / {s_ranked}곳 · 학생 가게 {len(students)}곳 · '
-             f'{"살아 있음" if me.get("alive") else "응답 없음"}</div></div></section>')
-    h.append(f'<section><h2>지갑 추이 (48시간)</h2>{spark(pts)}</section>')
+    d = (bal - START_TOKRW) if bal is not None else None
+    h.append('<section class="panel accent"><div class="split"><div><div class="label">가게 지갑</div>'
+             f'<div class="big">{E(f"{bal:,.1f}") if bal is not None else "-"} <small>tOKRW</small></div>'
+             + (f'<div class="sub {"up" if d >= 0 else "down"}">시작 대비 {d:+,.1f} ({d / START_TOKRW:+.1%})</div>' if d is not None else "")
+             + f'</div><div class="right"><div class="label">보드 순위</div><div class="big">{E(str(me.get("rank") or "-"))}'
+             f' <small>/ {ranked}곳</small></div><div class="sub">학생 중 {s_rank or "-"}위 / {len(s_ranks)}곳</div></div></div></section>')
+    h.append(f'<section class="panel"><h2>지갑 추이 · 48시간</h2>{spark(pts)}</section>')
 
-    h.append('<section class="grid">')
-    h.append(f'<div class="card"><div class="dim">감시</div><div>{"정상" if watch_age < 180 else "멈춤?"}'
-             f' <small class="dim">{int(watch_age)}초 전</small></div></div>')
     diff = recon.get("diff")
-    h.append(f'<div class="card"><div class="dim">잔고 대조</div><div class="{"" if diff is None or abs(diff) <= 2 else "down"}">'
-             f'{"-" if diff is None else f"{diff:+,.2f}"} <small class="dim">tOKRW</small></div></div>')
-    h.append(f'<div class="card"><div class="dim">초반 돕기 남은 시간</div><div>'
-             f'{f"{int(left // 3600)}시간 {int(left % 3600 // 60)}분" if left > 0 else "끝남"}</div></div>')
     med = statistics.median([e.get("secs", 0) for e in ok]) if ok else 0
-    h.append(f'<div class="card"><div class="dim">중계 (1시간)</div><div>{len(ok)}/{len(relay)} 응답 · 중앙 {med:.1f}초</div>'
-             f'<div class="dim">{E(" · ".join(f"{k} {v}" for k, v in sorted(by.items())))}'
-             f'{f" · 안전장치 {flagged}" if flagged else ""}</div></div>')
+    cards = [
+        ("잔고 대조", f'<span class="{"" if diff is None or abs(diff) <= 2 else "down"}">{"-" if diff is None else f"{diff:+,.2f}"}</span>', "기록과 지갑의 차이 · tOKRW"),
+        ("판매 정산", f"{len(sales)}건", f'{sum(e["data"].get("amount", 0) for e in sales):,} 크레딧'),
+        ("초반 돕기", f"{int(left // 3600)}시간 {int(left % 3600 // 60)}분" if left > 0 else "끝남", "11/27 19:00까지"),
+        ("중계 · 1시간", f"{len(ok)}/{len(relay)}", f'중앙 {med:.1f}초 · ' + " · ".join(f"{k} {v}" for k, v in sorted(by.items()))
+         + (f" · 안전장치 {flagged}" if flagged else "") if relay else "데스크 사용 중 · 호출 없음"),
+    ]
+    h.append('<div class="stats">' + "".join(f'<section class="panel"><div class="label">{E(a)}</div><div class="value">{v}</div>'
+                                            f'<div class="sub">{E(c)}</div></section>' for a, v, c in cards) + "</div>")
+
     claude1h = [e for e in ok if str(e.get("backend", "")).startswith("claude")]
-    opus = sum(1 for e in claude1h if str(e.get("model", "")).startswith("claude-opus"))
-    chars = sum(e.get("chars_in", 0) for e in claude1h)
     snaps = []
     try:
         snaps = [json.loads(l) for l in (KIT / "usage.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
     except (OSError, ValueError):
         pass
-    proj = ""
     if snaps:
         last = snaps[-1]
-        left_h = max(0.0, (last.get("resets", 0) - now) / 3600)
-        proj = f'주간 {last["pct"]}% ({E(hm(last["ts"]))} 기준) · 리셋까지 {left_h:.0f}시간'
+        proj = f'주간 {last["pct"]}% ({hm(last["ts"])} 기준) · 리셋까지 {max(0.0, (last.get("resets", 0) - now) / 3600):.0f}시간'
         if len(snaps) >= 2 and snaps[-1]["ts"] > snaps[-2]["ts"]:
             rate = (snaps[-1]["pct"] - snaps[-2]["pct"]) / ((snaps[-1]["ts"] - snaps[-2]["ts"]) / 3600)
             end = last["pct"] + rate * max(0.0, (last.get("resets", 0) - last["ts"]) / 3600)
-            proj += f' · 속도 {rate:.2f}%/시간 → 리셋 때 <span class="{"down" if end > 90 else ""}">{end:.0f}%</span>'
-    h.append(f'<div class="card" style="grid-column:1/-1"><div class="dim">Claude 사용 (중계, 1시간)</div>'
-             f'<div>{len(claude1h)}회 · Opus {opus} · 입력 {chars / 1e6:.1f}M자</div><div class="dim">{proj or "사용량 기록 없음"}</div></div>')
-    h.append('</section>')
+            proj += f" · {rate:.2f}%/시간 → 리셋 때 {end:.0f}%"
+        h.append(f'<section class="panel"><h2>Claude 사용</h2><div class="value">중계 {len(claude1h)}회 · 1시간</div>'
+                 f'<div class="sub">{E(proj)}</div></section>')
 
-    h.append('<section><h2>감시 경보</h2>')
-    if not alerts:
-        h.append('<p class="dim">경보 없음</p>')
-    for a in alerts:
-        h.append(f'<div class="item"><span class="tag {E(a.get("level", "").lower())}">{E(a.get("level", ""))}</span> '
-                 f'<span class="dim">{E(hm(a.get("ts")))}</span><div>{E(clip(a.get("text"), 220))}</div></div>')
-    h.append('</section>')
-
-    h.append(f'<section><h2>만든 도구 ({len(forge)})</h2>')
-    for name, e in sorted(forge.items(), key=lambda kv: -float(kv[1].get("ts", 0))):
-        h.append(f'<div class="item"><b>{E(str(name))}</b> v{E(str(e.get("version")))} '
-                 f'<span class="tag {"ok" if e.get("passed") else "stop"}">{"통과" if e.get("passed") else "실패"}</span> '
-                 f'<span class="dim">{E(hm(e.get("ts")))}</span></div>')
-    h.append('</section>')
-
-    h.append('<section><h2>최근 행동</h2>')
-    for e in react:
-        h.append(f'<div class="item"><span class="dim">{E(hm(e.get("ts")))}</span> <b>{E(str(e.get("action")))}</b>'
-                 f'<div>{E(clip(e.get("thought"), 200))}</div></div>')
-    h.append('</section>')
-
-    h.append('<section><h2>에이전트가 먼저 한 말 (앱)</h2>')
-    h.append('<p class="dim">아직 없음</p>' if not says else "")
-    for e in says:
-        h.append(f'<div class="item"><span class="dim">{E(hm(e.get("ts")))}</span><div>{E(clip(e.get("said_first"), 240))}</div></div>')
-    h.append('</section><section><h2>Claude의 질문 (nudge)</h2>')
-    h.append('<p class="dim">아직 없음</p>' if not nudges else "")
-    for e in nudges:
-        h.append(f'<div class="item"><span class="dim">{E(hm(e.get("ts")))} · {E(str(e.get("why", "")))}</span>'
-                 f'<div>{E(clip(e.get("text"), 240))}</div></div>')
-    h.append('</section>')
+    h.append('<section class="panel"><h2>감시 경보</h2>' + lst(
+        [(f'<span class="tag {E(a.get("level", "").lower())}">{E(a.get("level", ""))}</span> <span class="time">{E(hm(a.get("ts")))}</span>',
+          E(clip(a.get("text"), 200))) for a in alerts], "경보 없음") + "</section>")
+    h.append(f'<section class="panel"><h2>만든 도구 · {len(forge)}</h2>' + lst(
+        [(f'<b>{E(str(n))}</b> <span class="time">v{E(str(e.get("version")))}</span> '
+          f'<span class="tag {"ok" if e.get("passed") else "stop"}">{"통과" if e.get("passed") else "실패"}</span>',
+          f'<span class="time">{E(hm(e.get("ts")))}</span>')
+         for n, e in sorted(forge.items(), key=lambda kv: -float(kv[1].get("ts", 0)))]) + "</section>")
+    h.append('<section class="panel"><h2>최근 행동</h2>' + lst(
+        [(f'<span class="time">{E(hm(e.get("ts")))}</span> <b>{E(str(e.get("action")))}</b>', E(clip(e.get("thought"), 180)))
+         for e in react]) + "</section>")
+    h.append('<section class="panel"><h2>에이전트가 먼저 한 말</h2>' + lst(
+        [(f'<span class="time">{E(hm(e.get("ts")))}</span>', E(clip(e.get("said_first"), 220))) for e in says]) + "</section>")
+    h.append('<section class="panel"><h2>Claude의 질문</h2>' + lst(
+        [(f'<span class="time">{E(hm(e.get("ts")))}</span> <span class="tag">{E(str(e.get("why", "")))}</span>',
+          E(clip(e.get("text"), 160)) + (f'<br>→ {E(clip(e.get("reply"), 160))}' if e.get("reply") else ""))
+         for e in nudges]) + "</section>")
 
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="refresh" content="30"><meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="R4 가게"><meta name="theme-color" content="#f37021"><title>R4 가게</title>
+<meta name="apple-mobile-web-app-title" content="R4 가게"><title>현황 · {E(NAME)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/joungkyun/font-d2coding@1.3.2/d2coding.css">
-<style>{CSS}</style></head><body>
-<header class="wrap top">{'<a class="back" href="/">← 채팅</a>' if in_app else ''}<div class="eyebrow">AGENT MARKET · ROUND 4</div>
-<div class="top-row"><h1>{E(NAME)}</h1><span class="role">{E(time.strftime("%m/%d %H:%M:%S"))} · 30초마다 새로고침</span></div></header>
-<main class="wrap main">{"".join(h)}</main></body></html>"""
+<style>{ui_css()}</style></head><body class="screen">{head}<main class="page">{"".join(h)}</main></body></html>"""
+
+
+def ui_css():
+    """app/ui.css, the one look the chat and this page share (inlined: the Tailscale page has no /ui.css)."""
+    try:
+        return (HERE / "app" / "ui.css").read_text(encoding="utf-8")
+    except OSError:
+        return ""
 
 
 class Handler(BaseHTTPRequestHandler):

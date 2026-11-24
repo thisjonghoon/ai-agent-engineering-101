@@ -15,47 +15,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/joungkyun/font-d2coding@1.3.2/d2coding.css">
+<link rel="stylesheet" href="/ui.css">
 <style>
-/* webtoon-review-board's design system (paper, ink, one accent, red for errors only) with Hermes orange as the accent
-   and D2Coding for numbers (11/24, the same as the dashboard). The layout is the kit's template, unchanged. */
-:root{--font:"Nanum Gothic","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
-  --mono:"D2 coding","D2Coding","Nanum Gothic Coding",ui-monospace,Menlo,monospace;
-  --bg:#fff;--card:#f4f5f6;--raised:#fff;--hover:#eef0f2;--line:#e3e5e8;--line-strong:#cfd3d8;
-  --text:#111214;--text-soft:#3d4147;--text-mute:#6b7178;--primary:#f37021;--primary-ink:#0a0a0a;
-  --ok:#f37021;--warn:#b4490c;--fail:#e5342f;--focus:#f37021;--scrim:rgb(0 0 0/.32);
-  --shadow-2:0 8px 24px -6px rgb(0 0 0/.12),0 2px 6px rgb(0 0 0/.05);
-  --shadow-3:0 24px 64px -12px rgb(0 0 0/.24),0 4px 12px rgb(0 0 0/.06);
-  --ease:cubic-bezier(.22,1,.36,1);color-scheme:light}
-@media (prefers-color-scheme:dark){:root{--bg:#0e0f10;--card:#18191b;--raised:#18191b;--hover:#24262a;--line:#2a2c30;
-  --line-strong:#3a3d42;--text:#f1f2f3;--text-soft:#c9ccd1;--text-mute:#9a9fa6;--primary:#f37021;--primary-ink:#0a0a0a;
-  --ok:#f37021;--warn:#ff9a57;--fail:#ff5a52;--focus:#ff9a57;--scrim:rgb(0 0 0/.64);
-  --shadow-2:0 10px 28px -6px rgb(0 0 0/.7),0 2px 6px rgb(0 0 0/.4);
-  --shadow-3:0 28px 72px -12px rgb(0 0 0/.85),0 4px 12px rgb(0 0 0/.5);color-scheme:dark}}
-*{box-sizing:border-box}
-html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--text);font:15px/1.55 var(--font);-webkit-font-smoothing:antialiased;
-  -webkit-tap-highlight-color:transparent;overscroll-behavior:none;word-break:keep-all}
-button{font:inherit;color:inherit;cursor:pointer}
-button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+/* chat-only parts; the shared look is in /ui.css (see app/DESIGN.md) */
 .app{height:var(--app-h,100dvh);display:grid;grid-template-rows:auto 1fr auto;max-width:760px;margin:0 auto;background:var(--bg)}
 @media (min-width:800px){.app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
-
-header{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
-  border-bottom:1px solid var(--line);background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(14px);
-  -webkit-backdrop-filter:saturate(1.4) blur(14px)}
-.avatar{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--primary);
-  color:var(--primary-ink);font-weight:700;font-size:15px}
-.who{flex:1;min-width:0}
-.who b{display:block;font-size:15px;font-weight:650;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.status{display:inline-flex;align-items:center;gap:6px;color:var(--text-mute);font-size:12px;margin-top:1px}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--line-strong);flex:none}
-.status.on .dot{background:var(--ok)}
-.status.busy .dot{background:var(--warn);animation:pulse 1s ease-in-out infinite}
-.status.off .dot{background:var(--fail)}
-.btn{flex:none;min-height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line-strong);background:var(--bg);
-  font-size:13px;font-weight:500;transition:background .12s}
-.btn:active{transform:scale(.97)}
-
 #scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 8px}
 .empty{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 8px;gap:8px}
 .empty .avatar{width:60px;height:60px;border-radius:16px;font-size:24px;box-shadow:var(--shadow-2)}
@@ -64,7 +28,6 @@ header{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-are
 .chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:14px}
 .chip{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:7px 14px;font-size:13px;color:var(--text-soft)}
 .chip:active{background:var(--hover)}
-
 .row{display:flex;margin:3px 0}
 .row.me{justify-content:flex-end}
 .bubble{max-width:80%;padding:9px 14px;border-radius:18px;white-space:pre-wrap;overflow-wrap:anywhere;animation:in .2s var(--ease)}
@@ -79,10 +42,9 @@ header{display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-are
 .card div{white-space:pre-wrap;color:var(--text-soft);font-size:14px;margin-top:2px}
 .typing .bubble{display:flex;gap:4px;padding:14px}
 .typing i{width:6px;height:6px;border-radius:50%;background:var(--text-mute);animation:pulse 1.2s infinite}
-.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
-@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+.typing i:nth-child(2){animation-delay:.15s}
+.typing i:nth-child(3){animation-delay:.3s}
 @keyframes in{from{opacity:0;transform:translateY(4px)}}
-
 footer{padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:var(--bg)}
 form{display:flex;align-items:flex-end;gap:8px;background:var(--card);border:1px solid transparent;border-radius:22px;
   padding:5px 5px 5px 16px;transition:border-color .12s}
@@ -93,7 +55,6 @@ textarea::placeholder{color:var(--text-mute)}
 .send{flex:none;width:34px;height:34px;border-radius:50%;border:0;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;
   transition:opacity .12s}
 .send:disabled{opacity:.25;cursor:default}
-
 .shade{position:fixed;inset:0;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center;z-index:10;
   animation:fade .2s var(--ease)}
 .sheet{width:100%;max-width:560px;max-height:84dvh;overflow-y:auto;background:var(--raised);border-radius:16px 16px 0 0;box-shadow:var(--shadow-3);
@@ -102,31 +63,16 @@ textarea::placeholder{color:var(--text-mute)}
 .grip{width:36px;height:4px;border-radius:2px;background:var(--line-strong);margin:4px auto 16px}
 .sheet h3{margin:0 0 4px;font-size:17px;letter-spacing:-.01em}
 .sheet .sub{color:var(--text-mute);font-size:13px;margin:0 0 16px}
-.kv{background:var(--card);border-radius:10px;overflow:hidden;margin-bottom:16px}
-.kv div{display:flex;justify-content:space-between;gap:16px;padding:10px 14px;font-size:14px}
-.kv div+div{border-top:1px solid var(--line)}
-.kv span:first-child{color:var(--text-mute);font-family:var(--mono);font-size:13px}
-.kv span:last-child{text-align:right;overflow-wrap:anywhere;font-weight:500}
-.mono{font-family:var(--mono);font-size:13px}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .actions button{min-height:46px;border-radius:10px;border:1px solid var(--line-strong);background:var(--bg);font-weight:600}
 .actions .yes{background:var(--primary);color:var(--primary-ink);border-color:var(--primary)}
 .actions button:active{transform:scale(.98)}
-.sec{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-mute);margin:20px 0 8px}
-.list{background:var(--card);border-radius:10px;overflow:hidden}
-.list div{padding:10px 14px;font-size:14px}
-.list div+div{border-top:1px solid var(--line)}
-.list small{display:block;color:var(--text-mute);font-size:12px;margin-top:2px}
-.none{color:var(--text-mute);font-size:13px;padding:2px 0}
 .credit{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);color:var(--text-mute);font-size:12px;text-align:center}
 .credit a{color:var(--text-soft);text-decoration:none;font-weight:600}
 @keyframes up{from{transform:translateY(32px);opacity:0}}
 @keyframes fade{from{opacity:0}}
-[hidden]{display:none!important}
-header{border-bottom:3px solid var(--primary);background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none}
-.card{border-radius:8px}
-.sec{color:var(--warn)}
-.kv span:last-child{font-family:var(--mono)}
+html,body{height:100%}
+body{overscroll-behavior:none}
 </style>
 </head>
 <body>
@@ -134,7 +80,7 @@ header{border-bottom:3px solid var(--primary);background:var(--bg);backdrop-filt
   <header>
     <div class="avatar" id="av">A</div>
     <div class="who"><b id="nm">Agent</b><div class="status" id="st"><span class="dot"></span><span id="stt">연결하는 중</span></div></div>
-    <a class="btn" href="/dashboard.html" style="display:inline-grid;place-items:center;text-decoration:none;color:inherit">현황</a>
+    <nav class="seg" aria-label="화면"><a href="/" aria-current="page">채팅</a><a href="/dashboard.html">현황</a></nav>
     <button class="btn" id="act" type="button">활동</button>
   </header>
   <div id="scroll"><div id="log"></div></div>

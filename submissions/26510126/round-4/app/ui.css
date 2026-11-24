@@ -1,0 +1,91 @@
+/* The shop's one look, shared by every screen (chat, 현황, the Tailscale dashboard, and the screens still to come).
+   webtoon-review-board's system: paper and ink, one accent (Hermes orange, black text on it), red for errors only,
+   Nanum Gothic for text and D2Coding for every number. The frame is the mini app's: a thin header with the shop's
+   avatar, name and status, a segmented switch between screens, then panels, lists and key-value tables.
+   See app/DESIGN.md for how a new screen uses these parts. */
+:root{--font:"Nanum Gothic","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+  --mono:"D2 coding","D2Coding","Nanum Gothic Coding",ui-monospace,Menlo,monospace;
+  --bg:#fff;--paper:#f4f5f6;--card:#f4f5f6;--raised:#fff;--hover:#eef0f2;--line:#e3e5e8;--line-strong:#cfd3d8;
+  --text:#111214;--text-soft:#3d4147;--text-mute:#6b7178;--primary:#f37021;--primary-ink:#0a0a0a;
+  --accent-ink:#b4490c;--accent-soft:#fdeee4;--danger:#e5342f;--danger-soft:#fdecec;
+  --ok:#f37021;--warn:#b4490c;--fail:#e5342f;--focus:#f37021;--scrim:rgb(0 0 0/.32);
+  --shadow-2:0 8px 24px -6px rgb(0 0 0/.12),0 2px 6px rgb(0 0 0/.05);
+  --shadow-3:0 24px 64px -12px rgb(0 0 0/.24),0 4px 12px rgb(0 0 0/.06);
+  --ease:cubic-bezier(.22,1,.36,1);color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0e0f10;--paper:#0e0f10;--card:#18191b;--raised:#18191b;--hover:#24262a;
+  --line:#2a2c30;--line-strong:#3a3d42;--text:#f1f2f3;--text-soft:#c9ccd1;--text-mute:#9a9fa6;--primary:#f37021;
+  --primary-ink:#0a0a0a;--accent-ink:#ff9a57;--accent-soft:#3a2112;--danger:#ff5a52;--danger-soft:#3a1a19;
+  --ok:#f37021;--warn:#ff9a57;--fail:#ff5a52;--focus:#ff9a57;--scrim:rgb(0 0 0/.64);
+  --shadow-2:0 10px 28px -6px rgb(0 0 0/.7),0 2px 6px rgb(0 0 0/.4);
+  --shadow-3:0 28px 72px -12px rgb(0 0 0/.85),0 4px 12px rgb(0 0 0/.5);color-scheme:dark}}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.55 var(--font);-webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;word-break:keep-all}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+[hidden]{display:none!important}
+.num,.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.mono{font-size:13px}
+
+/* header: avatar, name and status, then the screen switch and buttons */
+header{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background:var(--bg);border-bottom:3px solid var(--primary)}
+.avatar{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--primary);
+  color:var(--primary-ink);font-weight:800;font-size:15px}
+.who{flex:1;min-width:0}
+.who b{display:block;font-size:15px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.status{display:inline-flex;align-items:center;gap:6px;color:var(--text-mute);font-size:12px;margin-top:1px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--line-strong);flex:none}
+.status.on .dot{background:var(--ok)}
+.status.busy .dot{background:var(--warn);animation:pulse 1s ease-in-out infinite}
+.status.off .dot{background:var(--fail)}
+.btn{flex:none;min-height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line-strong);background:var(--bg);
+  font-size:13px;font-weight:700;display:inline-grid;place-items:center;text-decoration:none;color:inherit}
+.btn:active{transform:scale(.97)}
+.seg{flex:none;display:inline-flex;padding:2px;border-radius:9px;background:var(--card);border:1px solid var(--line)}
+.seg a{min-height:28px;padding:0 11px;border-radius:7px;display:inline-grid;place-items:center;font-size:13px;font-weight:700;
+  color:var(--text-mute);text-decoration:none}
+.seg a[aria-current="page"]{background:var(--primary);color:var(--primary-ink)}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+
+/* a screen that is not the chat: panels on paper */
+.page{max-width:760px;margin:0 auto;padding:14px 16px calc(28px + env(safe-area-inset-bottom));display:flex;
+  flex-direction:column;gap:12px}
+.page>*{min-width:0}
+.screen{min-height:100dvh;background:var(--paper)}
+.panel{background:var(--raised);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
+.panel.accent{box-shadow:inset 4px 0 0 var(--primary)}
+.panel h2{font-size:14px;font-weight:700;margin:0 0 10px;color:var(--text-soft)}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stats .panel{padding:12px 14px}
+.label{font-size:12px;color:var(--text-mute)}
+.big{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:28px;font-weight:700;line-height:1.2}
+.big small{font-family:var(--font);font-size:13px;font-weight:400;color:var(--text-mute)}
+.value{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:16px;font-weight:700}
+.sub{font-size:12px;color:var(--text-mute);margin-top:2px}
+.up{color:var(--accent-ink);font-weight:700}.down{color:var(--danger);font-weight:700}
+.split{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.split>*{min-width:0}
+.right{text-align:right}
+
+/* lists and key-value tables (the activity sheet uses the same) */
+.sec{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--warn);margin:20px 0 8px}
+.list{background:var(--card);border-radius:10px;overflow:hidden}
+.list>div{padding:10px 14px;font-size:14px;overflow-wrap:anywhere}
+.list>div+div{border-top:1px solid var(--line)}
+.list small{display:block;color:var(--text-mute);font-size:12px;margin-top:2px}
+.none{color:var(--text-mute);font-size:13px;padding:2px 0}
+.kv{background:var(--card);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.kv div{display:flex;justify-content:space-between;gap:16px;padding:10px 14px;font-size:14px}
+.kv div+div{border-top:1px solid var(--line)}
+.kv span:first-child{color:var(--text-mute);font-family:var(--mono);font-size:13px}
+.kv span:last-child{text-align:right;overflow-wrap:anywhere;font-weight:700;font-family:var(--mono)}
+.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:999px;padding:1px 8px;background:var(--hover);color:var(--text-mute);
+  vertical-align:1px}
+.tag.ok,.tag.alert{background:var(--accent-soft);color:var(--accent-ink)}
+.tag.stop{background:var(--danger-soft);color:var(--danger)}
+.time{font-family:var(--mono);font-size:12px;color:var(--text-mute)}
+.spark{width:100%;height:64px;color:var(--primary);display:block}
+.axis{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--text-mute);margin-top:4px}

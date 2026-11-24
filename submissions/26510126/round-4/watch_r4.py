@@ -14,6 +14,13 @@ Checks:
         payment with its tx hash, and the chain says where it went), fell by more than DRAIN_FRAC (0.95) of its
         highest balance in the last 10 minutes and by at least DRAIN_MIN tOKRW (100); more than WARN_FRAC (0.5) only
         alerts, counting restocks too, so a person sees a large purchase.
+  ALERT big payment: one payment that is not a restock took more than BIG_FRAC (0.2) of the wallet (week 13: a large,
+        irreversible move is the one a person should see; it is seen at once, not stopped).
+  ALERT reconcile: the shop wallet's balance is not what its records explain for 3 passes running: the balance when the
+        watch began, plus the market's grants and settled sales to this shop (amount less shop_fee, from
+        GET /api/ledger), less every payment the kit logged (value and gas from the chain's receipts). Money in that no
+        settle explains can be a customer who paid and got nothing (week 13's rehearsal); money out that no logged
+        payment explains is a leak.
   LOG   every pass writes each wallet's tOKRW to logs/wallet.jsonl: the shop's money, so this is the score over time.
   ALERT relay: in the last 10 minutes llm_relay answered nothing and failed 3 or more times, or the kit logged 3 or
         more "[mind] model call failed" (a call that never reached the relay leaves no line in the relay's log).
@@ -52,6 +59,9 @@ WALLET_LOG = HERE / "logs" / "wallet.jsonl"
 MARKET = os.environ.get("MARKET", "https://market.ourolabs.ai")
 SENT = re.compile(r"\[maroo\] \S+ sent \S+ tOKRW from the (shop|buyer) wallet: \S*/tx/(0x[0-9a-fA-F]{64})")
 BEARER = re.compile(r"bearer [a-z0-9._-]{20,}")         # matched on lowered text
+BIG_FRAC = float(os.environ.get("BIG_FRAC", "0.2"))
+RECON_TOL = float(os.environ.get("RECON_TOL", "2"))       # tOKRW
+NAME = os.environ.get("AGENT_NAME", "thisjonghoon")
 REPEAT = 30 * 60                                        # the same alert at most once in 30 minutes
 SCAN = ["card.json", "notes.md", "tools", "app", "logs"]
 
@@ -177,7 +187,7 @@ def market_address(state):
     return a.lower()
 
 
-def restocks(state, maroo, read_at):
+def restocks(state, maroo, read_at, balances=None):
     """Read the kit's new payment lines; remember [time, tOKRW] per wallet for the ones paid to the market."""
     paid = state.setdefault("to_market", {})
     market = market_address(state)
@@ -189,16 +199,84 @@ def restocks(state, maroo, read_at):
             t = maroo.rpc("eth_getTransactionByHash", tx)
         except Exception:
             t = None
-        if not t or not market:                         # not readable yet: try again next pass
+        try:
+            rc = maroo.rpc("eth_getTransactionReceipt", tx) if t else None
+        except Exception:
+            rc = None
+        if not t or not market or not rc:              # not readable yet: try again next pass
             state["pending_tx"].append([role, tx])
             continue
-        if (t.get("to") or "").lower() == market:
-            paid.setdefault(f"{role}_wallet.key", []).append([read_at, int(t.get("value", "0x0"), 16) / 10 ** 18])
+        value = int(t.get("value", "0x0"), 16) / 10 ** 18
+        gas = int(rc.get("gasUsed", "0x0"), 16) * int(rc.get("effectiveGasPrice") or t.get("gasPrice") or "0x0", 16) / 10 ** 18
+        if role == "shop" and state.get("recon"):
+            state["recon"]["out"] += value + gas
+        to_market = (t.get("to") or "").lower() == market
+        if to_market:
+            paid.setdefault(f"{role}_wallet.key", []).append([read_at, value])
+        else:
+            after = (balances or {}).get(f"{role}_wallet.key")
+            before = (after or 0) + value + gas
+            if after is not None and before > 0 and value >= BIG_FRAC * before:
+                emit(state, "ALERT", f"big:{tx}", f"one payment of {value:,.1f} tOKRW ({value / before:.0%} of the "
+                     f"{role} wallet) went to {t.get('to')}, not the market: a refund, a warranty, or money leaving? "
+                     f"Read logs/react.jsonl ({maroo.tx_url(tx) if hasattr(maroo, 'tx_url') else tx}).")
     state["pending_tx"] = state["pending_tx"][-50:]
     now = time.time()
     for k in paid:
         paid[k] = [x for x in paid[k] if now - x[0] <= 700]
     return paid
+
+
+def ledger_since(state, seq):
+    """Ledger entries after seq, oldest first (at most 500 a call, so it pages)."""
+    import httpx
+    out = []
+    while True:
+        page = httpx.get(MARKET.rstrip("/") + "/api/ledger", params={"after": seq}, timeout=15).json()
+        out += page
+        if len(page) < 500:
+            return out
+        seq = page[-1]["seq"]
+
+
+def reconcile(state, balance):
+    """Week 13's ledger rule on the shop wallet: what the records explain against what the chain holds."""
+    r = state.get("recon")
+    if not r:                                           # the first pass is the baseline
+        try:
+            last = ledger_since(state, -1)
+        except Exception:
+            return
+        state["recon"] = {"base": balance, "seq": last[-1]["seq"] if last else 0, "in": 0.0, "out": 0.0,
+                          "since": int(time.time()), "off": 0}
+        return
+    try:
+        import httpx
+        shops = httpx.get(MARKET.rstrip("/") + "/api/shops", timeout=15).json()
+        shops = shops.get("shops", shops) if isinstance(shops, dict) else shops
+        urls = set(r.get("urls", []))
+        urls |= {s.get("url") for s in shops if isinstance(s, dict) and s.get("name") == NAME and s.get("url")}
+        r["urls"] = sorted(u for u in urls if u)[-20:]
+        new = ledger_since(state, r["seq"])
+    except Exception:
+        return                                          # the market did not answer: try next pass
+    for e in new:
+        d, k = e.get("data") or {}, e.get("kind")
+        if k == "grant" and d.get("shop") == NAME:
+            r["in"] += float(d.get("credits") or 0) / 1000
+        elif k == "settle" and d.get("shop") in r["urls"]:
+            r["in"] += (float(d.get("amount") or 0) - float(d.get("shop_fee") or 0)) / 1000
+        r["seq"] = max(r["seq"], e.get("seq", 0))
+    expected = r["base"] + r["in"] - r["out"]
+    diff = balance - expected
+    r["off"] = r["off"] + 1 if abs(diff) > RECON_TOL else 0
+    r["diff"] = round(diff, 3)
+    if r["off"] >= 3:
+        what = ("money came in that no settle to this shop explains: a customer who paid and did not get the goods? "
+                "Read logs/react.jsonl and the forum" if diff > 0 else
+                "money went out that no payment in logs/agent-kit.log explains")
+        emit(state, "ALERT", f"recon:{'in' if diff > 0 else 'out'}", f"the shop wallet holds {balance:,.1f} tOKRW; its "
+             f"records explain {expected:,.1f} ({diff:+,.1f}): {what}.")
 
 
 def check_wallets(state):
@@ -227,7 +305,9 @@ def check_wallets(state):
         hist[name] = h
     # the balances are read first and the kit's log after: the kit logs a payment right after its receipt, so a
     # restock that already lowered a balance is in the log by now
-    paid = restocks(state, maroo, read_at) if read else {}
+    paid = restocks(state, maroo, read_at, read) if read else {}
+    if "shop_wallet.key" in read:
+        reconcile(state, read["shop_wallet.key"])
     for name, tokrw in read.items():
         h, p = hist[name], paid.get(name, [])
         high = max(b for _, b in h)

@@ -65,6 +65,11 @@ textarea::placeholder{color:var(--text-mute)}
 .me .bubble,.agent .bubble{box-shadow:inset 0 0 0 1px var(--line-strong)}
 .bubble .quote{display:block;margin:0 0 8px;padding:6px 10px;border-left:2px solid var(--accent-ink);border-radius:2px 8px 8px 2px;
   background:color-mix(in srgb,var(--text) 6%,transparent);color:var(--text-soft);font-size:12px;line-height:1.45}
+.bubble .quote{cursor:pointer}
+.bubble.found{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--primary);transition:box-shadow .2s}
+.bubble .quote:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.jump-note{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:20;padding:6px 12px;border-radius:999px;
+  background:var(--text);color:var(--bg);font-size:12px}
 .other .bubble .quote{border-left-color:currentColor;color:inherit;opacity:.85}
 .bubble .by{display:block;text-align:right;margin-top:4px;font-size:12px;opacity:.8}
 /* reply: long-press (phone) or right-click (PC) a message, then 답장 or 복사 (11/24) */
@@ -133,7 +138,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 // a reply's quote line ("> who: "…"" first) drawn apart from the words after it (11/24); everything stays escaped
 const KIT_LINES = {'(the agent is busy; ask again)': '에이전트가 2분 안에 답하지 않았어요. 보내신 메시지는 그대로 있으니 잠시 뒤 다시 물어봐 주세요.'};
-const body = t => { const q = /^(?:>|↪\uFE0F?) ([^\n]*)\n([\s\S]*)$/.exec(String(t ?? '')); return q ? `<span class="quote">${esc(q[1])}</span>${esc(q[2])}` : esc(t); };
+const body = t => { const q = /^(?:>|↪\uFE0F?) ([^\n]*)\n([\s\S]*)$/.exec(String(t ?? '')); return q ? `<span class="quote" role="button" tabindex="0" title="원문으로">${esc(q[1])}</span>${esc(q[2])}` : esc(t); };
 // The owner talks to the agent here (11/23, decision 2: the app's chat is how the owner's intent reaches the agent), so
 // the default name is the owner's; ?user=<name> changes it on this device. Claude's messages arrive as "claude".
 let me = 'jonghoon';
@@ -318,6 +323,29 @@ draw();
     menu.hidden = true;
   });
   document.getElementById('replyx').onclick = () => { reply = null; bar.hidden = true; };
+  // tap a reply's quote to jump to the message it quotes (found by its opening words; the kit's chat has no ids)
+  const norm = s => s.replace(/\s+/g, ' ').trim();
+  const jump = quote => {
+    const m = /^[^:]{1,40}: "([\s\S]*?)(?:…)?"$/.exec(norm(quote.textContent));
+    const want = norm(m ? m[1] : quote.textContent).slice(0, 40);
+    const own = quote.closest('.bubble');
+    // only the words of a bubble (not its own quote box or "by Claude"), and only bubbles above the tapped one
+    const words = b => norm([...b.childNodes].filter(n => !n.classList?.contains('quote') && !n.classList?.contains('by'))
+      .map(n => n.textContent).join(''));
+    const hit = [...log.querySelectorAll('.bubble')].reverse()
+      .find(b => b !== own && !b.closest('.typing') && (b.compareDocumentPosition(own) & Node.DOCUMENT_POSITION_FOLLOWING)
+                 && words(b).includes(want));
+    if (!hit) {
+      document.querySelector('.jump-note')?.remove();
+      const n = Object.assign(document.createElement('div'), {className: 'jump-note', textContent: '원문을 찾지 못했어요'});
+      n.setAttribute('role', 'status'); document.body.append(n); setTimeout(() => n.remove(), 1600); return;
+    }
+    hit.scrollIntoView({block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+    hit.tabIndex = -1; hit.focus({preventScroll: true});
+    clearTimeout(hit._found); hit.classList.add('found'); hit._found = setTimeout(() => hit.classList.remove('found'), 1500);
+  };
+  log.addEventListener('click', e => { const q = e.target.closest('.quote'); if (q) jump(q); });
+  log.addEventListener('keydown', e => { const q = e.target.closest('.quote'); if (q && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); jump(q); } });
   // capture phase on the document: runs before the form's own submit handler, which reads the field
   document.addEventListener('submit', e => {
     if (e.target.id !== 'f' || !reply || !field.value.trim()) return;

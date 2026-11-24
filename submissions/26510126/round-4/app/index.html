@@ -56,6 +56,10 @@ textarea::placeholder{color:var(--text-mute)}
   transition:opacity .12s}
 .send:disabled{background:var(--hover);color:var(--text-mute);cursor:not-allowed}
 .other .bubble{background:var(--accent-soft)}
+/* claude's messages sit on the right like the owner's, in the soft orange, with its name above (11/24) */
+.row.other{justify-content:flex-end}
+.other .bubble{border-bottom-left-radius:18px;border-bottom-right-radius:6px}
+.name.to-right{text-align:right;margin-right:4px}
 .shade{position:fixed;inset:0;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center;z-index:10;
   animation:fade .2s var(--ease)}
 .sheet{width:100%;max-width:560px;max-height:84dvh;overflow-y:auto;background:var(--raised);border-radius:16px 16px 0 0;box-shadow:var(--shadow-3);
@@ -174,7 +178,7 @@ function draw() {
       html += `<div class="row me"><div class="bubble">${esc(m.text)}</div></div>`;
     } else {
       const cls = m.who === 'agent' ? 'agent' : 'other';
-      if (cls === 'other' && last !== m.who) html += `<div class="name">${esc(m.who)}</div>`;
+      if (cls === 'other' && last !== m.who) html += `<div class="name to-right">${esc(m.who)}</div>`;   // claude on the right (11/24)
       if (cls === 'agent' && last && last !== m.who && last !== me && last !== 'card' && last !== 'kit')
         html += `<div class="name">agent</div>`;   // the shop's name is close to the owner's: label the agent plainly (11/24)
       html += `<div class="row ${cls}"><div class="bubble">${esc(m.text)}</div></div>`;

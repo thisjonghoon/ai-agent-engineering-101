@@ -42,9 +42,12 @@ The look is webtoon-review-board's design system with Hermes orange as its one a
 - **전체 보기** (11/24, owner). A long list shows its first rows and `전체 보기 · N` (N = all). The script opens
   `dialog#full`: the whole screen on phones and tablets (landscape keeps the chat's 760 px column), a centred 760 px
   sheet over `--scrim` on the web (≥1280 px with a mouse); ✕ 44 px, Esc, or a click outside the web sheet closes it
-  and focus returns to the summary; every text is whole there (moves unfolded, `.cliponly` on the page and
-  `.fullonly` in the sheet with its own line breaks, a Claude question in `--text` over its answer); it is rebuilt on
-  each 30 s refresh. Without the script the
+  and focus returns to the summary; every row shows unfolded there; it is rebuilt on each 30 s refresh.
+- **Rows unfold on a tap** (11/24, owner): 감시 경보, 최근 행동, 스스로 보낸 메시지 and Claude의 질문 rows are all
+  `details.move`: a two-line muted preview (`aria-hidden`, the whole text follows), a tap shows the whole text in the
+  brighter `--text-soft` (a question in `--text` over its answer, an alert's English original as a small `.orig` line).
+  A chevron marks only rows with more to show (`.can`, set by the script); the row's top padding is part of the
+  tap area (≥ 52 px). Without the script the
   `<details>` unfold. 만든 도구 shows three rows of chips (90 px) and its 전체 보기 only when they overflow.
 - **Fixed header** (11/24, owner). On 현황 the body is a 100dvh column and only `#pane` scrolls (overscroll contained),
   so a pull past either end bounces the content, never the header. Targets: `.btn` 40 px, `.seg a` 36 px, send 40 px.

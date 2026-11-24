@@ -187,10 +187,17 @@ dialog.full::backdrop{background:var(--bg)}
   dialog.full .full-head,dialog.full .full-body{padding-left:20px;padding-right:20px}
   dialog.full .full-head{padding-top:12px}
 }
-.fullonly{display:none}dialog.full .fullonly{display:inline}dialog.full .cliponly{display:none}
-dialog.full .fullonly{white-space:pre-line}
-.list small .a{display:block}
-dialog.full .list small .q{color:var(--text);font-weight:500}dialog.full .list small .a{margin-top:4px}
+/* every list row unfolds like a move: the preview's answer line and the whole text's question/answer (11/24, owner) */
+details.move .a{display:block}
+details.move .orig{display:block;margin-top:4px;font-size:12px;color:var(--text-mute)}
+details.move>summary:focus-visible{outline:2px solid var(--primary);outline-offset:2px;border-radius:6px}
+/* the row's top padding is part of the tap area (≥44 px even for one line) */
+.list>div>details.move>summary{margin:-10px -14px 0;padding:10px 14px 0}
+details.move.can>summary{position:relative;padding-right:36px}
+details.move.can>summary::after{content:"";position:absolute;right:16px;top:16px;width:7px;height:7px;border-right:2px solid var(--text-mute);
+  border-bottom:2px solid var(--text-mute);transform:rotate(45deg);transition:transform .15s var(--ease)}
+details.move.can[open]>summary::after{transform:translate(0,3px) rotate(-135deg)}
+details.move .fulltext .q{display:block;color:var(--text);font-weight:500}details.move .fulltext .a{margin-top:4px}
 html.js .tchips.cap{max-height:calc(3 * 26px + 2 * 6px);overflow:hidden}
 html.js details.chipsmore{display:none}
 html.js section.over details.chipsmore{display:block}

@@ -178,20 +178,13 @@ def alert_ko(a):
     return text, "", []
 
 
-def both(text, n):
-    """The text clipped to n on the page, whole in the 전체 보기 sheet (11/24, owner)."""
-    flat, whole = " ".join(str(text or "").split()), str(text or "").strip()
-    if len(flat) <= n and flat == whole:
-        return E(flat)
-    # the sheet keeps the text's own line breaks (white-space:pre-line there)
-    return f'<span class="cliponly">{E(clip(flat, n))}</span><span class="fullonly">{E(whole)}</span>'
-
-
 def lst(rows, empty="아직 없습니다."):
     """rows: (main html, small html); a .list like the activity sheet's."""
     if not rows:
         return f'<div class="none">{empty}</div>'
-    return '<div class="list">' + "".join(f"<div>{a}{f'<small>{b}</small>' if b else ''}</div>" for a, b in rows) + "</div>"
+    return '<div class="list">' + "".join(r if isinstance(r, str) and r.startswith("<div") else
+                                          f"<div>{r}</div>" if isinstance(r, str) else
+                                          f"<div>{r[0]}{f'<small>{r[1]}</small>' if r[1] else ''}</div>" for r in rows) + "</div>"
 
 
 def page(in_app=False):
@@ -238,6 +231,11 @@ def page(in_app=False):
             f'<div class="status {"on" if alive else "off"}"><span class="dot"></span><span>'
             f'<span class="st-text">{"감시 정상" if alive else "감시 멈춤?"}</span> <span class="num">{E(time.strftime("%H:%M:%S"))}</span></span></div></div>'
             f'{seg}</header>')
+
+    def item(iid, head, preview, full):
+        """A row that unfolds on a tap: two muted lines of preview, then the whole text (the sheet opens them all)."""
+        return (f'<details class="move" id="{iid}"><summary>{head}<small class="preview" aria-hidden="true">{preview}</small></summary>'
+                f'<p class="fulltext">{full}</p></details>')
 
     def more(key, rows, shown, empty="아직 없습니다."):
         """The first `shown` rows, the rest folded under 더보기 (its open state survives the 30 s refresh)."""
@@ -291,7 +289,7 @@ def page(in_app=False):
     def move(e):
         full = " ".join(str(e.get("thought") or "").split())
         return (f'<details class="move" id="mv-{int(float(e.get("ts", 0)))}"><summary><span class="time">{E(hm(e.get("ts"))[6:])}</span> '
-                f'<b>{E(str(e.get("action")))}</b><small class="preview">{E(clip(full, 140))}</small></summary>'
+                f'<b>{E(str(e.get("action")))}</b><small class="preview" aria-hidden="true">{E(clip(full, 140))}</small></summary>'
                 f'<p class="fulltext">{E(full[:4000])}</p></details>')
     mv = [move(e) for e in react]
     # phone: 3 moves; landscape: 6, so the tall left cell beside two stacked panels is filled (owner's layout, 11/24)
@@ -300,15 +298,17 @@ def page(in_app=False):
                 f'{"".join(f"<div class=wide-only>{m}</div>" for m in mv[3:6])}</div>' if mv else '<div class="none">아직 없습니다.</div>')
              # one 전체 보기: it also holds moves 4-6 for a phone (the list above shows them in landscape); the modal lists all
              + (f'<details class="more" id="more-moves"><summary>전체 보기 · {len(mv)}</summary><div class="list">'
-                + "".join(f"<div class=narrow-only>{m}</div>" for m in mv[3:6])
+                + "".join(f"<div class=narrow-only>{m.replace('id="mv-', 'id="mvn-', 1)}</div>" for m in mv[3:6])  # own ids
                 + "".join(f"<div>{m}</div>" for m in mv[6:]) + "</div></details>" if len(mv) > 3 else "")
              + "</section>")
     alert_rows = []
     for a in alerts:
         ko, act, _ = alert_ko(a)
         lvl = a.get("level", "")
-        alert_rows.append((f'<span class="tag {E(lvl.lower())}">{"멈춤" if lvl == "STOP" else "경보"}</span> '
-                           f'<span class="time">{E(hm(a.get("ts")))}</span> {E(ko)}', E(act)))
+        alert_rows.append(item(f'al-{int(a.get("ts", 0))}-{len(alert_rows)}',
+                               f'<span class="tag {E(lvl.lower())}">{"멈춤" if lvl == "STOP" else "경보"}</span> '
+                               f'<span class="time">{E(hm(a.get("ts")))}</span> {E(ko)}', E(act),
+                               E(act) + (f'<span class="orig">감시 원문 <span lang="en">{E(a.get("text", ""))}</span></span>' if ko != a.get("text") else "")))
     recent = sum(1 for a in alerts if now - a.get("ts", 0) <= 3600)
     alerts_html = (f'<section class="panel g-al"><h2>감시 경보 · 최근 1시간 {recent}건</h2>' + more("alerts", alert_rows, 3, "경보 없음")
                    + "</section>")
@@ -332,12 +332,17 @@ def page(in_app=False):
     tools = tools.replace("</section>", '<div class="sub" style="margin:12px 0 6px">이 앱이 준 도구</div><div class="tchips">' + "".join(
         f'<span class="tchip neutral" title="{E(d)}">{E(n)}</span>' for n, d in app_tools) + "</div></section>", 1) if tools else tools
     said = ('<section class="panel g-sd"><h2>스스로 보낸 메시지</h2><div class="sub" style="margin:-6px 0 10px">직접 답장 외에 에이전트가 채팅에 따로 올린 후속 답과 알림</div>' + more("said",
-            [(f'<span class="time">{E(hm(e.get("ts")))}</span>', both(e.get("said_first"), 200)) for e in says], 2) + "</section>")
+            [item(f'sd-{int(e.get("ts", 0))}-{i}', f'<span class="time">{E(hm(e.get("ts")))}</span>',
+                  E(" ".join(str(e.get("said_first") or "").split())), E(str(e.get("said_first") or "").strip()))
+             for i, e in enumerate(says)], 2) + "</section>")
     asked = ('<section class="panel g-qs"><h2>Claude의 질문</h2>' + more("nudges",
-             [(f'<span class="time">{E(hm(e.get("ts")))}</span> <span class="tag">{E({"early": "초반", "alert": "경보", "offhours": "부재"}.get(e.get("why"), str(e.get("why", ""))))}</span>',
-               f'<span class="q">{both(e.get("text"), 120)}</span>'
-               + (f'<span class="a">→ {both(e.get("reply"), 140)}</span>' if e.get("reply") else ""))
-              for e in nudges], 3) + "</section>")
+             [item(f'qs-{int(e.get("ts", 0))}-{i}',
+                   f'<span class="time">{E(hm(e.get("ts")))}</span> <span class="tag">{E({"early": "초반", "alert": "경보", "offhours": "부재"}.get(e.get("why"), str(e.get("why", ""))))}</span>',
+                   E(" ".join(str(e.get("text") or "").split()))
+                   + (f'<span class="a">→ {E(" ".join(str(e.get("reply")).split()))}</span>' if e.get("reply") else ""),
+                   f'<span class="q">{E(str(e.get("text") or "").strip())}</span>'
+                   + (f'<span class="a">→ {E(str(e.get("reply")).strip())}</span>' if e.get("reply") else ""))
+              for i, e in enumerate(nudges)], 3) + "</section>")
 
     # phone: one column in this order; landscape (owner's layout, 11/24): alerts | tools, then moves tall on the left
     # beside the app messages over Claude's questions
@@ -375,7 +380,7 @@ setInterval(async () => {{
     document.querySelector('header .status').replaceWith(d.querySelector('header .status'));
     document.body.classList.remove('stale');
     open.forEach(id => {{ const e = document.getElementById(id); if (e) e.open = true; }});
-    chart(); caps(); if (full.open) fill(full.dataset.key);
+    chart(); caps(); cans(); if (full.open) fill(full.dataset.key);
   }} catch (e) {{ mark('갱신 실패'); }}
 }}, 30000);
 setInterval(() => {{
@@ -430,8 +435,11 @@ full.addEventListener('close', () => document.querySelector('main .' + full.data
 // a click on the dimmed page around the web's sheet closes it (the sheet fills the screen elsewhere, so no such click)
 full.addEventListener('click', e => {{ if (e.target === full) full.close(); }});
 // the tools' 전체 보기 shows only when the chips overflow their three rows
+// a row whose whole text is longer than its two-line preview gets a chevron (.can), so a tap visibly has more to give
+function cans() {{ document.querySelectorAll('main details.move').forEach(d => {{ const p = d.querySelector('.preview'), f = d.querySelector('.fulltext');
+  if (!d.open && p) d.classList.toggle('can', p.scrollHeight > p.clientHeight + 1 || (f && f.textContent.trim().length > p.textContent.trim().length + 2)); }}); }}
 function caps() {{ document.querySelectorAll('.tchips.cap').forEach(c => c.closest('section').classList.toggle('over', c.scrollHeight > c.clientHeight + 2)); }}
-document.documentElement.classList.add('js'); caps(); addEventListener('resize', caps); document.fonts?.ready.then(caps);
+document.documentElement.classList.add('js'); caps(); addEventListener('resize', caps); document.fonts?.ready.then(() => {{ caps(); cans(); }}); cans(); addEventListener('resize', cans);
 </script></body></html>"""
 
 

@@ -184,7 +184,7 @@ grep '\[app\] open' .kit/kit-terminal.log  # 앱 링크(접근 코드 포함). �
    - STOP 경보는 무엇이 새었거나 빠졌는지 확인하고, 다시 띄우기 전에 사용자와 정한다.
    - 평소에는 모델을 부르지 않는다.
 2. **초반 72시간 (11/24 19:00~11/27 19:00):**
-   - 3시간쯤마다 `logs/forge.jsonl`, `logs/react.jsonl`, `logs/agent-kit.log`를 읽는다.
+   - 30분마다(:13, :43) `logs/forge.jsonl`, `logs/react.jsonl`, `logs/agent-kit.log`, `logs/app.jsonl`을 읽고 도울지 정한다(11/24 사용자 지적: 초반엔 자주 본다). 3시간마다 세 줄로 묶어 정리한다.
    - 기본 도구(엔티티 카드 읽기, 손님 메시지 응답, 매입, checkout 서명, 정산)가 안 생기거나 같은 실패가 되풀이되면, `python nudge.py --why early "<질문이나 관찰>"`로 보낸다.
    - 보낸 것은 바로 사용자에게 알린다. 답을 알려 주지 말고, 상황과 질문을 건넨다.
 3. **그 뒤:** 경보 때(`--why alert`)와 사용자가 못 보는 시간(`--why offhours`)에만 보낸다.

@@ -32,7 +32,7 @@ unset ANTHROPIC_API_KEY OPENAI_API_KEY      # the relay uses the logged-in subsc
 
 [ -x "$PY" ] || { echo "[run] no venv at $PY (uv venv --python 3.12 .venv, then install the kit's packages)"; exit 1; }
 [ -n "${MARKET_OWNER:-}" ] || { echo "[run] export MARKET_OWNER=<claim code> first (the watch checks it is never leaked)"; exit 1; }
-for port in 8790 "$APP_PORT" 8810; do          # a port already taken would leave the relay or the app silently dead
+for port in 8790 "$APP_PORT"; do          # a port already taken would leave the relay or the app silently dead
   "$PY" -c "import socket,sys; s=socket.socket(); s.bind(('127.0.0.1', $port))" 2>/dev/null \
     || { echo "[run] port $port is in use (an earlier run still up?); stop it first"; exit 1; }
 done
@@ -97,7 +97,7 @@ sleep 3                                   # the relay takes its port before the 
 kit_loop &
 "$PY" watch_r4.py >> .kit/watch-terminal.log 2>&1 &
 backup_loop &
-"$PY" dashboard_r4.py >> .kit/dash-terminal.log 2>&1 &   # the phone's read-only dashboard (Tailscale and 127.0.0.1 only)
+"$PY" dashboard_r4.py --no-serve >> .kit/dash-terminal.log 2>&1 &   # writes the mini app's 현황 page every 30 s
 echo "[run $(stamp)] started. Links with the app's code: grep '\[app\] open' .kit/kit-terminal.log"
 caffeinate -is -w $$ &
 wait

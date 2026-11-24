@@ -345,6 +345,15 @@ def write_app_copy():
 
 
 def main():
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--no-serve", action="store_true",
+                    help="only write app/dashboard.html for the mini app's 현황 (11/24: the separate Tailscale page is off)")
+    a = ap.parse_args()
+    if a.no_serve:
+        print("[dash] writing app/dashboard.html every 30 s for the mini app (no server of its own)", flush=True)
+        write_app_copy()                                 # runs forever
+        return
     key = code()
     hosts = ["127.0.0.1"] + [ip for ip in [tailscale_ip()] if ip]
     servers = [ThreadingHTTPServer((h, PORT), Handler) for h in hosts]
@@ -354,8 +363,8 @@ def main():
     print(f"[dash] listening on {', '.join(f'{h}:{PORT}' for h in hosts)}; links with the code in .kit/dashboard.url",
           flush=True)
     threading.Thread(target=write_app_copy, daemon=True).start()
-    for s in servers[1:]:
-        threading.Thread(target=s.serve_forever, daemon=True).start()
+    for srv in servers[1:]:
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
     servers[0].serve_forever()
 
 

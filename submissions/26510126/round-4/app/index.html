@@ -62,6 +62,16 @@ textarea::placeholder{color:var(--text-mute)}
 .row.other{justify-content:flex-end}
 .other .bubble{border-bottom-left-radius:18px;border-bottom-right-radius:6px}
 .name.to-right{text-align:right;margin-right:4px}
+/* reply: long-press (phone) or right-click (PC) a message, then 답장 or 복사 (11/24) */
+.bubble{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.msgmenu{position:fixed;z-index:20;display:flex;gap:4px;padding:4px;background:var(--raised);border:1px solid var(--line);
+  border-radius:12px;box-shadow:var(--shadow-2)}
+.msgmenu button{min-height:40px;padding:0 16px;border:0;border-radius:8px;background:transparent;font-weight:700}
+.msgmenu button:hover,.msgmenu button:focus-visible{background:var(--hover)}
+.replybar{display:flex;align-items:center;gap:8px;margin:0 4px 8px;padding:4px 4px 4px 12px;border-radius:12px;
+  background:var(--accent-soft);color:var(--accent-ink);font-size:13px}
+.replybar span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.replybar button{flex:none;width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:inherit}
 .shade{position:fixed;inset:0;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center;z-index:10;
   animation:fade .2s var(--ease)}
 .sheet{width:100%;max-width:560px;max-height:84dvh;overflow-y:auto;background:var(--raised);border-radius:16px 16px 0 0;box-shadow:var(--shadow-3);
@@ -94,6 +104,8 @@ body{overscroll-behavior:none}
   </header>
   <div id="scroll" role="main"><div id="log"></div></div>
   <footer>
+    <div class="replybar" id="replybar" hidden><span id="replytext"></span>
+      <button type="button" id="replyx" aria-label="답장 취소">✕</button></div>
     <form id="f">
       <textarea id="t" rows="1" placeholder="메시지 보내기" enterkeyhint="send" autocomplete="off"></textarea>
       <button class="send" id="go" aria-label="보내기" disabled>
@@ -245,6 +257,66 @@ if (vv) {
   vv.addEventListener('resize', fit); fit();
 }
 draw();
+</script>
+<div class="msgmenu" id="msgmenu" role="menu" hidden>
+  <button type="button" role="menuitem" data-act="reply">답장</button>
+  <button type="button" role="menuitem" data-act="copy">복사</button>
+</div>
+<script>
+// Reply to a message (11/24): long-press or right-click a bubble, pick 답장, and the message goes out with a one-line
+// quote in front ("↪ claude: "…""), so the agent knows what it answers. The kit's chat has no threads; the kit's
+// script above is untouched: the quote is put into the field just before its own submit handler reads it.
+(() => {
+  const log = document.getElementById('log'), menu = document.getElementById('msgmenu'), field = document.getElementById('t');
+  const bar = document.getElementById('replybar'), barText = document.getElementById('replytext');
+  let target = null, reply = null, timer = null;
+  const whoOf = row => {
+    if (row.classList.contains('me')) return '나';
+    if (row.classList.contains('agent')) return 'agent';
+    for (let p = row.previousElementSibling; p; p = p.previousElementSibling) {
+      if (p.classList.contains('name')) return p.textContent.trim();
+      if (p.classList.contains('row') && !p.classList.contains('other')) break;
+    }
+    return 'claude';
+  };
+  const open = (bubble, x, y) => {
+    target = bubble; menu.hidden = false;
+    const r = menu.getBoundingClientRect();
+    menu.style.left = Math.max(8, Math.min(x - r.width / 2, innerWidth - r.width - 8)) + 'px';
+    menu.style.top = Math.max(8, y - r.height - 12) + 'px';
+    menu.querySelector('button').focus({preventScroll: true});
+  };
+  const bubbleAt = e => { const b = e.target.closest('.bubble'); return b && !b.closest('.typing') ? b : null; };
+  log.addEventListener('contextmenu', e => { const b = bubbleAt(e); if (!b) return; e.preventDefault(); open(b, e.clientX, e.clientY); });
+  log.addEventListener('touchstart', e => {
+    const b = bubbleAt(e); if (!b) return;
+    const p = e.touches[0];
+    timer = setTimeout(() => open(b, p.clientX, p.clientY), 450);
+  }, {passive: true});
+  ['touchend', 'touchmove', 'touchcancel'].forEach(ev => log.addEventListener(ev, () => clearTimeout(timer), {passive: true}));
+  document.addEventListener('pointerdown', e => { if (!menu.hidden && !menu.contains(e.target)) menu.hidden = true; }, true);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') menu.hidden = true; });
+  menu.addEventListener('click', async e => {
+    const act = e.target.closest('button')?.dataset.act;
+    if (!act || !target) return;
+    const text = target.textContent.trim();
+    if (act === 'copy') { try { await navigator.clipboard.writeText(text); } catch (err) {} }
+    else {
+      reply = {who: whoOf(target.closest('.row')), text};
+      barText.textContent = `답장: ${reply.who} · ${text.replace(/\s+/g, ' ')}`;
+      bar.hidden = false; field.focus();
+    }
+    menu.hidden = true;
+  });
+  document.getElementById('replyx').onclick = () => { reply = null; bar.hidden = true; };
+  // capture phase on the document: runs before the form's own submit handler, which reads the field
+  document.addEventListener('submit', e => {
+    if (e.target.id !== 'f' || !reply || !field.value.trim()) return;
+    const q = reply.text.replace(/\s+/g, ' ');
+    field.value = `↪ ${reply.who}: "${q.slice(0, 80)}${q.length > 80 ? '…' : ''}"\n${field.value}`;
+    reply = null; bar.hidden = true;
+  }, true);
+})();
 </script>
 </body>
 </html>

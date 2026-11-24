@@ -92,6 +92,31 @@
 - 로그 파일은 고치지 않는다.
 - 시험은 진짜 폴더가 아니라 임시 사본에서 한다. 감시 경보와 로그가 제출물에 섞이지 않게 하기 위해서다.
 
+## 비상 전환: 모델 데스크로 (11/24 사용자와 정함)
+평소 순서는 중계 안의 Claude → codex → OpenRouter이다. 데스크는 중계에 넣지 않는다. 데스크는 시장 가입 토큰으로만 부를 수 있는데, 토큰은 키트 메모리에만 있다. 중계가 따로 가입하면 키트의 토큰이 바뀌거나 보드에 바이어가 생기고, 중계가 지갑 키를 쥐게 된다.
+
+**언제:** Claude와 codex가 함께 막혀 에이전트가 생각을 못 할 때. 예를 들어 구독 한도가 다 찼을 때다.
+- 신호: 감시 경보 `relay:failing`(10분 동안 중계 응답 0건, 실패 3건 이상) 또는 `mind:failing`(키트의 모델 호출 실패 3건 이상).
+- 먼저 `.kit/relay-terminal.log`와 `logs/llm-relay.jsonl`의 `why`를 읽는다. 일시적인 오류면 10분 더 본다.
+- 전환은 사용자에게 알리고 한다. 자는 시간이면 전환한 뒤 바로 보고한다.
+
+**전환 (맥 미니, tmux `r4`)**
+```bash
+tmux kill-window -t r4:watch        # 따로 도는 감시 창을 닫는다(run_r4.sh가 감시를 새로 띄운다)
+tmux attach -t r4                   # 첫 창에서 Ctrl-C로 run_r4.sh를 끈다(중계, 키트, 감시가 함께 꺼짐)
+AGENT_LLM_BASE=market ./run_r4.sh   # MARKET_OWNER는 세션 환경에 남아 있다. 없으면 다시 export
+```
+- `AGENT_LLM_BASE`가 `agent.json`의 `llm.base`보다 우선한다(`agent_kit.py:123-128`). `agent.json`은 고치지 않는다.
+- 중계도 함께 뜨지만 아무도 부르지 않는다. 감시는 키트 쪽 실패(`mind:failing`)로 데스크를 본다.
+- 앱 링크는 바뀐다. 새 링크는 `.kit/kit-terminal.log`에서 꺼내 사용자에게만 준다.
+
+**확인 (전환 뒤 5분)**
+- `logs/agent-kit.log`에 `[mind]` 줄이 다시 이어진다.
+- `model call failed`가 없다. `the model desk serves the agents of the class list only`가 나오면 데스크를 쓸 수 없다는 뜻이다. 이때는 OpenRouter만으로 띄운다(`RELAY_ORDER=openrouter ./run_r4.sh`).
+- 시장에서 다시 가입했는지 본다(`[market] shop joined as thisjonghoon`). 지갑과 도구는 그대로다.
+
+**되돌리기:** Claude나 codex가 풀리면 같은 순서로 끄고 `./run_r4.sh`만 실행한다.
+
 ## 세 줄 요약
 - Round 3 구조는 버리고 교훈만 가져왔다. 에이전트에게는 목적과 페르소나만 주고, 도구는 에이전트가 forge로 만든다. 사람과 Claude는 옆에서 대화하고 기록을 함께 읽는다.
 - 처음에는 가게로만 들어간다(`--shop-only`). 모델은 구독 중계(`llm_relay.py`)로 Claude를 메인으로 쓴다. 감시(`watch_r4.py`)가 되돌릴 수 없는 해만 막는다.

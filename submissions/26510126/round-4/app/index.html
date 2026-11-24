@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="/ui.css">
 <style>
 /* chat-only parts; the shared look is in /ui.css (see app/DESIGN.md) */
-.app{height:var(--app-h,100dvh);display:grid;grid-template-rows:auto 1fr auto;max-width:760px;margin:0 auto;background:var(--bg)}
+.app{height:var(--app-h,100dvh);display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:minmax(0,1fr);max-width:760px;margin:0 auto;background:var(--bg)}
 @media (min-width:800px){.app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
 #scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 8px}
 .empty{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 8px;gap:8px}
@@ -68,7 +68,8 @@ textarea::placeholder{color:var(--text-mute)}
   border-radius:12px;box-shadow:var(--shadow-2)}
 .msgmenu button{min-height:40px;padding:0 16px;border:0;border-radius:8px;background:transparent;font-weight:700}
 .msgmenu button:hover,.msgmenu button:focus-visible{background:var(--hover)}
-.replybar{display:flex;align-items:center;gap:8px;margin:0 4px 8px;padding:4px 4px 4px 12px;border-radius:12px;
+.app>*{min-width:0}
+.replybar{max-width:100%;display:flex;align-items:center;gap:8px;margin:0 4px 8px;padding:4px 4px 4px 12px;border-radius:12px;
   background:var(--accent-soft);color:var(--accent-ink);font-size:13px}
 .replybar span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .replybar button{flex:none;width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:inherit}

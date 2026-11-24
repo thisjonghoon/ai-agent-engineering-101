@@ -187,23 +187,26 @@ def page(in_app=False):
     diff = recon.get("diff")
     relay15 = [e for e in relay if now - e.get("ts", 0) <= 900]
     desk = not relay15
-    claude1h = [e for e in ok if str(e.get("backend", "")).startswith("claude")]
-    snaps = []
+    # the desk: how fast the agent steps and how often a model call failed, in the last hour (from its own logs)
+    steps = [float(e.get("ts", 0)) for e in jsonl("react.jsonl", 400) if now - float(e.get("ts", 0)) <= 3600]
+    gaps = [b - a for a, b in zip(steps, steps[1:]) if b - a < 120]
+    fails = 0
     try:
-        snaps = [json.loads(l) for l in (KIT / "usage.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
-    except (OSError, ValueError):
+        cut, end = time.strftime("%H:%M:%S", time.localtime(now - 3600)), time.strftime("%H:%M:%S", time.localtime(now))
+        for line in (LOGS / "agent-kit.log").read_text(encoding="utf-8", errors="replace").splitlines()[-3000:]:
+            t = line[:8]                                 # the kit stamps HH:MM:SS; the hour before may cross midnight
+            if "[mind] model call failed" in line and ((cut <= t <= end) if cut <= end else (t >= cut or t <= end)):
+                fails += 1
+    except OSError:
         pass
-    usage = f'Claude 주간 {snaps[-1]["pct"]}% ({hm(snaps[-1]["ts"])})' if snaps else "Claude 사용량 기록 없음"
-    if len(snaps) >= 2 and snaps[-1]["ts"] > snaps[-2]["ts"]:
-        rate = (snaps[-1]["pct"] - snaps[-2]["pct"]) / ((snaps[-1]["ts"] - snaps[-2]["ts"]) / 3600)
-        usage += f" → 리셋 때 {snaps[-1]['pct'] + rate * max(0.0, (snaps[-1].get('resets', 0) - snaps[-1]['ts']) / 3600):.0f}%"
+    desk_sub = f'한 단계 중앙 {statistics.median(gaps):.1f}초 · 실패 {fails} (1시간)' if gaps else f"실패 {fails} (1시간)"
     cards = [
         ("잔고 대조", f'<span class="{"" if diff is None or abs(diff) <= 2 else "down"}">{"-" if diff is None else f"{diff:+,.2f}"}</span>',
          "기록과 지갑의 차이"),
         ("판매 정산", f"{len(sales)}건", f'{sum(e["data"].get("amount", 0) for e in sales):,} 크레딧'),
         ("초반 돕기", f"{int(left // 3600)}시간 {int(left % 3600 // 60)}분" if left > 0 else "끝남", "11/27 19:00까지"),
         ("모델", "데스크" if desk else "우리 중계",
-         usage if desk else f'{len(ok)}/{len(relay)} 응답 · 중앙 {statistics.median([e.get("secs", 0) for e in ok]) if ok else 0:.1f}초'
+         desk_sub if desk else f'{len(ok)}/{len(relay)} 응답 · 중앙 {statistics.median([e.get("secs", 0) for e in ok]) if ok else 0:.1f}초'
          + (f' · 거절 {flagged}' if flagged else "")),
     ]
     stats = '<div class="stats">' + "".join(

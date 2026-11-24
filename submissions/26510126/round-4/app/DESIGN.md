@@ -33,7 +33,9 @@ The look is webtoon-review-board's design system with Hermes orange as its one a
   `#D9601A`, dark `#E8682A`), a 10% wash, a dashed reference at the start capital, the range labelled at the left, an
   8px end dot and a touch/hover readout. No hero stripe on the left of a panel: the hero has a full orange outline.
 - **Phone first.** 390 px wide with no sideways scroll (`overflow-x:clip`), light and dark from the same tokens, motion
-  off under `prefers-reduced-motion`.
+  off under `prefers-reduced-motion`. When the keyboard opens, the chat follows the visible area's height and its offset
+  (`--app-h`, `--app-y` from `visualViewport`), so the header stays on top and the message box sits on the keyboard
+  (11/25, the owner's iPad: the offset alone had pushed the header off and left a gap).
 - **Wide screens** (iPad landscape, PC; 11/24 after the owner's iPad photos). Every header is `header.wide`, so it sits at
   the same place on chat and 현황 and switching does not jump. The chat's talk (`#log`, 728 px) and input share one
   centred column with no side rules. 현황 below the top row (the owner's layout, 11/24): 감시 경보 | 만든 도구, then 최근 행동

@@ -103,7 +103,7 @@ textarea::placeholder{color:var(--text-mute)}
 @keyframes fade{from{opacity:0}}
 html,body{height:100%;overflow:clip;overscroll-behavior:none}
 /* the chat page never scrolls as a whole: only the message list does (11/24) */
-.app{position:fixed;inset:0 0 auto 0;margin:0 auto}
+.app{position:fixed;inset:0 0 auto 0;top:var(--app-y,0px);margin:0 auto}
 #scroll{overscroll-behavior:contain}
 /* a home-screen app has no browser bar under the page: keep the message box off the home indicator (11/24) */
 @media (display-mode:standalone){footer{padding-bottom:max(28px,calc(12px + env(safe-area-inset-bottom)))}}
@@ -264,17 +264,19 @@ t.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !touch) { e.preventDefault(); $('f').requestSubmit(); }
 });
 $('f').onsubmit = e => { e.preventDefault(); const v = t.value; t.value = ''; grow(); send(v); if (!touch) t.focus(); };
-// iOS keeps the page height when the keyboard opens and scrolls the page instead: follow the visible area so the
-// header stays on top and the message box sits right above the keyboard.
+// iOS keeps the page height when the keyboard opens and scrolls the visible area instead (on iPad by a lot):
+// follow the visible area's height and its offset, so the header stays on top and the message box sits right
+// above the keyboard (11/25, owner's iPad).
 const vv = window.visualViewport;
 if (vv) {
-  const fit = () => {
+  const root = document.documentElement.style;
+  const fit = e => {
     if (vv.scale > 1.01) return;
-    document.documentElement.style.setProperty('--app-h', vv.height + 'px');
-    window.scrollTo(0, 0);
-    const sc = $('scroll'); sc.scrollTop = sc.scrollHeight;
+    root.setProperty('--app-h', vv.height + 'px');
+    root.setProperty('--app-y', Math.max(0, vv.offsetTop) + 'px');
+    if (!e || e.type === 'resize') { const sc = $('scroll'); sc.scrollTop = sc.scrollHeight; }
   };
-  vv.addEventListener('resize', fit); fit();
+  vv.addEventListener('resize', fit); vv.addEventListener('scroll', fit); fit();
 }
 draw();
 </script>

@@ -170,6 +170,8 @@ try {
 } catch (e) {}
 const touch = matchMedia('(pointer: coarse)').matches;
 let view = {chat: [], consents: [], moves: [], forged: {}, app_tools: {}}, cards = [], pending = [], waiting = 0, seen = 0, drawn = '';
+let heard = 0, unread = 0;                           // messages the agent sent first: how many are known, how many came while away
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { unread = 0; document.title = view.agent || 'Agent'; } });
 const handled = new Set();
 
 // An example page tool: the agent can show the person a card in the chat.
@@ -178,6 +180,15 @@ miniapp.offer('show_card', 'show the person a card in the chat; args {title, bod
 });
 
 function draw() {
+  const firsts = view.chat.filter(m => m.first);
+  if (firsts.length > heard) {                       // the agent spoke first: say so when the person is looking elsewhere
+    if (document.hidden) {
+      unread += firsts.length - heard;
+      document.title = `(${unread}) ${view.agent || 'Agent'}`;
+      try { if (Notification.permission === 'granted') new Notification(view.agent || 'Agent', {body: firsts.at(-1).text}) } catch (e) {}
+    }
+    heard = firsts.length;
+  }
   const items = view.chat.concat(cards).sort((a, b) => a.ts - b.ts);
   const mine = view.chat.filter(m => m.who === me).length;
   pending = pending.filter(p => mine <= p.base);
@@ -263,6 +274,7 @@ $('activity').onclick = e => { if (e.target === $('activity')) $('activity').hid
 async function send(text) {
   text = text.trim();
   if (!text) return;
+  try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission() } catch (e) {}
   pending.push({text, base: view.chat.filter(m => m.who === me).length + pending.length});
   waiting++; draw(); status();
   try { await miniapp.chat(text, me) } catch (e) {}

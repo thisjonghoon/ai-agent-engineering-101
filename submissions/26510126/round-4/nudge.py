@@ -11,6 +11,8 @@ be laid beside logs/forge.jsonl to see whether a nudge helped or the agent would
     --why: early (until 11/27 19:00 KST) | alert (an alert in logs/watch-r4.jsonl) | offhours (the user is away)
     --fact: a fact read from the records, one per flag, sent as evidence under the question
     --dry-run: print the message, send nothing, log nothing
+    --no-wait: send at once (by default it waits up to 15 minutes for the agent to sleep between runs, since a message
+               that finds the agent mid-run and is not answered in the app's 120 s is dropped by the kit: 20:36, 11/24)
 
 11/24 the user asked that the agent can follow these better: each message now opens with what this is (the owner gave
 claude the early watch; the current time in KST, since the agent's notes ran about 50 minutes ahead), carries its
@@ -49,6 +51,34 @@ def compose(why, text, facts, now):
     return "\n\n".join(parts)
 
 
+def wait_for_sleep(limit=900):
+    """Until the kit's last log line is the agent going to sleep, or `limit` seconds; returns the seconds waited."""
+    log, start = HERE / "logs" / "agent-kit.log", time.time()
+    while time.time() - start < limit:
+        try:
+            last = log.read_text(encoding="utf-8", errors="replace").rstrip().splitlines()[-1]
+        except (OSError, IndexError):
+            break
+        if "[mind] sleeps" in last:
+            break
+        time.sleep(3)
+    return int(time.time() - start)
+
+
+def answered_elsewhere(since):
+    """The agent's reply to claude that the kit refused (11/24 20:48: it wrote to "claude" and not the message id)."""
+    try:
+        for line in (HERE / "logs" / "react.jsonl").read_text(encoding="utf-8").splitlines()[::-1][:40]:
+            e = json.loads(line)
+            if float(e.get("ts", 0)) < since:
+                break
+            if e.get("action") == "reply" and str((e.get("args") or {}).get("to")) == "claude":
+                return (e.get("args") or {}).get("text"), str(e.get("observation"))[:200]
+    except (OSError, ValueError):
+        pass
+    return None, None
+
+
 def send(text, port):
     req = urllib.request.Request(f"http://127.0.0.1:{port}/api/chat", method="POST",
                                  data=json.dumps({"text": text, "user": "claude"}).encode(),
@@ -67,6 +97,7 @@ def main():
     ap.add_argument("--fact", action="append", default=[])
     ap.add_argument("--port", type=int, default=8800)
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--no-wait", action="store_true")
     a = ap.parse_args()
     now = datetime.now(KST)
     if a.why == "early" and now >= EARLY_END:
@@ -75,13 +106,19 @@ def main():
     if a.dry_run:
         print(message)
         return
+    waited = 0 if a.no_wait else wait_for_sleep()
+    sent_at = time.time()
     try:
         out = send(message, a.port)
         reply, err = out.get("reply"), out.get("error")
     except Exception as e:
         reply, err = None, f"{type(e).__name__}: {str(e)[:160]}"
+    if not reply and not err:
+        text, why = answered_elsewhere(sent_at)
+        if text:
+            reply, err = text, f"answered, but the kit refused the reply: {why}"
     entry = {"ts": int(time.time()), "time": now.strftime("%m/%d %H:%M:%S"), "why": a.why, "text": a.text,
-             "facts": a.fact, "sent": message,
+             "facts": a.fact, "sent": message, "waited_s": waited,
              "reply": reply, "error": err if err else (None if reply else "busy: the agent did not answer in time")}
     LOG.parent.mkdir(exist_ok=True)
     with open(LOG, "a", encoding="utf-8") as f:

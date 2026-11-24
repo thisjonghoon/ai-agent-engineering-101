@@ -285,10 +285,15 @@ def page(in_app=False):
                 f'<b>{E(str(e.get("action")))}</b><small class="preview">{E(clip(full, 140))}</small></summary>'
                 f'<p class="fulltext">{E(full[:4000])}</p></details>')
     mv = [move(e) for e in react]
-    moves = ('<section class="panel o1" id="activity"><h2>최근 행동</h2>'
-             + (f'<div class="list">{"".join(f"<div>{m}</div>" for m in mv[:3])}</div>' if mv else '<div class="none">아직 없습니다.</div>')
-             + (f'<details class="more" id="more-moves"><summary>더보기 · {len(mv) - 3}</summary>'
-                f'<div class="list">{"".join(f"<div>{m}</div>" for m in mv[3:])}</div></details>' if len(mv) > 3 else "")
+    # phone: 3 moves; landscape: 6, so the tall left cell beside two stacked panels is filled (owner's layout, 11/24)
+    moves = ('<section class="panel g-mv" id="activity"><h2>최근 행동</h2>'
+             + (f'<div class="list">{"".join(f"<div>{m}</div>" for m in mv[:3])}'
+                f'{"".join(f"<div class=wide-only>{m}</div>" for m in mv[3:6])}</div>' if mv else '<div class="none">아직 없습니다.</div>')
+             # one 더보기: on a phone it also holds moves 4-6 (shown in the list above in landscape), so its count differs
+             + (f'<details class="more" id="more-moves"><summary>더보기 · <span class="narrow-only">{len(mv) - 3}</span>'
+                f'<span class="wide-only">{len(mv) - 6}</span></summary><div class="list">'
+                + "".join(f"<div class=narrow-only>{m}</div>" for m in mv[3:6])
+                + "".join(f"<div>{m}</div>" for m in mv[6:]) + "</div></details>" if len(mv) > 3 else "")
              + "</section>")
     alert_rows = []
     for a in alerts:
@@ -297,9 +302,9 @@ def page(in_app=False):
         alert_rows.append((f'<span class="tag {E(lvl.lower())}">{"멈춤" if lvl == "STOP" else "경보"}</span> '
                            f'<span class="time">{E(hm(a.get("ts")))}</span> {E(ko)}', E(act)))
     recent = sum(1 for a in alerts if now - a.get("ts", 0) <= 3600)
-    alerts_html = (f'<section class="panel"><h2>감시 경보 · 최근 1시간 {recent}건</h2>' + more("alerts", alert_rows, 3, "경보 없음")
+    alerts_html = (f'<section class="panel g-al"><h2>감시 경보 · 최근 1시간 {recent}건</h2>' + more("alerts", alert_rows, 3, "경보 없음")
                    + "</section>")
-    tools = (f'<section class="panel o2"><h2>만든 도구 · {len(forge)}</h2><div class="tchips">' + "".join(
+    tools = (f'<section class="panel g-tl"><h2>만든 도구 · {len(forge)}</h2><div class="tchips">' + "".join(
              f'<span class="tchip {"" if e.get("passed") else "bad"}" title="{E(hm(e.get("ts")))}">{E(str(n))} <span class="num">v{E(str(e.get("version")))}</span></span>'
              for n, e in sorted(forge.items(), key=lambda kv: -float(kv[1].get("ts", 0)))) + "</div></section>") if forge else ""
     # app_say: whatever the agent sends to the app outside a reply (the kit logs it as said_first); 11/24 19:45 it was
@@ -314,15 +319,17 @@ def page(in_app=False):
         pass
     tools = tools.replace("</section>", '<div class="sub" style="margin:12px 0 6px">이 앱이 준 도구</div><div class="tchips">' + "".join(
         f'<span class="tchip neutral" title="{E(d)}">{E(n)}</span>' for n, d in app_tools) + "</div></section>", 1) if tools else tools
-    said = ('<section class="panel o3"><h2>앱으로 보낸 말</h2><div class="sub" style="margin:-6px 0 10px">답장 밖에서 보낸 메시지: 후속 답, 알림</div>' + more("said",
+    said = ('<section class="panel g-sd"><h2>스스로 보낸 메시지</h2><div class="sub" style="margin:-6px 0 10px">직접 답장 외에 에이전트가 채팅에 따로 올린 후속 답과 알림</div>' + more("said",
             [(f'<span class="time">{E(hm(e.get("ts")))}</span>', E(clip(e.get("said_first"), 200))) for e in says], 2) + "</section>")
-    asked = ('<section class="panel o4"><h2>Claude의 질문</h2>' + more("nudges",
+    asked = ('<section class="panel g-qs"><h2>Claude의 질문</h2>' + more("nudges",
              [(f'<span class="time">{E(hm(e.get("ts")))}</span> <span class="tag">{E({"early": "초반", "alert": "경보", "offhours": "부재"}.get(e.get("why"), str(e.get("why", ""))))}</span>',
                E(clip(e.get("text"), 120)) + (f'<br>→ {E(clip(e.get("reply"), 140))}' if e.get("reply") else ""))
               for e in nudges], 3) + "</section>")
 
-    body = (f'<div class="top">{hero}{stats}</div>{alerts_html}'      # alerts right under the numbers (user, 11/24)
-            f'<div class="cols"><div class="col">{moves}{said}</div><div class="col">{tools}{asked}</div></div>')  # balanced columns (iPad, 11/24)
+    # phone: one column in this order; landscape (owner's layout, 11/24): alerts | tools, then moves tall on the left
+    # beside the app messages over Claude's questions
+    body = (f'<div class="top">{hero}{stats}</div>'
+            f'<div class="lower">{alerts_html}{moves}{tools}{said}{asked}</div>')
 
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">

@@ -2,6 +2,7 @@
 """An OpenAI-compatible endpoint on this computer that answers with the user's subscriptions, for the Round 4 kit.
 
 The kit calls one model through POST <base>/chat/completions. This relay takes that call and answers it with, in order:
+  (11/24: Claude Opus 5.5 then Sonnet 5.5 from agent.json, codex gpt-6.2-sol, Copilot CLI on auto, then OpenRouter)
   1. Claude Code (`claude -p`, the logged-in subscription; ANTHROPIC_API_KEY is removed so no API key is billed),
   2. GPT through the Codex CLI (the logged-in ChatGPT plan), when Claude fails (a usage limit, an outage),
   3. a free OpenRouter model, when both fail (OPENROUTER_API_KEY; costs nothing).
@@ -34,8 +35,9 @@ HERE = Path(__file__).resolve().parent
 LOG = HERE / "logs" / "llm-relay.jsonl"
 EMPTY = tempfile.mkdtemp(prefix="round4-relay-")      # no project CLAUDE.md, AGENTS.md or settings are picked up
 PORT = int(os.environ.get("RELAY_PORT", "8790"))
-ORDER = [b.strip() for b in os.environ.get("RELAY_ORDER", "claude,codex,openrouter").split(",") if b.strip()]
-GPT_MODEL = os.environ.get("RELAY_GPT_MODEL", "gpt-6.1-sol")
+ORDER = [b.strip() for b in os.environ.get("RELAY_ORDER", "claude,claude-alt,codex,copilot,openrouter").split(",") if b.strip()]
+GPT_MODEL = os.environ.get("RELAY_GPT_MODEL", "gpt-6.2-sol")             # the newest of the sol line (11/24)
+COPILOT_MODEL = os.environ.get("RELAY_COPILOT_MODEL", "auto")           # the user's choice (11/24): Copilot picks
 FREE_MODEL = os.environ.get("RELAY_FREE_MODEL", "nvidia/nemotron-3.5-super-vl:free")
 DEADLINE = float(os.environ.get("RELAY_DEADLINE", "170"))
 ONE_AT_A_TIME = threading.Lock()                         # the kit's mind calls one at a time; keep it that way
@@ -79,11 +81,36 @@ def run(cmd, timeout, stdin_text=None):
     return out
 
 
-def claude(messages, model, timeout):
+def claude_models(model):
+    """(primary, fallback) Claude models: agent.json's llm.model and llm.fallback_model, read on every call, so the
+    model changes without restarting the kit, which reads agent.json once (11/24: Opus 5.5 first, then Sonnet 5.5,
+    both at their default effort). The model the kit sends is used only when agent.json names no Claude model."""
+    try:
+        llm = json.loads((HERE / "agent.json").read_text(encoding="utf-8")).get("llm") or {}
+    except (OSError, ValueError):
+        llm = {}
+    primary = llm.get("model") if str(llm.get("model", "")).startswith("claude-") else model
+    return primary, llm.get("fallback_model") or ""
+
+
+def cli_model(model):
+    """A full model id goes to the CLI as is; the short names of the first setup map to the CLI's aliases."""
+    short = {"claude-sonnet": "sonnet", "claude-opus": "opus", "claude-haiku": "haiku"}
+    return short.get(model) or (model if model.startswith("claude-") else os.environ.get("RELAY_CLAUDE_MODEL", "sonnet"))
+
+
+def claude_alt(messages, model, timeout):
+    primary, fallback = claude_models(model)
+    if not fallback or fallback == primary:
+        raise RuntimeError("no fallback Claude model in agent.json")
+    return claude(messages, fallback, timeout, resolved=True)
+
+
+def claude(messages, model, timeout, resolved=False):
     """The kit's system message goes in Claude's system slot and only the conversation in the user turn (11/24: with
     the system part pasted into the user turn, the safeguards flagged 8 of 25 calls in the first hour, the more often
     the longer the run; it read like instructions smuggled into a user message)."""
-    alias = model.split("claude-", 1)[1] if model.startswith("claude-") else os.environ.get("RELAY_CLAUDE_MODEL", "sonnet")
+    alias = cli_model(model if resolved else claude_models(model)[0])
     system = "\n\n".join(str(m.get("content") or "") for m in messages if m.get("role") == "system")
     turns = [m for m in messages if m.get("role") != "system"]
     cmd = ["claude", "-p", "--model", alias, "--tools", "", "--setting-sources", "", "--no-session-persistence"]
@@ -95,6 +122,13 @@ def claude(messages, model, timeout):
 def codex(messages, model, timeout):
     cmd = ["codex", "exec", "-m", GPT_MODEL, "--skip-git-repo-check", "-s", "read-only", "--ephemeral",
            "--ignore-user-config", "-c", "project_doc_max_bytes=0", transcript(messages)]
+    return run(cmd, timeout)
+
+
+def copilot(messages, model, timeout):
+    """GitHub Copilot CLI, one prompt, no tools, no MCP servers, no custom instructions, from an empty folder."""
+    cmd = ["copilot", "-p", transcript(messages), "-s", "--model", COPILOT_MODEL, "--available-tools", "",
+           "--disable-builtin-mcps", "--no-custom-instructions", "--no-color", "--stream", "off"]
     return run(cmd, timeout)
 
 
@@ -112,7 +146,17 @@ def openrouter(messages, model, timeout):
     return out
 
 
-BACKENDS = {"claude": claude, "codex": codex, "openrouter": openrouter}
+BACKENDS = {"claude": claude, "claude-alt": claude_alt, "codex": codex, "copilot": copilot, "openrouter": openrouter}
+
+
+def model_of(name, model):
+    if name == "claude":
+        return claude_models(model)[0]
+    if name == "claude-alt":
+        return claude_models(model)[1]
+    if name == "copilot":
+        return "copilot:" + COPILOT_MODEL
+    return GPT_MODEL if name == "codex" else FREE_MODEL if name == "openrouter" else model
 
 
 def answer(messages, model):
@@ -127,13 +171,13 @@ def answer(messages, model):
         t = time.time()
         try:
             text = BACKENDS[name](messages, model, left)
-            log({"backend": name, "ok": True, "secs": round(time.time() - t, 1), "chars_in": size,
+            log({"backend": name, "model": model_of(name, model), "ok": True, "secs": round(time.time() - t, 1), "chars_in": size,
                  "chars_out": len(text), "fallback": i > 0})
             if i > 0:
                 print(f"[relay] answered by {name} after {i} failed backend(s)", flush=True)
             return text, name
         except Exception as e:                              # the next backend tries; the reason is kept
-            log({"backend": name, "ok": False, "secs": round(time.time() - t, 1), "chars_in": size,
+            log({"backend": name, "model": model_of(name, model), "ok": False, "secs": round(time.time() - t, 1), "chars_in": size,
                  "why": f"{type(e).__name__}: {str(e)[:300]}"})
             print(f"[relay] {name} failed: {type(e).__name__}: {str(e)[:160]}", flush=True)
     return None, None

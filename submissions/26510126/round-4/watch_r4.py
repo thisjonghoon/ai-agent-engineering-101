@@ -353,7 +353,7 @@ def check_relay(state):
     if ok == 0 and bad >= 3:
         emit(state, "ALERT", "relay:failing", f"llm_relay answered nothing in 10 minutes ({bad} failures); the agent "
              "cannot think. See logs/llm-relay.jsonl.")
-    fb = [e for e in recent if e.get("ok") and e.get("backend") != "claude"]
+    fb = [e for e in recent if e.get("ok") and not str(e.get("backend", "")).startswith("claude")]
     if len(fb) >= 3:
         emit(state, "ALERT", "relay:fallback", f"{len(fb)} model calls in 10 minutes were answered by "
              f"{', '.join(sorted({e.get('backend', '?') for e in fb}))}, not Claude; see .kit/relay-terminal.log.")

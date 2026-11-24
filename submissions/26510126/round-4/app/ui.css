@@ -172,10 +172,12 @@ dialog.full{position:fixed;inset:0;width:100%;height:100%;max-width:none;max-hei
   background:var(--bg);color:var(--text);display:none;flex-direction:column}
 dialog.full[open]{display:flex}
 dialog.full::backdrop{background:var(--bg)}
-.full-head{flex:none;display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) max(16px,calc((100% - 760px) / 2)) 10px;
+/* the sheet's head sits exactly where the page header is: same edges (the 1120 px line), padding and 65 px height */
+.full-head{flex:none;display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) max(16px,calc((100% - 1120px) / 2 + 16px)) 10px;
   border-bottom:3px solid var(--primary)}
 .full-head h2{flex:1;margin:0;font-size:16px;font-weight:700}
-.full-x{flex:none;width:44px;height:44px;margin:-4px 0;border:0;border-radius:10px;background:var(--card);color:var(--text);font:inherit;font-size:16px;cursor:pointer}
+.full-x{flex:none;width:44px;height:42px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--text);font:inherit;font-size:16px;cursor:pointer}
+.full-x{position:relative}.full-x::after{content:"";position:absolute;inset:-1px 0}  /* a 44 px tap area at the switch's 42 px look */
 .full-x:focus-visible,details.more>summary:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
 .full-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;padding:16px max(16px,calc((100% - 760px) / 2)) calc(24px + env(safe-area-inset-bottom))}
 /* the web (a mouse and a wide window): a centred sheet over a dimmed page instead of the whole screen; phones and

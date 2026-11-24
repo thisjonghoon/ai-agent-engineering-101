@@ -147,3 +147,8 @@ details.more[open]>summary{padding-bottom:8px}
 .tchip.neutral{background:var(--hover);color:var(--text-soft)}
 .credit{text-align:center;margin-top:4px}
 .credit a{color:var(--text-soft);font-weight:700}
+details.move>summary{list-style:none;cursor:pointer}
+details.move>summary::-webkit-details-marker{display:none}
+details.move .preview{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text-mute);font-size:12px;margin-top:2px}
+details.move[open] .preview{display:none}
+details.move .fulltext{margin:4px 0 0;font-size:13px;color:var(--text-soft);white-space:pre-wrap;overflow-wrap:anywhere}

@@ -278,9 +278,18 @@ def page(in_app=False):
         f'<section class="panel"><div class="label">{E(a)}</div><div class="value">{v}</div><div class="sub clip">{numify(E(c))}</div></section>'
         for a, v, c in cards) + "</div>"
 
-    moves = ('<section class="panel" id="activity"><h2>최근 행동</h2>' + more("moves",
-             [(f'<span class="time">{E(hm(e.get("ts"))[6:])}</span> <b>{E(str(e.get("action")))}</b>', E(clip(e.get("thought"), 140)))
-              for e in react], 3) + "</section>")
+    # each move opens to its full thought on a tap (11/24); its id keeps it open across the 30 s refresh
+    def move(e):
+        full = " ".join(str(e.get("thought") or "").split())
+        return (f'<details class="move" id="mv-{int(float(e.get("ts", 0)))}"><summary><span class="time">{E(hm(e.get("ts"))[6:])}</span> '
+                f'<b>{E(str(e.get("action")))}</b><small class="preview">{E(clip(full, 140))}</small></summary>'
+                f'<p class="fulltext">{E(full[:4000])}</p></details>')
+    mv = [move(e) for e in react]
+    moves = ('<section class="panel" id="activity"><h2>최근 행동</h2>'
+             + (f'<div class="list">{"".join(f"<div>{m}</div>" for m in mv[:3])}</div>' if mv else '<div class="none">아직 없습니다.</div>')
+             + (f'<details class="more" id="more-moves"><summary>더보기 · {len(mv) - 3}</summary>'
+                f'<div class="list">{"".join(f"<div>{m}</div>" for m in mv[3:])}</div></details>' if len(mv) > 3 else "")
+             + "</section>")
     alert_rows = []
     for a in alerts:
         ko, act, _ = alert_ko(a)

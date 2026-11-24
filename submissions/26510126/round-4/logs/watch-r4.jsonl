@@ -1,3 +1,5 @@
 {"ts": 1795514880, "time": "11/24 19:08:00", "level": "ALERT", "what": "relay", "text": "3 model calls in 10 minutes were answered by codex, not Claude; see .kit/relay-terminal.log."}
 {"ts": 1795516691, "time": "11/24 19:38:11", "level": "ALERT", "what": "relay", "text": "17 model calls in 10 minutes were answered by codex, not Claude; see .kit/relay-terminal.log."}
 {"ts": 1795518527, "time": "11/24 20:08:47", "level": "ALERT", "what": "relay", "text": "14 model calls in 10 minutes were answered by codex, not Claude; see .kit/relay-terminal.log."}
+{"ts": 1795540827, "time": "11/25 02:20:27", "level": "ALERT", "what": "recon", "text": "the shop wallet holds 4,985.1 tOKRW; its records explain 4,976.0 (+9.1): money came in that no settle to this shop explains: a customer who paid and did not get the goods? Read logs/react.jsonl and the forum."}
+{"ts": 1795542664, "time": "11/25 02:51:04", "level": "ALERT", "what": "recon", "text": "the shop wallet holds 4,997.8 tOKRW; its records explain 4,976.0 (+21.8): money came in that no settle to this shop explains: a customer who paid and did not get the goods? Read logs/react.jsonl and the forum."}

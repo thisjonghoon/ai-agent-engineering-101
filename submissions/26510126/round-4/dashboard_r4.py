@@ -216,6 +216,25 @@ def page():
     h.append(f'<div class="card"><div class="dim">중계 (1시간)</div><div>{len(ok)}/{len(relay)} 응답 · 중앙 {med:.1f}초</div>'
              f'<div class="dim">{E(" · ".join(f"{k} {v}" for k, v in sorted(by.items())))}'
              f'{f" · 안전장치 {flagged}" if flagged else ""}</div></div>')
+    claude1h = [e for e in ok if str(e.get("backend", "")).startswith("claude")]
+    opus = sum(1 for e in claude1h if str(e.get("model", "")).startswith("claude-opus"))
+    chars = sum(e.get("chars_in", 0) for e in claude1h)
+    snaps = []
+    try:
+        snaps = [json.loads(l) for l in (KIT / "usage.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+    except (OSError, ValueError):
+        pass
+    proj = ""
+    if snaps:
+        last = snaps[-1]
+        left_h = max(0.0, (last.get("resets", 0) - now) / 3600)
+        proj = f'주간 {last["pct"]}% ({E(hm(last["ts"]))} 기준) · 리셋까지 {left_h:.0f}시간'
+        if len(snaps) >= 2 and snaps[-1]["ts"] > snaps[-2]["ts"]:
+            rate = (snaps[-1]["pct"] - snaps[-2]["pct"]) / ((snaps[-1]["ts"] - snaps[-2]["ts"]) / 3600)
+            end = last["pct"] + rate * max(0.0, (last.get("resets", 0) - last["ts"]) / 3600)
+            proj += f' · 속도 {rate:.2f}%/시간 → 리셋 때 <span class="{"down" if end > 90 else ""}">{end:.0f}%</span>'
+    h.append(f'<div class="card" style="grid-column:1/-1"><div class="dim">Claude 사용 (중계, 1시간)</div>'
+             f'<div>{len(claude1h)}회 · Opus {opus} · 입력 {chars / 1e6:.1f}M자</div><div class="dim">{proj or "사용량 기록 없음"}</div></div>')
     h.append('</section>')
 
     h.append('<section><h2>감시 경보</h2>')

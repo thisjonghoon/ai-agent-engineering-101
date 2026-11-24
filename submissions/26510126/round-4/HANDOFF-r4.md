@@ -10,10 +10,29 @@
 - 감시는 지갑이 10분에 50% 줄면 경보, 80% 줄면 멈춘다.
 
 **새 세션이 이어서 할 일 (순서대로)**
-1. **맥락 없는 검토를 다시 돌린다.** 옛 세션이 18:20에 돌렸지만 결과는 옛 세션으로만 간다.
-   - 범위: 이 폴더의 `run_r4.sh`, `agent.json`, `llm_relay.py`, `watch_r4.py`, `nudge.py`, `app/`, `.gitignore`, 이 문서.
-   - 기준: 최신 `ROUND4.md`(`gh api repos/Q00/agent-market/contents/market/ROUND4.md`), `weeks/week-12/README.md`, `scripts/round4/` 키트 코드.
-   - 지적은 원본으로 확인한 뒤 고친다.
+1. **맥락 없는 검토 결과를 원본으로 확인하고 고친다.** 옛 세션이 18:20에 돌린 검토 결과다. 개장을 막을 문제는 없다고 했다. 아직 원본으로 확인하지 않았다.
+   - **[높음] 정상 매입이 감시의 지갑 급감 STOP에 걸릴 수 있다** (`watch_r4.py` DRAIN_FRAC 0.8). 첫 run에서 자본의 80% 넘게 재고를 살 수도 있다.
+     - 안 1: `logs/agent-kit.log`의 `[maroo] <tool> sent X tOKRW ... /tx/<hash>` 줄에서 tx를 읽고, 받는 쪽이 시장 주소(`/api/chain`)인 송금은 급감 계산에서 뺀다.
+     - 안 2: 최소한 STOP 기준을 0.95로 올리고 80%는 경보로만 둔다.
+   - **[중상] 감시가 멈추는 과정이 불안하다.**
+     - run_r4.sh가 `&`로 띄운 키트는 SIGINT를 무시한다. 그래서 키트의 정리 코드가 돌지 않고, 10초 뒤 SIGTERM으로 그냥 죽는다.
+     - 키트가 죽어도 cloudflared 자식 둘(에이전트 터널, 앱 터널)이 고아로 남는다.
+     - 감시는 kill을 보낸 뒤에야 `stopped_at`을 저장한다. 그래서 run_r4.sh가 그것을 못 보고 재시작할 수 있다.
+     - 고칠 것: kill 전에 `.kit/STOP`을 만들고 `stopped_at`을 저장한다. 처음부터 SIGTERM을 보내고, `pgrep -P <kit>`로 cloudflared 자식도 TERM한다.
+   - **[중] 모델이 아예 안 불리는 경우를 감시가 못 본다.** 중계 bind 실패, 401, 연결 거부에는 중계 로그가 남지 않는다. `logs/agent-kit.log`의 `[mind] model call failed` 횟수도 세게 하고, 시작 전에 8790·8800 포트가 비었는지 확인한다.
+   - **[중] 모델 한 번이 손님 대기 한도보다 느릴 수 있다.** 손님 A2A는 80초, 앱은 120초를 기다린다. 중계는 한 번에 하나씩 처리하고, 호출마다 최대 9만 자를 넘긴다.
+     - 개장 후 1시간 동안 `llm-relay.jsonl`의 secs와 "바빠서" 비율을 본다.
+     - 길면 `handles: [a2a]` 도구가 필요하다는 신호다. 이 도구는 에이전트가 만들 몫이니 질문으로 건넨다.
+   - **[중하] 비밀값 목록 보강.**
+     - 감시에 `Bearer [A-Za-z0-9._-]{20,}` 패턴을 경보로 추가한다. checkout_jwt와는 겹치지 않는다.
+     - run_r4.sh에서 키트를 띄우기 전에 `unset ANTHROPIC_API_KEY`. 셸 환경에 있고, 키트와 감시가 물려받는다.
+   - **[하]** run_r4.sh의 cleanup에서 `trap - INT TERM`을 먼저 한다. 지금은 트랩이 3~5번 다시 돈다.
+   - **[하]** 재시작하면 앱 터널 URL이 바뀐다. 새 링크는 `.kit/kit-terminal.log`에서 다시 꺼낸다. 접근 코드는 그대로다.
+   - **[하, 사용자 결정]** goal의 "When the person in your app tells you how to work, write it down"에 Claude의 nudge도 걸린다. 질문이 작업 방침으로 굳을 수 있다. "the owner (jonghoon)"로 좁힐지 묻는다.
+     - goal에 빠진 규칙도 있다. 가게가 포럼에서 시간당 3번 넘게 비추천하면 비용이 붙고, 보증과 환불은 가게가 직접 송금한다.
+   - **[하]** "안 팔린 재고는 돈으로 치지 않는다"는 규칙 문장이 아니라 추론이다. 개장 후 순위로 확인할 항목이다.
+   - 이미 고친 것: 이 문서의 개인 경로, 보드 링크, Tailscale 주소를 뺐다(18:40).
+   - 검토가 괜찮다고 본 것: 키트 인자, RELAY_KEY 전달, 포트 경합 없음, 중계 응답 형식과 연결 유지, 중계 로그에 프롬프트와 키 없음, 앱 접근 코드가 `.kit/`로만 감, 감시의 프로세스 패턴, nudge와 앱의 v5.1 호환, .gitignore와 제출 목록, agent.json의 새 규칙 반영.
 2. **키 백업:** 첫 실행으로 `shop_wallet.key`가 생기면 `run_r4.sh`가 `~/Drop/round4-keys/`로 복사하게 한다.
    - 권한은 700/600으로 둔다. git 밖이고 iCloud 밖이다.
    - 가게 돈 전부가 이 지갑에 있고 GitHub 계정당 가게 하나라, 키를 잃으면 되돌릴 수 없다.
@@ -26,7 +45,7 @@
    - 첫 run이 카드를 읽고 forge를 시작하는지
    - 중계 응답 시간
 6. **감시 대시보드 (사용자 요청, 11/24):** 첫 기록이 쌓이면 만든다.
-   - `dashboard_r4.py`가 맥 미니의 Tailscale 주소(100.68.241.69)와 127.0.0.1에서만 받고, 접근 코드는 `.kit/`에 둔다.
+   - `dashboard_r4.py`가 맥 미니의 Tailscale 주소(`tailscale ip -4`)와 127.0.0.1에서만 받고, 접근 코드는 `.kit/`에 둔다.
    - 아이폰 Safari에서 홈 화면에 추가해 쓴다. `run_r4.sh`에서 함께 띄운다.
    - 칸: 지갑 잔액과 추이, 보드 순위, 감시 경보, forge한 도구, 최근 행동과 `app_say`, 독려 메시지와 72시간 남은 시간, 중계 상태.
    - 비밀값은 어떤 칸에도 나오지 않게 한다.
@@ -82,7 +101,7 @@
 | 페르소나 | 오래 장사한 동네 가게 주인이지만 이 시장은 배우는 중. 먼저 연락하고, 도구를 만들어 작게 시험한다 |
 | 역할 | 처음엔 가게만. 크레딧 정의를 확인한 뒤 바이어를 켤지 정한다 |
 
-결정 과정은 보드(https://claude.ai/artifact/Rfocwzug4ddS3kaGZyg91V)와 `~/Documents/SeoulTech/School/AgenticAI/round4_harness_principles_20261118.md`에 있다.
+결정 과정은 사용자의 결정 보드와 방향 문서(Claude 메모리의 round4-harness-principles가 위치를 가리킨다)에 있다. 이 파일은 공개 리포에 커밋되므로 개인 경로와 링크는 적지 않는다.
 
 ## 파일
 | 파일 | 하는 일 |

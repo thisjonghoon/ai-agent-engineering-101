@@ -12,14 +12,14 @@
   --accent-ink:#b4490c;--accent-soft:#fdeee4;--danger:#c9221d;--danger-soft:#fdecec;--on-danger:#fff;--chart:#d9601a;--bubble-strong:#b4490c;--bubble-strong-ink:#fff;
   --ok:#f37021;--warn:#b4490c;--fail:#c9221d;--focus:#b4490c;--scrim:rgb(0 0 0/.32);
   --shadow-2:0 8px 24px -6px rgb(0 0 0/.12),0 2px 6px rgb(0 0 0/.05);
-  --shadow-3:0 24px 64px -12px rgb(0 0 0/.24),0 4px 12px rgb(0 0 0/.06);
+  --shadow-3:0 24px 64px -12px rgb(0 0 0/.24),0 4px 12px rgb(0 0 0/.06);--scrim:rgb(0 0 0/.4);
   --ease:cubic-bezier(.22,1,.36,1);color-scheme:light}
 @media (prefers-color-scheme:dark){:root{--bg:#0e0f10;--paper:#0e0f10;--card:#18191b;--raised:#18191b;--hover:#24262a;
   --line:#2a2c30;--line-strong:#3a3d42;--text:#f1f2f3;--text-soft:#c9ccd1;--text-mute:#9a9fa6;--primary:#f37021;
   --primary-ink:#0a0a0a;--accent-ink:#ff9a57;--accent-soft:#3a2112;--danger:#ff5a52;--danger-soft:#3a1a19;--on-danger:#0a0a0a;--chart:#e8682a;--bubble-strong:#b4490c;--bubble-strong-ink:#fff;
   --ok:#f37021;--warn:#ff9a57;--fail:#ff5a52;--focus:#ff9a57;--scrim:rgb(0 0 0/.64);
   --shadow-2:0 10px 28px -6px rgb(0 0 0/.7),0 2px 6px rgb(0 0 0/.4);
-  --shadow-3:0 28px 72px -12px rgb(0 0 0/.85),0 4px 12px rgb(0 0 0/.5);color-scheme:dark}}
+  --shadow-3:0 28px 72px -12px rgb(0 0 0/.85),0 4px 12px rgb(0 0 0/.5);--scrim:rgb(0 0 0/.6);color-scheme:dark}}
 
 *{box-sizing:border-box}
 html,body{margin:0;overflow-x:clip}
@@ -56,7 +56,7 @@ header{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-are
 @media (max-width:359px){header{flex-wrap:wrap}.who{flex-basis:calc(100% - 46px)}}
 /* a home-screen app on iOS blurs a band under the status bar over whatever sits there; keep the header's name and
    buttons below it and let only the plain header ground sit in the blur (user's screenshots 11/24 21:48) */
-@media (display-mode:standalone){header{padding-top:calc(26px + env(safe-area-inset-top))}}
+@media (display-mode:standalone){header,.full-head{padding-top:calc(26px + env(safe-area-inset-top))}}
 
 /* a screen that is not the chat: panels on paper */
 .page{max-width:760px;margin:0 auto;padding:14px 16px calc(28px + env(safe-area-inset-bottom));display:flex;
@@ -122,7 +122,7 @@ details.more>summary{list-style:none;cursor:pointer;font-size:13px;font-weight:7
 details.more>summary::-webkit-details-marker{display:none}
 details.more[open]>summary{padding-bottom:8px}
 .tchips{display:flex;flex-wrap:wrap;gap:6px}
-.tchip{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:700;border-radius:999px;padding:3px 10px;
+.tchip{display:inline-flex;align-items:center;gap:4px;font-size:13px;line-height:20px;font-weight:700;border-radius:999px;padding:3px 10px;
   background:var(--accent-soft);color:var(--accent-ink)}
 .tchip .num{font-size:11px;font-weight:400}
 .tchip.bad{background:var(--danger-soft);color:var(--danger)}
@@ -162,7 +162,33 @@ details.move .fulltext{margin:4px 0 0;font-size:13px;color:var(--text-soft);whit
 /* scrolling (11/24): no visible scrollbars anywhere; the 현황 header stays at the top while the page scrolls */
 html,body,*{scrollbar-width:none}
 ::-webkit-scrollbar{display:none;width:0;height:0}
-body.screen>header{position:sticky;top:0;z-index:10}
+/* the header never moves: only #pane scrolls, so pulling past the top or bottom bounces the content, not the header (11/24) */
+body.screen{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+body.screen>header{flex:none;z-index:10}
+#pane{flex:1;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+/* 전체 보기: a full-screen sheet with the panel's whole list (11/24, owner) */
+dialog.full{position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:0;
+  background:var(--bg);color:var(--text);display:none;flex-direction:column}
+dialog.full[open]{display:flex}
+dialog.full::backdrop{background:var(--bg)}
+.full-head{flex:none;display:flex;align-items:center;gap:12px;padding:calc(10px + env(safe-area-inset-top)) max(16px,calc((100% - 760px) / 2)) 10px;
+  border-bottom:3px solid var(--primary)}
+.full-head h2{flex:1;margin:0;font-size:16px;font-weight:700}
+.full-x{flex:none;width:44px;height:44px;margin:-4px 0;border:0;border-radius:10px;background:var(--card);color:var(--text);font:inherit;font-size:16px;cursor:pointer}
+.full-x:focus-visible,details.more>summary:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.full-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;padding:16px max(16px,calc((100% - 760px) / 2)) calc(24px + env(safe-area-inset-bottom))}
+/* the web (a mouse and a wide window): a centred sheet over a dimmed page instead of the whole screen; phones and
+   tablets keep the full screen, landscape with the chat's side margins (11/24, owner) */
+@media (min-width:1280px) and (hover:hover) and (pointer:fine){
+  dialog.full{inset:0;margin:auto;width:min(760px,calc(100% - 64px));height:min(85vh,900px);border-radius:16px;
+    border:1px solid var(--line);box-shadow:var(--shadow-3);overflow:hidden}
+  dialog.full::backdrop{background:var(--scrim)}
+  dialog.full .full-head,dialog.full .full-body{padding-left:20px;padding-right:20px}
+  dialog.full .full-head{padding-top:12px}
+}
+html.js .tchips.cap{max-height:calc(3 * 26px + 2 * 6px);overflow:hidden}
+html.js details.chipsmore{display:none}
+html.js section.over details.chipsmore{display:block}
 
 /* type (11/24 review: Pretendard for every text role, D2Coding for numbers) */
 .seg a:not([aria-current="page"]){font-weight:600}

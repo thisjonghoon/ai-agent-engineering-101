@@ -236,7 +236,7 @@ def page(in_app=False):
             return f'<div class="none">{empty}</div>'
         out = lst(rows[:shown])
         if len(rows) > shown:
-            out += f'<details class="more" id="more-{key}"><summary>더보기 · {len(rows) - shown}</summary>{lst(rows[shown:])}</details>'
+            out += f'<details class="more" id="more-{key}"><summary>전체 보기 · {len(rows)}</summary>{lst(rows[shown:])}</details>'
         return out
 
     d = (bal - START_TOKRW) if bal is not None else None
@@ -289,9 +289,8 @@ def page(in_app=False):
     moves = ('<section class="panel g-mv" id="activity"><h2>최근 행동</h2>'
              + (f'<div class="list">{"".join(f"<div>{m}</div>" for m in mv[:3])}'
                 f'{"".join(f"<div class=wide-only>{m}</div>" for m in mv[3:6])}</div>' if mv else '<div class="none">아직 없습니다.</div>')
-             # one 더보기: on a phone it also holds moves 4-6 (shown in the list above in landscape), so its count differs
-             + (f'<details class="more" id="more-moves"><summary>더보기 · <span class="narrow-only">{len(mv) - 3}</span>'
-                f'<span class="wide-only">{len(mv) - 6}</span></summary><div class="list">'
+             # one 전체 보기: it also holds moves 4-6 for a phone (the list above shows them in landscape); the modal lists all
+             + (f'<details class="more" id="more-moves"><summary>전체 보기 · {len(mv)}</summary><div class="list">'
                 + "".join(f"<div class=narrow-only>{m}</div>" for m in mv[3:6])
                 + "".join(f"<div>{m}</div>" for m in mv[6:]) + "</div></details>" if len(mv) > 3 else "")
              + "</section>")
@@ -304,9 +303,13 @@ def page(in_app=False):
     recent = sum(1 for a in alerts if now - a.get("ts", 0) <= 3600)
     alerts_html = (f'<section class="panel g-al"><h2>감시 경보 · 최근 1시간 {recent}건</h2>' + more("alerts", alert_rows, 3, "경보 없음")
                    + "</section>")
-    tools = (f'<section class="panel g-tl"><h2>만든 도구 · {len(forge)}</h2><div class="tchips">' + "".join(
-             f'<span class="tchip {"" if e.get("passed") else "bad"}" title="{E(hm(e.get("ts")))}">{E(str(n))} <span class="num">v{E(str(e.get("version")))}</span></span>'
-             for n, e in sorted(forge.items(), key=lambda kv: -float(kv[1].get("ts", 0)))) + "</div></section>") if forge else ""
+    chips = "".join(
+        f'<span class="tchip {"" if e.get("passed") else "bad"}" title="{E(hm(e.get("ts")))}">{E(str(n))} <span class="num">v{E(str(e.get("version")))}</span></span>'
+        for n, e in sorted(forge.items(), key=lambda kv: -float(kv[1].get("ts", 0))))
+    # three rows of chips at most; when they overflow, the page's script shows 전체 보기 (11/24, owner)
+    tools = (f'<section class="panel g-tl"><h2>만든 도구 · {len(forge)}</h2><div class="tchips cap">{chips}</div>'
+             f'<details class="more chipsmore" id="more-tools"><summary>전체 보기 · {len(forge)}</summary>'
+             f'<div class="tchips">{chips}</div></details></section>') if forge else ""
     # app_say: whatever the agent sends to the app outside a reply (the kit logs it as said_first); 11/24 19:45 it was
     # the promised follow-up to the owner's question, so it is not always the agent speaking first
     # the tools this app gives the agent (the kit logs none of them): app_say from the kit, and each miniapp.offer in
@@ -342,7 +345,9 @@ def page(in_app=False):
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <meta name="description" content="thisjonghoon 가게의 지갑, 순위, 감시 경보와 에이전트 활동">
-<style>{ui_css()}</style></head><body class="screen">{head}<main class="page wide" data-ts="{int(now)}">{body}<p class="note credit">미니앱 키트는 <a href="https://github.com/Q00/meshkit" target="_blank" rel="noopener">MeshKit</a>과 <a href="https://github.com/Q00/ouroboros" target="_blank" rel="noopener">Ouroboros</a>에서 영감을 받았습니다</p></main>
+<style>{ui_css()}</style></head><body class="screen">{head}<div id="pane"><main class="page wide" data-ts="{int(now)}">{body}<p class="note credit">미니앱 키트는 <a href="https://github.com/Q00/meshkit" target="_blank" rel="noopener">MeshKit</a>과 <a href="https://github.com/Q00/ouroboros" target="_blank" rel="noopener">Ouroboros</a>에서 영감을 받았습니다</p></main></div>
+<dialog id="full" class="full" aria-labelledby="full-h"><div class="full-head"><h2 id="full-h"></h2>
+<button type="button" class="full-x" aria-label="닫기">✕</button></div><div class="full-body"></div></dialog>
 <script>
 // every 30 s swap in the new numbers without reloading: the scroll position and any open 더보기 stay as they are;
 // when the style itself changed (a new look), reload the whole page instead. A failed or late refresh shows in the header.
@@ -360,7 +365,7 @@ setInterval(async () => {{
     document.querySelector('header .status').replaceWith(d.querySelector('header .status'));
     document.body.classList.remove('stale');
     open.forEach(id => {{ const e = document.getElementById(id); if (e) e.open = true; }});
-    chart();
+    chart(); caps(); if (full.open) fill(full.dataset.key);
   }} catch (e) {{ mark('갱신 실패'); }}
 }}, 30000);
 setInterval(() => {{
@@ -386,6 +391,37 @@ function chart() {{
   box.onpointerleave = () => {{ line.hidden = tip.hidden = true; }};
 }}
 chart();
+// 전체 보기: a full-screen list of the whole panel instead of unfolding in place (11/24, owner); without the script the
+// <details> still unfold. The list is rebuilt from the page on each 30 s refresh while it is open.
+const full = document.getElementById('full');
+function fill(key) {{
+  const panel = document.querySelector('main .' + key); if (!panel) {{ full.close(); return; }}
+  full.dataset.key = key;
+  document.getElementById('full-h').textContent = panel.querySelector('h2').textContent;
+  const body = full.querySelector('.full-body'); body.replaceChildren();
+  const chipsAll = panel.querySelector('details.chipsmore .tchips');
+  if (chipsAll) {{ body.append(chipsAll.cloneNode(true)); return; }}
+  // a copy: no ids (they belong to the page), every move unfolded so the sheet shows whole texts
+  const list = document.createElement('div'); list.className = 'list';
+  panel.querySelectorAll('.list>div:not(.wide-only)').forEach(x => {{ const c = x.cloneNode(true); c.classList.remove('narrow-only'); list.append(c); }});
+  list.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
+  list.querySelectorAll('details.move').forEach(x => x.open = true);
+  body.append(list);
+}}
+document.addEventListener('click', e => {{
+  const s = e.target.closest('details.more>summary'); if (!s) return;
+  e.preventDefault();
+  const key = [...s.closest('section.panel').classList].find(c => c.startsWith('g-'));
+  fill(key); full.showModal(); full.querySelector('.full-body').scrollTop = 0;
+}});
+full.querySelector('.full-x').onclick = () => full.close();
+// back to the 전체 보기 that opened it (the page may have been refreshed under the sheet meanwhile)
+full.addEventListener('close', () => document.querySelector('main .' + full.dataset.key + ' details.more>summary')?.focus());
+// a click on the dimmed page around the web's sheet closes it (the sheet fills the screen elsewhere, so no such click)
+full.addEventListener('click', e => {{ if (e.target === full) full.close(); }});
+// the tools' 전체 보기 shows only when the chips overflow their three rows
+function caps() {{ document.querySelectorAll('.tchips.cap').forEach(c => c.closest('section').classList.toggle('over', c.scrollHeight > c.clientHeight + 2)); }}
+document.documentElement.classList.add('js'); caps(); addEventListener('resize', caps); document.fonts?.ready.then(caps);
 </script></body></html>"""
 
 

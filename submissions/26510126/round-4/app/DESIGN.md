@@ -38,7 +38,14 @@ The look is webtoon-review-board's design system with Hermes orange as its one a
   the same place on chat and 현황 and switching does not jump. The chat's talk (`#log`, 728 px) and input share one
   centred column with no side rules. 현황 below the top row (the owner's layout, 11/24): 감시 경보 | 만든 도구, then 최근 행동
   tall on the left (6 moves; 3 on a phone, `.wide-only`/`.narrow-only`, one 더보기 pinned to the panel's bottom) beside
-  스스로 보낸 메시지 over Claude의 질문 (`.lower` grid areas); below 900 px one column in DOM order. Targets: `.btn` 40 px, `.seg a` 36 px, send 40 px.
+  스스로 보낸 메시지 over Claude의 질문 (`.lower` grid areas); below 900 px one column in DOM order.
+- **전체 보기** (11/24, owner). A long list shows its first rows and `전체 보기 · N` (N = all). The script opens
+  `dialog#full`: the whole screen on phones and tablets (landscape keeps the chat's 760 px column), a centred 760 px
+  sheet over `--scrim` on the web (≥1280 px with a mouse); ✕ 44 px, Esc, or a click outside the web sheet closes it
+  and focus returns to the summary; moves show unfolded; it is rebuilt on each 30 s refresh. Without the script the
+  `<details>` unfold. 만든 도구 shows three rows of chips (90 px) and its 전체 보기 only when they overflow.
+- **Fixed header** (11/24, owner). On 현황 the body is a 100dvh column and only `#pane` scrolls (overscroll contained),
+  so a pull past either end bounces the content, never the header. Targets: `.btn` 40 px, `.seg a` 36 px, send 40 px.
 - **Reviewed 11/24** with impeccable (critique and audit), hallmark (audit) and dataviz; findings kept as false
   positives: the avatar initial read as an eyebrow, the typing dots (a real state), no Hallmark stamp (not a
   Hallmark build).

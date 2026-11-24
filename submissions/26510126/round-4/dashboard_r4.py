@@ -219,7 +219,9 @@ def page(in_app=False):
     tools = (f'<section class="panel"><h2>만든 도구 · {len(forge)}</h2><div class="tchips">' + "".join(
              f'<span class="tchip {"" if e.get("passed") else "bad"}" title="{E(hm(e.get("ts")))}">{E(str(n))} <span class="num">v{E(str(e.get("version")))}</span></span>'
              for n, e in sorted(forge.items(), key=lambda kv: -float(kv[1].get("ts", 0)))) + "</div></section>") if forge else ""
-    said = ('<section class="panel"><h2>에이전트가 먼저 한 말</h2>' + more("said",
+    # app_say: whatever the agent sends to the app outside a reply (the kit logs it as said_first); 11/24 19:45 it was
+    # the promised follow-up to the owner's question, so it is not always the agent speaking first
+    said = ('<section class="panel"><h2>앱으로 보낸 말</h2><div class="sub" style="margin:-6px 0 10px">답장 밖에서 보낸 메시지: 후속 답, 알림</div>' + more("said",
             [(f'<span class="time">{E(hm(e.get("ts")))}</span>', E(clip(e.get("said_first"), 200))) for e in says], 2) + "</section>")
     asked = ('<section class="panel"><h2>Claude의 질문</h2>' + more("nudges",
              [(f'<span class="time">{E(hm(e.get("ts")))}</span> <span class="tag">{E(str(e.get("why", "")))}</span>',

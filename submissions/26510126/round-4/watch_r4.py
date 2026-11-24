@@ -17,6 +17,7 @@ Checks:
   LOG   every pass writes each wallet's tOKRW to logs/wallet.jsonl: the shop's money, so this is the score over time.
   ALERT relay: in the last 10 minutes llm_relay answered nothing and failed 3 or more times, or the kit logged 3 or
         more "[mind] model call failed" (a call that never reached the relay leaves no line in the relay's log).
+  ALERT fallback: 3 or more model calls in 10 minutes answered by codex or the free model instead of Claude.
   ALERT slow: a model call in the last 10 minutes took longer than SLOW_SECS (70 s; a customer waits 80 s over A2A).
   ALERT bearer: an "Authorization: Bearer <token>" shaped value appears in a scanned file (the market tokens live
         only in the kit's memory, so this pattern is the only way to see one leak; it does not stop the agent).
@@ -237,7 +238,13 @@ def check_wallets(state):
         with open(WALLET_LOG, "a", encoding="utf-8") as f:
             f.write(json.dumps({"ts": int(time.time()), "time": time.strftime("%m/%d %H:%M:%S"), "wallet": name.split("_")[0],
                                 "tokrw": round(tokrw, 3), "to_market_10min": round(to_market, 3)}) + "\n")
-        if free_high > 0 and free_high - tokrw >= DRAIN_MIN and tokrw < free_high * (1 - DRAIN_FRAC):
+        unsure = [tx for role, tx in state.get("pending_tx", []) if f"{role}_wallet.key" == name]
+        if free_high > 0 and free_high - tokrw >= DRAIN_MIN and tokrw < free_high * (1 - DRAIN_FRAC) and unsure:
+            # payments whose receiver is not known yet (the market's address or the chain did not answer): a restock
+            # must never stop the shop, so this only alerts and is decided on the next pass
+            emit(state, "ALERT", f"wallet:unsure:{name}", f"the {name.split('_')[0]} wallet fell from {high:,.1f} to "
+                 f"{tokrw:,.1f} tOKRW with {len(unsure)} payment(s) whose receiver is not known yet; not stopping.")
+        elif free_high > 0 and free_high - tokrw >= DRAIN_MIN and tokrw < free_high * (1 - DRAIN_FRAC):
             drained = True
             emit(state, "STOP", f"wallet:drain:{name}", f"the {name.split('_')[0]} wallet fell from {high:,.1f} to "
                  f"{tokrw:,.1f} tOKRW within 10 minutes; {to_market:,.1f} went to the market for stock, and of the "
@@ -266,6 +273,10 @@ def check_relay(state):
     if ok == 0 and bad >= 3:
         emit(state, "ALERT", "relay:failing", f"llm_relay answered nothing in 10 minutes ({bad} failures); the agent "
              "cannot think. See logs/llm-relay.jsonl.")
+    fb = [e for e in recent if e.get("ok") and e.get("backend") != "claude"]
+    if len(fb) >= 3:
+        emit(state, "ALERT", "relay:fallback", f"{len(fb)} model calls in 10 minutes were answered by "
+             f"{', '.join(sorted({e.get('backend', '?') for e in fb}))}, not Claude; see .kit/relay-terminal.log.")
     slow = [e for e in recent if e.get("ok") and e.get("secs", 0) > SLOW_SECS]
     if slow:
         emit(state, "ALERT", "relay:slow", f"{len(slow)} model call(s) in 10 minutes took over {SLOW_SECS:g} s (longest "

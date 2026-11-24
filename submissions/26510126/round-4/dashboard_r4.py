@@ -181,7 +181,7 @@ def page(in_app=False):
             f'<div class="big">{E(f"{bal:,.1f}") if bal is not None else "-"} <small>tOKRW</small></div>'
             + (f'<div class="sub {"up" if d >= 0 else "down"}">시작 대비 <span class="num">{d:+,.1f} ({d / START_TOKRW:+.1%})</span></div>' if d is not None else "")
             + f'</div><div class="right"><div class="label">보드 순위</div><div class="big">{E(str(me.get("rank") or "-"))}'
-            f' <small>/ {ranked}곳</small></div><div class="sub">학생 중 <span class="num">{s_rank or "-"} / {len(s_ranks)}</span></div></div></div>'
+            f' <small>/ {ranked}</small></div><div class="sub">학생 중 <span class="num">{s_rank or "-"} / {len(s_ranks)}</span></div></div></div>'
             f'<div class="trend">{spark(pts)}</div></section>')
 
     diff = recon.get("diff")

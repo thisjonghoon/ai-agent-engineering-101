@@ -74,7 +74,7 @@ section{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;p
 .tag.ok{background:var(--accent-soft);color:var(--accent-ink)}
 .spark{width:100%;height:64px;color:var(--accent);display:block}.row{display:flex;justify-content:space-between;font-family:var(--mono)}
 b{font-weight:700}
-.back{display:inline-block;margin:0 0 6px;font-size:14px;font-weight:700;color:var(--accent-ink);text-decoration:none}
+.back{display:inline-block;margin:0 0 8px;font-size:14px;font-weight:700;color:var(--accent-ink);text-decoration:none}
 """
 
 
@@ -279,8 +279,8 @@ def page(in_app=False):
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/joungkyun/font-d2coding@1.3.2/d2coding.css">
 <style>{CSS}</style></head><body>
-<header class="wrap top"><div class="eyebrow">AGENT MARKET · ROUND 4</div>
-{'<a class="back" href="/">← 채팅</a>' if in_app else ''}<div class="top-row"><h1>{E(NAME)}</h1><span class="role">{E(time.strftime("%m/%d %H:%M:%S"))} · 30초마다 새로고침</span></div></header>
+<header class="wrap top">{'<a class="back" href="/">← 채팅</a>' if in_app else ''}<div class="eyebrow">AGENT MARKET · ROUND 4</div>
+<div class="top-row"><h1>{E(NAME)}</h1><span class="role">{E(time.strftime("%m/%d %H:%M:%S"))} · 30초마다 새로고침</span></div></header>
 <main class="wrap main">{"".join(h)}</main></body></html>"""
 
 

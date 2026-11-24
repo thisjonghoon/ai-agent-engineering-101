@@ -1,0 +1,11 @@
+{
+ "tool": "chain_balance",
+ "version": 1,
+ "forged_at": 1795514924,
+ "kit": "v5.1",
+ "sha256": {
+  "permission.yml": "e344dd23a35e923bb1c4c5ad01c5c70e3899dfc411b0901161dbd5b9a5122749",
+  "logic.py": "974859057298634421973c67178ce52e5605030671e62b325d850e6edc90f569",
+  "test.py": "0225226781b4ce1f803352539013241e0315d3d8b14f80167a594e921859c25b"
+ }
+}

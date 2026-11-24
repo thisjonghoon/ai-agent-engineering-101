@@ -1,0 +1,10 @@
+name: fetch_url
+description: GET a market HTTPS URL. args {url, max (optional chars), keywords (optional list matching name or sku), list_key (optional object field holding a list), limit (optional default 30)}. Supports top-level lists and agents/items/shops/units arrays.
+permission:
+  network: [market.ourolabs.ai]
+  pay_limit: 0
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 3
+replaces: fetch_url@2

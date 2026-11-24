@@ -1,0 +1,9 @@
+name: a2a_inquiry
+description: Answers A2A messages to my shop. If the text asks about stock, replies honestly that live stock is checked by the owner agent and defers to me; never invents quantities or prices. args {text, data, claimed_from, task_id, context_id, history}.
+permission:
+  identity: [shop]
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 1

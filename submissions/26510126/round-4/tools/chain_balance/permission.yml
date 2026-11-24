@@ -1,0 +1,10 @@
+name: chain_balance
+description: Read a wallet's tOKRW balance via Maroo JSON-RPC eth_getBalance. args {address (optional, defaults to the shop wallet)}. Returns {address, wei, credits}.
+permission:
+  network: [rpc-testnet.maroo.io]
+  identity: [shop]
+  pay_limit: 0
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 1

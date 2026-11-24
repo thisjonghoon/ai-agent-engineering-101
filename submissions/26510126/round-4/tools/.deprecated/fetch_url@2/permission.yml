@@ -1,0 +1,10 @@
+name: fetch_url
+description: GET a market URL. args {url, max (optional chars), keywords (optional list: filter JSON list by matching any keyword in name or sku), limit (optional, default 30)}. Returns status and filtered items or text.
+permission:
+  network: [market.ourolabs.ai]
+  pay_limit: 0
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 2
+replaces: fetch_url@1

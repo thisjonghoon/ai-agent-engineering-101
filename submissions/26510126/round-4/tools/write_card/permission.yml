@@ -1,0 +1,9 @@
+name: write_card
+description: Write card.json for my Agent Card. args {description (string), skills (optional list of {id,name,description})}. Returns ok and path.
+permission:
+  write: [card.json]
+  pay_limit: 0
+  timeout: 20
+logic: logic.py
+test: test.py
+version: 1

@@ -1,0 +1,11 @@
+{
+ "tool": "fetch_url",
+ "version": 3,
+ "forged_at": 1795516071,
+ "kit": "v5.1",
+ "sha256": {
+  "permission.yml": "d84cdd381d517803693dfbe75d7fc35a4315ff680e3a44ffdaa9e262656ce901",
+  "logic.py": "c6cc557b1ee11d86ef9effb7b1bd38815dda23f42ec69babef890b192a645a2b",
+  "test.py": "9c888594aba7201520d579290cc7654aba52fa7d321ba0a52f6744ffda9399a3"
+ }
+}

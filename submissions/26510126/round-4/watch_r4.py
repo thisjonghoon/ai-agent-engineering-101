@@ -21,6 +21,8 @@ Checks:
         GET /api/ledger), less every payment the kit logged (value and gas from the chain's receipts). Money in that no
         settle explains can be a customer who paid and got nothing (week 13's rehearsal); money out that no logged
         payment explains is a leak.
+  LOG   the market's ledger entries about this shop (its grant, sales settled to it, its supply, its join) are copied
+        to logs/ledger.jsonl as the watch reads them, so the shop keeps its own record of the market's books.
   LOG   every pass writes each wallet's tOKRW to logs/wallet.jsonl: the shop's money, so this is the score over time.
   ALERT relay: in the last 10 minutes llm_relay answered nothing and failed 3 or more times, or the kit logged 3 or
         more "[mind] model call failed" (a call that never reached the relay leaves no line in the relay's log).
@@ -56,6 +58,7 @@ DRAIN_MIN = float(os.environ.get("DRAIN_MIN", "100"))      # tOKRW
 SLOW_SECS = float(os.environ.get("SLOW_SECS", "70"))
 KIT_LOG = HERE / "logs" / "agent-kit.log"
 WALLET_LOG = HERE / "logs" / "wallet.jsonl"
+LEDGER_LOG = HERE / "logs" / "ledger.jsonl"           # our own copy of the market's entries about this shop
 MARKET = os.environ.get("MARKET", "https://market.ourolabs.ai")
 SENT = re.compile(r"\[maroo\] \S+ sent \S+ tOKRW from the (shop|buyer) wallet: \S*/tx/(0x[0-9a-fA-F]{64})")
 BEARER = re.compile(r"bearer [a-z0-9._-]{20,}")         # matched on lowered text
@@ -257,9 +260,16 @@ def reconcile(state, balance):
         urls = set(r.get("urls", []))
         urls |= {s.get("url") for s in shops if isinstance(s, dict) and s.get("name") == NAME and s.get("url")}
         r["urls"] = sorted(u for u in urls if u)[-20:]
+        urls_set = set(r["urls"])
         new = ledger_since(state, r["seq"])
     except Exception:
         return                                          # the market did not answer: try next pass
+    mine = [e for e in new if (e.get("data") or {}).get("shop") in urls_set | {NAME}
+            or (e.get("data") or {}).get("name") == NAME]
+    if mine:
+        with open(LEDGER_LOG, "a", encoding="utf-8") as f:
+            for e in mine:
+                f.write(json.dumps(e, ensure_ascii=False) + "\n")
     for e in new:
         d, k = e.get("data") or {}, e.get("kind")
         if k == "grant" and d.get("shop") == NAME:

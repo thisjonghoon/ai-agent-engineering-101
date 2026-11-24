@@ -165,7 +165,10 @@ def page():
     b = board()
     students = [s for s in b.get("shops", []) if s.get("student")]
     me = next((s for s in b.get("shops", []) if s.get("name") == NAME), {})
-    ranked = sum(1 for s in students if s.get("rank"))
+    ranked = sum(1 for s in b.get("shops", []) if s.get("rank"))   # the board ranks every shop, the market's own too
+    s_rank = (sorted(s.get("rank") for s in students if s.get("rank")).index(me["rank"]) + 1
+              if me.get("rank") and me.get("student") else None)
+    s_ranked = sum(1 for s in students if s.get("rank"))
     try:
         st = json.loads((KIT / "watch-state.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
@@ -197,7 +200,7 @@ def page():
         h.append(f'<div class="{"up" if d >= 0 else "down"}">시작 대비 {d:+,.1f} ({d / START_TOKRW:+.1%})</div>')
     h.append('</div><div class="right">')
     h.append(f'<div class="dim">보드 순위</div><div class="big">{E(str(me.get("rank") or "-"))}'
-             f' <small>위</small></div><div class="dim">순위 있는 {ranked}곳 · 학생 가게 {len(students)}곳 · '
+             f' <small>/ {ranked}곳</small></div><div class="dim">학생 중 {s_rank or "-"}위 / {s_ranked}곳 · 학생 가게 {len(students)}곳 · '
              f'{"살아 있음" if me.get("alive") else "응답 없음"}</div></div></section>')
     h.append(f'<section><h2>지갑 추이 (48시간)</h2>{spark(pts)}</section>')
 

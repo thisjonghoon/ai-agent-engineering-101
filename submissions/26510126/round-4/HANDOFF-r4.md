@@ -118,6 +118,13 @@ AGENT_LLM_BASE=market ./run_r4.sh   # MARKET_OWNER는 세션 환경에 남아 �
 
 **되돌리기:** Claude나 codex가 풀리면 같은 순서로 끄고 `./run_r4.sh`만 실행한다.
 
+**11/24 20:34 실제 전환 (사용자 결정: 교수님 구독을 먼저 써 본다)**
+- 이유: Claude 주간 사용량이 35%이고, Sonnet 안전장치 거절로 codex($20 요금제)가 시간당 100번꼴로 쓰였다. 데스크는 교수님 구독(codex terra라고 들음)이다.
+- 지금은 데스크가 메인이고 자동 폴백은 없다. 데스크가 막히면 `mind:failing` 경보가 나고, Claude가 몇 분 안에 `./run_r4.sh`로 되돌린다. 그러면 중계 Opus → Sonnet → codex → Copilot → OpenRouter 순서가 된다.
+- 배운 것 두 가지:
+  - tmux 창에서 `'./run_r4.sh; exec zsh'`처럼 비대화형으로 띄우면, run_r4.sh의 `kill 0`이 창의 셸까지 꺼서 세션이 사라진다. 대화형 셸에서 send-keys로 실행한다.
+  - 끈 직후에는 8790번이 TIME_WAIT로 30초쯤 묶여 포트 확인에서 멈춘다. 잠시 기다렸다가 다시 실행한다.
+
 ## 세 줄 요약
 - Round 3 구조는 버리고 교훈만 가져왔다. 에이전트에게는 목적과 페르소나만 주고, 도구는 에이전트가 forge로 만든다. 사람과 Claude는 옆에서 대화하고 기록을 함께 읽는다.
 - 처음에는 가게로만 들어간다(`--shop-only`). 모델은 구독 중계(`llm_relay.py`)로 Claude를 메인으로 쓴다. 감시(`watch_r4.py`)가 되돌릴 수 없는 해만 막는다.

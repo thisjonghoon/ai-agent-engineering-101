@@ -135,6 +135,7 @@ details.more[open]>summary{padding-bottom:8px}
 /* review fixes 11/24 (impeccable, hallmark, dataviz) */
 .list small{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .list .full small{display:block;-webkit-line-clamp:unset}
+dialog.full .list small{display:block;-webkit-line-clamp:unset;overflow:visible}
 .chartbox{position:relative}
 .chartbox .ref{stroke:var(--line-strong);stroke-width:1;stroke-dasharray:3 3}
 .chartbox .area{fill:var(--chart);opacity:.1}
@@ -181,11 +182,15 @@ dialog.full::backdrop{background:var(--bg)}
    tablets keep the full screen, landscape with the chat's side margins (11/24, owner) */
 @media (min-width:1280px) and (hover:hover) and (pointer:fine){
   dialog.full{inset:0;margin:auto;width:min(760px,calc(100% - 64px));height:min(85vh,900px);border-radius:16px;
-    border:1px solid var(--line);box-shadow:var(--shadow-3);overflow:hidden}
+    box-shadow:var(--shadow-3);overflow:hidden}
   dialog.full::backdrop{background:var(--scrim)}
   dialog.full .full-head,dialog.full .full-body{padding-left:20px;padding-right:20px}
   dialog.full .full-head{padding-top:12px}
 }
+.fullonly{display:none}dialog.full .fullonly{display:inline}dialog.full .cliponly{display:none}
+dialog.full .fullonly{white-space:pre-line}
+.list small .a{display:block}
+dialog.full .list small .q{color:var(--text);font-weight:500}dialog.full .list small .a{margin-top:4px}
 html.js .tchips.cap{max-height:calc(3 * 26px + 2 * 6px);overflow:hidden}
 html.js details.chipsmore{display:none}
 html.js section.over details.chipsmore{display:block}

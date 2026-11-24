@@ -178,6 +178,15 @@ def alert_ko(a):
     return text, "", []
 
 
+def both(text, n):
+    """The text clipped to n on the page, whole in the 전체 보기 sheet (11/24, owner)."""
+    flat, whole = " ".join(str(text or "").split()), str(text or "").strip()
+    if len(flat) <= n and flat == whole:
+        return E(flat)
+    # the sheet keeps the text's own line breaks (white-space:pre-line there)
+    return f'<span class="cliponly">{E(clip(flat, n))}</span><span class="fullonly">{E(whole)}</span>'
+
+
 def lst(rows, empty="아직 없습니다."):
     """rows: (main html, small html); a .list like the activity sheet's."""
     if not rows:
@@ -323,10 +332,11 @@ def page(in_app=False):
     tools = tools.replace("</section>", '<div class="sub" style="margin:12px 0 6px">이 앱이 준 도구</div><div class="tchips">' + "".join(
         f'<span class="tchip neutral" title="{E(d)}">{E(n)}</span>' for n, d in app_tools) + "</div></section>", 1) if tools else tools
     said = ('<section class="panel g-sd"><h2>스스로 보낸 메시지</h2><div class="sub" style="margin:-6px 0 10px">직접 답장 외에 에이전트가 채팅에 따로 올린 후속 답과 알림</div>' + more("said",
-            [(f'<span class="time">{E(hm(e.get("ts")))}</span>', E(clip(e.get("said_first"), 200))) for e in says], 2) + "</section>")
+            [(f'<span class="time">{E(hm(e.get("ts")))}</span>', both(e.get("said_first"), 200)) for e in says], 2) + "</section>")
     asked = ('<section class="panel g-qs"><h2>Claude의 질문</h2>' + more("nudges",
              [(f'<span class="time">{E(hm(e.get("ts")))}</span> <span class="tag">{E({"early": "초반", "alert": "경보", "offhours": "부재"}.get(e.get("why"), str(e.get("why", ""))))}</span>',
-               E(clip(e.get("text"), 120)) + (f'<br>→ {E(clip(e.get("reply"), 140))}' if e.get("reply") else ""))
+               f'<span class="q">{both(e.get("text"), 120)}</span>'
+               + (f'<span class="a">→ {both(e.get("reply"), 140)}</span>' if e.get("reply") else ""))
               for e in nudges], 3) + "</section>")
 
     # phone: one column in this order; landscape (owner's layout, 11/24): alerts | tools, then moves tall on the left

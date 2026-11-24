@@ -164,7 +164,8 @@ def page(in_app=False):
            if in_app else '<span class="btn">현황</span>')
     head = (f'<header><div class="avatar">{E(NAME[:1].upper())}</div><div class="who"><b>{E(NAME)}</b>'
             f'<div class="status {"on" if alive else "off"}"><span class="dot"></span><span>'
-            f'{"감시 정상" if alive else "감시 멈춤?"} · {E(time.strftime("%H:%M:%S"))}</span></div></div>{seg}</header>')
+            f'{"감시 정상" if alive else "감시 멈춤?"} · {E(time.strftime("%H:%M:%S"))}</span></div></div>'
+            f'<a class="btn" href="#activity">활동</a>{seg}</header>')
     h = []
     d = (bal - START_TOKRW) if bal is not None else None
     h.append('<section class="panel accent"><div class="split"><div><div class="label">가게 지갑</div>'
@@ -205,14 +206,14 @@ def page(in_app=False):
     h.append('<section class="panel"><h2>감시 경보</h2>' + lst(
         [(f'<span class="tag {E(a.get("level", "").lower())}">{E(a.get("level", ""))}</span> <span class="time">{E(hm(a.get("ts")))}</span>',
           E(clip(a.get("text"), 200))) for a in alerts], "경보 없음") + "</section>")
+    h.append('<section class="panel" id="activity"><h2>최근 행동</h2>' + lst(
+        [(f'<span class="time">{E(hm(e.get("ts")))}</span> <b>{E(str(e.get("action")))}</b>', E(clip(e.get("thought"), 180)))
+         for e in react]) + "</section>")
     h.append(f'<section class="panel"><h2>만든 도구 · {len(forge)}</h2>' + lst(
         [(f'<b>{E(str(n))}</b> <span class="time">v{E(str(e.get("version")))}</span> '
           f'<span class="tag {"ok" if e.get("passed") else "stop"}">{"통과" if e.get("passed") else "실패"}</span>',
           f'<span class="time">{E(hm(e.get("ts")))}</span>')
          for n, e in sorted(forge.items(), key=lambda kv: -float(kv[1].get("ts", 0)))]) + "</section>")
-    h.append('<section class="panel"><h2>최근 행동</h2>' + lst(
-        [(f'<span class="time">{E(hm(e.get("ts")))}</span> <b>{E(str(e.get("action")))}</b>', E(clip(e.get("thought"), 180)))
-         for e in react]) + "</section>")
     h.append('<section class="panel"><h2>에이전트가 먼저 한 말</h2>' + lst(
         [(f'<span class="time">{E(hm(e.get("ts")))}</span>', E(clip(e.get("said_first"), 220))) for e in says]) + "</section>")
     h.append('<section class="panel"><h2>Claude의 질문</h2>' + lst(

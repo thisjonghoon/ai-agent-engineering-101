@@ -111,8 +111,8 @@ def spark(points, w=320, h=64):
     lo, hi = min(v for _, v in points), max(v for _, v in points)
     span, tspan = (hi - lo) or 1, (t1 - t0) or 1
     xy = " ".join(f"{(t - t0) / tspan * w:.1f},{h - 4 - (v - lo) / span * (h - 8):.1f}" for t, v in points)
-    return (f'<svg viewBox="0 0 {w} {h}" class="spark" role="img" aria-label="지갑 추이">'
-            f'<polyline points="{xy}" fill="none" stroke="currentColor" stroke-width="2"/></svg>'
+    return (f'<svg viewBox="0 0 {w} {h}" preserveAspectRatio="none" class="spark" role="img" aria-label="지갑 추이">'
+            f'<polyline points="{xy}" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>'
             f'<div class="axis"><span>{hm(t0)}</span><span>{lo:,.1f} ~ {hi:,.1f}</span><span>{hm(t1)}</span></div>')
 
 
@@ -161,74 +161,96 @@ def page(in_app=False):
     alive = watch_age < 180
 
     seg = ('<nav class="seg" aria-label="화면"><a href="/">채팅</a><a href="/dashboard.html" aria-current="page">현황</a></nav>'
-           if in_app else '<span class="btn">현황</span>')
-    head = (f'<header><div class="avatar">{E(NAME[:1].upper())}</div><div class="who"><b>{E(NAME)}</b>'
+           if in_app else '')
+    head = (f'<header class="wide"><div class="avatar">{E(NAME[:1].upper())}</div><div class="who"><b>{E(NAME)}</b>'
             f'<div class="status {"on" if alive else "off"}"><span class="dot"></span><span>'
-            f'{"감시 정상" if alive else "감시 멈춤?"} · {E(time.strftime("%H:%M:%S"))}</span></div></div>'
+            f'{"감시 정상" if alive else "감시 멈춤?"} · <span class="num">{E(time.strftime("%H:%M:%S"))}</span></span></div></div>'
             f'<a class="btn" href="#activity">활동</a>{seg}</header>')
-    h = []
+
+    def more(key, rows, shown, empty="아직 없습니다."):
+        """The first `shown` rows, the rest folded under 더보기 (its open state survives the 30 s refresh)."""
+        if not rows:
+            return f'<div class="none">{empty}</div>'
+        out = lst(rows[:shown])
+        if len(rows) > shown:
+            out += f'<details class="more" id="more-{key}"><summary>더보기 · {len(rows) - shown}</summary>{lst(rows[shown:])}</details>'
+        return out
+
     d = (bal - START_TOKRW) if bal is not None else None
-    h.append('<section class="panel accent"><div class="split"><div><div class="label">가게 지갑</div>'
-             f'<div class="big">{E(f"{bal:,.1f}") if bal is not None else "-"} <small>tOKRW</small></div>'
-             + (f'<div class="sub {"up" if d >= 0 else "down"}">시작 대비 {d:+,.1f} ({d / START_TOKRW:+.1%})</div>' if d is not None else "")
-             + f'</div><div class="right"><div class="label">보드 순위</div><div class="big">{E(str(me.get("rank") or "-"))}'
-             f' <small>/ {ranked}곳</small></div><div class="sub">학생 중 {s_rank or "-"}위 / {len(s_ranks)}곳</div></div></div></section>')
-    h.append(f'<section class="panel"><h2>지갑 추이 · 48시간</h2>{spark(pts)}</section>')
+    hero = ('<section class="panel accent"><div class="split"><div><div class="label">가게 지갑</div>'
+            f'<div class="big">{E(f"{bal:,.1f}") if bal is not None else "-"} <small>tOKRW</small></div>'
+            + (f'<div class="sub {"up" if d >= 0 else "down"}">시작 대비 <span class="num">{d:+,.1f} ({d / START_TOKRW:+.1%})</span></div>' if d is not None else "")
+            + f'</div><div class="right"><div class="label">보드 순위</div><div class="big">{E(str(me.get("rank") or "-"))}'
+            f' <small>/ {ranked}곳</small></div><div class="sub">학생 중 <span class="num">{s_rank or "-"} / {len(s_ranks)}</span></div></div></div>'
+            f'<div class="trend">{spark(pts)}</div></section>')
 
     diff = recon.get("diff")
-    med = statistics.median([e.get("secs", 0) for e in ok]) if ok else 0
-    cards = [
-        ("잔고 대조", f'<span class="{"" if diff is None or abs(diff) <= 2 else "down"}">{"-" if diff is None else f"{diff:+,.2f}"}</span>', "기록과 지갑의 차이 · tOKRW"),
-        ("판매 정산", f"{len(sales)}건", f'{sum(e["data"].get("amount", 0) for e in sales):,} 크레딧'),
-        ("초반 돕기", f"{int(left // 3600)}시간 {int(left % 3600 // 60)}분" if left > 0 else "끝남", "11/27 19:00까지"),
-        ("중계 · 1시간", f"{len(ok)}/{len(relay)}", f'중앙 {med:.1f}초 · ' + " · ".join(f"{k} {v}" for k, v in sorted(by.items()))
-         + (f" · 안전장치 {flagged}" if flagged else "") if relay else "데스크 사용 중 · 호출 없음"),
-    ]
-    h.append('<div class="stats">' + "".join(f'<section class="panel"><div class="label">{E(a)}</div><div class="value">{v}</div>'
-                                            f'<div class="sub">{E(c)}</div></section>' for a, v, c in cards) + "</div>")
-
+    relay15 = [e for e in relay if now - e.get("ts", 0) <= 900]
+    desk = not relay15
     claude1h = [e for e in ok if str(e.get("backend", "")).startswith("claude")]
     snaps = []
     try:
         snaps = [json.loads(l) for l in (KIT / "usage.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
     except (OSError, ValueError):
         pass
-    if snaps:
-        last = snaps[-1]
-        proj = f'주간 {last["pct"]}% ({hm(last["ts"])} 기준) · 리셋까지 {max(0.0, (last.get("resets", 0) - now) / 3600):.0f}시간'
-        if len(snaps) >= 2 and snaps[-1]["ts"] > snaps[-2]["ts"]:
-            rate = (snaps[-1]["pct"] - snaps[-2]["pct"]) / ((snaps[-1]["ts"] - snaps[-2]["ts"]) / 3600)
-            end = last["pct"] + rate * max(0.0, (last.get("resets", 0) - last["ts"]) / 3600)
-            proj += f" · {rate:.2f}%/시간 → 리셋 때 {end:.0f}%"
-        h.append(f'<section class="panel"><h2>Claude 사용</h2><div class="value">중계 {len(claude1h)}회 · 1시간</div>'
-                 f'<div class="sub">{E(proj)}</div></section>')
+    usage = f'Claude 주간 {snaps[-1]["pct"]}% ({hm(snaps[-1]["ts"])})' if snaps else "Claude 사용량 기록 없음"
+    if len(snaps) >= 2 and snaps[-1]["ts"] > snaps[-2]["ts"]:
+        rate = (snaps[-1]["pct"] - snaps[-2]["pct"]) / ((snaps[-1]["ts"] - snaps[-2]["ts"]) / 3600)
+        usage += f" → 리셋 때 {snaps[-1]['pct'] + rate * max(0.0, (snaps[-1].get('resets', 0) - snaps[-1]['ts']) / 3600):.0f}%"
+    cards = [
+        ("잔고 대조", f'<span class="{"" if diff is None or abs(diff) <= 2 else "down"}">{"-" if diff is None else f"{diff:+,.2f}"}</span>',
+         "기록과 지갑의 차이"),
+        ("판매 정산", f"{len(sales)}건", f'{sum(e["data"].get("amount", 0) for e in sales):,} 크레딧'),
+        ("초반 돕기", f"{int(left // 3600)}시간 {int(left % 3600 // 60)}분" if left > 0 else "끝남", "11/27 19:00까지"),
+        ("모델", "데스크" if desk else "우리 중계",
+         usage if desk else f'{len(ok)}/{len(relay)} 응답 · 중앙 {statistics.median([e.get("secs", 0) for e in ok]) if ok else 0:.1f}초'
+         + (f' · 거절 {flagged}' if flagged else "")),
+    ]
+    stats = '<div class="stats">' + "".join(
+        f'<section class="panel"><div class="label">{E(a)}</div><div class="value">{v}</div><div class="sub clip">{E(c)}</div></section>'
+        for a, v, c in cards) + "</div>"
 
-    h.append('<section class="panel"><h2>감시 경보</h2>' + lst(
-        [(f'<span class="tag {E(a.get("level", "").lower())}">{E(a.get("level", ""))}</span> <span class="time">{E(hm(a.get("ts")))}</span>',
-          E(clip(a.get("text"), 200))) for a in alerts], "경보 없음") + "</section>")
-    h.append('<section class="panel" id="activity"><h2>최근 행동</h2>' + lst(
-        [(f'<span class="time">{E(hm(e.get("ts")))}</span> <b>{E(str(e.get("action")))}</b>', E(clip(e.get("thought"), 180)))
-         for e in react]) + "</section>")
-    h.append(f'<section class="panel"><h2>만든 도구 · {len(forge)}</h2>' + lst(
-        [(f'<b>{E(str(n))}</b> <span class="time">v{E(str(e.get("version")))}</span> '
-          f'<span class="tag {"ok" if e.get("passed") else "stop"}">{"통과" if e.get("passed") else "실패"}</span>',
-          f'<span class="time">{E(hm(e.get("ts")))}</span>')
-         for n, e in sorted(forge.items(), key=lambda kv: -float(kv[1].get("ts", 0)))]) + "</section>")
-    h.append('<section class="panel"><h2>에이전트가 먼저 한 말</h2>' + lst(
-        [(f'<span class="time">{E(hm(e.get("ts")))}</span>', E(clip(e.get("said_first"), 220))) for e in says]) + "</section>")
-    h.append('<section class="panel"><h2>Claude의 질문</h2>' + lst(
-        [(f'<span class="time">{E(hm(e.get("ts")))}</span> <span class="tag">{E(str(e.get("why", "")))}</span>',
-          E(clip(e.get("text"), 160)) + (f'<br>→ {E(clip(e.get("reply"), 160))}' if e.get("reply") else ""))
-         for e in nudges]) + "</section>")
+    moves = ('<section class="panel" id="activity"><h2>최근 행동</h2>' + more("moves",
+             [(f'<span class="time">{E(hm(e.get("ts"))[6:])}</span> <b>{E(str(e.get("action")))}</b>', E(clip(e.get("thought"), 140)))
+              for e in react], 5) + "</section>")
+    alert_rows = [(f'<span class="tag {E(a.get("level", "").lower())}">{E(a.get("level", ""))}</span> <span class="time">{E(hm(a.get("ts")))}</span>',
+                   E(clip(a.get("text"), 140))) for a in alerts]
+    alerts_html = '<section class="panel"><h2>감시 경보</h2>' + more("alerts", alert_rows, 3, "경보 없음") + "</section>"
+    tools = (f'<section class="panel"><h2>만든 도구 · {len(forge)}</h2><div class="tchips">' + "".join(
+             f'<span class="tchip {"" if e.get("passed") else "bad"}" title="{E(hm(e.get("ts")))}">{E(str(n))} <span class="num">v{E(str(e.get("version")))}</span></span>'
+             for n, e in sorted(forge.items(), key=lambda kv: -float(kv[1].get("ts", 0)))) + "</div></section>") if forge else ""
+    said = ('<section class="panel"><h2>에이전트가 먼저 한 말</h2>' + more("said",
+            [(f'<span class="time">{E(hm(e.get("ts")))}</span>', E(clip(e.get("said_first"), 200))) for e in says], 2) + "</section>")
+    asked = ('<section class="panel"><h2>Claude의 질문</h2>' + more("nudges",
+             [(f'<span class="time">{E(hm(e.get("ts")))}</span> <span class="tag">{E(str(e.get("why", "")))}</span>',
+               E(clip(e.get("text"), 120)) + (f'<br>→ {E(clip(e.get("reply"), 140))}' if e.get("reply") else ""))
+              for e in nudges], 3) + "</section>")
+
+    body = (f'<div class="top">{hero}{stats}</div>'
+            f'<div class="cols"><div class="col">{moves}</div><div class="col">{alerts_html}{tools}{said}{asked}</div></div>')
 
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="refresh" content="30"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="R4 가게"><title>현황 · {E(NAME)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/joungkyun/font-d2coding@1.3.2/d2coding.css">
-<style>{ui_css()}</style></head><body class="screen">{head}<main class="page">{"".join(h)}</main></body></html>"""
+<style>{ui_css()}</style></head><body class="screen">{head}<main class="page wide">{body}</main>
+<script>
+// every 30 s swap in the new numbers without reloading: the scroll position and any open 더보기 stay as they are
+setInterval(async () => {{
+  try {{
+    const r = await fetch(location.pathname, {{cache: 'no-store'}});
+    if (!r.ok) return;
+    const d = new DOMParser().parseFromString(await r.text(), 'text/html');
+    const open = [...document.querySelectorAll('details[open]')].map(x => x.id);
+    document.querySelector('main').replaceWith(d.querySelector('main'));
+    document.querySelector('header .status').replaceWith(d.querySelector('header .status'));
+    open.forEach(id => {{ const e = document.getElementById(id); if (e) e.open = true; }});
+  }} catch (e) {{}}
+}}, 30000);
+</script></body></html>"""
 
 
 def ui_css():

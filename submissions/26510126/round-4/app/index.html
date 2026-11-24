@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -123,7 +123,7 @@ textarea::placeholder{color:var(--text-mute)}
 @keyframes up{from{transform:translateY(32px);opacity:0}}
 @keyframes fade{from{opacity:0}}
 [hidden]{display:none!important}
-header{border-bottom:3px solid var(--primary)}
+header{border-bottom:3px solid var(--primary);background:var(--bg);backdrop-filter:none;-webkit-backdrop-filter:none}
 .card{border-radius:8px}
 .sec{color:var(--warn)}
 .kv span:last-child{font-family:var(--mono)}

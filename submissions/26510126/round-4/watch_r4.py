@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The Round 4 watch: code that checks the running agent every minute, calls no model, and stops it only for harm that
-cannot be undone (decision 5, 11/23: stop for a leaked secret or a draining wallet; alert for the rest; a person
+cannot be undone (decision 5, 11/23: stop for a leaked secret or a wallet drained of money not spent on stock; alert for the rest; a person
 restarts). Claude watches logs/watch-r4.jsonl and acts on an alert; the daily read covers what rules cannot see.
 
     python watch_r4.py                # every 60 s, from this folder
@@ -10,10 +10,16 @@ Checks:
   STOP  secret: the real value of a wallet key (shop_wallet.key, buyer_wallet.key), the app's access code
         (.kit/app.key), RELAY_KEY, OPENROUTER_API_KEY or MARKET_OWNER (the claim code) appears in what the agent
         writes or what gets committed: card.json, notes.md, tools/, app/, logs/. The value itself is never printed.
-  STOP  wallet: a wallet's tOKRW fell by more than DRAIN_FRAC (0.8) of its highest balance in the last 10 minutes and
-        by at least DRAIN_MIN tOKRW (100); more than WARN_FRAC (0.5) only alerts, since a shop now pays for its stock
-        from its wallet.
-  ALERT relay: in the last 10 minutes llm_relay answered nothing and failed 3 or more times.
+  STOP  wallet: a wallet's tOKRW, not counting what it paid to the market's own address (a restock: the kit logs every
+        payment with its tx hash, and the chain says where it went), fell by more than DRAIN_FRAC (0.95) of its
+        highest balance in the last 10 minutes and by at least DRAIN_MIN tOKRW (100); more than WARN_FRAC (0.5) only
+        alerts, counting restocks too, so a person sees a large purchase.
+  LOG   every pass writes each wallet's tOKRW to logs/wallet.jsonl: the shop's money, so this is the score over time.
+  ALERT relay: in the last 10 minutes llm_relay answered nothing and failed 3 or more times, or the kit logged 3 or
+        more "[mind] model call failed" (a call that never reached the relay leaves no line in the relay's log).
+  ALERT slow: a model call in the last 10 minutes took longer than SLOW_SECS (70 s; a customer waits 80 s over A2A).
+  ALERT bearer: an "Authorization: Bearer <token>" shaped value appears in a scanned file (the market tokens live
+        only in the kit's memory, so this pattern is the only way to see one leak; it does not stop the agent).
   ALERT process: the kit (agent_kit.py run) or the relay is not running.
 Not checked yet (needs the market's real logs, after Round 4 opens): false claims, a fall in credits per hour,
 repeated complaints. The market tokens live only in the kit's memory, so they cannot be matched by value; a JWT pattern
@@ -37,8 +43,14 @@ STATE = HERE / ".kit" / "watch-state.json"         # .kit/ is git-ignored
 # 11/24: from Round 4 the shop pays for its stock from its wallet (ROUND4.md "One money"), so a large drop can be a
 # normal restock: half gone in 10 minutes only alerts; 80% gone stops the agent.
 WARN_FRAC = float(os.environ.get("WARN_FRAC", "0.5"))
-DRAIN_FRAC = float(os.environ.get("DRAIN_FRAC", "0.8"))
+DRAIN_FRAC = float(os.environ.get("DRAIN_FRAC", "0.95"))
 DRAIN_MIN = float(os.environ.get("DRAIN_MIN", "100"))      # tOKRW
+SLOW_SECS = float(os.environ.get("SLOW_SECS", "70"))
+KIT_LOG = HERE / "logs" / "agent-kit.log"
+WALLET_LOG = HERE / "logs" / "wallet.jsonl"
+MARKET = os.environ.get("MARKET", "https://market.ourolabs.ai")
+SENT = re.compile(r"\[maroo\] \S+ sent \S+ tOKRW from the (shop|buyer) wallet: \S*/tx/(0x[0-9a-fA-F]{64})")
+BEARER = re.compile(r"bearer [a-z0-9._-]{20,}")         # matched on lowered text
 REPEAT = 30 * 60                                        # the same alert at most once in 30 minutes
 SCAN = ["card.json", "notes.md", "tools", "app", "logs"]
 
@@ -114,20 +126,89 @@ def check_secrets(state):
         for name, value in sec.items():
             if value.lower() in data:
                 found.append((name, rel))
+        if BEARER.search(data):
+            emit(state, "ALERT", f"bearer:{rel}", f"a 'Bearer <token>' value appears in {rel}; a market token may have "
+                 "leaked. Read it (do not paste the value anywhere) and decide with the person.")
     for name, rel in found:
         emit(state, "STOP", f"secret:{name}:{rel}", f"{name} appears in {rel}; the agent is stopped. Remove it, rotate "
              "the secret (a new wallet for a key) and restart by hand.")
     return bool(found)
 
 
+def kit_log_lines(state, key):
+    """New lines of logs/agent-kit.log since this reader's last pass (the kit rotates it to .log.1 when it is full)."""
+    offs = state.setdefault("kitlog", {})
+    try:
+        size = KIT_LOG.stat().st_size
+    except OSError:
+        return []
+    start = offs.get(key, 0)
+    if start > size:                                    # rotated: read the rest of the old file, then the new one
+        old = KIT_LOG.with_suffix(".log.1")
+        lines = []
+        try:
+            with open(old, "rb") as fh:
+                fh.seek(start)
+                lines = fh.read().decode("utf-8", errors="replace").splitlines()
+        except OSError:
+            pass
+        start = 0
+    else:
+        lines = []
+    with open(KIT_LOG, "rb") as fh:
+        fh.seek(start)
+        data = fh.read()
+    offs[key] = start + len(data)
+    return lines + data.decode("utf-8", errors="replace").splitlines()
+
+
+def market_address(state):
+    """The market's own wallet (GET /api/chain), where a restock is paid; cached for the watch's life."""
+    if state.get("market_address"):
+        return state["market_address"]
+    try:
+        import httpx
+        a = httpx.get(MARKET.rstrip("/") + "/api/chain", timeout=10).json().get("market_address") or ""
+    except Exception:
+        return ""
+    if a:
+        state["market_address"] = a.lower()
+    return a.lower()
+
+
+def restocks(state, maroo, read_at):
+    """Read the kit's new payment lines; remember [time, tOKRW] per wallet for the ones paid to the market."""
+    paid = state.setdefault("to_market", {})
+    market = market_address(state)
+    pending = state.setdefault("pending_tx", []) + [[m.group(1), m.group(2)] for line in kit_log_lines(state, "sent")
+                                                     if (m := SENT.search(line))]
+    state["pending_tx"] = []
+    for role, tx in pending:
+        try:
+            t = maroo.rpc("eth_getTransactionByHash", tx)
+        except Exception:
+            t = None
+        if not t or not market:                         # not readable yet: try again next pass
+            state["pending_tx"].append([role, tx])
+            continue
+        if (t.get("to") or "").lower() == market:
+            paid.setdefault(f"{role}_wallet.key", []).append([read_at, int(t.get("value", "0x0"), 16) / 10 ** 18])
+    state["pending_tx"] = state["pending_tx"][-50:]
+    now = time.time()
+    for k in paid:
+        paid[k] = [x for x in paid[k] if now - x[0] <= 700]
+    return paid
+
+
 def check_wallets(state):
-    """STOP when a wallet fell by more than DRAIN_FRAC of its 10-minute high and by DRAIN_MIN tOKRW or more."""
+    """STOP when a wallet, not counting its payments to the market, fell by more than DRAIN_FRAC of its 10-minute high
+    and by DRAIN_MIN tOKRW or more. Every balance read goes to logs/wallet.jsonl."""
     try:
         import maroo
     except Exception as e:                              # no httpx or eth_account: say so once, do not crash
         emit(state, "ALERT", "wallet:unchecked", f"wallet balances not checked: {type(e).__name__}")
         return False
-    hist, drained = state.setdefault("balances", {}), False
+    hist, drained, read, read_at = state.setdefault("balances", {}), False, {}, time.time()
     for name in ("shop_wallet.key", "buyer_wallet.key"):
         p = HERE / name
         if not p.exists():
@@ -140,16 +221,31 @@ def check_wallets(state):
                  f"{type(e).__name__}: {str(e)[:120]}")
             continue
         now = time.time()
+        read[name] = tokrw
         h = [x for x in hist.get(name, []) if now - x[0] <= 600] + [[now, tokrw]]
         hist[name] = h
+    # the balances are read first and the kit's log after: the kit logs a payment right after its receipt, so a
+    # restock that already lowered a balance is in the log by now
+    paid = restocks(state, maroo, read_at) if read else {}
+    for name, tokrw in read.items():
+        h, p = hist[name], paid.get(name, [])
         high = max(b for _, b in h)
-        if high > 0 and high - tokrw >= DRAIN_MIN and tokrw < high * (1 - DRAIN_FRAC):
+        to_market = sum(v for _, v in p)
+        # the money not spent on stock: each earlier balance less what went to the market after it was read (a
+        # payment found in this pass is already in this pass's balance, hence the strict >)
+        free_high = max(b - sum(v for tp, v in p if tp > t) for t, b in h)
+        with open(WALLET_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": int(time.time()), "time": time.strftime("%m/%d %H:%M:%S"), "wallet": name.split("_")[0],
+                                "tokrw": round(tokrw, 3), "to_market_10min": round(to_market, 3)}) + "\n")
+        if free_high > 0 and free_high - tokrw >= DRAIN_MIN and tokrw < free_high * (1 - DRAIN_FRAC):
             drained = True
             emit(state, "STOP", f"wallet:drain:{name}", f"the {name.split('_')[0]} wallet fell from {high:,.1f} to "
-                 f"{tokrw:,.1f} tOKRW within 10 minutes; the agent is stopped. Read logs/react.jsonl for the payments.")
+                 f"{tokrw:,.1f} tOKRW within 10 minutes; {to_market:,.1f} went to the market for stock, and of the "
+                 f"{free_high:,.1f} left after that, {free_high - tokrw:,.1f} left the wallet; the agent is stopped. Read logs/react.jsonl and logs/agent-kit.log for the payments.")
         elif high > 0 and high - tokrw >= DRAIN_MIN and tokrw < high * (1 - WARN_FRAC):
             emit(state, "ALERT", f"wallet:drop:{name}", f"the {name.split('_')[0]} wallet fell from {high:,.1f} to "
-                 f"{tokrw:,.1f} tOKRW within 10 minutes; a restock, or money leaving? Read logs/react.jsonl.")
+                 f"{tokrw:,.1f} tOKRW within 10 minutes, {to_market:,.1f} of it to the market for stock. Read "
+                 "logs/react.jsonl.")
     return drained
 
 
@@ -157,18 +253,34 @@ def check_relay(state):
     f = HERE / "logs" / "llm-relay.jsonl"
     if not f.exists():
         return
-    now, ok, bad = time.time(), 0, 0
+    now, ok, bad, recent = time.time(), 0, 0, []
     for line in f.read_text(encoding="utf-8", errors="replace").splitlines()[-200:]:
         try:
             e = json.loads(line)
         except ValueError:
             continue
         if now - e.get("ts", 0) <= 600:
+            recent.append(e)
             ok += bool(e.get("ok"))
             bad += not e.get("ok")
     if ok == 0 and bad >= 3:
         emit(state, "ALERT", "relay:failing", f"llm_relay answered nothing in 10 minutes ({bad} failures); the agent "
              "cannot think. See logs/llm-relay.jsonl.")
+    slow = [e for e in recent if e.get("ok") and e.get("secs", 0) > SLOW_SECS]
+    if slow:
+        emit(state, "ALERT", "relay:slow", f"{len(slow)} model call(s) in 10 minutes took over {SLOW_SECS:g} s (longest "
+             f"{max(e['secs'] for e in slow):g} s); a customer waits 80 s over A2A and 120 s in the app.")
+
+
+def check_model_calls(state):
+    """The kit's own count of failed model calls: a refused connection or a 401 never reaches the relay's log."""
+    now = time.time()
+    fails = [t for t in state.get("mind_fails", []) if now - t <= 600]
+    fails += [now for line in kit_log_lines(state, "mind") if "[mind] model call failed" in line]
+    state["mind_fails"] = fails
+    if len(fails) >= 3:
+        emit(state, "ALERT", "mind:failing", f"the kit logged {len(fails)} failed model calls in 10 minutes; see "
+             "logs/agent-kit.log ([mind]) and .kit/relay-terminal.log.")
 
 
 def pids(pattern):
@@ -187,26 +299,41 @@ def check_processes(state):
         emit(state, "ALERT", "process:relay", "llm_relay.py is not running")
 
 
+def descendants(pid):
+    out, todo = [], [pid]
+    while todo:
+        r = subprocess.run(["pgrep", "-P", str(todo.pop())], capture_output=True, text=True)
+        kids = [int(x) for x in r.stdout.split() if x.strip().isdigit()]
+        out += kids
+        todo += kids
+    return out
+
+
 def stop_agent(state):
-    """Ctrl-C to the kit (it closes its endpoint and app), then TERM after 10 s. A person restarts it."""
-    for pid in kit_pids():
-        try:
-            os.kill(pid, signal.SIGINT)
-        except OSError:
-            pass
-    time.sleep(10)
-    for pid in kit_pids():
-        try:
-            os.kill(pid, signal.SIGTERM)
-        except OSError:
-            pass
+    """Mark the stop first (.kit/STOP and stopped_at, so run_r4.sh never restarts it), then TERM the kit's children
+    (its two cloudflared tunnels: the kit has no TERM handler, so its own cleanup would not run) and the kit, and KILL
+    whatever is left after 10 s. A person restarts it."""
     state["stopped_at"] = int(time.time())
+    save_state(state)
+    (HERE / ".kit" / "STOP").touch()
+    targets = []
+    for pid in kit_pids():
+        targets += descendants(pid) + [pid]
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        for pid in targets:
+            try:
+                os.kill(pid, sig)
+            except OSError:
+                pass
+        if sig == signal.SIGTERM:
+            time.sleep(10)
 
 
 def one_pass(state):
     harm = check_secrets(state)
     harm = check_wallets(state) or harm
     check_relay(state)
+    check_model_calls(state)
     if harm and kit_pids():
         stop_agent(state)
     elif state.get("stopped_at") and kit_pids():

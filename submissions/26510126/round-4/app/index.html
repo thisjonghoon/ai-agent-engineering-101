@@ -99,7 +99,10 @@ textarea::placeholder{color:var(--text-mute)}
 .credit a{color:var(--text-soft);text-decoration:none;font-weight:600}
 @keyframes up{from{transform:translateY(32px);opacity:0}}
 @keyframes fade{from{opacity:0}}
-html,body{height:100%;overflow-x:clip}
+html,body{height:100%;overflow:clip;overscroll-behavior:none}
+/* the chat page never scrolls as a whole: only the message list does (11/24) */
+.app{position:fixed;inset:0 0 auto 0;margin:0 auto}
+#scroll{overscroll-behavior:contain}
 /* a home-screen app has no browser bar under the page: keep the message box off the home indicator (11/24) */
 @media (display-mode:standalone){footer{padding-bottom:max(28px,calc(12px + env(safe-area-inset-bottom)))}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}

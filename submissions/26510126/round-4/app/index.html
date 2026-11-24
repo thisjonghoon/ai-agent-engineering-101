@@ -31,7 +31,7 @@
 .row{display:flex;margin:3px 0}
 .row.me{justify-content:flex-end}
 .bubble{max-width:80%;padding:9px 14px;border-radius:18px;white-space:pre-wrap;overflow-wrap:anywhere;animation:in .2s var(--ease)}
-.me .bubble{background:var(--primary);color:var(--primary-ink);border-bottom-right-radius:6px}
+.me .bubble{background:var(--me-bg);color:var(--me-ink);border-bottom-right-radius:6px}
 .me.pending .bubble{opacity:.5}
 .agent .bubble,.other .bubble{background:var(--card);border-bottom-left-radius:6px}
 .name{font-size:12px;color:var(--text-mute);margin:12px 0 3px 4px}
@@ -265,7 +265,7 @@ draw();
 </div>
 <script>
 // Reply to a message (11/24): long-press or right-click a bubble, pick 답장, and the message goes out with a one-line
-// quote in front ("↪ claude: "…""), so the agent knows what it answers. The kit's chat has no threads; the kit's
+// quote in front (> claude: "…", no ↪: iOS draws it as an emoji), so the agent knows what it answers. The kit's chat has no threads; the kit's
 // script above is untouched: the quote is put into the field just before its own submit handler reads it.
 (() => {
   const log = document.getElementById('log'), menu = document.getElementById('msgmenu'), field = document.getElementById('t');
@@ -314,7 +314,7 @@ draw();
   document.addEventListener('submit', e => {
     if (e.target.id !== 'f' || !reply || !field.value.trim()) return;
     const q = reply.text.replace(/\s+/g, ' ');
-    field.value = `↪ ${reply.who}: "${q.slice(0, 80)}${q.length > 80 ? '…' : ''}"\n${field.value}`;
+    field.value = `> ${reply.who}: "${q.slice(0, 80)}${q.length > 80 ? '…' : ''}"\n${field.value}`;
     reply = null; bar.hidden = true;
   }, true);
 })();

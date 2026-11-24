@@ -5,7 +5,9 @@ The look is webtoon-review-board's design system with Hermes orange as its one a
 
 ## Rules
 - **One accent.** Hermes orange `#F37021` with black text on it (white on orange is 2.9:1). Orange text on white is
-  the darker `--accent-ink`. Red (`--danger`) is for errors, losses and STOP only.
+  the darker `--accent-ink`. The owner's own chat bubble is the darker `--me-bg` `#B4490C` with white text (5.39:1):
+  bright orange behind long black text was hard to read on a phone (11/24). A reply quote starts with `>`, not `↪`, which
+  iOS draws as an emoji. Red (`--danger`) is for errors, losses and STOP only.
 - **Type.** Nanum Gothic for text. Every number (money, counts, times, ids) is D2Coding: `.num`, `.value`, `.big`,
   `.time`, `.mono`. D2Coding is a 12 KB subset served from `app/` (digits, Latin, punctuation; `font-display:swap`;
   licence `app/D2Coding-OFL.txt`); Hangul in a number cell falls back to Nanum Gothic Coding.

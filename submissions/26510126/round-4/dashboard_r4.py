@@ -269,12 +269,15 @@ def page(in_app=False):
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/joungkyun/font-d2coding@1.3.2/d2coding.css">
 <style>{ui_css()}</style></head><body class="screen">{head}<main class="page wide">{body}</main>
 <script>
-// every 30 s swap in the new numbers without reloading: the scroll position and any open 더보기 stay as they are
+// every 30 s swap in the new numbers without reloading: the scroll position and any open 더보기 stay as they are;
+// when the style itself changed (a new look), reload the whole page instead
 setInterval(async () => {{
   try {{
     const r = await fetch(location.pathname, {{cache: 'no-store'}});
     if (!r.ok) return;
     const d = new DOMParser().parseFromString(await r.text(), 'text/html');
+    // a new look (ui.css changed) needs the new style too: reload the whole page then
+    if (d.querySelector('style')?.textContent !== document.querySelector('style')?.textContent) {{ location.reload(); return; }}
     const open = [...document.querySelectorAll('details[open]')].map(x => x.id);
     document.querySelector('main').replaceWith(d.querySelector('main'));
     document.querySelector('header .status').replaceWith(d.querySelector('header .status'));

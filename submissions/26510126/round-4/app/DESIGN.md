@@ -15,7 +15,8 @@ The look is webtoon-review-board's design system with Hermes orange as its one a
 - **Body.** A screen other than the chat is `body.screen` with `main.page`: panels (`.panel`, `.panel.accent` for the
   one number that matters most), a two-column `.stats` grid that stays two columns on a phone, lists (`.list`), and
   key-value tables (`.kv`). Section titles are `.panel h2`; small labels are `.label` and `.sub`.
-- **States.** Healthy is quiet: the status dot is grey (`--ok`). An alert is a solid orange chip (`.tag.alert`), a stop a
+- **States.** A live connection is an orange status dot (`--ok`; the owner found grey odd for 시장에서 거래 중). An alert
+  is a solid orange chip (`.tag.alert`), so the two stay apart by shape; a stop a
   solid red one (`.tag.stop`), neutral `.tag`/`.tag.ok` grey; `.up`/`.down` for gains and losses. A stale or failed
   refresh turns the dot red and says so (`body.stale`). Alerts read in Korean with what to do.
 - **Charts.** One 2px line in `--chart` (the accent's step that passes dataviz's lightness and 3:1 checks: light

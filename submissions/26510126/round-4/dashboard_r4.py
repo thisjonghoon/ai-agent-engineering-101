@@ -36,6 +36,45 @@ START_TOKRW = 5000.0
 EARLY_END = 1795777200            # 11/27 19:00 KST: the end of the early 72 hours
 E = html.escape
 
+# webtoon-review-board's design system (paper, ink, one accent, red for errors only), with Hermes orange as the accent
+CSS = """
+:root{--paper:#f4f5f6;--sheet:#fff;--ink:#111214;--muted:#6b7178;--rule:#e3e5e8;--chip:#eef0f2;
+--accent:#f37021;--on-accent:#0a0a0a;--accent-ink:#b4490c;--accent-soft:#fdeee4;--danger:#e5342f;--danger-soft:#fdecec;
+--display:"Nanum Gothic","Apple SD Gothic Neo",sans-serif;--body:"Nanum Gothic","Apple SD Gothic Neo",sans-serif;
+--mono:"Nanum Gothic Coding",ui-monospace,Menlo,monospace;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0e0f10;--sheet:#18191b;--ink:#f1f2f3;--muted:#9a9fa6;
+--rule:#2a2c30;--chip:#24262a;--accent:#f37021;--on-accent:#0a0a0a;--accent-ink:#ff9a57;--accent-soft:#3a2112;
+--danger:#ff5a52;--danger-soft:#3a1a19;color-scheme:dark}}
+:root[data-theme="dark"]{--paper:#0e0f10;--sheet:#18191b;--ink:#f1f2f3;--muted:#9a9fa6;--rule:#2a2c30;--chip:#24262a;
+--accent:#f37021;--on-accent:#0a0a0a;--accent-ink:#ff9a57;--accent-soft:#3a2112;--danger:#ff5a52;--danger-soft:#3a1a19;color-scheme:dark}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6}
+.wrap{max-width:860px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+.top{padding-top:max(20px,env(safe-area-inset-top));padding-bottom:6px;border-bottom:3px solid var(--accent)}
+.top-row{display:flex;justify-content:space-between;align-items:flex-end;gap:6px 12px;flex-wrap:wrap;padding-bottom:10px}.top-row>*{min-width:0}
+.eyebrow{font-size:12px;letter-spacing:.08em;color:var(--muted)}
+h1{font-family:var(--display);font-size:30px;line-height:1.2;margin:2px 0 0;font-weight:800}
+h2{font-family:var(--display);font-size:17px;margin:0 0 10px}
+.role{font-size:12px;border:1px solid var(--rule);border-radius:999px;padding:1px 9px;color:var(--muted);font-family:var(--mono)}
+.main>*{min-width:0;max-width:100%}.main{display:flex;flex-direction:column;gap:14px;padding-block:16px 80px}
+section{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:16px;min-width:0}
+.hero{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:inset 4px 0 0 var(--accent)}
+.hero>div{flex:1 1 150px;min-width:0}.right{text-align:right}
+.big{font-family:var(--mono);font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.25}
+.big small{font-family:var(--body);font-size:13px;color:var(--muted);font-weight:400}
+.dim{color:var(--muted);font-size:13px}.up{color:var(--accent-ink);font-weight:700}.down{color:var(--danger);font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;background:none;border:0;padding:0}
+@media (max-width:420px){.grid{grid-template-columns:1fr}}
+.card{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;min-width:0}
+.card>div:nth-child(2){font-family:var(--mono);font-variant-numeric:tabular-nums}
+.item{padding:9px 0;border-top:1px solid var(--rule);overflow-wrap:anywhere}.item:first-of-type{border-top:0;padding-top:0}
+.tag{font-size:12px;border-radius:999px;padding:1px 9px;background:var(--chip);color:var(--muted)}
+.tag.stop{background:var(--danger-soft);color:var(--danger)}.tag.alert{background:var(--accent-soft);color:var(--accent-ink)}
+.tag.ok{background:var(--accent-soft);color:var(--accent-ink)}
+.spark{width:100%;height:64px;color:var(--accent);display:block}.row{display:flex;justify-content:space-between;font-family:var(--mono)}
+b{font-weight:700}
+"""
+
 
 def code():
     p = KIT / "dashboard.key"
@@ -211,22 +250,13 @@ def page():
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="refresh" content="30"><meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="R4 가게"><title>R4 가게</title>
-<style>
-:root{{--bg:#f6f5f2;--fg:#1d1d1b;--dim:#76746d;--card:#fff;--line:#e4e2dc;--up:#1d7a46;--down:#b3261e;--warn:#9a6700}}
-@media (prefers-color-scheme:dark){{:root{{--bg:#151513;--fg:#ecebe6;--dim:#9b9990;--card:#1f1f1c;--line:#2e2e2a;--up:#5cc28a;--down:#ff8a80;--warn:#e0b44c}}}}
-*{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 -apple-system,system-ui,sans-serif;
-padding:max(12px,env(safe-area-inset-top)) 16px 32px}}h1{{font-size:17px;margin:4px 0 12px}}h2{{font-size:14px;color:var(--dim);margin:0 0 8px;font-weight:600}}
-section{{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 12px}}
-.hero{{display:flex;justify-content:space-between;gap:12px}}.right{{text-align:right}}.big{{font-size:26px;font-weight:700}}
-.big small{{font-size:13px;color:var(--dim);font-weight:500}}.dim{{color:var(--dim);font-size:13px}}.up{{color:var(--up)}}.down{{color:var(--down)}}
-.grid{{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:none;border:0;padding:0}}
-.card{{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}}
-.item{{padding:7px 0;border-top:1px solid var(--line);word-break:break-word}}.item:first-of-type{{border-top:0}}
-.tag{{font-size:11px;padding:1px 6px;border-radius:6px;border:1px solid currentColor}}.stop{{color:var(--down)}}.alert{{color:var(--warn)}}.ok{{color:var(--up)}}
-.spark{{width:100%;height:64px;color:var(--up)}}.row{{display:flex;justify-content:space-between}}
-</style></head><body><h1>Round 4 · {E(NAME)} <span class="dim">{E(time.strftime("%m/%d %H:%M:%S"))} · 30초마다 새로고침</span></h1>
-{"".join(h)}</body></html>"""
+<meta name="apple-mobile-web-app-title" content="R4 가게"><meta name="theme-color" content="#f37021"><title>R4 가게</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
+<style>{CSS}</style></head><body>
+<header class="wrap top"><div class="eyebrow">AGENT MARKET · ROUND 4</div>
+<div class="top-row"><h1>{E(NAME)}</h1><span class="role">{E(time.strftime("%m/%d %H:%M:%S"))} · 30초마다 새로고침</span></div></header>
+<main class="wrap main">{"".join(h)}</main></body></html>"""
 
 
 class Handler(BaseHTTPRequestHandler):

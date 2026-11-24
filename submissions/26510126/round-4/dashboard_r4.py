@@ -228,7 +228,7 @@ def page(in_app=False):
     head = (f'<header class="wide"><div class="avatar">{E(NAME[:1].upper())}</div><div class="who"><h1>{E(NAME)}</h1>'
             f'<div class="status {"on" if alive else "off"}"><span class="dot"></span><span>'
             f'<span class="st-text">{"감시 정상" if alive else "감시 멈춤?"}</span> <span class="num">{E(time.strftime("%H:%M:%S"))}</span></span></div></div>'
-            f'<a class="btn" href="#activity">활동</a>{seg}</header>')
+            f'{seg}</header>')
 
     def more(key, rows, shown, empty="아직 없습니다."):
         """The first `shown` rows, the rest folded under 더보기 (its open state survives the 30 s refresh)."""
@@ -295,6 +295,16 @@ def page(in_app=False):
              for n, e in sorted(forge.items(), key=lambda kv: -float(kv[1].get("ts", 0)))) + "</div></section>") if forge else ""
     # app_say: whatever the agent sends to the app outside a reply (the kit logs it as said_first); 11/24 19:45 it was
     # the promised follow-up to the owner's question, so it is not always the agent speaking first
+    # the tools this app gives the agent (the kit logs none of them): app_say from the kit, and each miniapp.offer in
+    # app/index.html; they were in the chat's activity sheet, which is gone (11/24)
+    app_tools = [("app_say", "앱에 먼저 말하기 (키트)")]
+    try:
+        page_src = (HERE / "app" / "index.html").read_text(encoding="utf-8")
+        app_tools += [(f"app_{n}", d) for n, d in re.findall(r"miniapp\.offer\('([a-z_]+)',\s*'([^']*)'", page_src)]
+    except OSError:
+        pass
+    tools = tools.replace("</section>", '<div class="sub" style="margin:12px 0 6px">이 앱이 준 도구</div><div class="tchips">' + "".join(
+        f'<span class="tchip neutral" title="{E(d)}">{E(n)}</span>' for n, d in app_tools) + "</div></section>", 1) if tools else tools
     said = ('<section class="panel"><h2>앱으로 보낸 말</h2><div class="sub" style="margin:-6px 0 10px">답장 밖에서 보낸 메시지: 후속 답, 알림</div>' + more("said",
             [(f'<span class="time">{E(hm(e.get("ts")))}</span>', E(clip(e.get("said_first"), 200))) for e in says], 2) + "</section>")
     asked = ('<section class="panel"><h2>Claude의 질문</h2>' + more("nudges",
@@ -315,7 +325,7 @@ def page(in_app=False):
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
 <meta name="description" content="thisjonghoon 가게의 지갑, 순위, 감시 경보와 에이전트 활동">
-<style>{ui_css()}</style></head><body class="screen">{head}<main class="page wide" data-ts="{int(now)}">{body}</main>
+<style>{ui_css()}</style></head><body class="screen">{head}<main class="page wide" data-ts="{int(now)}">{body}<p class="note credit">미니앱 키트는 <a href="https://github.com/Q00/meshkit" target="_blank" rel="noopener">MeshKit</a>과 <a href="https://github.com/Q00/ouroboros" target="_blank" rel="noopener">Ouroboros</a>에서 영감을 받았습니다</p></main>
 <script>
 // every 30 s swap in the new numbers without reloading: the scroll position and any open 더보기 stay as they are;
 // when the style itself changed (a new look), reload the whole page instead. A failed or late refresh shows in the header.

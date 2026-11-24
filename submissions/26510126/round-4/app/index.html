@@ -90,7 +90,6 @@ body{overscroll-behavior:none}
   <header>
     <div class="avatar" id="av">A</div>
     <div class="who"><h1 id="nm">Agent</h1><div class="status" id="st"><span class="dot"></span><span id="stt">연결하는 중</span></div></div>
-    <button class="btn" id="act" type="button">활동</button>
     <nav class="seg" aria-label="화면"><a href="/" aria-current="page">채팅</a><a href="/dashboard.html">현황</a></nav>
   </header>
   <div id="scroll" role="main"><div id="log"></div></div>
@@ -109,18 +108,6 @@ body{overscroll-behavior:none}
   <p class="sub" id="cname"></p>
   <div class="kv" id="cargs"></div>
   <div class="actions"><button type="button" id="no">거절</button><button type="button" class="yes" id="yes">허용</button></div>
-</div></div>
-<div class="shade" id="activity" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="activity-h">
-  <div class="grip"></div>
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2 id="activity-h">에이전트 활동</h2>
-  <button class="btn" type="button" id="activity-close">닫기</button></div>
-  <p class="sub">대화하는 동안에도 에이전트는 시장에서 계속 움직입니다.</p>
-  <div class="sec">최근 움직임</div><div id="moves"></div>
-  <div class="sec">에이전트가 만든 도구</div><div id="forged"></div>
-  <div class="sec">이 앱이 준 도구</div><div id="apptools"></div>
-  <div class="credit">Built with the agent market mini app kit, inspired by
-    <a href="https://github.com/Q00/meshkit" target="_blank" rel="noopener">MeshKit</a> and
-    <a href="https://github.com/Q00/ouroboros" target="_blank" rel="noopener">Ouroboros</a></div>
 </div></div>
 <script src="/miniapp.js"></script>
 <script>
@@ -226,16 +213,7 @@ miniapp.onState(s => {
   const name = s.agent || 'Agent';
   if ($('nm').textContent !== name) { $('nm').textContent = name; $('av').textContent = name[0].toUpperCase(); document.title = name; }
   draw(); status(); showConsent();
-  if (!$('activity').hidden) fillActivity();
 });
-
-function fillActivity() {
-  list($('moves'), (view.moves || []).map(m => [m.action, m.thought]));
-  list($('forged'), Object.entries(view.forged || {}).map(([k, v]) => [k, v]));
-  list($('apptools'), Object.entries(view.app_tools || {}).map(([k, v]) => [k, v]));
-}
-$('act').onclick = () => { fillActivity(); $('activity').hidden = false; };
-$('activity').onclick = e => { if (e.target === $('activity')) $('activity').hidden = true; };
 
 async function send(text) {
   text = text.trim();
@@ -267,11 +245,6 @@ if (vv) {
   vv.addEventListener('resize', fit); fit();
 }
 draw();
-</script>
-<script>
-// a way out of the activity sheet: its 닫기 button and Escape (11/24 review); the kit's script above is unchanged
-document.getElementById('activity-close').onclick = () => { document.getElementById('activity').hidden = true; };
-document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('activity').hidden = true; });
 </script>
 </body>
 </html>

@@ -144,3 +144,6 @@ details.more[open]>summary{padding-bottom:8px}
 .chartbox .hairv{position:absolute;top:0;bottom:0;width:1px;background:var(--text-mute);pointer-events:none}
 .chartbox{touch-action:pan-y;cursor:crosshair}
 
+.tchip.neutral{background:var(--hover);color:var(--text-soft)}
+.credit{text-align:center;margin-top:4px}
+.credit a{color:var(--text-soft);font-weight:700}

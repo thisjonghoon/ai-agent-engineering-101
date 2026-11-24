@@ -10,7 +10,8 @@ The look is webtoon-review-board's design system with Hermes orange as its one a
   `.time`, `.mono`. D2Coding is a 12 KB subset served from `app/` (digits, Latin, punctuation; `font-display:swap`;
   licence `app/D2Coding-OFL.txt`); Hangul in a number cell falls back to Nanum Gothic Coding.
 - **Frame.** A thin `header`: `.avatar` (the shop's initial), `.who` with the name and a `.status` dot, then the screen
-  switch `.seg` (the current screen's link has `aria-current="page"`), then buttons (`.btn`). The orange 3 px line
+  switch `.seg` (the current screen's link has `aria-current="page"`). No activity sheet since 11/24: 현황
+  carries the moves, the forged tools and the tools this app gives (`app_say`, each `miniapp.offer`), and the kit's credit. The orange 3 px line
   under the header is the only decoration.
 - **Body.** A screen other than the chat is `body.screen` with `main.page`: panels (`.panel`, `.panel.accent` for the
   one number that matters most), a two-column `.stats` grid that stays two columns on a phone, lists (`.list`), and

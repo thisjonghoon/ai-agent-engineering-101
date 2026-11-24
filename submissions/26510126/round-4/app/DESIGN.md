@@ -31,6 +31,13 @@ The look is webtoon-review-board's design system with Hermes orange as its one a
   positives: the avatar initial read as an eyebrow, the typing dots (a real state), no Hallmark stamp (not a
   Hallmark build).
 
+## Every design change
+Run the three checks each time (the owner's rule, 11/24), then look at 390 px in light and dark:
+- impeccable: critique (two isolated assessments: design review, and the detector with measurements) and audit
+- hallmark: `audit` (sloplint `--scope app`)
+- dataviz: whenever a chart or stat tile changes, validate its colours with `validate_palette.js`
+Report what was fixed and which findings were left as false positives, with the reason.
+
 ## A new screen
 1. Write it as `app/<name>.html` (or a page the dashboard writes there), link `/ui.css`, and use the parts above.
 2. Add its link to the `.seg` of every screen.

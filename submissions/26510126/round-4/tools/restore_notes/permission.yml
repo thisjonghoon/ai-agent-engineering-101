@@ -1,0 +1,9 @@
+name: restore_notes
+description: 핵심 장사 지침과 최신 재고 기록으로 notes.md를 복원합니다.
+permission:
+  write: [notes.md]
+  pay_limit: 0
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 1

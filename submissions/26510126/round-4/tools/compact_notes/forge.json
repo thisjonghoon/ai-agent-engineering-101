@@ -1,0 +1,11 @@
+{
+ "tool": "compact_notes",
+ "version": 1,
+ "forged_at": 1795526240,
+ "kit": "v5.1",
+ "sha256": {
+  "permission.yml": "2123fb00e57b075e8a7275c966345bd26b8d86d03bcd692a4fcc3930e5063939",
+  "logic.py": "5cb84e56173b2bcc66f68ad95deab832778c38bfd9dde65fff6656282fcaccd6",
+  "test.py": "7ecc0a4d0cca084b623acd24acc665a07d5f96b14852193640c9d5f6e9ad9755"
+ }
+}

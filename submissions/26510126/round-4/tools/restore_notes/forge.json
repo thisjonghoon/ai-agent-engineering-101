@@ -1,0 +1,11 @@
+{
+ "tool": "restore_notes",
+ "version": 1,
+ "forged_at": 1795526309,
+ "kit": "v5.1",
+ "sha256": {
+  "permission.yml": "622e7fd6cc9572615c23026230ebb431a2baf634bb1d33a3f26892af5a15962e",
+  "logic.py": "0db3a1651ddc1c1fdf7d4b0bbd0815110ff4313994d3b9a1cda55fa2af38eaa4",
+  "test.py": "8f5512d0849a83f526d215db0bdec1f3a934e3fc10de8c511f159c197bb2f316"
+ }
+}

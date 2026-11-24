@@ -80,9 +80,16 @@ def run(cmd, timeout, stdin_text=None):
 
 
 def claude(messages, model, timeout):
+    """The kit's system message goes in Claude's system slot and only the conversation in the user turn (11/24: with
+    the system part pasted into the user turn, the safeguards flagged 8 of 25 calls in the first hour, the more often
+    the longer the run; it read like instructions smuggled into a user message)."""
     alias = model.split("claude-", 1)[1] if model.startswith("claude-") else os.environ.get("RELAY_CLAUDE_MODEL", "sonnet")
+    system = "\n\n".join(str(m.get("content") or "") for m in messages if m.get("role") == "system")
+    turns = [m for m in messages if m.get("role") != "system"]
     cmd = ["claude", "-p", "--model", alias, "--tools", "", "--setting-sources", "", "--no-session-persistence"]
-    return run(cmd, timeout, transcript(messages))
+    if system:
+        cmd += ["--system-prompt", system]
+    return run(cmd, timeout, transcript(turns))
 
 
 def codex(messages, model, timeout):

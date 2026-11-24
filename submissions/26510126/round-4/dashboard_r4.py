@@ -104,17 +104,33 @@ def clip(s, n):
     return s if len(s) <= n else s[:n - 1] + "…"
 
 
-def spark(points, w=320, h=64):
+def spark(points, w=320, h=72):
+    """The wallet over time (dataviz review 11/24): one 2px line in the chart step of the accent, a 10% wash, a dashed
+    reference at the start capital, the range labelled on the left, an end dot, and a hover/touch readout."""
     if len(points) < 2:
         return '<p class="none">기록이 더 쌓이면 그래프가 나옵니다</p>'
     t0, t1 = points[0][0], points[-1][0]
-    lo, hi = min(v for _, v in points), max(v for _, v in points)
-    span, tspan = (hi - lo) or 1, (t1 - t0) or 1
-    xy = " ".join(f"{(t - t0) / tspan * w:.1f},{h - 4 - (v - lo) / span * (h - 8):.1f}" for t, v in points)
-    return (f'<svg viewBox="0 0 {w} {h}" preserveAspectRatio="none" class="spark" role="img" aria-label="지갑 추이">'
-            f'<polyline points="{xy}" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>'
-            f'<div class="axis"><span>{hm(t0)}</span><span>{lo:,.1f} ~ {hi:,.1f}</span><span>{hm(t1)}</span></div>')
-
+    vals = [v for _, v in points] + [START_TOKRW]
+    lo, hi = min(vals), max(vals)
+    pad = (hi - lo) * 0.08 or 1
+    lo, hi = lo - pad, hi + pad
+    X = lambda t: (t - t0) / ((t1 - t0) or 1) * w
+    Y = lambda v: h - (v - lo) / (hi - lo) * h
+    xy = " ".join(f"{X(t):.1f},{Y(v):.1f}" for t, v in points)
+    area = f"M0,{h} L" + " L".join(f"{X(t):.1f},{Y(v):.1f}" for t, v in points) + f" L{w},{h} Z"
+    ref = Y(START_TOKRW)
+    data = json.dumps([[int(t), round(v, 1)] for t, v in points], separators=(",", ":"))
+    last_x, last_y = X(points[-1][0]) / w * 100, Y(points[-1][1]) / h * 100
+    return (f'<div class="chartbox" data-pts=\'{E(data)}\' data-lo="{lo:.3f}" data-hi="{hi:.3f}" aria-label="지갑 추이">'
+            f'<svg viewBox="0 0 {w} {h}" preserveAspectRatio="none" class="spark" aria-hidden="true">'
+            f'<path class="area" d="{area}"/>'
+            f'<line class="ref" x1="0" x2="{w}" y1="{ref:.1f}" y2="{ref:.1f}" vector-effect="non-scaling-stroke"/>'
+            f'<polyline points="{xy}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" '
+            f'stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>'
+            f'<span class="yl" style="top:-4px">{hi - pad:,.1f}</span><span class="yl" style="bottom:-4px">{lo + pad:,.1f}</span>'
+            f'<span class="pt" style="left:{last_x:.2f}%;top:{last_y:.2f}%"></span>'
+            f'<span class="hairv" hidden></span><span class="tip" hidden></span></div>'
+            f'<div class="axis"><span>{hm(t0)}</span><span>점선: 시작 {START_TOKRW:,.0f}</span><span>{hm(t1)}</span></div>')
 
 RANKS = KIT / "rank.jsonl"                              # the shop's rank over time, for the ▲▼ beside it
 
@@ -137,6 +153,29 @@ def rank_trend(now, rank, s_rank):
         return '<span class="num">— (1시간)</span>'
     return (f'<span><span class="{"up" if moved > 0 else "down"} num">{"▲" if moved > 0 else "▼"}{abs(moved)}</span>'
             '<span class="num"> (1시간)</span></span>')
+
+
+ALERT_KO = [   # (what, a phrase in the text) -> (Korean, what to do); the watch writes English, the owner reads Korean
+    ("relay", "answered by", "Claude 대신 다른 모델이 답했습니다", "조치 필요 없음 · 데스크를 쓰는 중이면 지난 일"),
+    ("relay", "answered nothing", "모델 중계가 응답하지 않습니다", "Claude가 확인합니다"),
+    ("relay", "took over", "모델 응답이 70초를 넘었습니다", "손님이 기다리다 떠날 수 있음"),
+    ("mind", "", "에이전트의 모델 호출이 실패하고 있습니다", "Claude가 우리 중계로 되돌립니다"),
+    ("wallet", "fell from", "지갑이 크게 줄었습니다", "매입인지 확인 · 멈춤이면 Claude가 원인 보고"),
+    ("big", "", "큰 송금이 나갔습니다", "환불·보증인지 확인"),
+    ("recon", "", "지갑과 기록이 맞지 않습니다", "결제만 되고 정산 안 된 손님인지 확인"),
+    ("secret", "", "비밀값이 기록에 보입니다", "에이전트 멈춤 · 키 교체 필요"),
+    ("bearer", "", "토큰 모양의 값이 기록에 보입니다", "Claude가 확인합니다"),
+    ("process", "", "프로세스가 멈췄습니다", "Claude가 다시 띄웁니다"),
+]
+
+
+def alert_ko(a):
+    what, text = a.get("what", ""), a.get("text", "")
+    for w, phrase, ko, act in ALERT_KO:
+        if what == w and phrase in text:
+            nums = re.findall(r"\d[\d,.]*", text)
+            return ko, act, nums[:2]
+    return text, "", []
 
 
 def lst(rows, empty="아직 없습니다."):
@@ -186,9 +225,9 @@ def page(in_app=False):
 
     seg = ('<nav class="seg" aria-label="화면"><a href="/">채팅</a><a href="/dashboard.html" aria-current="page">현황</a></nav>'
            if in_app else '')
-    head = (f'<header class="wide"><div class="avatar">{E(NAME[:1].upper())}</div><div class="who"><b>{E(NAME)}</b>'
+    head = (f'<header class="wide"><div class="avatar">{E(NAME[:1].upper())}</div><div class="who"><h1>{E(NAME)}</h1>'
             f'<div class="status {"on" if alive else "off"}"><span class="dot"></span><span>'
-            f'{"감시 정상" if alive else "감시 멈춤?"} · <span class="num">{E(time.strftime("%H:%M:%S"))}</span></span></div></div>'
+            f'<span class="st-text">{"감시 정상" if alive else "감시 멈춤?"}</span> <span class="num">{E(time.strftime("%H:%M:%S"))}</span></span></div></div>'
             f'<a class="btn" href="#activity">활동</a>{seg}</header>')
 
     def more(key, rows, shown, empty="아직 없습니다."):
@@ -208,7 +247,7 @@ def page(in_app=False):
             f' <small>/ {ranked}</small></div></div></div>'
             f'<div class="rankline"><b>학생 <span class="num">{s_rank or "-"}</span>위</b>'
             f'{f"<span>상위 <span class=num>{s_rank / len(s_ranks):.0%}</span></span>" if s_rank and s_ranks else ""}{trend}</div>'
-            f'<div class="trend">{spark(pts)}</div></section>')
+            f'<div class="trend">{spark(pts)}</div><div class="note">1 tOKRW = 1,000 크레딧</div></section>')
 
     diff = recon.get("diff")
     relay15 = [e for e in relay if now - e.get("ts", 0) <= 900]
@@ -227,24 +266,30 @@ def page(in_app=False):
         pass
     desk_sub = f'응답 {statistics.median(gaps):.0f}초 · 실패 {fails}' if gaps else f"실패 {fails}"
     cards = [
-        ("잔고 대조", f'<span class="{"" if diff is None or abs(diff) <= 2 else "down"}">{"-" if diff is None else f"{diff:+,.2f}"}</span>',
-         "기록과 지갑의 차이"),
+        ("잔고 대조", "-" if diff is None else ("일치" if abs(diff) < 0.005 else f'<span class="{"" if abs(diff) <= 2 else "down"}">{diff:+,.2f}</span>'),
+         "장부와 지갑 차이"),
         ("판매 정산", f"{len(sales)}건", f'{sum(e["data"].get("amount", 0) for e in sales):,} 크레딧'),
-        ("초반 돕기", f"{int(left // 3600)}시간 {int(left % 3600 // 60)}분" if left > 0 else "끝남", "11/27 19:00까지"),
-        ("모델", "데스크" if desk else "우리 중계",
+        ("Claude 집중 지원", f"{int(left // 3600)}시간 {int(left % 3600 // 60)}분" if left > 0 else "끝남", "11/27 19:00까지"),
+        ("모델", "시장 데스크" if desk else "우리 중계",
          desk_sub if desk else f'{len(ok)}/{len(relay)} 응답 · 중앙 {statistics.median([e.get("secs", 0) for e in ok]) if ok else 0:.1f}초'
          + (f' · 거절 {flagged}' if flagged else "")),
     ]
     stats = '<div class="stats">' + "".join(
-        f'<section class="panel"><div class="label">{E(a)}</div><div class="value">{v}</div><div class="sub clip">{E(c)}</div></section>'
+        f'<section class="panel"><div class="label">{E(a)}</div><div class="value">{v}</div><div class="sub clip">{numify(E(c))}</div></section>'
         for a, v, c in cards) + "</div>"
 
     moves = ('<section class="panel" id="activity"><h2>최근 행동</h2>' + more("moves",
              [(f'<span class="time">{E(hm(e.get("ts"))[6:])}</span> <b>{E(str(e.get("action")))}</b>', E(clip(e.get("thought"), 140)))
-              for e in react], 5) + "</section>")
-    alert_rows = [(f'<span class="tag {E(a.get("level", "").lower())}">{E(a.get("level", ""))}</span> <span class="time">{E(hm(a.get("ts")))}</span>',
-                   E(clip(a.get("text"), 140))) for a in alerts]
-    alerts_html = '<section class="panel"><h2>감시 경보</h2>' + more("alerts", alert_rows, 3, "경보 없음") + "</section>"
+              for e in react], 3) + "</section>")
+    alert_rows = []
+    for a in alerts:
+        ko, act, _ = alert_ko(a)
+        lvl = a.get("level", "")
+        alert_rows.append((f'<span class="tag {E(lvl.lower())}">{"멈춤" if lvl == "STOP" else "경보"}</span> '
+                           f'<span class="time">{E(hm(a.get("ts")))}</span> {E(ko)}', E(act)))
+    recent = sum(1 for a in alerts if now - a.get("ts", 0) <= 3600)
+    alerts_html = (f'<section class="panel"><h2>감시 경보 · 최근 1시간 {recent}건</h2>' + more("alerts", alert_rows, 3, "경보 없음")
+                   + "</section>")
     tools = (f'<section class="panel"><h2>만든 도구 · {len(forge)}</h2><div class="tchips">' + "".join(
              f'<span class="tchip {"" if e.get("passed") else "bad"}" title="{E(hm(e.get("ts")))}">{E(str(n))} <span class="num">v{E(str(e.get("version")))}</span></span>'
              for n, e in sorted(forge.items(), key=lambda kv: -float(kv[1].get("ts", 0)))) + "</div></section>") if forge else ""
@@ -253,7 +298,7 @@ def page(in_app=False):
     said = ('<section class="panel"><h2>앱으로 보낸 말</h2><div class="sub" style="margin:-6px 0 10px">답장 밖에서 보낸 메시지: 후속 답, 알림</div>' + more("said",
             [(f'<span class="time">{E(hm(e.get("ts")))}</span>', E(clip(e.get("said_first"), 200))) for e in says], 2) + "</section>")
     asked = ('<section class="panel"><h2>Claude의 질문</h2>' + more("nudges",
-             [(f'<span class="time">{E(hm(e.get("ts")))}</span> <span class="tag">{E(str(e.get("why", "")))}</span>',
+             [(f'<span class="time">{E(hm(e.get("ts")))}</span> <span class="tag">{E({"early": "초반", "alert": "경보", "offhours": "부재"}.get(e.get("why"), str(e.get("why", ""))))}</span>',
                E(clip(e.get("text"), 120)) + (f'<br>→ {E(clip(e.get("reply"), 140))}' if e.get("reply") else ""))
               for e in nudges], 3) + "</section>")
 
@@ -266,25 +311,58 @@ def page(in_app=False):
 <meta name="apple-mobile-web-app-title" content="R4 가게"><title>현황 · {E(NAME)}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/joungkyun/font-d2coding@1.3.2/d2coding.css">
-<style>{ui_css()}</style></head><body class="screen">{head}<main class="page wide">{body}</main>
+<meta name="description" content="thisjonghoon 가게의 지갑, 순위, 감시 경보와 에이전트 활동">
+<style>{ui_css()}</style></head><body class="screen">{head}<main class="page wide" data-ts="{int(now)}">{body}</main>
 <script>
 // every 30 s swap in the new numbers without reloading: the scroll position and any open 더보기 stay as they are;
-// when the style itself changed (a new look), reload the whole page instead
+// when the style itself changed (a new look), reload the whole page instead. A failed or late refresh shows in the header.
+const mark = (text) => {{ document.body.classList.add('stale'); const t = document.querySelector('.st-text'); if (t) t.textContent = text; }};
 setInterval(async () => {{
+  if (document.hidden) return;
   try {{
     const r = await fetch(location.pathname, {{cache: 'no-store'}});
-    if (!r.ok) return;
+    if (!r.ok) {{ mark('갱신 실패'); return; }}
     const d = new DOMParser().parseFromString(await r.text(), 'text/html');
-    // a new look (ui.css changed) needs the new style too: reload the whole page then
     if (d.querySelector('style')?.textContent !== document.querySelector('style')?.textContent) {{ location.reload(); return; }}
+    if (document.querySelector('main').contains(document.activeElement)) return;
     const open = [...document.querySelectorAll('details[open]')].map(x => x.id);
     document.querySelector('main').replaceWith(d.querySelector('main'));
     document.querySelector('header .status').replaceWith(d.querySelector('header .status'));
+    document.body.classList.remove('stale');
     open.forEach(id => {{ const e = document.getElementById(id); if (e) e.open = true; }});
-  }} catch (e) {{}}
+    chart();
+  }} catch (e) {{ mark('갱신 실패'); }}
 }}, 30000);
+setInterval(() => {{
+  const ts = +document.querySelector('main')?.dataset.ts || 0, age = Date.now() / 1000 - ts;
+  if (age > 90) mark(`업데이트 ${{Math.round(age / 60)}}분 전`);
+}}, 5000);
+// the wallet chart's readout: a hairline and the value at the nearest point, by pointer or touch
+function chart() {{
+  const box = document.querySelector('.chartbox'); if (!box) return;
+  const pts = JSON.parse(box.dataset.pts), lo = +box.dataset.lo, hi = +box.dataset.hi;
+  const line = box.querySelector('.hairv'), tip = box.querySelector('.tip');
+  const t0 = pts[0][0], t1 = pts[pts.length - 1][0];
+  const show = (clientX) => {{
+    const r = box.getBoundingClientRect(), f = Math.min(1, Math.max(0, (clientX - r.left) / r.width)), t = t0 + f * (t1 - t0);
+    let best = pts[0]; for (const p of pts) if (Math.abs(p[0] - t) < Math.abs(best[0] - t)) best = p;
+    const x = (best[0] - t0) / ((t1 - t0) || 1) * 100;
+    line.hidden = tip.hidden = false; line.style.left = tip.style.left = x + '%';
+    const d = new Date(best[0] * 1000);
+    tip.textContent = `${{String(d.getHours()).padStart(2, '0')}}:${{String(d.getMinutes()).padStart(2, '0')}} · ${{best[1].toLocaleString('ko-KR', {{minimumFractionDigits: 1}})}}`;
+  }};
+  box.onpointermove = e => show(e.clientX);
+  box.onpointerdown = e => show(e.clientX);
+  box.onpointerleave = () => {{ line.hidden = tip.hidden = true; }};
+}}
+chart();
 </script></body></html>"""
+
+
+def numify(text):
+    """Digits in a sub line go in the number face (DESIGN.md: every number is D2Coding)."""
+    return re.sub(r"(\d[\d,.:%]*)", r'<span class="num">\1</span>', text)
+
 
 
 def ui_css():

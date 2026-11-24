@@ -12,9 +12,9 @@
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <title>골목 가게</title>
+<meta name="description" content="thisjonghoon 가게 주인과 에이전트의 대화 창">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/joungkyun/font-d2coding@1.3.2/d2coding.css">
 <link rel="stylesheet" href="/ui.css">
 <style>
 /* chat-only parts; the shared look is in /ui.css (see app/DESIGN.md) */
@@ -37,7 +37,7 @@
 .name{font-size:12px;color:var(--text-mute);margin:12px 0 3px 4px}
 .sys{text-align:center;color:var(--text-mute);font-size:12px;margin:12px 0}
 .card{margin:8px 0;background:var(--raised);border:1px solid var(--line);box-shadow:var(--shadow-2);border-radius:12px;padding:12px 14px;max-width:80%}
-.card .k{font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--text-mute)}
+.card .k{font-size:12px;font-weight:700;color:var(--text-mute)}
 .card b{display:block;margin-top:2px}
 .card div{white-space:pre-wrap;color:var(--text-soft);font-size:14px;margin-top:2px}
 .typing .bubble{display:flex;gap:4px;padding:14px}
@@ -48,20 +48,21 @@
 footer{padding:8px 12px calc(8px + env(safe-area-inset-bottom));background:var(--bg)}
 form{display:flex;align-items:flex-end;gap:8px;background:var(--card);border:1px solid transparent;border-radius:22px;
   padding:5px 5px 5px 16px;transition:border-color .12s}
-form:focus-within{border-color:var(--line-strong)}
+form:focus-within{border-color:var(--focus)}
 textarea{flex:1;min-width:0;border:0;outline:0;resize:none;background:transparent;color:var(--text);font:inherit;font-size:16px;
   line-height:1.4;padding:7px 0;max-height:140px}
 textarea::placeholder{color:var(--text-mute)}
-.send{flex:none;width:34px;height:34px;border-radius:50%;border:0;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;
+.send{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:var(--primary);color:var(--primary-ink);display:grid;place-items:center;
   transition:opacity .12s}
-.send:disabled{opacity:.25;cursor:default}
+.send:disabled{background:var(--hover);color:var(--text-mute);cursor:not-allowed}
+.other .bubble{background:var(--accent-soft)}
 .shade{position:fixed;inset:0;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center;z-index:10;
   animation:fade .2s var(--ease)}
 .sheet{width:100%;max-width:560px;max-height:84dvh;overflow-y:auto;background:var(--raised);border-radius:16px 16px 0 0;box-shadow:var(--shadow-3);
   padding:8px 20px calc(20px + env(safe-area-inset-bottom));animation:up .32s var(--ease)}
 @media (min-width:600px){.shade{align-items:center}.sheet{border-radius:16px;padding-bottom:20px}}
 .grip{width:36px;height:4px;border-radius:2px;background:var(--line-strong);margin:4px auto 16px}
-.sheet h3{margin:0 0 4px;font-size:17px;letter-spacing:-.01em}
+.sheet h2,.sheet h3{margin:0 0 4px;font-size:17px;letter-spacing:-.01em}
 .sheet .sub{color:var(--text-mute);font-size:13px;margin:0 0 16px}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .actions button{min-height:46px;border-radius:10px;border:1px solid var(--line-strong);background:var(--bg);font-weight:600}
@@ -71,7 +72,8 @@ textarea::placeholder{color:var(--text-mute)}
 .credit a{color:var(--text-soft);text-decoration:none;font-weight:600}
 @keyframes up{from{transform:translateY(32px);opacity:0}}
 @keyframes fade{from{opacity:0}}
-html,body{height:100%}
+html,body{height:100%;overflow-x:clip}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 body{overscroll-behavior:none}
 </style>
 </head>
@@ -79,11 +81,11 @@ body{overscroll-behavior:none}
 <div class="app">
   <header>
     <div class="avatar" id="av">A</div>
-    <div class="who"><b id="nm">Agent</b><div class="status" id="st"><span class="dot"></span><span id="stt">연결하는 중</span></div></div>
+    <div class="who"><h1 id="nm">Agent</h1><div class="status" id="st"><span class="dot"></span><span id="stt">연결하는 중</span></div></div>
     <button class="btn" id="act" type="button">활동</button>
     <nav class="seg" aria-label="화면"><a href="/" aria-current="page">채팅</a><a href="/dashboard.html">현황</a></nav>
   </header>
-  <div id="scroll"><div id="log"></div></div>
+  <div id="scroll" role="main"><div id="log"></div></div>
   <footer>
     <form id="f">
       <textarea id="t" rows="1" placeholder="메시지 보내기" enterkeyhint="send" autocomplete="off"></textarea>
@@ -93,16 +95,17 @@ body{overscroll-behavior:none}
     </form>
   </footer>
 </div>
-<div class="shade" id="consent" hidden><div class="sheet" role="dialog" aria-modal="true">
+<div class="shade" id="consent" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="consent-h">
   <div class="grip"></div>
-  <h3>에이전트가 허락을 구합니다</h3>
+  <h2 id="consent-h">에이전트가 허락을 구합니다</h2>
   <p class="sub" id="cname"></p>
   <div class="kv" id="cargs"></div>
   <div class="actions"><button type="button" id="no">거절</button><button type="button" class="yes" id="yes">허용</button></div>
 </div></div>
-<div class="shade" id="activity" hidden><div class="sheet" role="dialog" aria-modal="true">
+<div class="shade" id="activity" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="activity-h">
   <div class="grip"></div>
-  <h3>에이전트 활동</h3>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><h2 id="activity-h">에이전트 활동</h2>
+  <button class="btn" type="button" id="activity-close">닫기</button></div>
   <p class="sub">대화하는 동안에도 에이전트는 시장에서 계속 움직입니다.</p>
   <div class="sec">최근 움직임</div><div id="moves"></div>
   <div class="sec">에이전트가 만든 도구</div><div id="forged"></div>
@@ -256,6 +259,11 @@ if (vv) {
   vv.addEventListener('resize', fit); fit();
 }
 draw();
+</script>
+<script>
+// a way out of the activity sheet: its 닫기 button and Escape (11/24 review); the kit's script above is unchanged
+document.getElementById('activity-close').onclick = () => { document.getElementById('activity').hidden = true; };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') document.getElementById('activity').hidden = true; });
 </script>
 </body>
 </html>

@@ -36,12 +36,12 @@ START_TOKRW = 5000.0
 EARLY_END = 1795777200            # 11/27 19:00 KST: the end of the early 72 hours
 E = html.escape
 
-# webtoon-review-board's design system (paper, ink, one accent, red for errors only), with Hermes orange as the accent
+# webtoon-review-board's design system (paper, ink, one accent, red for errors only), with Hermes orange as the accent and D2Coding for numbers
 CSS = """
 :root{--paper:#f4f5f6;--sheet:#fff;--ink:#111214;--muted:#6b7178;--rule:#e3e5e8;--chip:#eef0f2;
 --accent:#f37021;--on-accent:#0a0a0a;--accent-ink:#b4490c;--accent-soft:#fdeee4;--danger:#e5342f;--danger-soft:#fdecec;
 --display:"Nanum Gothic","Apple SD Gothic Neo",sans-serif;--body:"Nanum Gothic","Apple SD Gothic Neo",sans-serif;
---mono:"Nanum Gothic Coding",ui-monospace,Menlo,monospace;color-scheme:light}
+--mono:"D2 coding","D2Coding","Nanum Gothic Coding",ui-monospace,Menlo,monospace;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--paper:#0e0f10;--sheet:#18191b;--ink:#f1f2f3;--muted:#9a9fa6;
 --rule:#2a2c30;--chip:#24262a;--accent:#f37021;--on-accent:#0a0a0a;--accent-ink:#ff9a57;--accent-soft:#3a2112;
 --danger:#ff5a52;--danger-soft:#3a1a19;color-scheme:dark}}
@@ -252,7 +252,8 @@ def page():
 <meta http-equiv="refresh" content="30"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="R4 가게"><meta name="theme-color" content="#f37021"><title>R4 가게</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&family=Nanum+Gothic+Coding:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700;800&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/joungkyun/font-d2coding@1.3.2/d2coding.css">
 <style>{CSS}</style></head><body>
 <header class="wrap top"><div class="eyebrow">AGENT MARKET · ROUND 4</div>
 <div class="top-row"><h1>{E(NAME)}</h1><span class="role">{E(time.strftime("%m/%d %H:%M:%S"))} · 30초마다 새로고침</span></div></header>

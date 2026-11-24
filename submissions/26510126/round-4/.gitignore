@@ -2,3 +2,5 @@
 .market/
 .kit/
 meshkit.json
+app/dashboard.html
+app/dashboard.tmp

@@ -6,6 +6,7 @@ on the page, and every value is escaped.
 
     python dashboard_r4.py               # port 8810 (DASH_PORT), from this folder
 
+The same page is also written to app/dashboard.html every 30 s for the mini app's 현황 button (git-ignored).
 It listens on 127.0.0.1 and on this computer's Tailscale address (100.64.0.0/10, found at start), never on the LAN
 or a tunnel. The page asks for an access code kept in .kit/dashboard.key (git-ignored); the link with the code is
 written to .kit/dashboard.url. Open it once on the phone (it sets a cookie), then Safari, Share, Add to Home Screen.
@@ -73,6 +74,7 @@ section{background:var(--sheet);border:1px solid var(--rule);border-radius:8px;p
 .tag.ok{background:var(--accent-soft);color:var(--accent-ink)}
 .spark{width:100%;height:64px;color:var(--accent);display:block}.row{display:flex;justify-content:space-between;font-family:var(--mono)}
 b{font-weight:700}
+.back{display:inline-block;margin:0 0 6px;font-size:14px;font-weight:700;color:var(--accent-ink);text-decoration:none}
 """
 
 
@@ -153,7 +155,7 @@ def spark(points, w=320, h=64):
             f'<div class="row dim"><span>{hm(t0)}</span><span>{lo:,.1f} ~ {hi:,.1f}</span><span>{hm(t1)}</span></div>')
 
 
-def page():
+def page(in_app=False):
     now = time.time()
     wallet = [e for e in jsonl("wallet.jsonl") if e.get("wallet") == "shop"]
     bal = wallet[-1]["tokrw"] if wallet else None
@@ -278,7 +280,7 @@ def page():
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/joungkyun/font-d2coding@1.3.2/d2coding.css">
 <style>{CSS}</style></head><body>
 <header class="wrap top"><div class="eyebrow">AGENT MARKET · ROUND 4</div>
-<div class="top-row"><h1>{E(NAME)}</h1><span class="role">{E(time.strftime("%m/%d %H:%M:%S"))} · 30초마다 새로고침</span></div></header>
+{'<a class="back" href="/">← 채팅</a>' if in_app else ''}<div class="top-row"><h1>{E(NAME)}</h1><span class="role">{E(time.strftime("%m/%d %H:%M:%S"))} · 30초마다 새로고침</span></div></header>
 <main class="wrap main">{"".join(h)}</main></body></html>"""
 
 
@@ -316,6 +318,21 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
 
+APP_COPY = HERE / "app" / "dashboard.html"           # the mini app serves it behind its own access code (11/24)
+
+
+def write_app_copy():
+    """Every 30 s, the same page into app/ so the mini app's 현황 button opens it (git-ignored; no secret in it)."""
+    while True:
+        try:
+            tmp = APP_COPY.with_suffix(".tmp")
+            tmp.write_text(page(in_app=True), encoding="utf-8")
+            tmp.replace(APP_COPY)                   # whole or nothing: the app never serves half a page
+        except Exception as e:
+            print(f"[dash] app copy not written: {type(e).__name__}: {e}", flush=True)
+        time.sleep(30)
+
+
 def main():
     key = code()
     hosts = ["127.0.0.1"] + [ip for ip in [tailscale_ip()] if ip]
@@ -325,6 +342,7 @@ def main():
     (KIT / "dashboard.url").chmod(0o600)
     print(f"[dash] listening on {', '.join(f'{h}:{PORT}' for h in hosts)}; links with the code in .kit/dashboard.url",
           flush=True)
+    threading.Thread(target=write_app_copy, daemon=True).start()
     for s in servers[1:]:
         threading.Thread(target=s.serve_forever, daemon=True).start()
     servers[0].serve_forever()

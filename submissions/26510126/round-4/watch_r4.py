@@ -10,8 +10,9 @@ Checks:
   STOP  secret: the real value of a wallet key (shop_wallet.key, buyer_wallet.key), the app's access code
         (.kit/app.key), RELAY_KEY, OPENROUTER_API_KEY or MARKET_OWNER (the claim code) appears in what the agent
         writes or what gets committed: card.json, notes.md, tools/, app/, logs/. The value itself is never printed.
-  STOP  wallet: a wallet's tOKRW fell by more than DRAIN_FRAC (0.5) of its highest balance in the last 10 minutes and
-        by at least DRAIN_MIN tOKRW (100).
+  STOP  wallet: a wallet's tOKRW fell by more than DRAIN_FRAC (0.8) of its highest balance in the last 10 minutes and
+        by at least DRAIN_MIN tOKRW (100); more than WARN_FRAC (0.5) only alerts, since a shop now pays for its stock
+        from its wallet.
   ALERT relay: in the last 10 minutes llm_relay answered nothing and failed 3 or more times.
   ALERT process: the kit (agent_kit.py run) or the relay is not running.
 Not checked yet (needs the market's real logs, after Round 4 opens): false claims, a fall in credits per hour,
@@ -33,7 +34,10 @@ ROOT = HERE.parents[2]
 sys.path.insert(0, str(ROOT / "scripts" / "round4"))
 OUT = HERE / "logs" / "watch-r4.jsonl"
 STATE = HERE / ".kit" / "watch-state.json"         # .kit/ is git-ignored
-DRAIN_FRAC = float(os.environ.get("DRAIN_FRAC", "0.5"))
+# 11/24: from Round 4 the shop pays for its stock from its wallet (ROUND4.md "One money"), so a large drop can be a
+# normal restock: half gone in 10 minutes only alerts; 80% gone stops the agent.
+WARN_FRAC = float(os.environ.get("WARN_FRAC", "0.5"))
+DRAIN_FRAC = float(os.environ.get("DRAIN_FRAC", "0.8"))
 DRAIN_MIN = float(os.environ.get("DRAIN_MIN", "100"))      # tOKRW
 REPEAT = 30 * 60                                        # the same alert at most once in 30 minutes
 SCAN = ["card.json", "notes.md", "tools", "app", "logs"]
@@ -143,6 +147,9 @@ def check_wallets(state):
             drained = True
             emit(state, "STOP", f"wallet:drain:{name}", f"the {name.split('_')[0]} wallet fell from {high:,.1f} to "
                  f"{tokrw:,.1f} tOKRW within 10 minutes; the agent is stopped. Read logs/react.jsonl for the payments.")
+        elif high > 0 and high - tokrw >= DRAIN_MIN and tokrw < high * (1 - WARN_FRAC):
+            emit(state, "ALERT", f"wallet:drop:{name}", f"the {name.split('_')[0]} wallet fell from {high:,.1f} to "
+                 f"{tokrw:,.1f} tOKRW within 10 minutes; a restock, or money leaving? Read logs/react.jsonl.")
     return drained
 
 

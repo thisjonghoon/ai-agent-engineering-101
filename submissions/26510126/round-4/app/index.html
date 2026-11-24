@@ -66,7 +66,7 @@ textarea::placeholder{color:var(--text-mute)}
 .bubble .quote{display:block;margin:0 0 8px;padding:6px 10px;border-left:2px solid var(--accent-ink);border-radius:2px 8px 8px 2px;
   background:color-mix(in srgb,var(--text) 6%,transparent);color:var(--text-soft);font-size:12px;line-height:1.45}
 .bubble .quote{cursor:pointer}
-.bubble.found{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--primary);transition:box-shadow .2s}
+.bubble.found{position:relative;z-index:1;box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--primary);transition:box-shadow .2s}
 .bubble .quote:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 .jump-note{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:20;padding:6px 12px;border-radius:999px;
   background:var(--text);color:var(--bg);font-size:12px}

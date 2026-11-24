@@ -257,8 +257,8 @@ def page(in_app=False):
                E(clip(e.get("text"), 120)) + (f'<br>→ {E(clip(e.get("reply"), 140))}' if e.get("reply") else ""))
               for e in nudges], 3) + "</section>")
 
-    body = (f'<div class="top">{hero}{stats}</div>'
-            f'<div class="cols"><div class="col">{moves}</div><div class="col">{alerts_html}{tools}{said}{asked}</div></div>')
+    body = (f'<div class="top">{hero}{stats}</div>{alerts_html}'      # alerts right under the numbers (user, 11/24)
+            f'<div class="cols"><div class="col">{moves}</div><div class="col">{tools}{said}{asked}</div></div>')
 
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">

@@ -8,7 +8,7 @@ The look is webtoon-review-board's design system with Hermes orange as its one a
   the darker `--accent-ink`. In the chat (11/24, the owner's choices): the owner's bubble is the soft orange with ink text,
   Claude's is `--bubble-strong` `#B4490C` with white text (5.39:1) and signs "by Claude" inside, the agent's is grey on
   the left; no name labels above bubbles; a reply's quote (`>` or an old `↪`) sits in a small tinted box
-  above the owner's words; the kit's English notices show as centred Korean system lines ("2분 안에 답하지 않았어요…"); owner and agent bubbles carry a 1 px `--line-strong` edge; a change of
+  above the owner's words; the kit's English notices show as centred Korean system lines ("2분 안에 답하지 않았어요." and "메시지는 그대로 있으니…", one sentence a line); owner and agent bubbles carry a 1 px `--line-strong` edge; a change of
   speaker adds 12 px. A reply quote starts with `>`, not `↪`, which
   iOS draws as an emoji. Red (`--danger`) is for errors, losses and STOP only.
 - **Type.** Nanum Gothic for text. Every number (money, counts, times, ids) is D2Coding: `.num`, `.value`, `.big`,

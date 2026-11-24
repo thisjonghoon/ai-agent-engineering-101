@@ -35,7 +35,7 @@
 .me.pending .bubble{opacity:.5}
 .agent .bubble,.other .bubble{background:var(--card);border-bottom-left-radius:6px}
 .name{font-size:12px;color:var(--text-mute);margin:12px 0 3px 4px}
-.sys{text-align:center;color:var(--text-mute);font-size:12px;margin:12px 0;text-wrap:balance;word-break:keep-all;max-width:32ch;margin-inline:auto}
+.sys{text-align:center;color:var(--text-mute);font-size:12px;margin:12px 0;white-space:pre-line;word-break:keep-all;margin-inline:auto}
 .card{margin:8px 0;background:var(--raised);border:1px solid var(--line);box-shadow:var(--shadow-2);border-radius:12px;padding:12px 14px;max-width:80%}
 .card .k{font-size:12px;font-weight:700;color:var(--text-mute)}
 .card b{display:block;margin-top:2px}
@@ -137,7 +137,7 @@ body{overscroll-behavior:none}
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 // a reply's quote line ("> who: "…"" first) drawn apart from the words after it (11/24); everything stays escaped
-const KIT_LINES = {'(the agent is busy; ask again)': '에이전트가 2분 안에 답하지 않았어요. 보내신 메시지는 그대로 있으니 잠시 뒤 다시 물어봐 주세요.'};
+const KIT_LINES = {'(the agent is busy; ask again)': '에이전트가 2분 안에 답하지 않았어요.\n메시지는 그대로 있으니 잠시 뒤 다시 물어봐 주세요.'};
 const body = t => { const q = /^(?:>|↪\uFE0F?) ([^\n]*)\n([\s\S]*)$/.exec(String(t ?? '')); return q ? `<span class="quote" role="button" tabindex="0" title="원문으로">${esc(q[1])}</span>${esc(q[2])}` : esc(t); };
 // The owner talks to the agent here (11/23, decision 2: the app's chat is how the owner's intent reaches the agent), so
 // the default name is the owner's; ?user=<name> changes it on this device. Claude's messages arrive as "claude".

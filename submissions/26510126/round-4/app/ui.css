@@ -54,6 +54,9 @@ header{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-are
 .seg a[aria-current="page"]{background:var(--primary);color:var(--primary-ink)}
 @keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
 @media (max-width:359px){header{flex-wrap:wrap}.who{flex-basis:calc(100% - 46px)}}
+/* a home-screen app on iOS blurs a band under the status bar over whatever sits there; keep the header's name and
+   buttons below it and let only the plain header ground sit in the blur (user's screenshots 11/24 21:48) */
+@media (display-mode:standalone){header{padding-top:calc(50px + env(safe-area-inset-top))}}
 
 /* a screen that is not the chat: panels on paper */
 .page{max-width:760px;margin:0 auto;padding:14px 16px calc(28px + env(safe-area-inset-bottom));display:flex;

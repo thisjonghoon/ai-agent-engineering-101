@@ -176,7 +176,7 @@ function draw() {
       const cls = m.who === 'agent' ? 'agent' : 'other';
       if (cls === 'other' && last !== m.who) html += `<div class="name">${esc(m.who)}</div>`;
       if (cls === 'agent' && last && last !== m.who && last !== me && last !== 'card' && last !== 'kit')
-        html += `<div class="name">${esc(name)}</div>`;
+        html += `<div class="name">agent</div>`;   // the shop's name is close to the owner's: label the agent plainly (11/24)
       html += `<div class="row ${cls}"><div class="bubble">${esc(m.text)}</div></div>`;
     }
     last = m.who;

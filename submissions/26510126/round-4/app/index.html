@@ -19,8 +19,9 @@
 <link rel="stylesheet" href="/ui.css">
 <style>
 /* chat-only parts; the shared look is in /ui.css (see app/DESIGN.md) */
-.app{height:var(--app-h,100dvh);display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:minmax(0,1fr);max-width:760px;margin:0 auto;background:var(--bg)}
-@media (min-width:800px){.app{border-left:1px solid var(--line);border-right:1px solid var(--line)}}
+.app{height:var(--app-h,100dvh);display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:minmax(0,1fr);background:var(--bg)}
+/* wide screens (iPad landscape, PC): the header spans the width like 현황's; the talk and the input keep a 760 px column (11/24) */
+#log{max-width:728px;margin:0 auto}
 #scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 8px}
 .empty{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 8px;gap:8px}
 .empty .avatar{width:60px;height:60px;border-radius:16px;font-size:24px;box-shadow:var(--shadow-2)}
@@ -106,13 +107,14 @@ html,body{height:100%;overflow:clip;overscroll-behavior:none}
 #scroll{overscroll-behavior:contain}
 /* a home-screen app has no browser bar under the page: keep the message box off the home indicator (11/24) */
 @media (display-mode:standalone){footer{padding-bottom:max(28px,calc(12px + env(safe-area-inset-bottom)))}}
+.app>footer{padding-left:max(12px,calc((100% - 760px) / 2 + 16px));padding-right:max(12px,calc((100% - 760px) / 2 + 16px))}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 body{overscroll-behavior:none}
 </style>
 </head>
 <body>
 <div class="app">
-  <header>
+  <header class="wide">
     <div class="avatar" id="av">A</div>
     <div class="who"><h1 id="nm">Agent</h1><div class="status" id="st"><span class="dot"></span><span id="stt">연결하는 중</span></div></div>
     <nav class="seg" aria-label="화면"><a href="/" aria-current="page">채팅</a><a href="/dashboard.html">현황</a></nav>

@@ -104,13 +104,16 @@ html{scroll-behavior:smooth}
 .page.wide{max-width:1120px}
 header.wide{padding-left:max(16px,calc((100% - 1120px) / 2 + 16px));padding-right:max(16px,calc((100% - 1120px) / 2 + 16px))}
 .top,.cols,.col{display:grid;gap:12px;min-width:0}
+/* phone: one column in reading order (moves, tools, app, questions); wide: two columns of two panels whose last panels stretch so both columns end together (iPad, 11/24) */
+@media (max-width:899px){.col{display:contents}.o1{order:1}.o2{order:2}.o3{order:3}.o4{order:4}}
 .col>*,.top>*{min-width:0}
 .trend{margin-top:12px}
 .clip{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (min-width:900px){
   .top{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:stretch}
   .top .stats{align-content:stretch}
-  .cols{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:start}
+  .cols{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);align-items:stretch}
+  .col{grid-template-rows:auto 1fr}
 }
 details.more>summary{list-style:none;cursor:pointer;font-size:13px;font-weight:700;color:var(--accent-ink);padding:10px 2px 2px}
 details.more>summary::-webkit-details-marker{display:none}

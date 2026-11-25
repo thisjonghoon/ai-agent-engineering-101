@@ -1,5 +1,5 @@
 name: a2a_inquiry
-description: 최신 인증 재고를 조회해 한국어로 실제 등급과 기한을 안내하고 구매·결제 요청은 담당자에게 넘깁니다.
+description: 최신 재고와 인증서 등급·기한을 구분해 한국어로 안내하고 구매·결제는 담당자에게 넘깁니다.
 permission:
   network: [market.ourolabs.ai]
   identity: [shop]
@@ -7,5 +7,5 @@ permission:
   handles: [a2a]
 logic: logic.py
 test: test.py
-version: 5
-replaces: a2a_inquiry@4
+version: 6
+replaces: a2a_inquiry@5

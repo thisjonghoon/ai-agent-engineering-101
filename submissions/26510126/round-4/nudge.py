@@ -39,15 +39,20 @@ HEAD = {
     "offhours": "[주인 부재 중 · 지금 {now} KST]\n주인 jonghoon이 자리를 비운 동안 claude가 기록을 보고 있어요. 아래는 기록에서 "
                 "확인한 사실과 질문입니다.",
 }
-TAIL = ("결정은 당신 몫이에요. 받아들일지 말지와 그 이유를 짧게 답해 주세요. 쓸 만하면 메모에 남겨서 다음 run에서도 "
-        "기억해 주세요.")
+# the tail matches the goal (11/25 17:40, owner): check the cited records with your own tools and act on what holds
+TAIL = ("근거는 기록으로 확인할 수 있습니다. 당신의 도구로 직접 확인하고, 맞으면 지금 반영해 주세요. 반영하지 않는다면 "
+        "무엇이 확인되면 바꿀지 적어 주세요. 반영한 것은 메모 끝에 남겨 다음 run에서도 기억해 주세요.")
+# --urgent (owner, 11/25): a customer's money, a long sales stall, or lost notes or stock
+URGENT_HEAD = "[중요] 손님 돈이나 가게 기록이 걸린 일입니다."
+URGENT_TAIL = ("지금 바로 당신의 도구로 확인하고, 맞으면 다음 행동부터 바꿔 주세요. 확인한 결과와 바꾼 행동을 답해 주세요. "
+               "바꾸지 않는다면 무엇이 확인되면 바꿀지 적어 주세요.")
 
 
-def compose(why, text, facts, now):
-    parts = [HEAD[why].format(now=now.strftime("%m/%d %H:%M"))]
+def compose(why, text, facts, now, urgent=False):
+    parts = ([URGENT_HEAD] if urgent else []) + [HEAD[why].format(now=now.strftime("%m/%d %H:%M"))]
     if facts:
         parts.append("근거:\n" + "\n".join(f"- {f}" for f in facts))
-    parts += ["질문: " + text, TAIL]
+    parts += ["질문: " + text, URGENT_TAIL if urgent else TAIL]
     return "\n\n".join(parts)
 
 
@@ -98,15 +103,16 @@ def main():
     ap.add_argument("--port", type=int, default=8800)
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-wait", action="store_true")
+    ap.add_argument("--urgent", action="store_true", help="a customer's money, a long sales stall, lost notes or stock")
     a = ap.parse_args()
     now = datetime.now(KST)
     if a.why == "early" and now >= EARLY_END:
         raise SystemExit(f"[nudge] the early phase ended {EARLY_END:%m/%d %H:%M}; use --why alert or offhours")
-    message = compose(a.why, a.text, a.fact, now)
+    message = compose(a.why, a.text, a.fact, now, a.urgent)
     if a.dry_run:
         print(message)
         return
-    waited = 0 if a.no_wait else wait_for_sleep()
+    waited = 0 if a.no_wait else wait_for_sleep(120 if a.urgent else 900)
     sent_at = time.time()
     try:
         out = send(message, a.port)
@@ -118,7 +124,7 @@ def main():
         if text:
             reply, err = text, f"answered, but the kit refused the reply: {why}"
     entry = {"ts": int(time.time()), "time": now.strftime("%m/%d %H:%M:%S"), "why": a.why, "text": a.text,
-             "facts": a.fact, "sent": message, "waited_s": waited,
+             "facts": a.fact, "urgent": a.urgent, "sent": message, "waited_s": waited,
              "reply": reply, "error": err if err else (None if reply else "busy: the agent did not answer in time")}
     LOG.parent.mkdir(exist_ok=True)
     with open(LOG, "a", encoding="utf-8") as f:

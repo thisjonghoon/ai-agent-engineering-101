@@ -13,8 +13,10 @@ The look is webtoon-review-board's design system with Hermes orange as its one a
   iOS draws as an emoji. Red (`--danger`) is for errors, losses and STOP only.
 - **Times and dates in the chat** (11/25, the owner's Telegram as the model). Every bubble carries its 24-hour time at
   the bottom right (`.stamp.time`, D2Coding 12 px, the bubble's own ink at .72; in Claude's bubble at full ink after
-  "by Claude", 5.39:1). A date pill (`.day`: 오늘, 어제, 11월 24일 (화); the year when it is not this year) marks each
-  new day, and while the person scrolls the date of the topmost message floats at the top (`#daytip`, fades after
+  "by Claude", now also full ink, 5.39:1). The time sits in the corner and a hidden 48 px gap at the end of the words keeps
+  it on the last line when there is room, as Telegram does. A date pill (`.day`: 오늘, 어제, 11월 24일 (화); the year when it is not this year) marks each
+  new day, and while the person scrolls the date of the topmost message floats at the top (`#daytip`, a zero-height sticky
+  strip so nothing moves, a tinted pill with `--line-strong` edge that stands apart from bubbles in dark, fades after
   1.2 s, not on the redraw's own jump to the end, `aria-hidden`). Copy and reply leave the time out.
 - **Type.** Pretendard (variable, dynamic subset, swap) for every text role since 11/24: chosen over Wanted Sans, SUIT,
   Noto Sans KR, IBM Plex Sans KR, Gmarket Sans and Nanum Gothic by a specimen review (Hangul and Latin even in colour,

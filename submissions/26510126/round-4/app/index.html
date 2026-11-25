@@ -74,18 +74,20 @@ textarea::placeholder{color:var(--text-mute)}
   background:var(--text);color:var(--bg);font-size:12px}
 .other .bubble .quote{border-left-color:currentColor;color:inherit;opacity:.85}
 .bubble .by{display:block;text-align:right;margin-top:4px;font-size:12px}
-.bubble .by .who{opacity:.8}
+.bubble .by .who{opacity:1}
 /* times and dates like the owner's Telegram (11/25): a 24-hour time at the bottom right of every bubble, a date pill
    when the day changes, and the same pill pinned at the top while scrolling */
-.bubble .stamp{float:right;margin:4px 0 -4px 12px;font-size:12px;line-height:1.6;color:inherit;opacity:.72}
-.bubble .by .stamp{float:none;margin:0 0 0 8px;opacity:1}
-.bubble::after{content:"";display:block;clear:both}
+.bubble{position:relative}
+.bubble .gap{display:inline-block;width:48px;height:1px}
+.bubble>.stamp{position:absolute;right:14px;bottom:8px;font-size:12px;line-height:1.6;color:inherit;opacity:.72}
+.bubble .by .stamp{margin:0 0 0 8px;font-size:12px;color:inherit}
 .day{display:flex;justify-content:center;margin:16px 0 8px}
-.day span,.daytip{padding:4px 12px;border-radius:999px;background:var(--raised);border:1px solid var(--line);color:var(--text-soft);
+.day span,.daytip span{padding:4px 12px;border-radius:999px;background:var(--raised);border:1px solid var(--line);color:var(--text-soft);
   font-size:12px;line-height:1.45}
 #scroll{position:relative}
-.daytip{position:sticky;top:8px;z-index:5;display:table;margin:0 auto -32px;box-shadow:var(--shadow-2);opacity:0;transition:opacity .2s;
+.daytip{position:sticky;top:8px;z-index:5;height:0;display:flex;justify-content:center;align-items:flex-start;overflow:visible;opacity:0;transition:opacity .2s;
   pointer-events:none}
+.daytip span{background:color-mix(in srgb,var(--bg) 90%,var(--text) 10%);border-color:var(--line-strong);box-shadow:var(--shadow-2)}
 .daytip.on{opacity:1}
 @media (prefers-reduced-motion:reduce){.daytip{transition:none}}
 /* reply: long-press (phone) or right-click (PC) a message, then 답장 or 복사 (11/24) */
@@ -133,7 +135,7 @@ body{overscroll-behavior:none}
     <div class="who"><h1 id="nm">Agent</h1><div class="status" id="st"><span class="dot"></span><span id="stt">연결하는 중</span></div></div>
     <nav class="seg" aria-label="화면"><a href="/" aria-current="page">채팅</a><a href="/dashboard.html">현황</a></nav>
   </header>
-  <div id="scroll" role="main"><div class="daytip" id="daytip" aria-hidden="true"></div><div id="log"></div></div>
+  <div id="scroll" role="main"><div class="daytip" id="daytip" aria-hidden="true"><span></span></div><div id="log"></div></div>
   <footer>
     <div class="replybar" id="replybar" hidden><span id="replytext"></span>
       <button type="button" id="replyx" aria-label="답장 취소">✕</button></div>
@@ -191,7 +193,7 @@ function draw() {
   const items = view.chat.concat(cards).sort((a, b) => a.ts - b.ts);
   const mine = view.chat.filter(m => m.who === me).length;
   pending = pending.filter(p => mine <= p.base);
-  const key = JSON.stringify([items.length, items.at(-1), pending, waiting, view.agent]);
+  const key = JSON.stringify([items.length, items.at(-1), pending, waiting, view.agent, new Date().toDateString()]);
   if (key === drawn) return;
   drawn = key;
   const sc = $('scroll'), atEnd = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 80;
@@ -207,6 +209,7 @@ function draw() {
   items.forEach(m => {
     const d = m.ts ? dayLabel(m.ts) : lastDay;
     if (d !== lastDay) { lastDay = d; html += `<div class="day" role="heading" aria-level="2" data-day="${esc(d)}"><span>${esc(d)}</span></div>`; last = ''; }
+    const gap = m.ts ? '<span class="gap" aria-hidden="true"></span>' : '';
     const st = m.ts ? ` <time class="stamp time" datetime="${new Date(m.ts * 1000).toISOString()}" aria-label="${esc(d + ' ' + hm(m.ts))}">${hm(m.ts)}</time>` : '';
     if (m.who === 'card') {
       html += `<div class="card"><div class="k">${esc(name)}</div><b>${esc(m.title)}</b><div>${esc(m.text)}</div></div>`;
@@ -214,11 +217,11 @@ function draw() {
       // the kit's own notices are shown as Korean system lines, not as the agent's words (11/24); the record is unchanged
       html += `<div class="sys">${esc(m.who === 'kit' ? '키트 알림: ' + m.text : KIT_LINES[m.text])}</div>`;
     } else if (m.who === me) {
-      html += `<div class="row me${last && last !== m.who ? ' turn' : ''}"><div class="bubble">${body(m.text)}${st}</div></div>`;
+      html += `<div class="row me${last && last !== m.who ? ' turn' : ''}"><div class="bubble">${body(m.text)}${gap}${st}</div></div>`;
     } else {
       const cls = m.who === 'agent' ? 'agent' : 'other';
       // no name labels (11/24): the side and colour say who; only someone other than the agent signs inside the bubble
-      const by = cls === 'other' ? `<span class="by"><span class="who">by ${esc(m.who === 'claude' ? 'Claude' : m.who)}</span>${st}</span>` : st;
+      const by = cls === 'other' ? `<span class="by"><span class="who">by ${esc(m.who === 'claude' ? 'Claude' : m.who)}</span>${st}</span>` : gap + st;
       html += `<div class="row ${cls}${last && last !== m.who ? ' turn' : ''}"><div class="bubble">${body(m.text)}${by}</div></div>`;
     }
     last = m.who;
@@ -252,7 +255,7 @@ function dayLabel(ts) {
     let cur = days[0];
     for (const d of days) { if (d.getBoundingClientRect().top <= top) cur = d; else break; }
     const pillShowing = days.some(d => { const r = d.getBoundingClientRect().top - top; return r > -8 && r < 36; });
-    tip.textContent = cur.dataset.day;
+    tip.firstChild.textContent = cur.dataset.day;
     tip.classList.toggle('on', !pillShowing);
     clearTimeout(hide); hide = setTimeout(() => tip.classList.remove('on'), 1200);
   }, {passive: true});

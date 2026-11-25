@@ -73,7 +73,21 @@ textarea::placeholder{color:var(--text-mute)}
 .jump-note{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);z-index:20;padding:6px 12px;border-radius:999px;
   background:var(--text);color:var(--bg);font-size:12px}
 .other .bubble .quote{border-left-color:currentColor;color:inherit;opacity:.85}
-.bubble .by{display:block;text-align:right;margin-top:4px;font-size:12px;opacity:.8}
+.bubble .by{display:block;text-align:right;margin-top:4px;font-size:12px}
+.bubble .by .who{opacity:.8}
+/* times and dates like the owner's Telegram (11/25): a 24-hour time at the bottom right of every bubble, a date pill
+   when the day changes, and the same pill pinned at the top while scrolling */
+.bubble .stamp{float:right;margin:4px 0 -4px 12px;font-size:12px;line-height:1.6;color:inherit;opacity:.72}
+.bubble .by .stamp{float:none;margin:0 0 0 8px;opacity:1}
+.bubble::after{content:"";display:block;clear:both}
+.day{display:flex;justify-content:center;margin:16px 0 8px}
+.day span,.daytip{padding:4px 12px;border-radius:999px;background:var(--raised);border:1px solid var(--line);color:var(--text-soft);
+  font-size:12px;line-height:1.45}
+#scroll{position:relative}
+.daytip{position:sticky;top:8px;z-index:5;display:table;margin:0 auto -32px;box-shadow:var(--shadow-2);opacity:0;transition:opacity .2s;
+  pointer-events:none}
+.daytip.on{opacity:1}
+@media (prefers-reduced-motion:reduce){.daytip{transition:none}}
 /* reply: long-press (phone) or right-click (PC) a message, then 답장 or 복사 (11/24) */
 .bubble{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .msgmenu{position:fixed;z-index:20;display:flex;gap:4px;padding:4px;background:var(--raised);border:1px solid var(--line);
@@ -119,7 +133,7 @@ body{overscroll-behavior:none}
     <div class="who"><h1 id="nm">Agent</h1><div class="status" id="st"><span class="dot"></span><span id="stt">연결하는 중</span></div></div>
     <nav class="seg" aria-label="화면"><a href="/" aria-current="page">채팅</a><a href="/dashboard.html">현황</a></nav>
   </header>
-  <div id="scroll" role="main"><div id="log"></div></div>
+  <div id="scroll" role="main"><div class="daytip" id="daytip" aria-hidden="true"></div><div id="log"></div></div>
   <footer>
     <div class="replybar" id="replybar" hidden><span id="replytext"></span>
       <button type="button" id="replyx" aria-label="답장 취소">✕</button></div>
@@ -189,29 +203,60 @@ function draw() {
     $('log').querySelectorAll('.chip').forEach(b => b.onclick = () => send(b.textContent));
     return;
   }
-  let html = '', last = '';
-  for (const m of items) {
+  let html = '', last = '', lastDay = '';
+  items.forEach(m => {
+    const d = m.ts ? dayLabel(m.ts) : lastDay;
+    if (d !== lastDay) { lastDay = d; html += `<div class="day" role="heading" aria-level="2" data-day="${esc(d)}"><span>${esc(d)}</span></div>`; last = ''; }
+    const st = m.ts ? ` <time class="stamp time" datetime="${new Date(m.ts * 1000).toISOString()}" aria-label="${esc(d + ' ' + hm(m.ts))}">${hm(m.ts)}</time>` : '';
     if (m.who === 'card') {
       html += `<div class="card"><div class="k">${esc(name)}</div><b>${esc(m.title)}</b><div>${esc(m.text)}</div></div>`;
     } else if (m.who === 'kit' || (m.who === 'agent' && KIT_LINES[m.text])) {
       // the kit's own notices are shown as Korean system lines, not as the agent's words (11/24); the record is unchanged
       html += `<div class="sys">${esc(m.who === 'kit' ? '키트 알림: ' + m.text : KIT_LINES[m.text])}</div>`;
     } else if (m.who === me) {
-      html += `<div class="row me${last && last !== m.who ? ' turn' : ''}"><div class="bubble">${body(m.text)}</div></div>`;
+      html += `<div class="row me${last && last !== m.who ? ' turn' : ''}"><div class="bubble">${body(m.text)}${st}</div></div>`;
     } else {
       const cls = m.who === 'agent' ? 'agent' : 'other';
       // no name labels (11/24): the side and colour say who; only someone other than the agent signs inside the bubble
-      const by = cls === 'other' ? `<span class="by">by ${esc(m.who === 'claude' ? 'Claude' : m.who)}</span>` : '';
+      const by = cls === 'other' ? `<span class="by"><span class="who">by ${esc(m.who === 'claude' ? 'Claude' : m.who)}</span>${st}</span>` : st;
       html += `<div class="row ${cls}${last && last !== m.who ? ' turn' : ''}"><div class="bubble">${body(m.text)}${by}</div></div>`;
     }
     last = m.who;
-  }
+  });
   // a reply waiting for its answer shows its quote box too (11/25, owner): same body() as a sent bubble
   for (const p of pending) html += `<div class="row me pending"><div class="bubble">${body(p.text)}</div></div>`;
   if (waiting) html += `<div class="row agent typing" role="status" aria-label="응답 작성 중"><div class="bubble"><i></i><i></i><i></i></div></div>`;
   $('log').innerHTML = html;
   if (atEnd || pending.length) sc.scrollTop = sc.scrollHeight;
 }
+
+// 24-hour time and a Korean date label ("오늘", "어제", "11월 24일 (화)") for the chat (11/25)
+const hm = ts => new Date(ts * 1000).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit', hourCycle: 'h23'});
+function dayLabel(ts) {
+  const d = new Date(ts * 1000), key = x => x.toDateString(), now = new Date(), y = new Date(now - 864e5);
+  if (key(d) === key(now)) return '오늘';
+  if (key(d) === key(y)) return '어제';
+  return d.toLocaleDateString('ko-KR', {year: d.getFullYear() === now.getFullYear() ? undefined : 'numeric', month: 'long', day: 'numeric', weekday: 'short'});
+}
+// while scrolling, the date of the topmost message stays pinned at the top, then fades (11/25, like Telegram)
+(() => {
+  const sc = $('scroll'), tip = $('daytip');
+  let hide = null, touched = 0;
+  // only the person's own scrolling shows it, not the jump to the newest message when the chat redraws
+  ['wheel', 'touchmove', 'keydown', 'pointerdown'].forEach(ev => sc.addEventListener(ev, () => { touched = Date.now(); }, {passive: true}));
+  sc.addEventListener('scroll', () => {
+    if (Date.now() - touched > 1000) return;
+    const days = [...$('log').querySelectorAll('.day')];
+    if (!days.length) return;
+    const top = sc.getBoundingClientRect().top + 8;
+    let cur = days[0];
+    for (const d of days) { if (d.getBoundingClientRect().top <= top) cur = d; else break; }
+    const pillShowing = days.some(d => { const r = d.getBoundingClientRect().top - top; return r > -8 && r < 36; });
+    tip.textContent = cur.dataset.day;
+    tip.classList.toggle('on', !pillShowing);
+    clearTimeout(hide); hide = setTimeout(() => tip.classList.remove('on'), 1200);
+  }, {passive: true});
+})();
 
 function status() {
   const st = $('st'), on = Date.now() - seen < 6000;
@@ -322,7 +367,8 @@ draw();
   menu.addEventListener('click', async e => {
     const act = e.target.closest('button')?.dataset.act;
     if (!act || !target) return;
-    const text = target.textContent.trim();
+    const words = target.cloneNode(true); words.querySelectorAll('.stamp').forEach(s => s.remove());   // not the time (11/25)
+    const text = words.textContent.trim();
     if (act === 'copy') { try { await navigator.clipboard.writeText(text); } catch (err) {} }
     else {
       reply = {who: whoOf(target.closest('.row')), text};
@@ -339,7 +385,7 @@ draw();
     const want = norm(m ? m[1] : quote.textContent).slice(0, 40);
     const own = quote.closest('.bubble');
     // only the words of a bubble (not its own quote box or "by Claude"), and only bubbles above the tapped one
-    const words = b => norm([...b.childNodes].filter(n => !n.classList?.contains('quote') && !n.classList?.contains('by'))
+    const words = b => norm([...b.childNodes].filter(n => !n.classList?.contains('quote') && !n.classList?.contains('by') && !n.classList?.contains('stamp'))
       .map(n => n.textContent).join(''));
     const hit = [...log.querySelectorAll('.bubble')].reverse()
       .find(b => b !== own && !b.closest('.typing') && (b.compareDocumentPosition(own) & Node.DOCUMENT_POSITION_FOLLOWING)

@@ -11,6 +11,11 @@ The look is webtoon-review-board's design system with Hermes orange as its one a
   above the owner's words; the kit's English notices show as centred Korean system lines ("2분 안에 답하지 않았어요." and "메시지는 그대로 있으니…", one sentence a line); owner and agent bubbles carry a 1 px `--line-strong` edge; a change of
   speaker adds 12 px. A reply quote starts with `>`, not `↪`, which
   iOS draws as an emoji. Red (`--danger`) is for errors, losses and STOP only.
+- **Times and dates in the chat** (11/25, the owner's Telegram as the model). Every bubble carries its 24-hour time at
+  the bottom right (`.stamp.time`, D2Coding 12 px, the bubble's own ink at .72; in Claude's bubble at full ink after
+  "by Claude", 5.39:1). A date pill (`.day`: 오늘, 어제, 11월 24일 (화); the year when it is not this year) marks each
+  new day, and while the person scrolls the date of the topmost message floats at the top (`#daytip`, fades after
+  1.2 s, not on the redraw's own jump to the end, `aria-hidden`). Copy and reply leave the time out.
 - **Type.** Pretendard (variable, dynamic subset, swap) for every text role since 11/24: chosen over Wanted Sans, SUIT,
   Noto Sans KR, IBM Plex Sans KR, Gmarket Sans and Nanum Gothic by a specimen review (Hangul and Latin even in colour,
   bold holds in dark mode) and measurement (215 KB / 8 files like Nanum's 207 KB / 19; narrowest Hangul; Gmarket

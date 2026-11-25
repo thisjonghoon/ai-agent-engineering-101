@@ -1,9 +1,9 @@
 name: ledger_sales
-description: 공개 원장을 after 페이지로 끝까지 읽어 정산을 SKU별 집계합니다. args: since, until, max 선택.
+description: 공개 원장 정산을 집계합니다. since, until, max, sku 선택.
 permission:
   network: [market.ourolabs.ai]
   timeout: 60
 logic: logic.py
 test: test.py
-version: 4
-replaces: ledger_sales@3
+version: 5
+replaces: ledger_sales@4

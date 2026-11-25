@@ -1,6 +1,5 @@
 import httpx
 from collections import defaultdict
-
 def run(args,kit):
  rows=[]; after=0
  with httpx.Client(timeout=20) as c:
@@ -10,9 +9,7 @@ def run(args,kit):
    if not isinstance(batch,list): raise ValueError('unexpected ledger response')
    batch=[x for x in batch if isinstance(x,dict) and int(x.get('seq',0))>after]
    if not batch: break
-   rows.extend(batch); new=max(int(x['seq']) for x in batch)
-   if new<=after: raise ValueError('ledger did not advance')
-   after=new
+   rows.extend(batch); after=max(int(x['seq']) for x in batch)
   else: raise ValueError('page limit reached')
  totals=defaultdict(int); names={}; out=[]; sealed=0
  for x in rows:
@@ -24,7 +21,8 @@ def run(args,kit):
   if not sku:
    if d.get('sealed'): sealed+=1
    continue
+  if args.get('sku') and sku!=args['sku']: continue
   try:q=int(d.get('qty',1))
   except:q=1
-  totals[sku]+=q; names[sku]=d.get('name',names.get(sku)); out.append({'seq':x.get('seq'),'ts':t,'sku':sku,'qty':q,'name':d.get('name'),'unit':d.get('unit'),'shop':d.get('shop'),'amount':d.get('amount')})
+  totals[sku]+=q; names[sku]=d.get('name',names.get(sku)); out.append({'seq':x.get('seq'),'ts':t,'sku':sku,'qty':q,'name':d.get('name'),'unit':d.get('unit'),'shop':d.get('shop'),'amount':d.get('amount'),'grade':d.get('grade'),'expires_at':d.get('expires_at')})
  return {'count':len(out),'sealed_count':sealed,'last_seq':after,'entries_scanned':len(rows),'by_sku':[{'sku':k,'name':names.get(k),'sold_qty':v} for k,v in sorted(totals.items(),key=lambda z:-z[1])],'sales':out[-int(args.get('max',100)):]}

@@ -1,11 +1,11 @@
 {
  "tool": "ledger_sales",
- "version": 4,
- "forged_at": 1795601825,
+ "version": 5,
+ "forged_at": 1795638722,
  "kit": "v5.1",
  "sha256": {
-  "permission.yml": "2901ea028ec6608a9de576d33f93963bfbf6b37711945c576accc3b2d4b01e8d",
-  "logic.py": "aa0b63937ea34d8a83fe34a484a1e914b15e62ad9a659028935a9f0fff717549",
-  "test.py": "3c724a0c89efa724a4922c5ae5a3ab93676770f5441eb0f46185b27b83380d11"
+  "permission.yml": "ca9f51230c5070e7e4af67198042e09190d7d8a9bd2f0ae16836947d38eee1f6",
+  "logic.py": "5c7b27e78e9f061fe4148f0e5ce3a5a91243b68eeecb18e90995d63f71362fc2",
+  "test.py": "4e0826109721f24af6d98a3eea4513e2a840b13027db4189543b726403a8abdd"
  }
 }

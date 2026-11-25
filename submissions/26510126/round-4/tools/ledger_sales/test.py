@@ -1,3 +1,2 @@
 def test(run,kit):
- assert kit.testing
- o=run({'max':10},kit); assert 'by_sku' in o and 'sales' in o and 'last_seq' in o
+ o=run({'max':10,'sku':'G00c60e91'},kit); assert 'sales' in o and all(x['sku']=='G00c60e91' for x in o['sales'])

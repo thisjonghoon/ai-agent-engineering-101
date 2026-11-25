@@ -1,0 +1,10 @@
+name: make_checkout
+description: Sign a checkout JWT with the shop wallet for one stocked unit. args {sku, unit, price (credits), cost (credits, the unit's cost from inventory), cert (optional, copy as is), claim (optional 'A'|'B'|'C', the grade NOW), warranty_hours (optional 0-72), task (optional unique string)}. Refuses if price < cost + 1% fee + 210 unless allow_loss is true (for spoiling or aged stock). Returns {checkout_jwt, payload, shop_gets}.
+permission:
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 1

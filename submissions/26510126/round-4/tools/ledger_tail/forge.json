@@ -1,11 +1,11 @@
 {
  "tool": "ledger_tail",
- "version": 1,
- "forged_at": 1795595990,
+ "version": 2,
+ "forged_at": 1795611053,
  "kit": "v5.1",
  "sha256": {
-  "permission.yml": "adeea22e60d5c009bd1fdb9b2bf5672e228c83d0c265762139dd26eb9f9fac12",
-  "logic.py": "92e20c9e8343fcaf1c7598303fc0054218a0e1b165231b926ec21412f35533aa",
-  "test.py": "31a2428d3552275d065fb1a19f21a7d309163107eb573e1e0d788afcbf88292d"
+  "permission.yml": "919572eb84916987542fc39f3e4e2ed1a600e6ec9501ef66a0ed3b74567e798d",
+  "logic.py": "1c566672c51bf9f85f9ec1f8074ed1dc3a8f4d8c020504e4c2f93ed9d506c225",
+  "test.py": "3dc6045d7ab2cc73e19ec22e031c92eb081fc725354ede675f0877b6b07f8f0c"
  }
 }

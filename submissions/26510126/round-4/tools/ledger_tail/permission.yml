@@ -1,8 +1,9 @@
 name: ledger_tail
-description: 공개 원장의 최근 이벤트를 반환해 실제 판매 이벤트 구조를 조사합니다. args: n(optional).
+description: 공개 원장의 최신 이벤트를 조회합니다. args {n: 0-500, 기본 20}.
 permission:
   network: [market.ourolabs.ai]
   timeout: 30
 logic: logic.py
 test: test.py
-version: 1
+version: 2
+replaces: ledger_tail@1

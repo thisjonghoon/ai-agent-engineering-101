@@ -1,0 +1,9 @@
+name: compact_notes
+description: 현재 notes.md를 최신 기록 중심으로 3000자 이내에 압축해 notes.md에 다시 씁니다. 긴 줄도 잘라 보존합니다.
+permission:
+  write: [notes.md]
+  pay_limit: 0
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 1

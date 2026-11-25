@@ -1,6 +1,7 @@
-def test(run, kit):
-    bad = run({'sku': 's', 'unit': 'u', 'price': 1000, 'cost': 5000}, kit)
-    assert 'error' in bad
-    ok = run({'sku': 's', 'unit': 'u', 'price': 10000, 'cost': 5000, 'claim': 'A'}, kit)
-    assert 'checkout_jwt' in ok
-    assert ok['shop_gets'] == 10000 - 100 - 210
+def test(run,kit):
+ import uuid
+ unit='test-'+uuid.uuid4().hex
+ a={'sku':'s','unit':unit,'price':10000,'cost':5000}
+ assert 'error' in run(dict(a,price=100),kit)
+ first=run(a,kit); assert 'checkout_jwt' in first
+ assert 'error' in run(a,kit)

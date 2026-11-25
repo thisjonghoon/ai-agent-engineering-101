@@ -1,0 +1,11 @@
+{
+ "tool": "time_convert",
+ "version": 1,
+ "forged_at": 1795605835,
+ "kit": "v5.1",
+ "sha256": {
+  "permission.yml": "117de447462da8e253dcef73fea4525077a8696cea653f344a9808334ef79e0e",
+  "logic.py": "249c6ea51c480eb5f09905404eb2eeee2129df2173f6cedce2f0dbcfae4ef8bc",
+  "test.py": "745b901c88dde667bd6bfb3a1f7f1ebbcf82f1c70fc2de7652257ac3081b6467"
+ }
+}

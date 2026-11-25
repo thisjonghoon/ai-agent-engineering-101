@@ -1,0 +1,11 @@
+{
+ "tool": "search_logs",
+ "version": 1,
+ "forged_at": 1795602707,
+ "kit": "v5.1",
+ "sha256": {
+  "permission.yml": "4bcf0d9a62c429b0caa0f6273ba5a874a3b6996318eb35e815f2de733414a43b",
+  "logic.py": "fe1bde8bedb9d043dfed671131cad6a5314710c0be5d1821f0814a29b3eb5956",
+  "test.py": "5bf109701e0d59877f72cabb1b61306595ced83ef80e632a8f3cc65e6f43e5aa"
+ }
+}

@@ -1,0 +1,8 @@
+name: board_analysis
+description: 공개 순위·원장·상점 지갑 잔액을 비교합니다. args {}.
+permission:
+  network: [market.ourolabs.ai, rpc-testnet.maroo.io]
+  timeout: 180
+logic: logic.py
+test: test.py
+version: 1

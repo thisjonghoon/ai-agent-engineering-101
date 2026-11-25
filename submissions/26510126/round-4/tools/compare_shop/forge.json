@@ -1,0 +1,11 @@
+{
+ "tool": "compare_shop",
+ "version": 1,
+ "forged_at": 1795604562,
+ "kit": "v5.1",
+ "sha256": {
+  "permission.yml": "97a0a68804b01ed813c3bc64099608204a009ab42ab8ab4b4603a0adb128796a",
+  "logic.py": "7e93d0f314bd3c0c0b6d79fe129432903ae848057e86a5ef9e530b11116f5ed1",
+  "test.py": "652c89569806a083ec2086d615ff2b8e365077ce5a9ddfed8e69dc846b8f32fa"
+ }
+}

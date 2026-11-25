@@ -1,0 +1,7 @@
+name: search_logs
+description: 로컬 실행 기록에서 검색어가 들어간 줄을 최근순으로 조회합니다. args {query, limit optional}.
+permission:
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 1

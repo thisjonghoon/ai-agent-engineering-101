@@ -1,18 +1,20 @@
 import httpx
 
 def run(args, kit):
-    method = (args.get('method') or 'GET').upper()
-    path = args.get('path') or ''
-    mx = int(args.get('max', 20000))
+    method=(args.get('method') or 'GET').upper()
+    path=args.get('path') or ''
     if not path.startswith('/api/'):
-        return {'error': 'path must start with /api/'}
-    headers = {'authorization': 'Bearer ' + kit.token('shop')}
-    url = kit.market + path
-    if method == 'POST':
-        r = httpx.post(url, json=args.get('body') or {}, headers=headers, timeout=30)
+        return {'error':'path must start with /api/'}
+    headers={'authorization':'Bearer '+kit.token('shop')}
+    if method=='POST':
+        r=httpx.post(kit.market+path,json=args.get('body') or {},headers=headers,timeout=30)
     else:
-        r = httpx.get(url, headers=headers, timeout=30)
+        r=httpx.get(kit.market+path,headers=headers,timeout=30)
     try:
-        return {'status': r.status_code, 'json': r.json()}
-    except Exception:
-        return {'status': r.status_code, 'text': r.text[:mx]}
+        data=r.json()
+        keywords=args.get('keywords')
+        if keywords and isinstance(data,dict) and isinstance(data.get('units'),list):
+            data['units']=[u for u in data['units'] if any(str(k).lower() in (str(u.get('name',''))+' '+str(u.get('category',''))+' '+str(u.get('sku',''))).lower() for k in keywords)]
+        return {'status':r.status_code,'json':data}
+    except ValueError:
+        return {'status':r.status_code,'text':r.text[:int(args.get('max',20000))]}

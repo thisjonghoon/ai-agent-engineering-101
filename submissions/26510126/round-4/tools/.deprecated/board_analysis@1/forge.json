@@ -1,0 +1,11 @@
+{
+ "tool": "board_analysis",
+ "version": 1,
+ "forged_at": 1795603761,
+ "kit": "v5.1",
+ "sha256": {
+  "permission.yml": "55491e3ef50545c74557c8ccd489f13eefed7bfb170f07f0794267a6b4d2b4ea",
+  "logic.py": "b88286d5ec32fa7b21eca3b2b2882adba6eb59e7d05698d91ee7510470825b82",
+  "test.py": "2f7bd5c76441790a28cb595e6d79f2c7d1817e863b5f4950e02fd331eaf5be0e"
+ }
+}

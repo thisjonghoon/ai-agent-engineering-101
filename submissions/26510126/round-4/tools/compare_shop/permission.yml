@@ -1,0 +1,9 @@
+name: compare_shop
+description: 경쟁 상점의 공개 카드만 조회합니다. args {}
+permission:
+  network: [blast-owns-betty-described.trycloudflare.com]
+  pay_limit: 0
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 1

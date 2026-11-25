@@ -25,3 +25,13 @@
 {"ts": 1795595924, "tool": "ledger_sales", "version": 2, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai"], "write": [], "identity": [], "wallet": [], "timeout": 30, "handles": []}}
 {"ts": 1795595990, "tool": "ledger_tail", "version": 1, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai"], "write": [], "identity": [], "wallet": [], "timeout": 30, "handles": []}}
 {"ts": 1795596029, "tool": "ledger_sales", "version": 3, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai"], "write": [], "identity": [], "wallet": [], "timeout": 30, "handles": []}}
+{"ts": 1795599937, "tool": "a2a_inquiry", "version": 5, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai"], "identity": ["shop"], "timeout": 20, "handles": ["a2a"]}}
+{"ts": 1795600066, "tool": "market_call", "version": 2, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai"], "write": [], "identity": ["shop"], "wallet": [], "pay_limit": 0, "timeout": 40}}
+{"ts": 1795601825, "tool": "ledger_sales", "version": 4, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai"], "timeout": 60}}
+{"ts": 1795602707, "tool": "search_logs", "version": 1, "passed": true, "error": null, "permission": {"network": [], "write": [], "identity": [], "wallet": [], "timeout": 30}}
+{"ts": 1795603761, "tool": "board_analysis", "version": 1, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai", "rpc-testnet.maroo.io"], "timeout": 180}}
+{"ts": 1795603795, "tool": "board_analysis", "version": 2, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai", "rpc-testnet.maroo.io"], "timeout": 180}}
+{"ts": 1795603819, "tool": "board_analysis", "version": 3, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai", "rpc-testnet.maroo.io"], "timeout": 180}}
+{"ts": 1795604562, "tool": "compare_shop", "version": 1, "passed": true, "error": null, "permission": {"network": ["blast-owns-betty-described.trycloudflare.com"], "write": [], "identity": [], "wallet": [], "pay_limit": 0, "timeout": 30}}
+{"ts": 1795605835, "tool": "time_convert", "version": 1, "passed": true, "error": null, "permission": {"network": [], "write": [], "identity": [], "wallet": [], "timeout": 10}}
+{"ts": 1795606306, "tool": "find_ledger", "version": 2, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai"], "write": [], "identity": [], "wallet": [], "pay_limit": 0, "timeout": 90}}

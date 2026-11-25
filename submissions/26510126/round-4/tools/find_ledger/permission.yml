@@ -1,10 +1,10 @@
 name: find_ledger
-description: Fetch the public market ledger and return entries matching a transaction hash, checkout id, unit, or SKU.
+description: 공개 원장 전체 페이지에서 query 또는 tx_hash, checkout_id, unit, sku를 검색합니다. count와 matches, last_seq, scanned를 반환합니다.
 permission:
   network: [market.ourolabs.ai]
-  identity: [shop]
   pay_limit: 0
-  timeout: 30
+  timeout: 90
 logic: logic.py
 test: test.py
-version: 1
+version: 2
+replaces: find_ledger@1

@@ -1,5 +1,5 @@
 name: market_call
-description: Call the market REST API with the shop token. args {method: GET|POST, path: '/api/...', body (optional dict), max (optional int chars, default 20000)}. Returns {status, json or text}.
+description: Call market REST API with shop token. args {method GET|POST, path '/api/...', body optional, max optional, keywords optional list to filter units}.
 permission:
   network: [market.ourolabs.ai]
   identity: [shop]
@@ -7,4 +7,5 @@ permission:
   timeout: 40
 logic: logic.py
 test: test.py
-version: 1
+version: 2
+replaces: market_call@1

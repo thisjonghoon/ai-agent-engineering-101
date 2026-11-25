@@ -1,0 +1,7 @@
+name: time_convert
+description: Convert Unix epoch to Korean time. args {timestamp}.
+permission:
+  timeout: 10
+logic: logic.py
+test: test.py
+version: 1

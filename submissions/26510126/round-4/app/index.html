@@ -244,11 +244,15 @@ function dayLabel(ts) {
 // while scrolling, the date of the topmost message stays pinned at the top, then fades (11/25, like Telegram)
 (() => {
   const sc = $('scroll'), tip = $('daytip');
-  let hide = null, touched = 0;
-  // only the person's own scrolling shows it, not the jump to the newest message when the chat redraws
+  let hide = null, touched = 0, holding = false;
+  // only the person's own scrolling shows it, not the jump to the newest message when the chat redraws.
+  // It stays while the finger is down or the list is still moving, and goes 3 s after both stop (11/25, owner).
+  const later = () => { clearTimeout(hide); if (!holding) hide = setTimeout(() => tip.classList.remove('on'), 3000); };
   ['wheel', 'touchmove', 'keydown', 'pointerdown'].forEach(ev => sc.addEventListener(ev, () => { touched = Date.now(); }, {passive: true}));
+  sc.addEventListener('touchstart', () => { holding = true; touched = Date.now(); clearTimeout(hide); }, {passive: true});
+  ['touchend', 'touchcancel'].forEach(ev => sc.addEventListener(ev, () => { holding = false; if (tip.classList.contains('on')) later(); }, {passive: true}));
   sc.addEventListener('scroll', () => {
-    if (Date.now() - touched > 1000) return;
+    if (!holding && Date.now() - touched > 1000 && !tip.classList.contains('on')) return;
     const days = [...$('log').querySelectorAll('.day')];
     if (!days.length) return;
     const top = sc.getBoundingClientRect().top + 8;
@@ -257,7 +261,7 @@ function dayLabel(ts) {
     const pillShowing = days.some(d => { const r = d.getBoundingClientRect().top - top; return r > -8 && r < 36; });
     tip.firstChild.textContent = cur.dataset.day;
     tip.classList.toggle('on', !pillShowing);
-    clearTimeout(hide); hide = setTimeout(() => tip.classList.remove('on'), 1200);
+    later();
   }, {passive: true});
 })();
 

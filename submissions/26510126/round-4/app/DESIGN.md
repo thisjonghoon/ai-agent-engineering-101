@@ -16,8 +16,8 @@ The look is webtoon-review-board's design system with Hermes orange as its one a
   "by Claude", now also full ink, 5.39:1). The time sits in the corner and a hidden 48 px gap at the end of the words keeps
   it on the last line when there is room, as Telegram does. A date pill (`.day`: 오늘, 어제, 11월 24일 (화); the year when it is not this year) marks each
   new day, and while the person scrolls the date of the topmost message floats at the top (`#daytip`, a zero-height sticky
-  strip so nothing moves, a tinted pill with `--line-strong` edge that stands apart from bubbles in dark, fades after
-  1.2 s, not on the redraw's own jump to the end, `aria-hidden`). Copy and reply leave the time out.
+  strip so nothing moves, a tinted pill with `--line-strong` edge that stands apart from bubbles in dark; it stays while
+  the finger is down or the list still moves and fades 3 s after both stop (owner, 11/25), not on the redraw's own jump to the end, `aria-hidden`). Copy and reply leave the time out.
 - **Type.** Pretendard (variable, dynamic subset, swap) for every text role since 11/24: chosen over Wanted Sans, SUIT,
   Noto Sans KR, IBM Plex Sans KR, Gmarket Sans and Nanum Gothic by a specimen review (Hangul and Latin even in colour,
   bold holds in dark mode) and measurement (215 KB / 8 files like Nanum's 207 KB / 19; narrowest Hangul; Gmarket

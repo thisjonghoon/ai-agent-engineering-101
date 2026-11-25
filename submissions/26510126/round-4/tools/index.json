@@ -1,23 +1,23 @@
 {
  "fetch_url": {
-  "uses": 151,
-  "fails": 17,
-  "last": 1795563852
+  "uses": 177,
+  "fails": 18,
+  "last": 1795575399
  },
  "market_call": {
-  "uses": 231,
+  "uses": 257,
   "fails": 0,
-  "last": 1795564620
+  "last": 1795575442
  },
  "chain_balance": {
-  "uses": 4,
+  "uses": 7,
   "fails": 0,
-  "last": 1795541766
+  "last": 1795575644
  },
  "buy_stock": {
-  "uses": 31,
+  "uses": 34,
   "fails": 0,
-  "last": 1795562703
+  "last": 1795564990
  },
  "make_checkout": {
   "uses": 73,
@@ -25,19 +25,19 @@
   "last": 1795561871
  },
  "write_card": {
-  "uses": 10,
+  "uses": 13,
   "fails": 0,
-  "last": 1795556766
+  "last": 1795571835
  },
  "a2a_inquiry": {
-  "uses": 341,
+  "uses": 368,
   "fails": 0,
-  "last": 1795562059
+  "last": 1795575577
  },
  "compact_notes": {
-  "uses": 10,
+  "uses": 11,
   "fails": 0,
-  "last": 1795559719
+  "last": 1795568596
  },
  "restore_notes": {
   "uses": 1,
@@ -45,8 +45,18 @@
   "last": 1795526318
  },
  "find_ledger": {
-  "uses": 11,
+  "uses": 17,
   "fails": 0,
-  "last": 1795561796
+  "last": 1795575675
+ },
+ "chain_tx": {
+  "uses": 4,
+  "fails": 0,
+  "last": 1795575685
+ },
+ "refund_verified": {
+  "uses": 4,
+  "fails": 1,
+  "last": 1795573725
  }
 }

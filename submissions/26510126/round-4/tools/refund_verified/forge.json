@@ -1,0 +1,11 @@
+{
+ "tool": "refund_verified",
+ "version": 2,
+ "forged_at": 1795573634,
+ "kit": "v5.1",
+ "sha256": {
+  "permission.yml": "c46c72723b18844ec2a206e474120cf4a59154a45a31634fc6165c0b3a11b0dc",
+  "logic.py": "ebb00d2cf1ebae4b12bcb42a1a5a8e30617c16e72c0eb87be72e566bb79d330e",
+  "test.py": "cb8040eb54352177095bb816e34063c371dd54d65b8d7b465379fe566ca415e7"
+ }
+}

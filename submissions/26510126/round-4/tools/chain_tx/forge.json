@@ -1,0 +1,11 @@
+{
+ "tool": "chain_tx",
+ "version": 1,
+ "forged_at": 1795571352,
+ "kit": "v5.1",
+ "sha256": {
+  "permission.yml": "8b2b99c35e5258f9c829708eaa79c72de064abef96ff051e29f68719ee9ed812",
+  "logic.py": "8762f5f3464c3c978120530c609d0b4b43143191cca180b80a4c682c02e67598",
+  "test.py": "80029b9676ae9aeea08baae6a66b1c0ab895a40fc0bc36e02cf10be79c907e05"
+ }
+}

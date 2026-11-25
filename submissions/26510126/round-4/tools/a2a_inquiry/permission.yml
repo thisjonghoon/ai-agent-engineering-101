@@ -1,10 +1,10 @@
 name: a2a_inquiry
-description: 한국어로 고객의 재고 문의에 현재 확인된 재고의 품목·수량·등급·소비기한을 안내하고 가격은 주문 시 확인한다고 답합니다. args {text,data,claimed_from,task_id,context_id,history}
+description: 한국어로 고객에게 현재 확인된 판매 가능 재고의 실제 unit·수량·등급·소비기한을 안내합니다. 만료·정산 보류 재고는 판매 가능하다고 약속하지 않습니다. args {text,data,claimed_from,task_id,context_id,history}
 permission:
   identity: [shop]
   timeout: 20
   handles: [a2a]
 logic: logic.py
 test: test.py
-version: 2
-replaces: a2a_inquiry@1
+version: 3
+replaces: a2a_inquiry@2

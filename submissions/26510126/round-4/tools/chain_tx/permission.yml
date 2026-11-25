@@ -1,0 +1,8 @@
+name: chain_tx
+description: Maroo JSON-RPC에서 거래 또는 영수증을 조회합니다. args {tx_hash, receipt optional}.
+permission:
+  network: [market.ourolabs.ai, rpc-testnet.maroo.io]
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 1

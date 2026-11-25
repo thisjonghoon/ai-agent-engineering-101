@@ -20,3 +20,8 @@
 {"ts": 1795573595, "tool": "refund_verified", "version": 1, "passed": true, "error": null, "permission": {"network": ["rpc-testnet.maroo.io"], "write": [], "identity": ["shop"], "wallet": ["pay"], "pay_limit": 10000, "timeout": 180, "handles": []}}
 {"ts": 1795573634, "tool": "refund_verified", "version": 2, "passed": true, "error": null, "permission": {"network": ["rpc-testnet.maroo.io"], "write": [], "identity": ["shop"], "wallet": ["pay"], "pay_limit": 10000, "timeout": 180, "handles": []}}
 {"ts": 1795583786, "tool": "a2a_inquiry", "version": 4, "passed": true, "error": null, "permission": {"network": [], "write": [], "identity": ["shop"], "wallet": [], "timeout": 20, "handles": ["a2a"]}}
+{"ts": 1795592094, "tool": "read_market_text", "version": 1, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai"], "write": [], "identity": [], "wallet": [], "timeout": 30, "handles": []}}
+{"ts": 1795595835, "tool": "ledger_sales", "version": 1, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai"], "write": [], "identity": [], "wallet": [], "timeout": 30, "handles": []}}
+{"ts": 1795595924, "tool": "ledger_sales", "version": 2, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai"], "write": [], "identity": [], "wallet": [], "timeout": 30, "handles": []}}
+{"ts": 1795595990, "tool": "ledger_tail", "version": 1, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai"], "write": [], "identity": [], "wallet": [], "timeout": 30, "handles": []}}
+{"ts": 1795596029, "tool": "ledger_sales", "version": 3, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai"], "write": [], "identity": [], "wallet": [], "timeout": 30, "handles": []}}

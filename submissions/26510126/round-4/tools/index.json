@@ -1,23 +1,23 @@
 {
  "fetch_url": {
-  "uses": 180,
+  "uses": 202,
   "fails": 18,
-  "last": 1795583695
+  "last": 1795596729
  },
  "market_call": {
-  "uses": 284,
+  "uses": 326,
   "fails": 0,
-  "last": 1795590095
+  "last": 1795596713
  },
  "chain_balance": {
-  "uses": 7,
+  "uses": 8,
   "fails": 0,
-  "last": 1795575644
+  "last": 1795594582
  },
  "buy_stock": {
-  "uses": 40,
+  "uses": 42,
   "fails": 0,
-  "last": 1795587657
+  "last": 1795590333
  },
  "make_checkout": {
   "uses": 73,
@@ -25,29 +25,29 @@
   "last": 1795561871
  },
  "write_card": {
-  "uses": 13,
+  "uses": 14,
   "fails": 0,
-  "last": 1795571835
+  "last": 1795595697
  },
  "a2a_inquiry": {
-  "uses": 390,
+  "uses": 399,
   "fails": 0,
-  "last": 1795589168
+  "last": 1795596883
  },
  "compact_notes": {
-  "uses": 12,
+  "uses": 16,
   "fails": 0,
-  "last": 1795586883
+  "last": 1795595150
  },
  "restore_notes": {
-  "uses": 1,
+  "uses": 2,
   "fails": 0,
-  "last": 1795526318
+  "last": 1795594243
  },
  "find_ledger": {
-  "uses": 17,
+  "uses": 20,
   "fails": 0,
-  "last": 1795575675
+  "last": 1795596287
  },
  "chain_tx": {
   "uses": 4,
@@ -58,5 +58,20 @@
   "uses": 4,
   "fails": 1,
   "last": 1795573725
+ },
+ "read_market_text": {
+  "uses": 6,
+  "fails": 0,
+  "last": 1795594622
+ },
+ "ledger_sales": {
+  "uses": 4,
+  "fails": 0,
+  "last": 1795596650
+ },
+ "ledger_tail": {
+  "uses": 1,
+  "fails": 0,
+  "last": 1795596002
  }
 }

@@ -1,0 +1,8 @@
+name: read_market_text
+description: 시장 HTTPS URL의 텍스트 문서를 GET으로 읽습니다. args: {url, max_chars optional}.
+permission:
+  network: [market.ourolabs.ai]
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 1

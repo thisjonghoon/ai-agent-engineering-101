@@ -206,7 +206,8 @@ function draw() {
     }
     last = m.who;
   }
-  for (const p of pending) html += `<div class="row me pending"><div class="bubble">${esc(p.text)}</div></div>`;
+  // a reply waiting for its answer shows its quote box too (11/25, owner): same body() as a sent bubble
+  for (const p of pending) html += `<div class="row me pending"><div class="bubble">${body(p.text)}</div></div>`;
   if (waiting) html += `<div class="row agent typing" role="status" aria-label="응답 작성 중"><div class="bubble"><i></i><i></i><i></i></div></div>`;
   $('log').innerHTML = html;
   if (atEnd || pending.length) sc.scrollTop = sc.scrollHeight;

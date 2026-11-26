@@ -291,7 +291,7 @@ def page(in_app=False):
 
     seg = ('<nav class="seg" aria-label="화면"><a href="/">채팅</a><a href="/dashboard.html" aria-current="page">현황</a></nav>'
            if in_app else '')
-    head = (f'<header class="wide"><div class="avatar"><img src="/icon.svg" alt=""></div><div class="who"><h1>{E(NAME)}</h1>'
+    head = (f'<header class="wide"><div class="avatar"><img src="/icon.svg?v=2" alt=""></div><div class="who"><h1>{E(NAME)}</h1>'
             f'<div class="status {"on" if alive else "off"}"><span class="dot"></span><span>'
             f'<span class="st-text">{"감시 정상" if alive else "감시 멈춤?"}</span> <span class="num">{E(time.strftime("%H:%M:%S"))}</span></span></div></div>'
             f'{seg}</header>')

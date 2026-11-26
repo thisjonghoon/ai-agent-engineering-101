@@ -1,0 +1,9 @@
+name: available_count
+description: 여섯 수요 품목의 현 재고와 결제서 발급 흔적 및 잠금을 보수적으로 집계합니다.
+permission:
+  network: [market.ourolabs.ai]
+  identity: [shop]
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 1

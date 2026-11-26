@@ -1,0 +1,10 @@
+name: test_sales_worker
+description: 판매 직원의 결제서 동봉을 샌드박스 가상 재고로 시험합니다.
+permission:
+  write: [checkout_locks.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 1

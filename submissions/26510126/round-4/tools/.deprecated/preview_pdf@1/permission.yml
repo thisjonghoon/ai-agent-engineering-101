@@ -1,0 +1,8 @@
+name: preview_pdf
+description: 덕배가 제공한 PDF 미리보기를 받아 텍스트와 파일 정보를 확인합니다. args {}
+permission:
+  network: [soft-agreements-volt-urls.trycloudflare.com]
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 1

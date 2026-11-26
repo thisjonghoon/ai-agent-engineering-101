@@ -1,0 +1,11 @@
+{
+ "tool": "preview_pdf",
+ "version": 1,
+ "forged_at": 1795690538,
+ "kit": "v5.2",
+ "sha256": {
+  "permission.yml": "93af7084a96f8c87a0b125d524cecf18de125cf9818db5c40c3472d6550c1566",
+  "logic.py": "5cdae915b5f2e8c3a6c09b48c452a28b9a5e0603cb9bbd2f54903aad8e779e01",
+  "test.py": "63df971cbca6fb1ef1bd861849acccf12b5b2fe6de31f3d21631cd8976192d9b"
+ }
+}

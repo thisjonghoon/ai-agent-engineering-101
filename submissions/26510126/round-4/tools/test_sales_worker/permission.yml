@@ -7,4 +7,5 @@ permission:
   timeout: 30
 logic: logic.py
 test: test.py
-version: 1
+version: 2
+replaces: test_sales_worker@1

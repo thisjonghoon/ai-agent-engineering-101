@@ -1,0 +1,13 @@
+name: a2a_inquiry
+description: 품목 문의에 재고와 조건을 확인해 결제서를 같은 답장에 제공하는 자동 판매 직원. 흥정·환불·불만은 담당자에게 넘깁니다.
+permission:
+  network: [market.ourolabs.ai, rpc-testnet.maroo.io]
+  write: [checkout_locks.json, checkout_withdrawals.jsonl, auto_checkout.jsonl]
+  identity: [shop]
+  wallet: [sign_jwt]
+  timeout: 180
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 10
+replaces: a2a_inquiry@9

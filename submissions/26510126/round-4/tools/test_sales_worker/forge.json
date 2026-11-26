@@ -1,11 +1,11 @@
 {
  "tool": "test_sales_worker",
- "version": 1,
- "forged_at": 1795681281,
+ "version": 2,
+ "forged_at": 1795683967,
  "kit": "v5.1",
  "sha256": {
-  "permission.yml": "bb0b0ac0b6e06bfc914727dec315c8c36583b53610098c83597be018d5a842fe",
+  "permission.yml": "fde319f6e29a1ba5d883e2d5788bee7cbc01312f4fbb36b6d97f572db0139043",
   "logic.py": "23c2acf902e7eeaa0a2a6bb1359b05517beff0a36d2c0e9ac8c3ee8672056ebb",
-  "test.py": "404cb5ce6f2e11885cc2d94d3ad4c1e2f7c60ae36074c753db444230ec0820bb"
+  "test.py": "d40f2428af71962ad463d7dc050875573129ddde701f5a9bce95bd00cd067409"
  }
 }

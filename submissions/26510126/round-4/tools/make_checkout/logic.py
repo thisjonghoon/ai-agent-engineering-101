@@ -1,9 +1,23 @@
-import time,uuid,json,os,fcntl
+import time,uuid,json,os,fcntl,httpx
 
 def run(args,kit):
  sku=args.get('sku'); unit=args.get('unit'); price=args.get('price'); cost=args.get('cost')
  if not sku or not unit or price is None or cost is None: return {'error':'need sku, unit, price, cost'}
- price=int(price); cost=int(cost); gets=price-price//100-210
+ price=int(price); cost=int(cost)
+ if price<=0 or cost<0: return {'error':'invalid price or cost'}
+ if not kit.testing:
+  try:
+   r=httpx.get(kit.market.rstrip('/')+'/api/inventory',headers={'authorization':'Bearer '+kit.token('shop')},timeout=15); r.raise_for_status(); inv=r.json()
+   matches=[u for u in inv.get('units',[]) if u.get('unit')==unit and u.get('sku')==sku]
+   if len(matches)!=1: return {'error':'unit not uniquely present in inventory'}
+   stock=matches[0]
+   if stock.get('cost') is None or not isinstance(stock.get('cert'),dict): return {'error':'inventory cost or certificate unavailable'}
+   if cost!=int(stock['cost']): return {'error':'cost does not match inventory','actual_cost':stock['cost']}
+   if args.get('cert') is not None and args['cert']!=stock['cert']: return {'error':'certificate differs from inventory'}
+   if args.get('claim') is not None and args['claim']!=stock.get('grade'): return {'error':'claim differs from current grade','actual_grade':stock.get('grade')}
+  except Exception as e: return {'error':'inventory check failed','detail':str(e)}
+ else: stock={'cost':cost,'cert':args.get('cert'), 'grade':args.get('claim')}
+ gets=price-price//100-210
  if gets<cost and not args.get('allow_loss'): return {'error':'price below cost plus fees','shop_gets':gets,'cost':cost}
  wh=int(args.get('warranty_hours',0))
  if wh<0 or wh>72: return {'error':'warranty_hours 0-72'}
@@ -27,8 +41,7 @@ def run(args,kit):
        if isinstance(obs,dict) and obs.get('ok') and 'checkout_jwt' in obs.get('result',{}): return {'error':'prior checkout in logs; refusing'}
    except OSError: return {'error':'checkout history unavailable; refusing'}
   payload={'id':'co-'+uuid.uuid4().hex[:12],'shop':kit.name,'shop_url':kit.shop_url,'item':sku,'price':price,'task':args.get('task') or 't-'+uuid.uuid4().hex[:12],'currency':'credits','iat':int(time.time()),'unit':unit,'warranty_hours':wh}
-  if args.get('cert'): payload['cert']=args['cert']
-  if args.get('claim') in ('A','B','C'): payload['claim']=args['claim']
+  if stock.get('cert'): payload['cert']=stock['cert']
+  if stock.get('grade') in ('A','B','C'): payload['claim']=stock['grade']
   locks[unit]=payload['id']; f.seek(0); f.truncate(); json.dump(locks,f); f.flush(); os.fsync(f.fileno())
-  jwt=kit.sign_jwt(payload,'shop')
-  return {'checkout_jwt':jwt,'payload':payload,'shop_gets':gets}
+  return {'checkout_jwt':kit.sign_jwt(payload,'shop'),'payload':payload,'shop_gets':gets}

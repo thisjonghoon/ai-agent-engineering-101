@@ -1,0 +1,9 @@
+name: inventory_audit
+description: 실제 재고와 발급 이력, 카드 노출 및 임박 기한을 집계합니다. args {}
+permission:
+  network: [market.ourolabs.ai]
+  identity: [shop]
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 1

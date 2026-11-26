@@ -1,0 +1,12 @@
+name: make_checkout
+description: 재고 단위당 기존 서명 발급 이력이 없는 경우에만 결제서를 서명합니다. args {sku, unit, price, cost, cert optional, claim optional, warranty_hours optional, task optional, allow_loss optional}. 기존 발급 이력은 안전하게 차단합니다.
+permission:
+  write: [checkout_locks.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 2
+replaces: make_checkout@1

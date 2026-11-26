@@ -1,0 +1,11 @@
+name: buy_stock
+description: Buy stock from the wholesale market in two steps. args {sku, qty (1-20), max_total (credits; abort without paying if the quote total exceeds it), dry (optional bool: only fetch the quote and do not pay)}. Returns the quote on dry/abort, or {quote, tx_hash, result} after paying the exact quoted transfer from the shop wallet.
+permission:
+  network: [market.ourolabs.ai, rpc-testnet.maroo.io]
+  identity: [shop]
+  wallet: [pay]
+  pay_limit: 3000000
+  timeout: 120
+logic: logic.py
+test: test.py
+version: 1

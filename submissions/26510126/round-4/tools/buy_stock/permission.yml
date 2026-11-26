@@ -1,5 +1,5 @@
 name: buy_stock
-description: Buy stock from the wholesale market in two steps. args {sku, qty (1-20), max_total (credits; abort without paying if the quote total exceeds it), dry (optional bool: only fetch the quote and do not pay)}. Returns the quote on dry/abort, or {quote, tx_hash, result} after paying the exact quoted transfer from the shop wallet.
+description: 도매 견적을 확인하고 조건이 맞으면 매입합니다. args {sku, qty, max_total, dry optional, grade optional, min_expires_at optional}. grade 지정 시 모든 단위가 해당 등급이어야 결제합니다.
 permission:
   network: [market.ourolabs.ai, rpc-testnet.maroo.io]
   identity: [shop]
@@ -8,4 +8,5 @@ permission:
   timeout: 120
 logic: logic.py
 test: test.py
-version: 1
+version: 2
+replaces: buy_stock@1

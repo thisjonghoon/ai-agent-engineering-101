@@ -1,0 +1,11 @@
+{
+ "tool": "make_checkout",
+ "version": 2,
+ "forged_at": 1795611072,
+ "kit": "v5.1",
+ "sha256": {
+  "permission.yml": "cf0a3da41b58b0bf994078caa5e398e06c24d8f56d81cf54ec0bdee734372278",
+  "logic.py": "0d8527e902de9425b268b9898599c1b52853e52d98108d8d100a94ee154ec1b7",
+  "test.py": "eb099260b3006f66ff86fdeb74242f786caa6dbcb141e4d2ec882c8ed4e2d634"
+ }
+}

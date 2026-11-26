@@ -1,3 +1,2 @@
 def test(run, kit):
-    out = run({'sku': 'x'}, kit)
-    assert 'error' in out
+    assert 'error' in run({'sku':'x'},kit)

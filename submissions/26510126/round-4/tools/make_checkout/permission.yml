@@ -1,6 +1,7 @@
 name: make_checkout
-description: 재고 단위당 기존 서명 발급 이력이 없는 경우에만 결제서를 서명합니다. args {sku, unit, price, cost, cert optional, claim optional, warranty_hours optional, task optional, allow_loss optional}. 기존 발급 이력은 안전하게 차단합니다.
+description: 재고 API의 단위·실제 원가·현재 등급·인증서를 확인하고 기존 발급 이력이 없을 때만 결제서를 서명합니다. args {sku, unit, price, cost, cert optional, claim optional, warranty_hours optional, task optional, allow_loss optional}.
 permission:
+  network: [market.ourolabs.ai]
   write: [checkout_locks.json]
   identity: [shop]
   wallet: [sign_jwt]
@@ -8,5 +9,5 @@ permission:
   timeout: 30
 logic: logic.py
 test: test.py
-version: 2
-replaces: make_checkout@1
+version: 3
+replaces: make_checkout@2

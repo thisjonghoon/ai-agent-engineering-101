@@ -1,10 +1,10 @@
 name: compact_notes
-description: 최신 메모와 지속 원칙을 끝에 보존해 3000자 이내로 압축합니다.
+description: notes.md를 최근 정보 중심으로 3000자 이내 압축하고, 기존 owner_rules.md를 읽어 notes.md 맨 끝에 보존합니다. owner_rules.md는 수정하지 않습니다. args 없음.
 permission:
   write: [notes.md]
   pay_limit: 0
   timeout: 30
 logic: logic.py
 test: test.py
-version: 2
-replaces: compact_notes@1
+version: 4
+replaces: compact_notes@3

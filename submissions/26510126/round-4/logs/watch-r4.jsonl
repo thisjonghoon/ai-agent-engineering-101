@@ -31,3 +31,9 @@
 {"ts": 1795701556, "time": "11/26 22:59:16", "level": "ALERT", "what": "relay", "text": "4 model calls in 10 minutes were answered by codex, not Claude; see .kit/relay-terminal.log."}
 {"ts": 1795703454, "time": "11/26 23:30:54", "level": "ALERT", "what": "relay", "text": "5 model calls in 10 minutes were answered by codex, not Claude; see .kit/relay-terminal.log."}
 {"ts": 1795705290, "time": "11/27 00:01:30", "level": "ALERT", "what": "relay", "text": "4 model calls in 10 minutes were answered by codex, not Claude; see .kit/relay-terminal.log."}
+{"ts": 1795707188, "time": "11/27 00:33:08", "level": "ALERT", "what": "relay", "text": "4 model calls in 10 minutes were answered by codex, not Claude; see .kit/relay-terminal.log."}
+{"ts": 1795711132, "time": "11/27 01:38:52", "level": "ALERT", "what": "process", "text": "the agent (agent_kit.py run) is not running"}
+{"ts": 1795711377, "time": "11/27 01:42:57", "level": "ALERT", "what": "repeat", "text": "make_checkout failed the same way 3 times in the last hour: grade mismatch. Has the agent written a lesson for it?"}
+{"ts": 1795713216, "time": "11/27 02:13:36", "level": "ALERT", "what": "repeat", "text": "make_checkout failed the same way 3 times in the last hour: grade mismatch. Has the agent written a lesson for it?"}
+{"ts": 1795713400, "time": "11/27 02:16:40", "level": "ALERT", "what": "repeat", "text": "reply failed the same way 3 times in the last hour: error: no message 'jonghoon' is waiting. waiting: ['*']. Has the agent written a lesson for it?"}
+{"ts": 1795715239, "time": "11/27 02:47:19", "level": "ALERT", "what": "repeat", "text": "reply failed the same way 4 times in the last hour: error: no message 'jonghoon' is waiting. waiting: ['*']. Has the agent written a lesson for it?"}

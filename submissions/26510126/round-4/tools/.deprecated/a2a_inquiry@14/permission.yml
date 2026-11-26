@@ -1,0 +1,13 @@
+name: a2a_inquiry
+description: SKU·포장·등급 범위·최소 잔여시간을 확인해 단일 결제서를 발급합니다. 모호한 기한이나 복합 거절 조건은 직접 응대로 넘깁니다.
+permission:
+  network: [market.ourolabs.ai, rpc-testnet.maroo.io]
+  write: [checkout_locks.json, checkout_withdrawals.jsonl, auto_checkout.jsonl]
+  identity: [shop]
+  wallet: [sign_jwt]
+  timeout: 180
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 14
+replaces: a2a_inquiry@13

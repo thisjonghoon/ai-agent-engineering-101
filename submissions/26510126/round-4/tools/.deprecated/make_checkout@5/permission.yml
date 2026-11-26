@@ -1,0 +1,12 @@
+name: make_checkout
+description: 재고·수수료·철회 및 원장과 체인을 검증해 단일 결제서를 발급합니다. args {sku,unit,price,cost,cert?,claim?,task?,warranty_hours?,allow_loss?,withdrawal_post?}.
+permission:
+  network: [market.ourolabs.ai, rpc-testnet.maroo.io]
+  write: [checkout_locks.json, checkout_withdrawals.jsonl]
+  identity: [shop]
+  wallet: [sign_jwt]
+  timeout: 180
+logic: logic.py
+test: test.py
+version: 5
+replaces: make_checkout@4

@@ -1,13 +1,13 @@
 {
  "fetch_url": {
-  "uses": 527,
+  "uses": 532,
   "fails": 20,
-  "last": 1795703110
+  "last": 1795714314
  },
  "market_call": {
-  "uses": 1109,
+  "uses": 1133,
   "fails": 0,
-  "last": 1795704807
+  "last": 1795714350
  },
  "chain_balance": {
   "uses": 18,
@@ -20,24 +20,24 @@
   "last": 1795688251
  },
  "make_checkout": {
-  "uses": 169,
+  "uses": 184,
   "fails": 1,
-  "last": 1795703439
+  "last": 1795712425
  },
  "write_card": {
-  "uses": 44,
+  "uses": 46,
   "fails": 0,
-  "last": 1795683793
+  "last": 1795715968
  },
  "a2a_inquiry": {
-  "uses": 631,
+  "uses": 643,
   "fails": 0,
-  "last": 1795704572
+  "last": 1795714705
  },
  "compact_notes": {
-  "uses": 21,
+  "uses": 24,
   "fails": 0,
-  "last": 1795635241
+  "last": 1795715139
  },
  "restore_notes": {
   "uses": 2,
@@ -45,9 +45,9 @@
   "last": 1795594243
  },
  "find_ledger": {
-  "uses": 196,
+  "uses": 216,
   "fails": 0,
-  "last": 1795701825
+  "last": 1795712904
  },
  "chain_tx": {
   "uses": 5,
@@ -60,54 +60,54 @@
   "last": 1795573725
  },
  "read_market_text": {
-  "uses": 38,
+  "uses": 39,
   "fails": 0,
-  "last": 1795692341
+  "last": 1795705498
  },
  "ledger_sales": {
-  "uses": 234,
+  "uses": 247,
   "fails": 0,
-  "last": 1795703728
+  "last": 1795714755
  },
  "ledger_tail": {
-  "uses": 24,
+  "uses": 27,
   "fails": 0,
-  "last": 1795703080
+  "last": 1795715111
  },
  "search_logs": {
-  "uses": 465,
+  "uses": 481,
   "fails": 0,
-  "last": 1795704762
+  "last": 1795710353
  },
  "board_analysis": {
-  "uses": 6,
+  "uses": 7,
   "fails": 1,
-  "last": 1795669358
+  "last": 1795709338
  },
  "compare_shop": {
-  "uses": 1,
-  "fails": 0,
-  "last": 1795604567
+  "uses": 3,
+  "fails": 2,
+  "last": 1795714290
  },
  "time_convert": {
-  "uses": 118,
+  "uses": 119,
   "fails": 0,
-  "last": 1795687407
+  "last": 1795705413
  },
  "audit_checkout_logs": {
-  "uses": 151,
+  "uses": 164,
   "fails": 0,
-  "last": 1795705302
+  "last": 1795715853
  },
  "inventory_audit": {
-  "uses": 193,
+  "uses": 215,
   "fails": 0,
-  "last": 1795704831
+  "last": 1795715937
  },
  "checkout_payments": {
-  "uses": 189,
+  "uses": 206,
   "fails": 0,
-  "last": 1795704741
+  "last": 1795715836
  },
  "forum_thread": {
   "uses": 100,
@@ -115,9 +115,9 @@
   "last": 1795703070
  },
  "inspect_local": {
-  "uses": 39,
+  "uses": 53,
   "fails": 0,
-  "last": 1795693464
+  "last": 1795714323
  },
  "channel_audit": {
   "uses": 2,
@@ -130,13 +130,23 @@
   "last": 1795687487
  },
  "available_count": {
-  "uses": 15,
+  "uses": 20,
   "fails": 0,
-  "last": 1795697632
+  "last": 1795715950
  },
  "preview_pdf": {
   "uses": 2,
   "fails": 0,
   "last": 1795690555
+ },
+ "shop_health": {
+  "uses": 2,
+  "fails": 0,
+  "last": 1795712975
+ },
+ "edit_owner_rules": {
+  "uses": 3,
+  "fails": 0,
+  "last": 1795711779
  }
 }

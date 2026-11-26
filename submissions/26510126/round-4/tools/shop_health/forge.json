@@ -1,0 +1,11 @@
+{
+ "tool": "shop_health",
+ "version": 1,
+ "forged_at": 1795708601,
+ "kit": "v5.2",
+ "sha256": {
+  "permission.yml": "b2f318b9c72d8c4e373e244efa416caf41d23b81b4cc70dcb796500380d76221",
+  "logic.py": "aa951a49fba9e19e1f8a14fdb81a80c5e752c0b275b86dbca7e5cb0d0f040bbe",
+  "test.py": "4de1fda80531404317ee5ca97546cb56c049f3cb9ec1a853db0b785388d94743"
+ }
+}

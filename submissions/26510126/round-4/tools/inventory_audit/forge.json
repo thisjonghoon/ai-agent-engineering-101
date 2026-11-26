@@ -1,11 +1,11 @@
 {
  "tool": "inventory_audit",
- "version": 1,
- "forged_at": 1795649542,
- "kit": "v5.1",
+ "version": 3,
+ "forged_at": 1795712595,
+ "kit": "v5.2",
  "sha256": {
-  "permission.yml": "b176ac896e826e32aff806e57665167fcaaac0bc44c11c606d26bc29fa43f9a7",
-  "logic.py": "874fc3e452c539b807404ae0b2fea738f24172283d4f8598c37665b268ed3ffb",
-  "test.py": "e77dfe5a13215ecee61a7dd2e5fe0ca8ecc827ca3878758e42fe856a9ddb5c28"
+  "permission.yml": "76615d1e889ff197757365d3453ffa7f1c13750aa78976ba5a64e5cebcd58ab0",
+  "logic.py": "817d52c702edd431b0864cedcc6c3b95564d3c80056ee8ca851a393e0dd54eea",
+  "test.py": "9c0bcee9c2db11274e39cdf336e47ee13dee2247273a285c52a1cef64373fb99"
  }
 }

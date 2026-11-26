@@ -1,9 +1,11 @@
 name: inventory_audit
-description: 실제 재고와 발급 이력, 카드 노출 및 임박 기한을 집계합니다. args {}
+description: 실제 재고를 조회하고 실제 checkout_jwt가 발급된 기록만 사용해 최근 3시간 live_checkout, 3시간 경과 voidable, never_issued 및 sellable_now를 계산합니다.
 permission:
   network: [market.ourolabs.ai]
   identity: [shop]
-  timeout: 30
+  pay_limit: 0
+  timeout: 60
 logic: logic.py
 test: test.py
-version: 1
+version: 3
+replaces: inventory_audit@2

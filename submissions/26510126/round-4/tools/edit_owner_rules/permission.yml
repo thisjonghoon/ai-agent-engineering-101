@@ -1,0 +1,11 @@
+name: edit_owner_rules
+description: owner_rules.md를 보존적으로 편집합니다. args {append optional string, remove_today optional bool, remove_test_line optional bool}. 테스트 문장 제거와 오늘의 마감 관련 줄 제거를 지원합니다.
+permission:
+  write: [owner_rules.md]
+  identity: [shop]
+  pay_limit: 0
+  timeout: 10
+logic: logic.py
+test: test.py
+version: 3
+replaces: edit_owner_rules@2

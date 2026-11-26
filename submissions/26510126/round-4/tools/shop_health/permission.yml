@@ -1,0 +1,11 @@
+name: shop_health
+description: 원장과 wallet 로그에서 지난 3시간·24시간의 판매 건수/금액, 매입액, 만료·폐기 원가, 지갑 증감을 집계하고 결과를 notes.md 끝에 한 줄로 기록합니다. args 없음.
+permission:
+  network: [market.ourolabs.ai]
+  write: [notes.md]
+  identity: [shop]
+  pay_limit: 0
+  timeout: 60
+logic: logic.py
+test: test.py
+version: 1

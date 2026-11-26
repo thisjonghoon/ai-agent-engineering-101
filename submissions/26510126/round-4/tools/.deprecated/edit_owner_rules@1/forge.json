@@ -1,0 +1,11 @@
+{
+ "tool": "edit_owner_rules",
+ "version": 1,
+ "forged_at": 1795709585,
+ "kit": "v5.2",
+ "sha256": {
+  "permission.yml": "a5880ae1249ade92e30ffbe0e5b258cb15cf0a073a36fba3c21623c2e205ebbe",
+  "logic.py": "a7b489cf54a7333edd4cd3128729b820b200d7b7bbbcfe3608fafb95591ef728",
+  "test.py": "55855b9bc2fe0a85c7224306c440b5ae19050eb4c6545598aeb0bc3e40b8496c"
+ }
+}

@@ -1,5 +1,5 @@
 name: a2a_inquiry
-description: 품목 문의에 조건과 넉넉한 기한을 확인하여 결제서를 제공하고 발급·응답 원문과 전달 확인 상태를 기록합니다.
+description: SKU·포장·등급 범위·최소 잔여시간을 확인해 단일 결제서를 발급합니다. 모호한 기한이나 복합 거절 조건은 직접 응대로 넘깁니다.
 permission:
   network: [market.ourolabs.ai, rpc-testnet.maroo.io]
   write: [checkout_locks.json, checkout_withdrawals.jsonl, auto_checkout.jsonl]
@@ -9,5 +9,5 @@ permission:
   handles: [a2a]
 logic: logic.py
 test: test.py
-version: 12
-replaces: a2a_inquiry@11
+version: 14
+replaces: a2a_inquiry@13

@@ -25,3 +25,9 @@
 {"ts": 1795661280, "time": "11/26 11:48:00", "level": "ALERT", "what": "process", "text": "the agent (agent_kit.py run) is not running"}
 {"ts": 1795681344, "time": "11/26 17:22:24", "level": "ALERT", "what": "process", "text": "the agent (agent_kit.py run) is not running"}
 {"ts": 1795689573, "time": "11/26 19:39:33", "level": "ALERT", "what": "process", "text": "the agent (agent_kit.py run) is not running"}
+{"ts": 1795695178, "time": "11/26 21:12:58", "level": "ALERT", "what": "mind", "text": "the kit logged 3 failed model calls in 10 minutes; see logs/agent-kit.log ([mind]) and .kit/relay-terminal.log."}
+{"ts": 1795698370, "time": "11/26 22:06:10", "level": "ALERT", "what": "mind", "text": "the kit logged 3 failed model calls in 10 minutes; see logs/agent-kit.log ([mind]) and .kit/relay-terminal.log."}
+{"ts": 1795698370, "time": "11/26 22:06:10", "level": "ALERT", "what": "process", "text": "the agent (agent_kit.py run) is not running"}
+{"ts": 1795701556, "time": "11/26 22:59:16", "level": "ALERT", "what": "relay", "text": "4 model calls in 10 minutes were answered by codex, not Claude; see .kit/relay-terminal.log."}
+{"ts": 1795703454, "time": "11/26 23:30:54", "level": "ALERT", "what": "relay", "text": "5 model calls in 10 minutes were answered by codex, not Claude; see .kit/relay-terminal.log."}
+{"ts": 1795705290, "time": "11/27 00:01:30", "level": "ALERT", "what": "relay", "text": "4 model calls in 10 minutes were answered by codex, not Claude; see .kit/relay-terminal.log."}

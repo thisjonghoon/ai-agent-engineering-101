@@ -1,18 +1,26 @@
-def test(run,kit):
- import time,importlib.util,types
- assert run({'text':'환불해주세요'},kit)=={'defer':True}
- assert '없' in run({'text':'우유 있나요?','_units':[],'_ledger':[]},kit)['reply']
- original=importlib.util.spec_from_file_location
- class Loader:
-  def create_module(self,spec): return None
-  def exec_module(self,mod):
-   mod.run=lambda a,k:{'checkout_jwt':'test','payload':{'id':'co-test','task':a['task']}}
- def fake(name,path):
-  return importlib.util.spec_from_loader(name,Loader())
- importlib.util.spec_from_file_location=fake
- try:
-  now=int(time.time()); units=[{'name':'취나물','sku':'G159be1f8','unit':'short','cost':100,'grade':'B','expires_at':now+3600},{'name':'취나물','sku':'G159be1f8','unit':'long','cost':100,'grade':'B','expires_at':now+90000}]
-  x=run({'text':'취나물 B등급 주세요','task_id':'test','_units':units,'_ledger':[]},kit)
-  assert x['data']['checkout']['id']=='co-test' and '1일' in x['reply'] and '실물 소비기한' not in x['reply'] and 'B등급' in x['reply'],x
-  print('시험 답장 원문: '+x['reply'])
- finally: importlib.util.spec_from_file_location=original
+import time
+
+
+def test(run, kit):
+    now = int(time.time())
+    units = [
+        {'unit':'a', 'sku':'G02595b69', 'name':'계란 40구', 'grade':'A', 'expires_at':now + 180000},
+        {'unit':'b', 'sku':'G02595b69', 'name':'계란 40구', 'grade':'B', 'expires_at':now + 120000},
+        {'unit':'c', 'sku':'G02595b69', 'name':'계란 40구', 'grade':'C', 'expires_at':now + 200000},
+        {'unit':'short', 'sku':'G02595b69', 'name':'계란 40구', 'grade':'B', 'expires_at':now + 600},
+        {'unit':'unknown', 'sku':'G02595b69', 'name':'계란 40구', 'grade':'A'},
+        {'unit':'small', 'sku':'Gab7c8b3d', 'name':'계란 20구', 'grade':'A', 'expires_at':now + 210000},
+    ]
+    def ask(text):
+        return run({'text':text, '_units':units, '_inspect_candidates':True}, kit)
+    assert ask('G02595b69 계란 40구 B등급 이상, 소비기한 24시간 이상') == {'units':['a','b']}
+    assert ask('G02595b69 계란 40구 B등급 이하') == {'units':['c','b','short']}
+    assert ask('G02595b69 계란 40구 B등급') == {'units':['b','short']}
+    assert ask('G02595b69 계란 20구 대체 없음') == {'units':[]}
+    assert ask('계란 20구 A등급') == {'units':['small']}
+    assert ask('계란 C등급이거나 소비기한이 짧은 건 안 사겠다') == {'defer':True}
+    assert ask('계란 소비기한 넉넉한 걸로') == {'defer':True}
+    assert ask('계란 B등급 이상, 소비기한 내일까지') == {'defer':True}
+    assert ask('계란 40구 1+등급') == {'defer':True}
+    assert ask('환불해주세요') == {'defer':True}
+    assert '없' in run({'text':'우유 있나요?', '_units':[]}, kit)['reply']

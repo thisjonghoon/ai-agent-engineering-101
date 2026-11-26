@@ -1,0 +1,13 @@
+name: a2a_inquiry
+description: 명시 SKU·포장 수량·등급·대체 금지 조건을 엄격히 확인한 뒤 재고가 맞을 때만 단일 결제서를 발급하고 응답과 전달 상태를 기록합니다.
+permission:
+  network: [market.ourolabs.ai, rpc-testnet.maroo.io]
+  write: [checkout_locks.json, checkout_withdrawals.jsonl, auto_checkout.jsonl]
+  identity: [shop]
+  wallet: [sign_jwt]
+  timeout: 180
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 13
+replaces: a2a_inquiry@12

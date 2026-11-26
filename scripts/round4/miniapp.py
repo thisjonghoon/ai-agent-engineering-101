@@ -205,11 +205,29 @@ def app(root, mind, toolbox, Event, name="agent", key=None):
                                                     # tools can reach 127.0.0.1, so these POSTs need what only the page has
     page_seen = threading.Event()                  # the page has offered its tools: the agent's first run can start
     chat, chat_lock = [], threading.Lock()         # what the page shows: [{who, text, ts}]
+    # thisjonghoon 11/26: keep the chat across kit restarts (it lived only in memory, so every restart emptied the
+    # app). .kit/ is git-ignored, so the chat stays on this Mac and out of commits.
+    chat_file = root / ".kit" / "chat.jsonl"
+    try:
+        for line in chat_file.read_text(encoding="utf-8").splitlines()[-200:]:
+            try:
+                chat.append(json.loads(line))
+            except ValueError:
+                pass
+    except OSError:
+        pass
 
     def say(who, text, first=False):
         with chat_lock:
-            chat.append(dict({"who": who, "text": text, "ts": int(time.time())}, **({"first": True} if first else {})))
+            m = dict({"who": who, "text": text, "ts": int(time.time())}, **({"first": True} if first else {}))
+            chat.append(m)
             del chat[:-200]
+            try:
+                chat_file.parent.mkdir(exist_ok=True)
+                with open(chat_file, "a", encoding="utf-8") as f:
+                    f.write(json.dumps(m, ensure_ascii=False) + "\n")
+            except OSError:
+                pass
 
     page_polled, spoke = [0.0], [0.0]              # when the page last asked for the state; when the agent last spoke up
 

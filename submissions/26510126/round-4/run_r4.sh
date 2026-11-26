@@ -89,6 +89,16 @@ kit_loop() {
   done
 }
 
+app_tunnel_loop() {   # 11/26: a fixed address for the mini app, https://r4.jghn.dev (named tunnel agent-market-r4-app ->
+  # port 8800). The kit's own quick tunnel (--app-tunnel) stays as a fallback; its URL still changes on each restart.
+  [ -f "$HOME/.cloudflared/config-r4-app.yml" ] || return
+  while ! stopped; do
+    cloudflared tunnel --config "$HOME/.cloudflared/config-r4-app.yml" run >> .kit/app-tunnel.log 2>&1
+    echo "[run $(stamp)] app tunnel exited ($?); restarting in 15 s"
+    sleep 15
+  done
+}
+
 cleanup() { trap - INT TERM; touch .kit/STOP; kill 0 2>/dev/null; }
 trap cleanup INT TERM
 
@@ -97,6 +107,7 @@ sleep 3                                   # the relay takes its port before the 
 kit_loop &
 "$PY" watch_r4.py >> .kit/watch-terminal.log 2>&1 &
 backup_loop &
+app_tunnel_loop &
 "$PY" dashboard_r4.py --no-serve >> .kit/dash-terminal.log 2>&1 &   # writes the mini app's 현황 page every 30 s
 echo "[run $(stamp)] started. Links with the app's code: grep '\[app\] open' .kit/kit-terminal.log"
 caffeinate -is -w $$ &

@@ -275,10 +275,20 @@ def reconcile(state, balance):
         if k == "grant" and d.get("shop") == NAME:
             r["in"] += float(d.get("credits") or 0) / 1000
         elif k == "settle" and d.get("shop") in r["urls"]:
-            r["in"] += (float(d.get("amount") or 0) - float(d.get("shop_fee") or 0)) / 1000
+            if "amount" in d:
+                r["in"] += (float(d.get("amount") or 0) - float(d.get("shop_fee") or 0)) / 1000
+            else:   # a sealed settle shows no amount; the money still reaches the wallet (11/25, Hermes)
+                r["sealed"] = r.get("sealed", 0) + 1
         r["seq"] = max(r["seq"], e.get("seq", 0))
     expected = r["base"] + r["in"] - r["out"]
     diff = balance - expected
+    if diff > RECON_TOL and r.get("sealed"):
+        # money in after a sealed settle to this shop: that settle is the explanation, count it as its net
+        emit(state, "NOTE", "recon:sealed", f"{r['sealed']} sealed settle(s) to this shop; counting the {diff:+,.3f} "
+             f"tOKRW that came in as their net (a sealed settle shows no amount on the ledger).")
+        r["in"] += diff
+        r["sealed"] = 0
+        expected, diff = expected + diff, 0.0
     r["off"] = r["off"] + 1 if abs(diff) > RECON_TOL else 0
     r["diff"] = round(diff, 3)
     if r["off"] >= 3:

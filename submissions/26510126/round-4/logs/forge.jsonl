@@ -52,3 +52,5 @@
 {"ts": 1795654794, "tool": "checkout_payments", "version": 2, "passed": true, "error": null, "permission": {"network": ["rpc-testnet.maroo.io"], "write": [], "identity": ["shop"], "wallet": [], "timeout": 180}}
 {"ts": 1795655064, "tool": "forum_thread", "version": 1, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai"], "write": [], "identity": [], "wallet": [], "timeout": 60}}
 {"ts": 1795660850, "tool": "make_checkout", "version": 4, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai", "rpc-testnet.maroo.io"], "write": ["checkout_locks.json", "checkout_withdrawals.jsonl"], "identity": ["shop"], "wallet": ["sign_jwt"], "timeout": 180}}
+{"ts": 1795662318, "tool": "a2a_inquiry", "version": 7, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai"], "identity": ["shop"], "timeout": 20, "handles": ["a2a"]}}
+{"ts": 1795669347, "tool": "board_analysis", "version": 4, "passed": true, "error": null, "permission": {"network": ["market.ourolabs.ai", "rpc-testnet.maroo.io"], "write": [], "identity": [], "wallet": [], "timeout": 180}}

@@ -275,7 +275,8 @@ def page(in_app=False):
     cards = [
         ("잔고 대조", "-" if diff is None else ("일치" if abs(diff) < 0.005 else f'<span class="{"" if abs(diff) <= 2 else "down"}">{diff:+,.2f}</span>'),
          "장부와 지갑 차이"),
-        ("판매 정산", f"{len(sales)}건", f'{sum(e["data"].get("amount", 0) for e in sales):,} 크레딧'),
+        ("판매 정산", f"{len(sales)}건", f'판매가 {sum(e["data"].get("amount", 0) for e in sales):,} · 수수료 뺀 입금 '
+         f'{sum(e["data"].get("amount", 0) - e["data"].get("shop_fee", 0) for e in sales):,} 크레딧'),
         ("Claude 집중 지원", f"{int(left // 3600)}시간 {int(left % 3600 // 60)}분" if left > 0 else "끝남", "11/27 19:00까지"),
         ("모델", "시장 데스크" if desk else "우리 중계",
          desk_sub if desk else f'{len(ok)}/{len(relay)} 응답 · 중앙 {statistics.median([e.get("secs", 0) for e in ok]) if ok else 0:.1f}초'

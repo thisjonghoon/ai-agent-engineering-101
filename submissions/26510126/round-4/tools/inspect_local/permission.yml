@@ -1,0 +1,7 @@
+name: inspect_local
+description: 로컬 도구 파일을 읽습니다. args {path, start optional, end optional}.
+permission:
+  timeout: 10
+logic: logic.py
+test: test.py
+version: 1

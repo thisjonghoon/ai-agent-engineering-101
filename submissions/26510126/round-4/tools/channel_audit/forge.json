@@ -1,0 +1,11 @@
+{
+ "tool": "channel_audit",
+ "version": 1,
+ "forged_at": 1795676532,
+ "kit": "v5.1",
+ "sha256": {
+  "permission.yml": "9a206743488b3d7aa9a60f11a6612fc139700620c852740e52d45b7148ff6523",
+  "logic.py": "cb8fb836d288ac20c3701ec8cde677f08556ed987962a99db93df7d19a1fd0fd",
+  "test.py": "5e3f58e68588d5430bd99e32afcc07961b56bfe1928dc0a0b0c3f9dbd21d7637"
+ }
+}

@@ -1,0 +1,9 @@
+name: a2a_inquiry
+description: 모든 고객 문의를 담당자에게 즉시 넘겨 같은 대화에서 재고 확인과 결제서 전달을 처리합니다.
+permission:
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 8
+replaces: a2a_inquiry@7

@@ -1,4 +1,22 @@
-import time,uuid,json,fcntl,httpx,re,hashlib,concurrent.futures,os
+import time,uuid,json,fcntl,httpx,hashlib,concurrent.futures,os
+
+def covered(rows,unit,targets,lo):
+ ranges=[]
+ for row in rows:
+  if row.get('action')!='checkout_payments': continue
+  try:
+   ob=row['observation']; ob=json.loads(ob) if isinstance(ob,str) else ob
+   if not ob.get('ok'): continue
+   r=ob['result']; hs=set(r['hashes'][unit])
+   if not targets.issubset(hs) or r['errors'] or r['matches']: continue
+   a=int(r['start_block']); b=int(r['end_block'])
+   if a<=b and b<=int(r['latest']): ranges.append((a,b))
+  except (KeyError,TypeError,ValueError): continue
+ end=lo-1
+ for a,b in sorted(ranges):
+  if a>end+1: break
+  end=max(end,b)
+ return end
 
 def run(args,kit):
  sku=args.get('sku'); unit=args.get('unit'); price=int(args.get('price',0)); cost=int(args.get('cost',-1)); wh=int(args.get('warranty_hours',0))
@@ -23,13 +41,12 @@ def run(args,kit):
    f.seek(0)
    if f.read().strip(): return {'error':'lock file corrupt'}
    locks={}
-  prior=[]
+  prior=[]; rows=[]
   if not kit.testing:
    try:
     with open('logs/react.jsonl',encoding='utf8') as log:
      for line in log:
-      if unit not in line: continue
-      row=json.loads(line)
+      row=json.loads(line); rows.append(row)
       if row.get('action')!='make_checkout' or row.get('args',{}).get('unit')!=unit: continue
       obs=row.get('observation',''); obs=json.loads(obs) if isinstance(obs,str) else obs
       res=obs.get('result',{}) if isinstance(obs,dict) else {}
@@ -65,16 +82,18 @@ def run(args,kit):
      mid=(lo+hi)//2; b=rpc('eth_getBlockByNumber',[hex(mid),False])
      if int(b['timestamp'],16)<start: lo=mid+1
      else: hi=mid
-    if latest-lo>100000: return {'error':'chain range too large'}
     targets={'0x'+hashlib.sha256(x['jwt'].encode()).hexdigest() for x in prior}; address=kit.address('shop').lower()
+    end=covered(rows,unit,targets,lo); scanfrom=max(lo,end+1)
+    if latest-scanfrom>10000: return {'error':'chain verification requires additional chunks','start_block':scanfrom,'latest':latest}
     def scan(n):
      b=rpc('eth_getBlockByNumber',[hex(n),True])
      if not isinstance(b,dict) or not isinstance(b.get('transactions'),list): raise ValueError('missing block')
      return [t['hash'] for t in b['transactions'] if isinstance(t,dict) and (t.get('to') or '').lower()==address and t.get('input','').lower() in targets]
-    with concurrent.futures.ThreadPoolExecutor(max_workers=32) as ex:
-     for hit in ex.map(scan,range(lo,latest+1)):
+    with concurrent.futures.ThreadPoolExecutor(max_workers=24) as ex:
+     for hit in ex.map(scan,range(scanfrom,latest+1)):
       if hit: return {'error':'chain payment requires review','transactions':hit}
-    record={'unit':unit,'checkout_ids':[x['payload']['id'] for x in prior],'withdrawal_post':pid,'withdrawal_ts':p['ts'],'verified_at':int(time.time()),'ledger_seq':after,'chain_from':lo,'chain_to':latest,'jwt_hashes':list(targets)}
+    if stock.get('expires_at') and stock['expires_at']<=time.time(): return {'error':'expired during verification'}
+    record={'unit':unit,'checkout_ids':[x['payload']['id'] for x in prior],'withdrawal_post':pid,'withdrawal_ts':p['ts'],'verified_at':int(time.time()),'ledger_seq':after,'chain_from':lo,'chain_to':latest,'reused_through':end,'jwt_hashes':list(targets)}
     with open('checkout_withdrawals.jsonl','a',encoding='utf8') as out: out.write(json.dumps(record,ensure_ascii=False)+'\n'); out.flush(); os.fsync(out.fileno())
    except Exception as e: return {'error':'withdrawal verification failed','detail':str(e)}
   payload={'id':'co-'+uuid.uuid4().hex[:12],'shop':kit.name,'shop_url':kit.shop_url,'item':sku,'price':price,'task':args.get('task') or 't-'+uuid.uuid4().hex[:12],'currency':'credits','iat':int(time.time()),'unit':unit,'warranty_hours':wh}

@@ -1,0 +1,11 @@
+{
+ "tool": "inspect_local",
+ "version": 1,
+ "forged_at": 1795674974,
+ "kit": "v5.1",
+ "sha256": {
+  "permission.yml": "1b1bcc367dcdcff206e9105b1af9dee31fa6eeb4f03faba49e6de637cd2feaae",
+  "logic.py": "a5456439931c678e58a4886851e5dc842628f785e7466c94fc3b1b71a5462dc2",
+  "test.py": "e4ec91fc8518a64e15f7666879e91b6fc27e39bc320a01333840c0010f64b1b1"
+ }
+}

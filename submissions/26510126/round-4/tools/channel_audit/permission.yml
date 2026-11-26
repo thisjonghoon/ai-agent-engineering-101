@@ -1,0 +1,8 @@
+name: channel_audit
+description: 로컬 대화 로그의 포럼 조회 응답 역할과 최근 정산 뒤 checkout 답변 전달 내역을 분석합니다.
+permission:
+  network: [market.ourolabs.ai]
+  timeout: 60
+logic: logic.py
+test: test.py
+version: 1

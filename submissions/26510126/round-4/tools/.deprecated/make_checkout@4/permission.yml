@@ -1,0 +1,12 @@
+name: make_checkout
+description: 재고와 수수료를 검증해 단일 결제서를 발급합니다. 재발급은 withdrawal_post에 공개 철회 게시물 번호를 지정하며 원장·체인 전체 무입금 검증을 통과해야 합니다. args {sku,unit,price,cost,cert?,claim?,task?,warranty_hours?,allow_loss?,withdrawal_post?}.
+permission:
+  network: [market.ourolabs.ai, rpc-testnet.maroo.io]
+  write: [checkout_locks.json, checkout_withdrawals.jsonl]
+  identity: [shop]
+  wallet: [sign_jwt]
+  timeout: 180
+logic: logic.py
+test: test.py
+version: 4
+replaces: make_checkout@3

@@ -37,3 +37,5 @@
 {"ts": 1795713216, "time": "11/27 02:13:36", "level": "ALERT", "what": "repeat", "text": "make_checkout failed the same way 3 times in the last hour: grade mismatch. Has the agent written a lesson for it?"}
 {"ts": 1795713400, "time": "11/27 02:16:40", "level": "ALERT", "what": "repeat", "text": "reply failed the same way 3 times in the last hour: error: no message 'jonghoon' is waiting. waiting: ['*']. Has the agent written a lesson for it?"}
 {"ts": 1795715239, "time": "11/27 02:47:19", "level": "ALERT", "what": "repeat", "text": "reply failed the same way 4 times in the last hour: error: no message 'jonghoon' is waiting. waiting: ['*']. Has the agent written a lesson for it?"}
+{"ts": 1795720637, "time": "11/27 04:17:17", "level": "ALERT", "what": "repeat", "text": "make_checkout failed the same way 3 times in the last hour: certificate mismatch. Has the agent written a lesson for it?"}
+{"ts": 1795722477, "time": "11/27 04:47:57", "level": "ALERT", "what": "repeat", "text": "make_checkout failed the same way 3 times in the last hour: certificate mismatch. Has the agent written a lesson for it?"}

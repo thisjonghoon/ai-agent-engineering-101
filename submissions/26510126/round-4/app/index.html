@@ -161,7 +161,7 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 // a reply's quote line ("> who: "…"" first) drawn apart from the words after it (11/24); everything stays escaped
 const KIT_LINES = {'(the agent is busy; ask again)': '에이전트가 2분 안에 답하지 않았어요.\n메시지는 그대로 있으니 잠시 뒤 다시 물어봐 주세요.'};
-// The agent writes light Markdown (**bold**, lists, `code`); its bubbles show it formatted (11/26, owner). Everything is
+// Chat bubbles (agent, owner, Claude) show light Markdown (**bold**, lists, `code`) formatted (11/26, owner). Everything is
 // escaped first, so only these few marks become tags and nothing the agent writes can inject HTML.
 const md = s => esc(s).split('\n').map(line => {
   let l = line.replace(/^#{1,4} (.+)$/, '<b class="mh">$1</b>').replace(/^(\s*)[-*•] (?=\S)/, '$1• ');
@@ -171,7 +171,7 @@ const md = s => esc(s).split('\n').map(line => {
     .replace(/~~(?=\S)([^~]*?\S)~~/g, '<s>$1</s>')
     .replace(/\[([^\]]+)\]\((https:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
 }).filter(l => !/^\s*```/.test(l)).join('\n');   // code-fence lines are dropped; their contents stay as text
-const body = (t, fmt) => { const q = /^(?:>|↪\uFE0F?) ([^\n]*)\n([\s\S]*)$/.exec(String(t ?? '')); const f = fmt ? md : esc; return q ? `<span class="quote" role="button" tabindex="0" title="원문으로">${esc(q[1])}</span>${f(q[2])}` : f(t); };
+const body = (t, fmt = true) => { const q = /^(?:>|↪\uFE0F?) ([^\n]*)\n([\s\S]*)$/.exec(String(t ?? '')); const f = fmt ? md : esc; return q ? `<span class="quote" role="button" tabindex="0" title="원문으로">${esc(q[1])}</span>${f(q[2])}` : f(t); };
 // The owner talks to the agent here (11/23, decision 2: the app's chat is how the owner's intent reaches the agent), so
 // the default name is the owner's; ?user=<name> changes it on this device. Claude's messages arrive as "claude".
 let me = 'jonghoon';
@@ -228,7 +228,7 @@ function draw() {
       // the kit's own notices are shown as Korean system lines, not as the agent's words (11/24); the record is unchanged
       html += `<div class="sys">${esc(m.who === 'kit' ? '키트 알림: ' + m.text : KIT_LINES[m.text])}</div>`;
     } else if (m.who === me) {
-      html += `<div class="row me${last && last !== m.who ? ' turn' : ''}"><div class="bubble">${body(m.text)}${gap}${st}</div></div>`;
+      html += `<div class="row me${last && last !== m.who ? ' turn' : ''}"><div class="bubble">${body(m.text, true)}${gap}${st}</div></div>`;
     } else {
       const cls = m.who === 'agent' ? 'agent' : 'other';
       // no name labels (11/24): the side and colour say who; only someone other than the agent signs inside the bubble
@@ -238,7 +238,7 @@ function draw() {
     last = m.who;
   });
   // a reply waiting for its answer shows its quote box too (11/25, owner): same body() as a sent bubble
-  for (const p of pending) html += `<div class="row me pending"><div class="bubble">${body(p.text)}</div></div>`;
+  for (const p of pending) html += `<div class="row me pending"><div class="bubble">${body(p.text, true)}</div></div>`;
   if (waiting) html += `<div class="row agent typing" role="status" aria-label="응답 작성 중"><div class="bubble"><i></i><i></i><i></i></div></div>`;
   $('log').innerHTML = html;
   if (atEnd || pending.length) sc.scrollTop = sc.scrollHeight;

@@ -79,6 +79,6 @@ Report what was fixed and which findings were left as false positives, with the 
    from disk, so a change is live at once).
 4. Keep `<script src="/miniapp.js"></script>` in `index.html` (ROUND4.md: the one line the kit needs).
 
-- Agent bubbles render light Markdown (owner, 11/26): `**bold**`, `*italic*`, `` `code` ``, `~~strike~~`, `#` headings as bold lines,
+- All chat bubbles (agent, owner, Claude) render light Markdown (owner, 11/26): `**bold**`, `*italic*`, `` `code` ``, `~~strike~~`, `#` headings as bold lines,
   `-`/`*` list markers as `•`, `[text](https://…)` links; code-fence lines are dropped. Text is HTML-escaped first, so only
-  these marks become tags. The owner's own bubbles stay plain.
+  these marks become tags.

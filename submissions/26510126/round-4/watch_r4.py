@@ -31,6 +31,14 @@ Checks:
   ALERT bearer: an "Authorization: Bearer <token>" shaped value appears in a scanned file (the market tokens live
         only in the kit's memory, so this pattern is the only way to see one leak; it does not stop the agent).
   ALERT process: the kit (agent_kit.py run) or the relay is not running.
+  ALERT notes (11/27): the kit hands the agent only the last 3,000 characters of notes.md. Alerts when notes.md passes
+        NOTES_MAX characters (6,000: compaction has stopped; on 11/26 it grew from 9 KB to 223 KB with no compact_notes
+        for 20 hours), when those last 3,000 characters hold no owner instruction (no 주인, jonghoon or 소유자), and
+        when the agent calls restore_notes (it overwrites the notes with a copy from 11/24; it wiped them on 11/25).
+  ALERT repeat (11/27): the same error from the same tool ERR_TIMES (3) times within an hour, read from
+        logs/react.jsonl (on 11/26 fetch_url was refused for another shop's card 54 times and buy_stock was called
+        into a closed supply window 29 times, and no lesson was written). The error text is normalised (numbers, unit
+        and checkout ids, hex) so one mistake counts as one kind.
 Not checked yet (needs the market's real logs, after Round 4 opens): false claims, a fall in credits per hour,
 repeated complaints. The market tokens live only in the kit's memory, so they cannot be matched by value; a JWT pattern
 would also match the checkout_jwt the shop hands to customers, so it is not used.
@@ -67,6 +75,13 @@ RECON_TOL = float(os.environ.get("RECON_TOL", "2"))       # tOKRW
 NAME = os.environ.get("AGENT_NAME", "thisjonghoon")
 REPEAT = 30 * 60                                        # the same alert at most once in 30 minutes
 SCAN = ["card.json", "notes.md", "tools", "app", "logs"]
+NOTES = HERE / "notes.md"
+REACT_LOG = HERE / "logs" / "react.jsonl"
+NOTES_SEEN = 3000                                       # what the kit hands the agent (agent_kit.py, Mind.notes)
+NOTES_MAX = int(os.environ.get("NOTES_MAX", "6000"))    # characters
+OWNER_MARK = re.compile(r"주인|jonghoon|소유자")
+ERR_TIMES = int(os.environ.get("ERR_TIMES", "3"))
+ERR_WINDOW = 60 * 60
 
 
 def load_state():
@@ -394,6 +409,101 @@ def check_model_calls(state):
              "logs/agent-kit.log ([mind]) and .kit/relay-terminal.log.")
 
 
+def check_notes(state):
+    """notes.md is the agent's only memory between runs, and only its tail reaches the next run."""
+    try:
+        text = NOTES.read_text(encoding="utf-8")
+    except OSError:
+        return
+    if len(text) > NOTES_MAX:
+        emit(state, "ALERT", "notes:size", f"notes.md is {len(text):,} characters; the agent's next run sees only the "
+             f"last {NOTES_SEEN:,}. It has not compacted them (compact_notes).")
+    if text.strip() and not OWNER_MARK.search(text[-NOTES_SEEN:]):
+        emit(state, "ALERT", "notes:owner", f"the last {NOTES_SEEN:,} characters of notes.md, all the next run sees, "
+             "hold no owner instruction (no 주인, jonghoon or 소유자).")
+
+
+def react_moves(state):
+    """New lines of logs/react.jsonl since the last pass; on the first pass start at its end (no alerts on history)."""
+    try:
+        size = REACT_LOG.stat().st_size
+    except OSError:
+        return []
+    start = state.get("react_off")
+    if start is None or start > size:
+        state["react_off"] = size
+        return []
+    with open(REACT_LOG, "rb") as fh:
+        fh.seek(start)
+        data = fh.read()
+    cut = data.rfind(b"\n") + 1                         # leave a half-written last line for the next pass
+    state["react_off"] = start + cut
+    out = []
+    for line in data[:cut].decode("utf-8", errors="replace").splitlines():
+        try:
+            out.append(json.loads(line))
+        except ValueError:
+            pass
+    return out
+
+
+def error_of(move):
+    """The error a move's observation reports, or None. Shapes seen in react.jsonl: 'error: ...' from the kit,
+    {"ok": false, "error"}, {"ok": true, "result": {"error"}} or {"result": {"status": 4xx|5xx, "json": {"error"}}}
+    from a tool, {"test": "failed", "error"} from forge_tool."""
+    o = move.get("observation")
+    if not isinstance(o, str) or move.get("action") == "read_tool":
+        return None
+    if o.startswith("error"):
+        return o
+    if not o.startswith("{"):
+        return None
+    try:
+        d = json.loads(o)
+    except ValueError:
+        return None
+    if not isinstance(d, dict):
+        return None
+    if d.get("test") == "failed" or d.get("ok") is False:
+        return str(d.get("error") or "failed")
+    r = d.get("result")
+    if isinstance(r, dict):
+        if r.get("error"):
+            return str(r["error"])
+        st = r.get("status")
+        if isinstance(st, int) and st >= 400:
+            j = r.get("json")
+            return f"HTTP {st}: {j.get('error')}" if isinstance(j, dict) and j.get("error") else f"HTTP {st}"
+    return None
+
+
+def error_kind(text):
+    t = re.sub(r"\b(u|co|m)-?[0-9a-f]{6,}\b", "*", text.lower())
+    t = re.sub(r"\bhttp (\d{3})\b", r"http_\1", t)                    # keep the status: 404 and 429 are two kinds
+    t = re.sub(r"0x[0-9a-f]+|https?://\S+|\b\d+(\.\d+)?", "#", t).replace("http_", "http ")
+    return re.sub(r"\s+", " ", t).strip()[:60]
+
+
+def check_moves(state):
+    """restore_notes calls, and the same error from the same tool ERR_TIMES times in an hour."""
+    now = time.time()
+    errs = {k: [t for t in v if now - t <= ERR_WINDOW] for k, v in state.get("errs", {}).items()}
+    for m in react_moves(state):
+        if m.get("action") == "restore_notes":
+            emit(state, "ALERT", "notes:restore", "the agent called restore_notes, which overwrites notes.md with a copy "
+                 "from 11/24 (it wiped the notes on 11/25).")
+        e = error_of(m)
+        if e:
+            key = f"{m.get('action')}|{error_kind(e)}"
+            errs.setdefault(key, []).append(m.get("ts") or now)
+    for key, ts in errs.items():
+        if len(ts) >= ERR_TIMES:
+            tool, kind = key.split("|", 1)
+            emit(state, "ALERT", f"repeat:{key}", f"{tool} failed the same way {len(ts)} times in the last hour: "
+                 f"{kind}. Has the agent written a lesson for it?")
+    state["errs"] = {k: v for k, v in errs.items() if v}
+
+
 def pids(pattern):
     r = subprocess.run(["pgrep", "-f", pattern], capture_output=True, text=True)
     return [int(x) for x in r.stdout.split() if x.strip().isdigit() and int(x) != os.getpid()]
@@ -445,6 +555,8 @@ def one_pass(state):
     harm = check_wallets(state) or harm
     check_relay(state)
     check_model_calls(state)
+    check_notes(state)
+    check_moves(state)
     if harm and kit_pids():
         stop_agent(state)
     elif state.get("stopped_at") and kit_pids():

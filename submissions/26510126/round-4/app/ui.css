@@ -209,3 +209,19 @@ html.js section.over details.chipsmore{display:block}
 .label,.sub,.status,.note{line-height:1.45}
 .rankline b{letter-spacing:-.01em}
 .rankline>span{font-weight:500}
+/* 현황 · 가게 구조 (11/26): a folded panel at the bottom; the flow reads top to bottom with a hairline between steps */
+.g-st{margin-top:16px}
+.struct>summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;align-items:baseline;gap:6px}
+.struct>summary::-webkit-details-marker{display:none}
+.struct>summary::after{content:"펼치기";margin-left:auto;font-size:12px;color:var(--text-mute)}
+.struct[open]>summary::after{content:"접기"}
+.struct .preview{color:var(--text-mute);font-size:13px}
+.flow-steps{list-style:none;margin:14px 0 4px;padding:0;display:grid;gap:0}
+.flow-steps li{position:relative;padding:8px 0 8px 22px;border-left:2px solid var(--line);margin-left:6px}
+.flow-steps li::before{content:"";position:absolute;left:-7px;top:13px;width:12px;height:12px;border-radius:50%;background:var(--raised);border:2px solid var(--primary)}
+.flow-steps li b{font-size:14px}
+.flow-steps li small{display:block;color:var(--text-mute);font-size:13px;margin-top:2px}
+.tchip.neutral{background:var(--paper);color:var(--text-mute)}
+
+/* the shop's logo in the avatar (11/26): app/icon.svg, orange with its own rounded square */
+.avatar img{width:100%;height:100%;display:block;border-radius:inherit}

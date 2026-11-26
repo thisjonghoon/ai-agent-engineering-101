@@ -346,19 +346,26 @@ def app(root, mind, toolbox, Event, name="agent", key=None):
 
     async def manifest(_req):
         return JSONResponse({"name": name, "short_name": name[:12], "start_url": "/", "scope": "/", "display": "standalone",
-                             "background_color": "#0a0a0a", "theme_color": "#0a0a0a",
+                             "background_color": "#0a0a0a", "theme_color": "#0a0a0a" if not own("icon.svg") else "#f37021",
                              "icons": [{"src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
                                        {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
                                        {"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml"}]},
                             media_type="application/manifest+json")
 
+    # an app/ that brings its own icons (icon.svg, icon-192.png, icon-512.png, apple-touch-icon.png) is served those
+    # instead of the kit's drawn bubble (11/26, the shop's logo); without them nothing changes
+    def own(file):
+        f = custom / file
+        return f.read_bytes() if custom.is_dir() and f.is_file() else None
+
     def png(size):
-        async def route(_req):
-            return Response(icon_png(size), media_type="image/png", headers={"cache-control": "public, max-age=86400"})
+        async def route(req):
+            data = own(req.url.path.lstrip("/")) or icon_png(size)
+            return Response(data, media_type="image/png", headers={"cache-control": "public, max-age=86400"})
         return route
 
     async def svg(_req):
-        return Response(ICON_SVG, media_type="image/svg+xml", headers={"cache-control": "public, max-age=86400"})
+        return Response(own("icon.svg") or ICON_SVG, media_type="image/svg+xml", headers={"cache-control": "public, max-age=86400"})
 
     web = Starlette(routes=[Route("/miniapp.js", sdk), Route("/api/chat", post_chat, methods=["POST"]),
                             Route("/api/state", get_state), Route("/api/offer", post_offer, methods=["POST"]),

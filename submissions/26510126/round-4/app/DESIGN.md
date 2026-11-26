@@ -82,3 +82,13 @@ Report what was fixed and which findings were left as false positives, with the 
 - All chat bubbles (agent, owner, Claude) render light Markdown (owner, 11/26): `**bold**`, `*italic*`, `` `code` ``, `~~strike~~`, `#` headings as bold lines,
   `-`/`*` list markers as `•`, `[text](https://…)` links; code-fence lines are dropped. Text is HTML-escaped first, so only
   these marks become tags.
+
+## Logo (11/26, owner: like hoon-ticket)
+
+- **Mark:** a shop front under a striped awning, ink `#0a0a0a` on Hermes orange `#F37021` (the app's one accent); the
+  second stripe tone is the ink at 55% like hoon-ticket's ticket lines. Only these two colours; no white, no gradient.
+- **Large:** `brand/logo.svg` (512, rounded). **Small (16-36px):** `icon.svg` = `brand/icon-small.svg` — four scallops,
+  no stripes or windows; the header avatar and the tab use it. **Full bleed:** `brand/icon-square.svg` for iOS and
+  maskable (the mark stays inside the 80% safe zone).
+- **Served:** `icon.svg`, `icon-192.png`, `icon-512.png`, `apple-touch-icon.png` in `app/`; the kit serves these instead
+  of its drawn bubble when they exist (miniapp.py `own()`), and the manifest's theme colour turns orange.

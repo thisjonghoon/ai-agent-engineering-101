@@ -29,11 +29,11 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 LOG = HERE / "logs" / "nudges.jsonl"
 KST = timezone(timedelta(hours=9))
-EARLY_END = datetime(2026, 11, 27, 19, 0, tzinfo=KST)    # Round 4 opens 11/24 19:00; 72 hours from then
+EARLY_END = datetime(2026, 12, 31, 23, 59, tzinfo=KST)   # was 11/27 19:00 (72 hours); 11/26 the owner kept the advisory team on until he says otherwise
 
 
 HEAD = {
-    "early": "[초반 집중 모니터링 · 11/27 19:00까지 · 지금 {now} KST]\n주인 jonghoon이 초반 72시간 동안 claude에게 30분마다 "
+    "early": "[조언팀 모니터링 · 지금 {now} KST]\n주인 jonghoon이 claude 조언팀에게 30분마다 "
              "가게 기록을 읽고 관찰을 전하도록 맡겼어요. 아래는 기록에서 확인한 사실과 질문입니다.",
     "alert": "[감시 경보 · 지금 {now} KST]\n주인 jonghoon이 맡긴 감시에서 경보가 났어요. 아래는 기록에서 확인한 사실과 질문입니다.",
     "offhours": "[주인 부재 중 · 지금 {now} KST]\n주인 jonghoon이 자리를 비운 동안 claude가 기록을 보고 있어요. 아래는 기록에서 "

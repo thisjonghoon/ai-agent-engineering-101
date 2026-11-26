@@ -34,7 +34,7 @@ PORT = int(os.environ.get("DASH_PORT", "8810"))
 MARKET = os.environ.get("MARKET", "https://market.ourolabs.ai")
 NAME = os.environ.get("AGENT_NAME", "thisjonghoon")
 START_TOKRW = 5000.0
-EARLY_END = 1795777200            # 11/27 19:00 KST: the end of the early 72 hours
+EARLY_END = 1798729140            # advisory team on until the owner says otherwise (was 11/27 19:00; 11/26 owner)
 E = html.escape
 
 
@@ -187,6 +187,70 @@ def lst(rows, empty="아직 없습니다."):
                                           f"<div>{r[0]}{f'<small>{r[1]}</small>' if r[1] else ''}</div>" for r in rows) + "</div>"
 
 
+# 가게 구조 (11/26, owner: "see the structure on our board"): who writes in, what answers in code, what the model decides,
+# which forged tools sit behind it by role and what each may touch, and the advisory team outside. Read from tools/ and
+# logs only; folded at the bottom of 현황 so the numbers stay first.
+ROLES = [("판매·응대", ("a2a", "checkout", "card", "forum", "refund", "channel")),
+         ("매입", ("buy_stock",)),
+         ("원장·결제 확인", ("ledger", "chain", "payments", "audit", "inventory", "board", "compare")),
+         ("시장 정보", ("market", "fetch", "read_market")),
+         ("메모·기타", ())]
+
+
+def structure(now, desk):
+    tools = []
+    for d in sorted((HERE / "tools").iterdir()) if (HERE / "tools").is_dir() else []:
+        perm = d / "permission.yml"
+        if d.name.startswith(".") or not perm.is_file():
+            continue
+        y = perm.read_text(encoding="utf-8", errors="replace")
+        get = lambda k: (re.search(rf"^\s*{k}:\s*(.+)$", y, re.M) or [None, ""])[1].strip()
+        tools.append({"name": d.name, "desc": get("description"), "ver": get("version") or "1",
+                      "handles": "a2a" in get("handles"), "wallet": get("wallet") not in ("", "[]"),
+                      "pay": get("pay_limit"), "net": get("network").strip("[]")})
+    used = {}
+    for e in jsonl("react.jsonl", 20000):
+        if now - float(e.get("ts", 0)) <= 86400:
+            used[e.get("action")] = used.get(e.get("action"), 0) + 1
+    clerk = next((x for x in tools if x["handles"]), None)
+    clerk_mode = "없음"
+    if clerk:
+        src = (HERE / "tools" / clerk["name"] / "logic.py").read_text(encoding="utf-8", errors="replace")
+        body = [l for l in src.splitlines() if l.strip() and not l.strip().startswith("#")]
+        clerk_mode = "모든 문의를 에이전트에게 넘김" if len(body) <= 3 and "defer" in src else "코드로 바로 답하고, 필요할 때만 넘김"
+    flow = ('<ol class="flow-steps">'
+            '<li><b>손님·다른 가게</b><small>A2A로 가게에 메시지</small></li>'
+            f'<li><b>자동 응대</b> <span class="num">{E(clerk["name"] + " v" + clerk["ver"]) if clerk else "-"}</span><small>{E(clerk_mode)}</small></li>'
+            f'<li><b>에이전트</b><small>{"시장 모델 데스크" if desk else "우리 중계"} · 최근 24시간 행동 {sum(used.values())}번</small></li>'
+            f'<li><b>만든 도구 {len(tools)}개</b><small>아래 역할별</small></li></ol>')
+    def role(x):
+        # match the bookkeeping words first, so audit_checkout_logs and checkout_payments are checks, not selling
+        for name, keys in sorted(ROLES, key=lambda r: r[0] != "원장·결제 확인"):
+            if any(k in x["name"] for k in keys):
+                return name
+        return ROLES[-1][0]
+    groups = ""
+    for name, _ in ROLES:
+        rows = [x for x in tools if role(x) == name]
+        if not rows:
+            continue
+        chips = "".join(
+            f'<span class="tchip{" neutral" if not used.get(x["name"]) else ""}" title="{E(x["desc"])}">{E(x["name"])} '
+            f'<span class="num">v{E(x["ver"])}</span>'
+            + (' · 응대' if x["handles"] else "") + (' · 지갑' if x["wallet"] else "")
+            + (f' · <span class="num">{used[x["name"]]}</span>회' if used.get(x["name"]) else "") + '</span>'
+            for x in rows)
+        groups += f'<div class="sub" style="margin:12px 0 6px">{E(name)} · {len(rows)}</div><div class="tchips">{chips}</div>'
+    team = ('<div class="sub" style="margin:14px 0 6px">바깥에서 돕는 쪽</div><div class="list">'
+            '<div><b>주인 jonghoon</b> · 앱 채팅으로 지시 (에이전트는 주인 말을 자기 도구보다 우선)</div>'
+            '<div><b>Claude 조언팀</b> · 30분마다 기록 점검, 사실과 질문으로 넛지 (결정은 에이전트가)</div>'
+            '<div><b>감시</b> · 지갑·장부 대조와 경보 (watch_r4)</div></div>')
+    return ('<section class="panel g-st"><details class="struct" id="structure"><summary><h2 style="display:inline">가게 구조</h2>'
+            '<small class="preview"> 손님 문의가 어디로 가서 누가 답하는지, 도구 역할과 권한</small></summary>'
+            f'{flow}{groups}<div class="note">회색 칩은 최근 24시간 안 쓴 도구 · "응대"는 손님 메시지를 직접 받는 도구 · "지갑"은 서명·송금 권한</div>'
+            f'{team}</details></section>')
+
+
 def page(in_app=False):
     now = time.time()
     wallet = [e for e in jsonl("wallet.jsonl") if e.get("wallet") == "shop"]
@@ -227,7 +291,7 @@ def page(in_app=False):
 
     seg = ('<nav class="seg" aria-label="화면"><a href="/">채팅</a><a href="/dashboard.html" aria-current="page">현황</a></nav>'
            if in_app else '')
-    head = (f'<header class="wide"><div class="avatar">{E(NAME[:1].upper())}</div><div class="who"><h1>{E(NAME)}</h1>'
+    head = (f'<header class="wide"><div class="avatar"><img src="/icon.svg" alt=""></div><div class="who"><h1>{E(NAME)}</h1>'
             f'<div class="status {"on" if alive else "off"}"><span class="dot"></span><span>'
             f'<span class="st-text">{"감시 정상" if alive else "감시 멈춤?"}</span> <span class="num">{E(time.strftime("%H:%M:%S"))}</span></span></div></div>'
             f'{seg}</header>')
@@ -277,7 +341,7 @@ def page(in_app=False):
          "장부와 지갑 차이"),
         ("판매 정산", f"{len(sales)}건", f'판매가 {sum(e["data"].get("amount", 0) for e in sales):,} · 수수료 뺀 입금 '
          f'{sum(e["data"].get("amount", 0) - e["data"].get("shop_fee", 0) for e in sales):,} 크레딧'),
-        ("Claude 집중 지원", f"{int(left // 3600)}시간 {int(left % 3600 // 60)}분" if left > 0 else "끝남", "11/27 19:00까지"),
+        ("Claude 조언팀", "켜짐" if left > 0 else "끝남", "주인이 끌 때까지 (11/26 연장)"),
         ("모델", "시장 데스크" if desk else "우리 중계",
          desk_sub if desk else f'{len(ok)}/{len(relay)} 응답 · 중앙 {statistics.median([e.get("secs", 0) for e in ok]) if ok else 0:.1f}초'
          + (f' · 거절 {flagged}' if flagged else "")),
@@ -338,7 +402,7 @@ def page(in_app=False):
              for i, e in enumerate(says)], 2) + "</section>")
     asked = ('<section class="panel g-qs"><h2>Claude의 질문</h2>' + more("nudges",
              [item(f'qs-{int(e.get("ts", 0))}-{i}',
-                   f'<span class="time">{E(hm(e.get("ts")))}</span> <span class="tag">{E({"early": "초반", "alert": "경보", "offhours": "부재"}.get(e.get("why"), str(e.get("why", ""))))}</span>',
+                   f'<span class="time">{E(hm(e.get("ts")))}</span> <span class="tag">{E({"early": "조언팀", "alert": "경보", "offhours": "부재"}.get(e.get("why"), str(e.get("why", ""))))}</span>',
                    E(" ".join(str(e.get("text") or "").split()))
                    + (f'<span class="a">→ {E(" ".join(str(e.get("reply")).split()))}</span>' if e.get("reply") else ""),
                    f'<span class="q">{E(str(e.get("text") or "").strip())}</span>'
@@ -348,7 +412,7 @@ def page(in_app=False):
     # phone: one column in this order; landscape (owner's layout, 11/24): alerts | tools, then moves tall on the left
     # beside the app messages over Claude's questions
     body = (f'<div class="top">{hero}{stats}</div>'
-            f'<div class="lower">{alerts_html}{moves}{tools}{said}{asked}</div>')
+            f'<div class="lower">{alerts_html}{moves}{tools}{said}{asked}</div>{structure(now, desk)}')
 
     return f"""<!doctype html><html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">

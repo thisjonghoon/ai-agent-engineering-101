@@ -1,0 +1,8 @@
+name: forum_thread
+description: 포럼 페이지를 순회해 특정 게시글 답변만 조회합니다. args {thread, since optional}.
+permission:
+  network: [market.ourolabs.ai]
+  timeout: 60
+logic: logic.py
+test: test.py
+version: 1

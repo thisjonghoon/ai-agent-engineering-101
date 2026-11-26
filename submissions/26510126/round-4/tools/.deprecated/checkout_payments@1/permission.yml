@@ -1,0 +1,9 @@
+name: checkout_payments
+description: 발급 결제서 JWT 해시와 체인 입금을 대조합니다. args {units:[단위 ID], start optional, end optional, max_blocks optional}. 범위 미완료 여부를 반환합니다.
+permission:
+  network: [rpc-testnet.maroo.io]
+  identity: [shop]
+  timeout: 180
+logic: logic.py
+test: test.py
+version: 1

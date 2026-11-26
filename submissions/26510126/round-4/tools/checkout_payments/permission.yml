@@ -1,0 +1,10 @@
+name: checkout_payments
+description: 결제서 JWT 해시와 체인 입금을 대조합니다. args {units, start optional epoch, start_block optional, end optional, max_blocks optional}.
+permission:
+  network: [rpc-testnet.maroo.io]
+  identity: [shop]
+  timeout: 180
+logic: logic.py
+test: test.py
+version: 2
+replaces: checkout_payments@1

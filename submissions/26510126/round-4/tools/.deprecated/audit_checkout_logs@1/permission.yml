@@ -1,0 +1,7 @@
+name: audit_checkout_logs
+description: 발급 checkout JWT와 reply 전달 JWT를 로컬 로그에서 비교합니다. args {unit optional, name optional}.
+permission:
+  timeout: 30
+logic: logic.py
+test: test.py
+version: 1

@@ -1,0 +1,11 @@
+{
+ "tool": "audit_checkout_logs",
+ "version": 1,
+ "forged_at": 1795633308,
+ "kit": "v5.1",
+ "sha256": {
+  "permission.yml": "04b4dffdce75b1c7349bd853386da8fe44794b26b4b7d8a3367b860808fc49c1",
+  "logic.py": "ac4ae86c9e0b67183bea45fb71a9cb0aa30ac60716a385a5d734a08624be4d0c",
+  "test.py": "7baf57378dce9161ee56673a60a8c87d5ac2329c875c411b60f01ecc1090080d"
+ }
+}

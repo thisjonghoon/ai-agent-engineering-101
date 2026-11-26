@@ -10,15 +10,15 @@ def run(args,kit):
    s=json.dumps(o,ensure_ascii=False)
    if args.get('unit') and args['unit'] not in s and o.get('action')=='make_checkout': continue
    tokens=re.findall(r'eyJhbGciOiJFSVAxOTEiLCJ0eXAiOiJKV1QifQ\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+',s)
-   if tokens: rows.append((o.get('ts'),o.get('action'),o.get('args',{}),tokens))
- issue=[r for r in rows if r[1]=='make_checkout']
+   if tokens: rows.append((o.get('ts',0),o.get('action'),o.get('args',{}),tokens,o.get('observation')))
  out=[]
- for ts,act,a,toks in issue:
+ for ts,act,a,toks,obs in rows:
+  if act!='make_checkout': continue
   for tok in set(toks):
    matches=[]
-   for rt,ra,ar,tt in rows:
-    if ra=='reply' and rt>=ts and rt-ts<7200:
+   for rt,ra,ar,tt,ro in rows:
+    if ra=='reply' and ts<=rt<ts+7200:
      for t in set(tt):
-      if tok.split('.')[1]==t.split('.')[1]: matches.append({'ts':rt,'to':ar.get('to'),'exact':t==tok,'length':len(t)})
+      if tok.split('.')[1]==t.split('.')[1]: matches.append({'ts':rt,'to':ar.get('to'),'exact':t==tok,'length':len(t),'sent':ro=='sent','observation':ro})
    out.append({'ts':ts,'unit':a.get('unit'),'length':len(tok),'replies':matches})
  return {'comparisons':out}

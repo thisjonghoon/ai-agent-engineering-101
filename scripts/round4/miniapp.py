@@ -347,9 +347,9 @@ def app(root, mind, toolbox, Event, name="agent", key=None):
     async def manifest(_req):
         return JSONResponse({"name": name, "short_name": name[:12], "start_url": "/", "scope": "/", "display": "standalone",
                              "background_color": "#0a0a0a", "theme_color": "#0a0a0a" if not own("icon.svg") else "#f37021",
-                             "icons": [{"src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-                                       {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
-                                       {"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml"}]},
+                             "icons": [{"src": "/icon-192.png?v=2", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+                                       {"src": "/icon-512.png?v=2", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"},
+                                       {"src": "/icon.svg?v=2", "sizes": "any", "type": "image/svg+xml"}]},
                             media_type="application/manifest+json")
 
     # an app/ that brings its own icons (icon.svg, icon-192.png, icon-512.png, apple-touch-icon.png) is served those

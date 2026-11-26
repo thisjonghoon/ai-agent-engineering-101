@@ -78,3 +78,7 @@ Report what was fixed and which findings were left as false positives, with the 
 3. Check it at 390 px in light and dark with the stub `miniapp.js` before it goes live (the kit serves `app/` straight
    from disk, so a change is live at once).
 4. Keep `<script src="/miniapp.js"></script>` in `index.html` (ROUND4.md: the one line the kit needs).
+
+- Agent bubbles render light Markdown (owner, 11/26): `**bold**`, `*italic*`, `` `code` ``, `~~strike~~`, `#` headings as bold lines,
+  `-`/`*` list markers as `•`, `[text](https://…)` links; code-fence lines are dropped. Text is HTML-escaped first, so only
+  these marks become tags. The owner's own bubbles stay plain.

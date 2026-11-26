@@ -33,6 +33,7 @@
 .row{display:flex;margin:3px 0}
 .row.me{justify-content:flex-end}
 .bubble{max-width:80%;padding:9px 14px;border-radius:18px;line-height:1.6;letter-spacing:-.005em;white-space:pre-wrap;overflow-wrap:anywhere;animation:in .2s var(--ease)}
+.bubble code{font:13px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;background:rgb(0 0 0 / .06);padding:1px 5px;border-radius:6px}.bubble .mh{display:inline-block;font-size:1.05em}.bubble a{color:inherit;text-decoration:underline}
 .me .bubble{background:var(--accent-soft);color:var(--text);border-bottom-right-radius:6px}
 .me.pending .bubble{opacity:.5}
 .agent .bubble,.other .bubble{background:var(--card);border-bottom-left-radius:6px}
@@ -160,7 +161,17 @@ const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
 // a reply's quote line ("> who: "…"" first) drawn apart from the words after it (11/24); everything stays escaped
 const KIT_LINES = {'(the agent is busy; ask again)': '에이전트가 2분 안에 답하지 않았어요.\n메시지는 그대로 있으니 잠시 뒤 다시 물어봐 주세요.'};
-const body = t => { const q = /^(?:>|↪\uFE0F?) ([^\n]*)\n([\s\S]*)$/.exec(String(t ?? '')); return q ? `<span class="quote" role="button" tabindex="0" title="원문으로">${esc(q[1])}</span>${esc(q[2])}` : esc(t); };
+// The agent writes light Markdown (**bold**, lists, `code`); its bubbles show it formatted (11/26, owner). Everything is
+// escaped first, so only these few marks become tags and nothing the agent writes can inject HTML.
+const md = s => esc(s).split('\n').map(line => {
+  let l = line.replace(/^#{1,4} (.+)$/, '<b class="mh">$1</b>').replace(/^(\s*)[-*•] (?=\S)/, '$1• ');
+  return l.replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(?=\S)([^*]*?\S)\*\*/g, '<b>$1</b>')
+    .replace(/(^|[\s(])\*(?=\S)([^*]*?\S)\*(?=[\s).,!?:;]|$)/g, '$1<i>$2</i>')
+    .replace(/~~(?=\S)([^~]*?\S)~~/g, '<s>$1</s>')
+    .replace(/\[([^\]]+)\]\((https:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+}).filter(l => !/^\s*```/.test(l)).join('\n');   // code-fence lines are dropped; their contents stay as text
+const body = (t, fmt) => { const q = /^(?:>|↪\uFE0F?) ([^\n]*)\n([\s\S]*)$/.exec(String(t ?? '')); const f = fmt ? md : esc; return q ? `<span class="quote" role="button" tabindex="0" title="원문으로">${esc(q[1])}</span>${f(q[2])}` : f(t); };
 // The owner talks to the agent here (11/23, decision 2: the app's chat is how the owner's intent reaches the agent), so
 // the default name is the owner's; ?user=<name> changes it on this device. Claude's messages arrive as "claude".
 let me = 'jonghoon';
@@ -222,7 +233,7 @@ function draw() {
       const cls = m.who === 'agent' ? 'agent' : 'other';
       // no name labels (11/24): the side and colour say who; only someone other than the agent signs inside the bubble
       const by = cls === 'other' ? `<span class="by"><span class="who">by ${esc(m.who === 'claude' ? 'Claude' : m.who)}</span>${st}</span>` : gap + st;
-      html += `<div class="row ${cls}${last && last !== m.who ? ' turn' : ''}"><div class="bubble">${body(m.text)}${by}</div></div>`;
+      html += `<div class="row ${cls}${last && last !== m.who ? ' turn' : ''}"><div class="bubble">${body(m.text, true)}${by}</div></div>`;
     }
     last = m.who;
   });

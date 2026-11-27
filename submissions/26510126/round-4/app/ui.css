@@ -326,3 +326,5 @@ header.app-head{flex-wrap:wrap;row-gap:0;padding-bottom:0;border-bottom:1px soli
 .meter{flex:0 0 100%;display:block;height:4px;border-radius:2px;background:var(--hover);overflow:hidden}
 .meter b{display:block;height:100%;background:var(--primary);border-radius:inherit}
 .meter.hot b{background:var(--danger)}
+/* a usage row ends with its bar, so its value is not the row's last child: give it the value's look directly (11/27) */
+.menu-sheet .kv div.use>span:nth-child(2){margin-left:auto;text-align:right;font-weight:700;overflow-wrap:anywhere;font-family:var(--font)}

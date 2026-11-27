@@ -328,3 +328,10 @@ header.app-head{flex-wrap:wrap;row-gap:0;padding-bottom:0;border-bottom:1px soli
 .meter.hot b{background:var(--danger)}
 /* a usage row ends with its bar, so its value is not the row's last child: give it the value's look directly (11/27) */
 .menu-sheet .kv div.use>span:nth-child(2){margin-left:auto;text-align:right;font-weight:700;overflow-wrap:anywhere;font-family:var(--font)}
+/* 보드 with real cards (11/27, owner's web screenshot): a long unbroken string (an address, "4,405 credits") made a card
+   as wide as its text and it ran over the next column; the cards now keep their column's width and break such words.
+   내 차례 gets more room, since its drafts are long and they are the owner's to read */
+.cards{grid-template-columns:minmax(0,1fr)}
+.col>*,.cards>*{min-width:0}
+.cards .t,.cards .preview,.cards .fulltext,.bcard .bh b,.bcard .what,.draft{overflow-wrap:anywhere}
+.cols{grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1.6fr) minmax(0,1fr) minmax(0,1fr)}

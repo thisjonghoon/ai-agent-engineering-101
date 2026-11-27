@@ -40,3 +40,12 @@
 {"ts": 1795720637, "time": "11/27 04:17:17", "level": "ALERT", "what": "repeat", "text": "make_checkout failed the same way 3 times in the last hour: certificate mismatch. Has the agent written a lesson for it?"}
 {"ts": 1795722477, "time": "11/27 04:47:57", "level": "ALERT", "what": "repeat", "text": "make_checkout failed the same way 3 times in the last hour: certificate mismatch. Has the agent written a lesson for it?"}
 {"ts": 1795729466, "time": "11/27 06:44:26", "level": "ALERT", "what": "repeat", "text": "make_checkout failed the same way 3 times in the last hour: certificate mismatch. Has the agent written a lesson for it?"}
+{"ts": 1795739587, "time": "11/27 09:33:07", "level": "ALERT", "what": "notes", "text": "the last 3,000 characters of notes.md, all the next run sees, hold no owner instruction (no 주인, jonghoon or 소유자)."}
+{"ts": 1795740752, "time": "11/27 09:52:32", "level": "ALERT", "what": "notes", "text": "notes.md is 6,048 characters; the agent's next run sees only the last 3,000. It has not compacted them (compact_notes)."}
+{"ts": 1795741427, "time": "11/27 10:03:47", "level": "ALERT", "what": "notes", "text": "the last 3,000 characters of notes.md, all the next run sees, hold no owner instruction (no 주인, jonghoon or 소유자)."}
+{"ts": 1795742593, "time": "11/27 10:23:13", "level": "ALERT", "what": "notes", "text": "notes.md is 6,663 characters; the agent's next run sees only the last 3,000. It has not compacted them (compact_notes)."}
+{"ts": 1795743268, "time": "11/27 10:34:28", "level": "ALERT", "what": "notes", "text": "the last 3,000 characters of notes.md, all the next run sees, hold no owner instruction (no 주인, jonghoon or 소유자)."}
+{"ts": 1795743268, "time": "11/27 10:34:28", "level": "ALERT", "what": "repeat", "text": "reply failed the same way 3 times in the last hour: error: that message is no longer waiting (it was answered, o. Has the agent written a lesson for it?"}
+{"ts": 1795745109, "time": "11/27 11:05:09", "level": "ALERT", "what": "repeat", "text": "reply failed the same way 3 times in the last hour: error: that message is no longer waiting (it was answered, o. Has the agent written a lesson for it?"}
+{"ts": 1795748301, "time": "11/27 11:58:21", "level": "ALERT", "what": "process", "text": "the agent (agent_kit.py run) is not running"}
+{"ts": 1795748301, "time": "11/27 11:58:21", "level": "ALERT", "what": "process", "text": "llm_relay.py is not running"}

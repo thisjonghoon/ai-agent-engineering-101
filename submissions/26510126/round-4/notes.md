@@ -37,3 +37,16 @@ shop_health {"asof":1795762446.301413,"windows":{"3h":{"sales_count":0,"sales_am
 20:04 계란 문의 audit 확인: u-fa751fcbe7a1 결제서는 19:40:57 발급됐으나 19:41:50 reply 시 m4c5150이 이미 종료되어 전송 실패. 핵심은 handler가 먼저 defer/‘잠시 바빠서’로 응답하고 발급·reply를 나중에 시도해 80초 창을 놓친 것. 재문의 시 a2a handler 한 번 안에서 실제 sellable 단위 확인→등급/기한 안내→make_checkout→checkout JWT를 같은 답장에 포함하고, defer·중복 발급·사후 reply 금지.
 
 shop_health {"asof":1795777679.6302369,"windows":{"3h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0},"24h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0}},"ledger_rows":500}
+21:33 실제 /api/inventory 확인: 취나물·총각김치·계란 등 실측 C급 재고의 cert 내부 grade가 모두 null. 고객이 결제서의 grade null/voided를 이유로 거절한 기록과 일치. a2a_inquiry v24로 교체·테스트 통과: cert grade가 없거나 실측 grade와 다르면 checkout 발급 금지, 검증 가능한 단위만 claim과 인증서를 함께 발급. 검증 불가 재고는 정직하게 안내.
+21:44 취나물 G159be1f8 A급 1개(u-832a87a9b67f) 2,494 credits 매입 성공. 실제 grade A이나 cert 내부 grade null이라 a2a_inquiry 검증 판매 불가. 도매 창구에서 B 요청 시 A 견적이 나와 중단 후 A로 매입.
+22:06~22:07 엄수인 고객 문의 처리: 콩나물·비빔밥용 나물은 검증 가능한 재고 없음. 크리넥스 3겹 데코&소프트 와이드 35mX24롤 A급 3개·소비기한 없음·26,500 credits 확인. make_checkout은 u-fffce95c82da cert=true에서 certificate mismatch, cert 객체를 넣은 u-e0a938413732도 certificate mismatch, cert/claim 생략은 expires None 비교 오류로 실패. 결제서 미발급 사실을 고객에게 안내 완료. 인증서 처리 원인 점검 필요.
+
+shop_health {"asof":1795785857.566507,"windows":{"3h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0},"24h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0}},"ledger_rows":500}
+22:24 엄수인-2a34 문의: 크리넥스 A급 26,500크레딧, 소비기한 없음 재고 확인. make_checkout이 expires_at None 비교 오류로 실패해 결제서 발급 불가를 즉시 안내. 콩나물·비빔밥용 나물 검증 재고 없음. a2a handler는 defer하여 직접 응답으로 마감.
+[최신 우선] owner_rules.md 11/27 주인 지시: 인증서 grade가 null이어도 판매 금지하지 않는다. 실측 등급·남은 소비기한을 확인해 정직하게 안내하고, 등급 claim 없이 checkout 발급. cert에 실제 grade가 있고 실측과 불일치할 때만 차단. notes의 ‘검증 불가 판매 금지’는 폐기된 판단. 22:24 포럼 공지는 주인 지시와 불일치하므로 추후 API 형식 확인 후 정정.
+23:01 조언팀 지적의 포럼 post 20705를 forum_thread로 직접 조회했으나 posts가 비어 있어 현재 공지 원문을 확인하지 못함(last_id 20975). 추측 정정 공지는 올리지 않았고, /api/forum 조회 형식과 원문 확인 후 주인 지시(인증서 grade null이어도 실측 등급·소비기한을 정직하게 안내하고 판매)를 반영할 것.
+23:01~23:02 /api/forum 카드 확인: POST body는 {text, thread optional, refs[]}이며 상점 300초 게시 간격. 정정 POST 시도 결과가 관찰에 반환되지 않았고 최신 /api/forum 목록에도 thisjonghoon 정정 글이 보이지 않음. 300초 제한 중복 게시를 피하고 다음 가능 시 재시도.
+23:22 inventory 확인: 잔액 4,193,138 credits. 시금치 u-12db5198c916 C급, 소비기한 1795798857; 계란 u-2ca21b8ea5bb C급 1795791078, u-0d5f5ccd40ab C급 1795800304, u-fa751fcbe7a1 C급 1795804593; 김치 u-71877283cf8f C급 1795790505. owner 지시대로 cert grade null이어도 실측 등급·소비기한을 안내하고 claim 없이 checkout 발급. 카드 갱신 완료.
+23:31 남정욱 빵 분류 문의가 a2a_inquiry v25의 BLOCKED ['이나']에 걸려 defer됨. 이후 80초 창을 놓쳐 고객 응답 불가. audit상 23:29:55 결제서 발급 기록은 있으나 해당 문의 reply는 없어 전달되지 않음. 핸들러의 '이나' 차단을 제거하고 빵 별칭(몽실이빵·찰보리빵·튀김소보로)을 지원하도록 동일 도구 forge가 필요함. 분류형 문의는 defer 금지, 재고 확인과 답장을 한 번에 수행.
+11/27 23:45 도매 매입 시도: 공급 창구 닫힘, 다음 867초 후(1795791603) 개방. 판매량 상위는 취나물·계란·둥굴레차·총각김치·시금치. 현재 임박: 계란 u-2ca21b8ea5bb, 시금치 u-12db5198c916. 잔액 4,193,138 credits로 시작금 미달.
+00:01 계란 Gab7c8b3d B급 u-26d6251f9a0e 1개 매입 완료. 총 7,577 credits(상품 7,058+보관 519), 소비기한 1795971412. cert grade null이므로 판매 시 실측 B급·기한만 안내하고 등급 claim 금지. 재고 82→83.

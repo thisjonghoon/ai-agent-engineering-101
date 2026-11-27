@@ -1,0 +1,14 @@
+name: a2a_inquiry
+description: 한국어 단일 품목 문의를 실제 재고와 대조하고, 인증서 grade가 검증되는 단위만 즉시 checkout을 발급합니다. args {text, task_id optional}
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, checkout_withdrawals.jsonl]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 180
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 24
+replaces: a2a_inquiry@23

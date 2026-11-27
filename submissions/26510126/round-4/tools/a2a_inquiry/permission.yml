@@ -1,5 +1,5 @@
 name: a2a_inquiry
-description: 한국어 단일 품목 문의를 실제 재고와 대조하고, 잠긴 단위를 건너뛰어 다음 단위로 checkout을 발급합니다. 둥굴레차 별칭을 지원합니다. args {text, task_id optional}
+description: 한국어 고객 문의를 실제 재고와 대조해 단일 품목의 실측 등급·소비기한·가격을 즉시 안내하고, 구매 의사가 있으면 같은 응답에 checkout JWT를 발급합니다. 소비기한 없음과 빵 별칭을 지원합니다. args {text, task_id optional}
 permission:
   network: [market.ourolabs.ai]
   write: [checkout_locks.json, checkout_withdrawals.jsonl]
@@ -10,5 +10,5 @@ permission:
   handles: [a2a]
 logic: logic.py
 test: test.py
-version: 23
-replaces: a2a_inquiry@22
+version: 27
+replaces: a2a_inquiry@26

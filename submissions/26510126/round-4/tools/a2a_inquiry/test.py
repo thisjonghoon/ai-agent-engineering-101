@@ -1,5 +1,4 @@
-import time
 def test(run,kit):
-    units=[{'name':'몽실이빵','sku':'t','unit':'x','expires_at':None,'grade':'B','cost':1000,'cert':{}}]
-    r=run({'text':'몽실이빵 있나요?','_units':units},kit)
-    assert r.get('state')=='completed' and '실제 재고 등급은 B' in r.get('reply','') and '소비기한 없음' in r.get('reply','')
+ u=[{'name':'계란','sku':'e','unit':'c','expires_at':9999999999,'grade':'C','cost':100},{'name':'계란','sku':'e','unit':'b','expires_at':9999999999,'grade':'B','cost':100}]
+ r=run({'text':'계란 C급 제외 있나요?','_units':u},kit)
+ assert '실제 재고 등급은 B' in r['reply']

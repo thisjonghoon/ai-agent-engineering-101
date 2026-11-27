@@ -303,8 +303,9 @@ def status_data():
     cards = [
         {"k": "잔고 대조", "v": "-" if diff is None else ("일치" if abs(diff) < 0.005 else f"{diff:+,.2f}"),
          "tone": "down" if diff is not None and abs(diff) > 2 else "", "sub": "장부와 지갑 차이"},
-        {"k": "판매 정산", "v": f"{len(sales)}건", "sub": f'판매가 {sum(e["data"].get("amount", 0) for e in sales):,} · 수수료 뺀 입금 '
-         f'{sum(e["data"].get("amount", 0) - e["data"].get("shop_fee", 0) for e in sales):,} 크레딧'},
+        # two lines (11/27, owner): 판매가, then 순매출 (what came in after the market's fee)
+        {"k": "판매 정산", "v": f"{len(sales)}건", "lines": [f'판매가 {sum(e["data"].get("amount", 0) for e in sales):,}',
+         f'순매출 {sum(e["data"].get("amount", 0) - e["data"].get("shop_fee", 0) for e in sales):,}'], "sub": ""},
         {"k": "Claude 조언팀", "v": "켜짐" if left > 0 else "끝남", "sub": "주인이 끌 때까지 (11/26 연장)"},
         {"k": "모델", "v": "시장 데스크" if desk else "우리 중계", "sub": model_sub},
     ]

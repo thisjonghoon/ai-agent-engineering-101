@@ -86,7 +86,7 @@ function hero(d) {
 }
 
 const stats = d => '<div class="stats">' + d.cards.map(c =>
-  `<section class="panel"><div class="label">${esc(c.k)}</div><div class="value">${c.tone ? `<span class="${c.tone}">${esc(c.v)}</span>` : esc(c.v)}</div><div class="sub clip">${numify(c.sub)}</div></section>`).join('') + '</div>';
+  `<section class="panel"><div class="label">${esc(c.k)}</div><div class="value">${c.tone ? `<span class="${c.tone}">${esc(c.v)}</span>` : esc(c.v)}</div>${c.lines ? c.lines.map(l => `<div class="sub">${numify(l)}</div>`).join('') : `<div class="sub clip">${numify(c.sub)}</div>`}</section>`).join('') + '</div>';
 
 function moves(d) {
   const mv = d.moves.map(e => item(`mv-${Math.floor(e.ts)}`, `<span class="time">${hm(e.ts).slice(6)}</span> <b>${esc(e.action)}</b>`,

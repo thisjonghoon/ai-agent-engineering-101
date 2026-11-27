@@ -251,6 +251,147 @@ def structure(now, desk):
             f'{team}</details></section>')
 
 
+def status_data():
+    """현황 as data (11/27, owner: the mini app draws every screen itself). app/status.html reads this as
+    app/status.json; no HTML here, every value is plain text or a number and the page escapes what it shows."""
+    now = time.time()
+    wallet = [e for e in jsonl("wallet.jsonl") if e.get("wallet") == "shop"]
+    bal = wallet[-1]["tokrw"] if wallet else None
+    pts = [(e["ts"], e["tokrw"]) for e in wallet if now - e["ts"] <= 48 * 3600]
+    while pts and pts[0][1] == 0:                        # before the start capital came in
+        pts.pop(0)
+    if len(pts) > 300:
+        pts = pts[:: len(pts) // 300 + 1] + [pts[-1]]
+    b = board()
+    students = [x for x in b.get("shops", []) if x.get("student")]
+    me = next((x for x in b.get("shops", []) if x.get("name") == NAME), {})
+    ranked = sum(1 for x in b.get("shops", []) if x.get("rank"))
+    s_ranks = sorted(x.get("rank") for x in students if x.get("rank"))
+    s_rank = s_ranks.index(me["rank"]) + 1 if me.get("rank") in s_ranks else None
+    moved = rank_moved(now, me.get("rank"), s_rank)
+    try:
+        st = json.loads((KIT / "watch-state.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        st = {}
+    recon, watch_age = st.get("recon") or {}, now - st.get("last_pass", 0)
+    alerts = jsonl("watch-r4.jsonl", 12)[::-1]
+    relay = [e for e in jsonl("llm-relay.jsonl", 400) if now - e.get("ts", 0) <= 3600]
+    ok = [e for e in relay if e.get("ok")]
+    flagged = sum(1 for e in relay if "safeguards" in (e.get("why") or ""))
+    forge = {}
+    for e in jsonl("forge.jsonl"):
+        forge[e.get("tool")] = e
+    sales = [e for e in jsonl("ledger.jsonl") if e.get("kind") == "settle"]
+    left = EARLY_END - now
+    alive = watch_age < 180
+    diff = recon.get("diff")
+    desk = not [e for e in relay if now - e.get("ts", 0) <= 900]
+    steps = [float(e.get("ts", 0)) for e in jsonl("react.jsonl", 400) if now - float(e.get("ts", 0)) <= 3600]
+    gaps = [y - x for x, y in zip(steps, steps[1:]) if y - x < 120]
+    fails = 0
+    try:
+        cut, end = time.strftime("%H:%M:%S", time.localtime(now - 3600)), time.strftime("%H:%M:%S", time.localtime(now))
+        for line in (LOGS / "agent-kit.log").read_text(encoding="utf-8", errors="replace").splitlines()[-3000:]:
+            t = line[:8]                                 # the kit stamps HH:MM:SS; the hour before may cross midnight
+            if "[mind] model call failed" in line and ((cut <= t <= end) if cut <= end else (t >= cut or t <= end)):
+                fails += 1
+    except OSError:
+        pass
+    model_sub = ((f"응답 {statistics.median(gaps):.0f}초 · 실패 {fails}" if gaps else f"실패 {fails}") if desk else
+                 f'{len(ok)}/{len(relay)} 응답 · 중앙 {statistics.median([e.get("secs", 0) for e in ok]) if ok else 0:.1f}초'
+                 + (f" · 거절 {flagged}" if flagged else ""))
+    cards = [
+        {"k": "잔고 대조", "v": "-" if diff is None else ("일치" if abs(diff) < 0.005 else f"{diff:+,.2f}"),
+         "tone": "down" if diff is not None and abs(diff) > 2 else "", "sub": "장부와 지갑 차이"},
+        {"k": "판매 정산", "v": f"{len(sales)}건", "sub": f'판매가 {sum(e["data"].get("amount", 0) for e in sales):,} · 수수료 뺀 입금 '
+         f'{sum(e["data"].get("amount", 0) - e["data"].get("shop_fee", 0) for e in sales):,} 크레딧'},
+        {"k": "Claude 조언팀", "v": "켜짐" if left > 0 else "끝남", "sub": "주인이 끌 때까지 (11/26 연장)"},
+        {"k": "모델", "v": "시장 데스크" if desk else "우리 중계", "sub": model_sub},
+    ]
+    MENU.clear()                                         # the ⋯ menu's rows (app/menu.json, written with the status)
+    MENU.update({"at": time.strftime("%H:%M"), "warn": False, "rows": [
+        {"k": "모델", "v": cards[3]["v"], "sub": model_sub},
+        {"k": "Claude 조언팀", "v": cards[2]["v"], "sub": cards[2]["sub"]},
+        {"k": "감시", "v": "정상" if alive else "멈춤?", "sub": f"마지막 점검 {int(watch_age)}초 전" if watch_age < 1e8 else "기록 없음"}]})
+    out_alerts = []
+    for a in alerts:
+        ko, act, _ = alert_ko(a)
+        out_alerts.append({"ts": a.get("ts", 0), "level": a.get("level", ""), "ko": ko, "act": act,
+                           "orig": a.get("text", "") if ko != a.get("text") else ""})
+    app_tools = [{"name": "app_say", "desc": "앱에 먼저 말하기 (키트)"}]
+    try:
+        page_src = (HERE / "app" / "index.html").read_text(encoding="utf-8")
+        app_tools += [{"name": f"app_{n}", "desc": d} for n, d in re.findall(r"miniapp\.offer\('([a-z_]+)',\s*'([^']*)'", page_src)]
+    except OSError:
+        pass
+    return {
+        "at": int(now), "name": NAME, "alive": alive, "start": START_TOKRW,
+        "wallet": {"bal": bal, "pts": [[int(t), round(v, 1)] for t, v in pts]},
+        "rank": {"rank": me.get("rank"), "ranked": ranked, "s_rank": s_rank, "s_total": len(s_ranks), "moved": moved},
+        "cards": cards,
+        "alerts": out_alerts, "alerts_hour": sum(1 for a in alerts if now - a.get("ts", 0) <= 3600),
+        "moves": [{"ts": float(e.get("ts", 0)), "action": str(e.get("action")),
+                   "thought": " ".join(str(e.get("thought") or "").split())[:4000]} for e in jsonl("react.jsonl", 15)[::-1]],
+        "forge": [{"name": str(n), "version": str(e.get("version")), "passed": bool(e.get("passed")), "ts": e.get("ts")}
+                  for n, e in sorted(forge.items(), key=lambda kv: -float(kv[1].get("ts", 0)))],
+        "app_tools": app_tools,
+        "said": [{"ts": e.get("ts", 0), "text": str(e.get("said_first") or "").strip()} for e in jsonl("app.jsonl", 5)[::-1]],
+        "nudges": [{"ts": e.get("ts", 0), "why": e.get("why", ""), "text": str(e.get("text") or "").strip(),
+                    "reply": str(e.get("reply") or "").strip()} for e in jsonl("nudges.jsonl", 5)[::-1]],
+        "structure": structure_data(now, desk),
+    }
+
+
+def rank_moved(now, rank, s_rank):
+    """Append the rank when it changes (at most once in 10 minutes); how many student places it climbed in an hour."""
+    try:
+        rows = [json.loads(l) for l in RANKS.read_text(encoding="utf-8").splitlines() if l.strip()]
+    except (OSError, ValueError):
+        rows = []
+    if s_rank and (not rows or rows[-1].get("s_rank") != s_rank or now - rows[-1]["ts"] > 600):
+        with open(RANKS, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": int(now), "rank": rank, "s_rank": s_rank}) + "\n")
+        rows.append({"ts": now, "rank": rank, "s_rank": s_rank})
+    old = [r for r in rows if r["ts"] <= now - 3600]
+    return old[-1]["s_rank"] - s_rank if s_rank and old else None
+
+
+def structure_data(now, desk):
+    """가게 구조 as data: the clerk, the agent, the forged tools by role and their rights (see structure())."""
+    tools = []
+    for d in sorted((HERE / "tools").iterdir()) if (HERE / "tools").is_dir() else []:
+        perm = d / "permission.yml"
+        if d.name.startswith(".") or not perm.is_file():
+            continue
+        y = perm.read_text(encoding="utf-8", errors="replace")
+        get = lambda k: (re.search(rf"^\s*{k}:\s*(.+)$", y, re.M) or [None, ""])[1].strip()
+        tools.append({"name": d.name, "desc": get("description"), "ver": get("version") or "1",
+                      "handles": "a2a" in get("handles"), "wallet": get("wallet") not in ("", "[]")})
+    used = {}
+    for e in jsonl("react.jsonl", 20000):
+        if now - float(e.get("ts", 0)) <= 86400:
+            used[e.get("action")] = used.get(e.get("action"), 0) + 1
+    clerk = next((x for x in tools if x["handles"]), None)
+    mode = "없음"
+    if clerk:
+        src = (HERE / "tools" / clerk["name"] / "logic.py").read_text(encoding="utf-8", errors="replace")
+        body = [l for l in src.splitlines() if l.strip() and not l.strip().startswith("#")]
+        mode = "모든 문의를 에이전트에게 넘김" if len(body) <= 3 and "defer" in src else "코드로 바로 답하고, 필요할 때만 넘김"
+
+    def role(x):
+        for name, keys in sorted(ROLES, key=lambda r: r[0] != "원장·결제 확인"):
+            if any(k in x["name"] for k in keys):
+                return name
+        return ROLES[-1][0]
+    groups = []
+    for name, _ in ROLES:
+        rows = [dict(x, used=used.get(x["name"], 0)) for x in tools if role(x) == name]
+        if rows:
+            groups.append({"role": name, "tools": rows})
+    return {"clerk": {"name": clerk["name"], "ver": clerk["ver"]} if clerk else None, "clerk_mode": mode, "desk": desk,
+            "actions24": sum(used.values()), "count": len(tools), "groups": groups}
+
+
 def page(in_app=False):
     now = time.time()
     wallet = [e for e in jsonl("wallet.jsonl") if e.get("wallet") == "shop"]
@@ -567,6 +708,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 APP_COPY = HERE / "app" / "dashboard.html"           # the mini app serves it behind its own access code (11/24)
+STATUS_COPY = HERE / "app" / "status.json"           # 11/27: 현황 as data; app/status.html draws it
 MENU_COPY = HERE / "app" / "menu.json"               # the ⋯ menu's rows (11/27)
 MENU = {}
 CREDIT = ('<p class="note credit">미니앱 키트는 <a href="https://github.com/Q00/meshkit" target="_blank" rel="noopener">MeshKit</a>과 '
@@ -620,12 +762,16 @@ def board_sync():
 
 
 def write_app_copy():
-    """Every 30 s, the same page into app/ so the mini app's 현황 button opens it (git-ignored; no secret in it)."""
+    """Every 30 s, 현황's data into app/status.json for the mini app's app/status.html (git-ignored; no secret in it).
+    Until 11/27 this wrote the whole page (app/dashboard.html); that address now forwards to the new page."""
+    APP_COPY.write_text('<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/status.html">'
+                        '<a href="/status.html">현황</a>', encoding="utf-8")
     while True:
         try:
-            tmp = APP_COPY.with_suffix(".tmp")
-            tmp.write_text(page(in_app=True), encoding="utf-8")
-            tmp.replace(APP_COPY)                   # whole or nothing: the app never serves half a page
+            data = status_data()
+            tmp = STATUS_COPY.with_suffix(".tmp")
+            tmp.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(STATUS_COPY)                # whole or nothing: the app never reads half a status
             use, warn = usage_rows()
             menu = dict(MENU, rows=use + MENU.get("rows", []), warn=warn)
             tmp = MENU_COPY.with_suffix(".tmp")
@@ -641,10 +787,10 @@ def main():
     import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-serve", action="store_true",
-                    help="only write app/dashboard.html for the mini app's 현황 (11/24: the separate Tailscale page is off)")
+                    help="only write app/status.json for the mini app's 현황 (11/24: the separate Tailscale page is off)")
     a = ap.parse_args()
     if a.no_serve:
-        print("[dash] writing app/dashboard.html every 30 s for the mini app (no server of its own)", flush=True)
+        print("[dash] writing app/status.json every 30 s for the mini app (no server of its own)", flush=True)
         write_app_copy()                                 # runs forever
         return
     key = code()

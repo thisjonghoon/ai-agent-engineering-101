@@ -9,3 +9,5 @@ app/board.tmp
 app/menu.json
 app/menu.tmp
 logs/board.lock
+app/status.json
+app/status.tmp

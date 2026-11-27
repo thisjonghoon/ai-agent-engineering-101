@@ -1,6 +1,8 @@
 # The shop's screens: one look
 
-Every screen of the shop (the chat, 현황, the Tailscale dashboard, and any screen added later) uses `app/ui.css`.
+Every screen of the shop (the chat, 현황, 보드, and any screen added later) uses `app/ui.css`. Since 11/27 every screen is a
+static page in `app/` that reads its data as JSON: 현황 is `app/status.html` over `app/status.json` (dashboard_r4.py writes
+it every 30 s; `/dashboard.html` forwards there), 보드 is `app/board.html` over `app/board.json`.
 The look is webtoon-review-board's design system with Hermes orange as its one accent; the frame is the mini app's.
 
 ## Rules

@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e0f10" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg?v=2" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+<title>현황 · 골목 가게</title>
+<meta name="description" content="thisjonghoon 가게의 지갑, 순위, 감시 경보와 에이전트 활동">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="/ui.css?v=3">
+</head>
+<body class="screen">
+<header class="wide app-head">
+  <div class="ident"><div class="avatar"><img src="/icon.svg?v=2" alt=""></div>
+    <div class="who"><h1 id="nm">thisjonghoon</h1><div class="status" id="st"><span class="dot"></span><span><span class="st-text" id="stt">현황을 읽는 중</span> <span class="num" id="sttime"></span></span></div></div></div>
+  <nav class="tabs" aria-label="화면"><a href="/status.html" aria-current="page">현황</a><a href="/">채팅</a><a href="/board.html">보드<span class="badge" id="boardbadge" hidden></span></a></nav>
+  <button type="button" class="morebtn" id="morebtn" aria-label="더보기" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span class="pip" hidden></span></button>
+</header>
+<div id="pane"><main class="page wide" id="main"><div class="board-empty">현황을 읽는 중입니다.</div></main></div>
+<dialog id="full" class="full" aria-labelledby="full-h"><div class="full-head"><h2 id="full-h"></h2>
+<button type="button" class="full-x" aria-label="닫기">✕</button></div><div class="full-body"></div></dialog>
+<div class="shade" id="menu" hidden><div class="sheet menu-sheet" role="dialog" aria-modal="true" aria-labelledby="menu-h" tabindex="-1">
+  <div class="grip"></div><h2 id="menu-h">가게 정보</h2><div id="menu-body"></div>
+</div></div>
+<script>
+// 현황 (11/27, owner: the mini app draws every screen). dashboard_r4.py writes the numbers to /status.json every 30 s;
+// this page draws them with the same parts as before (ui.css, app/DESIGN.md) and redraws on each new file, keeping
+// the scroll, the open rows and an open 전체 보기. Every value is escaped; numbers go in the number face.
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+const numify = s => esc(s).replace(/(\d[\d,.:%]*)/g, '<span class="num">$1</span>');
+const pad = n => String(n).padStart(2, '0');
+const hm = ts => { const d = new Date((+ts || 0) * 1000); return `${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const f1 = v => (+v).toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+const sign = (v, f) => (v >= 0 ? '+' : '-') + f(Math.abs(v));
+const clip = (s, n) => { s = String(s || '').replace(/\s+/g, ' ').trim(); return s.length <= n ? s : s.slice(0, n - 1) + '…'; };
+
+const item = (id, head, preview, full) =>
+  `<details class="move" id="${id}"><summary>${head}<small class="preview" aria-hidden="true">${preview}</small></summary><p class="fulltext">${full}</p></details>`;
+const lst = (rows, empty = '아직 없습니다.') => rows.length ? `<div class="list">${rows.map(r => `<div>${r}</div>`).join('')}</div>` : `<div class="none">${empty}</div>`;
+function more(key, rows, shown, empty = '아직 없습니다.') {
+  if (!rows.length) return `<div class="none">${empty}</div>`;
+  return lst(rows.slice(0, shown)) + (rows.length > shown
+    ? `<details class="more" id="more-${key}"><summary>전체 보기 · ${rows.length}</summary>${lst(rows.slice(shown))}</details>` : '');
+}
+
+// the wallet over time (dataviz review 11/24): a 2px line, a 10% wash, a dashed start line, the range at the left, an end dot
+function spark(points, start, w = 320, h = 72) {
+  if (points.length < 2) return '<p class="none">기록이 더 쌓이면 그래프가 나옵니다</p>';
+  const t0 = points[0][0], t1 = points[points.length - 1][0];
+  const vals = points.map(p => p[1]).concat(start);
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  const pd = (hi - lo) * 0.08 || 1; lo -= pd; hi += pd;
+  const X = t => (t - t0) / ((t1 - t0) || 1) * w, Y = v => h - (v - lo) / (hi - lo) * h;
+  const xy = points.map(([t, v]) => `${X(t).toFixed(1)},${Y(v).toFixed(1)}`);
+  const area = `M0,${h} L${xy.join(' L')} L${w},${h} Z`, ref = Y(start).toFixed(1);
+  const last = points[points.length - 1];
+  return `<div class="chartbox" data-pts='${esc(JSON.stringify(points))}' aria-label="지갑 추이">`
+    + `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" class="spark" aria-hidden="true"><path class="area" d="${area}"/>`
+    + `<line class="ref" x1="0" x2="${w}" y1="${ref}" y2="${ref}" vector-effect="non-scaling-stroke"/>`
+    + `<polyline points="${xy.join(' ')}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>`
+    + `<span class="yl" style="top:-4px">${f1(hi - pd)}</span><span class="yl" style="bottom:-4px">${f1(lo + pd)}</span>`
+    + `<span class="pt" style="left:${(X(last[0]) / w * 100).toFixed(2)}%;top:${(Y(last[1]) / h * 100).toFixed(2)}%"></span>`
+    + `<span class="hairv" hidden></span><span class="tip" hidden></span></div>`
+    + `<div class="axis"><span>${hm(t0)}</span><span>점선: 시작 ${Math.round(start).toLocaleString('en-US')}</span><span>${hm(t1)}</span></div>`;
+}
+
+function hero(d) {
+  const bal = d.wallet.bal, r = d.rank, diff = bal == null ? null : bal - d.start;
+  const moved = r.moved == null || !r.s_rank ? '' : r.moved === 0 ? '<span class="num">— (1시간)</span>'
+    : `<span><span class="${r.moved > 0 ? 'up' : 'down'} num">${r.moved > 0 ? '▲' : '▼'}${Math.abs(r.moved)}</span><span class="num"> (1시간)</span></span>`;
+  return `<section class="panel accent"><div class="split"><div><div class="label">가게 지갑</div>`
+    + `<div class="big">${bal == null ? '-' : f1(bal)} <small>tOKRW</small></div>`
+    + (diff == null ? '' : `<div class="sub ${diff >= 0 ? 'up' : 'down'}">시작 대비 <span class="num">${sign(diff, f1)} (${sign(diff / d.start * 100, v => v.toFixed(1))}%)</span></div>`)
+    + `</div><div class="right"><div class="label">보드 순위</div><div class="big">${esc(r.rank || '-')} <small>/ ${r.ranked}</small></div></div></div>`
+    + `<div class="rankline"><b>학생 <span class="num">${r.s_rank || '-'}</span>위</b>`
+    + (r.s_rank && r.s_total ? `<span>상위 <span class="num">${Math.round(r.s_rank / r.s_total * 100)}%</span></span>` : '') + moved + '</div>'
+    + `<div class="trend">${spark(d.wallet.pts, d.start)}</div><div class="note">1 tOKRW = 1,000 크레딧</div></section>`;
+}
+
+const stats = d => '<div class="stats">' + d.cards.map(c =>
+  `<section class="panel"><div class="label">${esc(c.k)}</div><div class="value">${c.tone ? `<span class="${c.tone}">${esc(c.v)}</span>` : esc(c.v)}</div><div class="sub clip">${numify(c.sub)}</div></section>`).join('') + '</div>';
+
+function moves(d) {
+  const mv = d.moves.map(e => item(`mv-${Math.floor(e.ts)}`, `<span class="time">${hm(e.ts).slice(6)}</span> <b>${esc(e.action)}</b>`,
+    esc(clip(e.thought, 140)), esc(e.thought)));
+  // phone: 3 moves; landscape: 6, so the tall left cell beside two stacked panels is filled (owner's layout, 11/24)
+  return '<section class="panel g-mv" id="activity"><h2>최근 행동</h2>'
+    + (mv.length ? `<div class="list">${mv.slice(0, 3).map(m => `<div>${m}</div>`).join('')}${mv.slice(3, 6).map(m => `<div class=wide-only>${m}</div>`).join('')}</div>` : '<div class="none">아직 없습니다.</div>')
+    + (mv.length > 3 ? `<details class="more" id="more-moves"><summary>전체 보기 · ${mv.length}</summary><div class="list">`
+      + mv.slice(3, 6).map(m => `<div class=narrow-only>${m.replace('id="mv-', 'id="mvn-')}</div>`).join('')
+      + mv.slice(6).map(m => `<div>${m}</div>`).join('') + '</div></details>' : '')
+    + '</section>';
+}
+
+function alerts(d) {
+  const rows = d.alerts.map((a, i) => item(`al-${Math.floor(a.ts)}-${i}`,
+    `<span class="tag ${esc(String(a.level).toLowerCase())}">${a.level === 'STOP' ? '멈춤' : '경보'}</span> <span class="time">${hm(a.ts)}</span> ${esc(a.ko)}`,
+    esc(a.act), esc(a.act) + (a.orig ? `<span class="orig">감시 원문 <span lang="en">${esc(a.orig)}</span></span>` : '')));
+  return `<section class="panel g-al"><h2>감시 경보 · 최근 1시간 ${d.alerts_hour}건</h2>${more('alerts', rows, 3, '경보 없음')}</section>`;
+}
+
+function tools(d) {
+  if (!d.forge.length) return '';
+  const chips = d.forge.map(e => `<span class="tchip ${e.passed ? '' : 'bad'}" title="${esc(hm(e.ts))}">${esc(e.name)} <span class="num">v${esc(e.version)}</span></span>`).join('');
+  // three rows of chips at most; when they overflow, 전체 보기 shows (11/24, owner)
+  return `<section class="panel g-tl"><h2>만든 도구 · ${d.forge.length}</h2><div class="tchips cap">${chips}</div>`
+    + `<details class="more chipsmore" id="more-tools"><summary>전체 보기 · ${d.forge.length}</summary><div class="tchips">${chips}</div></details>`
+    + `<div class="sub" style="margin:12px 0 6px">이 앱이 준 도구</div><div class="tchips">${d.app_tools.map(t => `<span class="tchip neutral" title="${esc(t.desc)}">${esc(t.name)}</span>`).join('')}</div></section>`;
+}
+
+const said = d => '<section class="panel g-sd"><h2>스스로 보낸 메시지</h2><div class="sub" style="margin:-6px 0 10px">직접 답장 외에 에이전트가 채팅에 따로 올린 후속 답과 알림</div>'
+  + more('said', d.said.map((e, i) => item(`sd-${Math.floor(e.ts)}-${i}`, `<span class="time">${hm(e.ts)}</span>`, esc(e.text.replace(/\s+/g, ' ')), esc(e.text))), 2) + '</section>';
+
+const WHY = {early: '조언팀', alert: '경보', offhours: '부재'};
+const asked = d => '<section class="panel g-qs"><h2>Claude의 질문</h2>' + more('nudges', d.nudges.map((e, i) => item(`qs-${Math.floor(e.ts)}-${i}`,
+  `<span class="time">${hm(e.ts)}</span> <span class="tag">${esc(WHY[e.why] || e.why)}</span>`,
+  esc(e.text.replace(/\s+/g, ' ')) + (e.reply ? `<span class="a">→ ${esc(e.reply.replace(/\s+/g, ' '))}</span>` : ''),
+  `<span class="q">${esc(e.text)}</span>` + (e.reply ? `<span class="a">→ ${esc(e.reply)}</span>` : ''))), 3) + '</section>';
+
+// 가게 구조 (11/26): who writes in, what answers in code, what the model decides, the tools by role and their rights
+function structure(d) {
+  const s = d.structure;
+  const flow = '<ol class="flow-steps"><li><b>손님·다른 가게</b><small>A2A로 가게에 메시지</small></li>'
+    + `<li><b>자동 응대</b> <span class="num">${s.clerk ? esc(s.clerk.name + ' v' + s.clerk.ver) : '-'}</span><small>${esc(s.clerk_mode)}</small></li>`
+    + `<li><b>에이전트</b><small>${s.desk ? '시장 모델 데스크' : '우리 중계'} · 최근 24시간 행동 ${s.actions24}번</small></li>`
+    + `<li><b>만든 도구 ${s.count}개</b><small>아래 역할별</small></li></ol>`;
+  const groups = s.groups.map(g => `<div class="sub" style="margin:12px 0 6px">${esc(g.role)} · ${g.tools.length}</div><div class="tchips">`
+    + g.tools.map(x => `<span class="tchip${x.used ? '' : ' neutral'}" title="${esc(x.desc)}">${esc(x.name)} <span class="num">v${esc(x.ver)}</span>`
+      + (x.handles ? ' · 응대' : '') + (x.wallet ? ' · 지갑' : '') + (x.used ? ` · <span class="num">${x.used}</span>회` : '') + '</span>').join('') + '</div>').join('');
+  const team = '<div class="sub" style="margin:14px 0 6px">바깥에서 돕는 쪽</div><div class="list">'
+    + '<div><b>주인 jonghoon</b> · 앱 채팅으로 지시 (에이전트는 주인 말을 자기 도구보다 우선)</div>'
+    + '<div><b>Claude 조언팀</b> · 30분마다 기록 점검, 사실과 질문으로 넛지 (결정은 에이전트가)</div>'
+    + '<div><b>감시</b> · 지갑·장부 대조와 경보 (watch_r4)</div></div>';
+  return '<section class="panel g-st"><details class="struct" id="structure"><summary><h2 style="display:inline">가게 구조</h2>'
+    + '<small class="preview"> 손님 문의가 어디로 가서 누가 답하는지, 도구 역할과 권한</small></summary>'
+    + `${flow}${groups}<div class="note">회색 칩은 최근 24시간 안 쓴 도구 · "응대"는 손님 메시지를 직접 받는 도구 · "지갑"은 서명·송금 권한</div>${team}</details></section>`;
+}
+
+// phone: one column in this order; landscape (owner's layout, 11/24): alerts | tools, then moves tall on the left
+// beside the app messages over Claude's questions
+let data = null, lastAt = 0;
+function draw(d) {
+  const main = $('main');
+  if (main.contains(document.activeElement) && document.activeElement !== main && lastAt) return;   // not under a finger
+  const open = [...main.querySelectorAll('details[open]')].map(x => x.id);
+  main.innerHTML = `<div class="top">${hero(d)}${stats(d)}</div><div class="lower">${alerts(d)}${moves(d)}${tools(d)}${said(d)}${asked(d)}</div>${structure(d)}`;
+  open.forEach(id => { const e = document.getElementById(id); if (e) e.open = true; });
+  main.dataset.ts = d.at;
+  lastAt = d.at;
+  chart(); caps(); cans(); if (full.open) fill(full.dataset.key);
+}
+
+function status() {
+  const st = $('st'), age = data ? Date.now() / 1000 - data.at : Infinity;
+  const late = age > 90, alive = data && data.alive;
+  st.className = 'status ' + (alive && !late ? 'on' : 'off');
+  document.body.classList.toggle('stale', !!late);
+  $('stt').textContent = !data ? '현황을 읽는 중' : late ? `업데이트 ${Math.round(age / 60)}분 전` : alive ? '감시 정상' : '감시 멈춤?';
+  $('sttime').textContent = data ? hm(data.at).slice(6) : '';
+}
+
+async function load() {
+  if (document.hidden && data) return;
+  try {
+    const r = await fetch('/status.json', {cache: 'no-store'});
+    if (!r.ok) throw new Error(r.status);
+    const d = await r.json();
+    data = d;
+    if ($('nm').textContent !== d.name) $('nm').textContent = d.name;
+    if (d.at !== lastAt) draw(d);
+  } catch (e) { if (!data) $('main').innerHTML = '<div class="board-empty">현황을 읽지 못했습니다. 대시보드가 돌고 있는지 확인해 주세요.</div>'; }
+  status();
+}
+
+// the wallet chart's readout: a hairline and the value at the nearest point, by pointer or touch
+function chart() {
+  const box = document.querySelector('.chartbox'); if (!box) return;
+  const pts = JSON.parse(box.dataset.pts), line = box.querySelector('.hairv'), tip = box.querySelector('.tip');
+  const t0 = pts[0][0], t1 = pts[pts.length - 1][0];
+  const show = x0 => {
+    const r = box.getBoundingClientRect(), f = Math.min(1, Math.max(0, (x0 - r.left) / r.width)), t = t0 + f * (t1 - t0);
+    let best = pts[0]; for (const p of pts) if (Math.abs(p[0] - t) < Math.abs(best[0] - t)) best = p;
+    const x = (best[0] - t0) / ((t1 - t0) || 1) * 100;
+    line.hidden = tip.hidden = false; line.style.left = tip.style.left = x + '%';
+    const d = new Date(best[0] * 1000);
+    tip.textContent = `${pad(d.getHours())}:${pad(d.getMinutes())} · ${best[1].toLocaleString('ko-KR', {minimumFractionDigits: 1})}`;
+  };
+  box.onpointermove = e => show(e.clientX);
+  box.onpointerdown = e => show(e.clientX);
+  box.onpointerleave = () => { line.hidden = tip.hidden = true; };
+}
+
+// 전체 보기: a full-screen list of the whole panel instead of unfolding in place (11/24, owner); without the script the
+// <details> still unfold. The list is rebuilt on each redraw while it is open.
+const full = $('full');
+function fill(key) {
+  const panel = document.querySelector('main .' + key); if (!panel) { full.close(); return; }
+  full.dataset.key = key;
+  $('full-h').textContent = panel.querySelector('h2').textContent;
+  const body = full.querySelector('.full-body'); body.replaceChildren();
+  const chipsAll = panel.querySelector('details.chipsmore .tchips');
+  if (chipsAll) { body.append(chipsAll.cloneNode(true)); return; }
+  const list = document.createElement('div'); list.className = 'list';
+  panel.querySelectorAll('.list>div:not(.wide-only)').forEach(x => { const c = x.cloneNode(true); c.classList.remove('narrow-only'); list.append(c); });
+  list.querySelectorAll('[id]').forEach(x => x.removeAttribute('id'));
+  list.querySelectorAll('details.move').forEach(x => x.open = true);
+  body.append(list);
+}
+document.addEventListener('click', e => {
+  const s = e.target.closest('details.more>summary'); if (!s) return;
+  e.preventDefault();
+  const key = [...s.closest('section.panel').classList].find(c => c.startsWith('g-'));
+  fill(key); full.showModal(); full.querySelector('.full-body').scrollTop = 0;
+});
+full.querySelector('.full-x').onclick = () => full.close();
+full.addEventListener('close', () => document.querySelector('main .' + full.dataset.key + ' details.more>summary')?.focus());
+full.addEventListener('click', e => { if (e.target === full) full.close(); });
+// a row whose whole text is longer than its two-line preview gets a chevron (.can); the tools' 전체 보기 shows only
+// when the chips overflow their three rows
+function cans() { document.querySelectorAll('main details.move').forEach(d => { const p = d.querySelector('.preview'), f = d.querySelector('.fulltext');
+  if (!d.open && p) d.classList.toggle('can', p.scrollHeight > p.clientHeight + 1 || (f && f.textContent.trim().length > p.textContent.trim().length + 2)); }); }
+function caps() { document.querySelectorAll('.tchips.cap').forEach(c => c.closest('section').classList.toggle('over', c.scrollHeight > c.clientHeight + 2)); }
+document.documentElement.classList.add('js');
+addEventListener('resize', () => { caps(); cans(); });
+document.fonts?.ready.then(() => { caps(); cans(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+load(); setInterval(load, 15000); setInterval(status, 5000);
+</script>
+<script src="/shell.js?v=3"></script>
+</body>
+</html>

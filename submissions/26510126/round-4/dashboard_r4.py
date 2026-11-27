@@ -579,6 +579,36 @@ def numify_plain(text):
     return re.sub(r"<[^>]+>", "", text)
 
 
+TICKET_LIMITS = os.environ.get("TICKET_LIMITS", "http://127.0.0.1:8830/api/limits")
+
+
+def usage_rows():
+    """Claude and Codex plan usage from the ticket app (hoon-ticket's top-bar meter, local only; 11/27 owner).
+    The ticket app caches it for 5 minutes. Copilot and OpenRouter are left out (owner)."""
+    try:
+        with urllib.request.urlopen(TICKET_LIMITS, timeout=8) as r:
+            snap = json.loads(r.read())
+    except Exception:
+        return [], False
+    rows, warn = [], False
+    for a in snap.get("agents", []):
+        if a.get("agent") not in ("claude", "codex"):
+            continue
+        ws = {w["label"]: w for w in a.get("windows", [])}
+        week, five = ws.get("Week"), ws.get("5 hours")
+        if not week:
+            continue
+        rest = [f'5시간 {five["usedPercent"]:.0f}%'] if five else []
+        rest += [f'{k.replace("Week · ", "")} {w["usedPercent"]:.0f}%' for k, w in ws.items() if k.startswith("Week · ")]
+        if week.get("resetsAt"):
+            rest.append("리셋 " + time.strftime("%m/%d %H:%M", time.localtime(week["resetsAt"] / 1000)))
+        pct = week["usedPercent"]
+        warn = warn or pct >= 85 or (five or {}).get("usedPercent", 0) >= 90
+        rows.append({"k": "Claude" if a["agent"] == "claude" else "Codex", "v": f"주간 {pct:.0f}%", "sub": " · ".join(rest),
+                     "pct": pct})
+    return rows, warn
+
+
 def board_sync():
     """Orders the owner sent from the app move to 반영·검증 (board_r4.py sync), on the page's own 30 s beat."""
     if not (LOGS / "board.jsonl").exists():
@@ -596,8 +626,10 @@ def write_app_copy():
             tmp = APP_COPY.with_suffix(".tmp")
             tmp.write_text(page(in_app=True), encoding="utf-8")
             tmp.replace(APP_COPY)                   # whole or nothing: the app never serves half a page
+            use, warn = usage_rows()
+            menu = dict(MENU, rows=use + MENU.get("rows", []), warn=warn)
             tmp = MENU_COPY.with_suffix(".tmp")
-            tmp.write_text(json.dumps(MENU, ensure_ascii=False), encoding="utf-8")
+            tmp.write_text(json.dumps(menu, ensure_ascii=False), encoding="utf-8")
             tmp.replace(MENU_COPY)
             board_sync()
         except Exception as e:

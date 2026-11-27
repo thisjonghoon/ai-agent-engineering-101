@@ -321,3 +321,8 @@ header.app-head{flex-wrap:wrap;row-gap:0;padding-bottom:0;border-bottom:1px soli
 .col .none{padding:4px}
 .board-empty{text-align:center;color:var(--text-mute);font-size:13px;padding:40px 16px}
 .sheet:focus{outline:none}
+/* plan usage in the ⋯ menu (11/27, from the ticket app): a thin bar under the row, red from 90 % */
+.menu-sheet .kv div.use{flex-wrap:wrap;row-gap:8px}
+.meter{flex:0 0 100%;display:block;height:4px;border-radius:2px;background:var(--hover);overflow:hidden}
+.meter b{display:block;height:100%;background:var(--primary);border-radius:inherit}
+.meter.hot b{background:var(--danger)}

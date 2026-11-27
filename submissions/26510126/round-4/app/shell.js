@@ -15,7 +15,8 @@
   function drawMenu() {
     const rows = (menu && menu.rows) || [];
     $('menu-body').innerHTML = (rows.length
-      ? `<div class="kv">${rows.map(r => `<div><span>${esc(r.k)}</span><span>${esc(r.v)}${r.sub ? `<small>${esc(r.sub)}</small>` : ''}</span></div>`).join('')}</div>`
+      ? `<div class="kv">${rows.map(r => `<div${r.pct != null ? ' class="use"' : ''}><span>${esc(r.k)}</span><span>${esc(r.v)}${r.sub ? `<small>${esc(r.sub)}</small>` : ''}</span>`
+        + (r.pct != null ? `<i class="meter${r.pct >= 90 ? ' hot' : ''}" aria-hidden="true"><b style="width:${Math.min(100, +r.pct)}%"></b></i>` : '') + '</div>').join('')}</div>`
       : '<p class="sub">현황이 아직 쓰이지 않았습니다.</p>')
       + `<button type="button" class="mbtn" id="copylink">앱 주소 복사</button>`
       + (menu && menu.at ? `<p class="note" style="margin:10px 0 0">기준 <span class="num">${esc(menu.at)}</span></p>` : '')

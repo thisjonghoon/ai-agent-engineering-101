@@ -26,10 +26,19 @@ The look is webtoon-review-board's design system with Hermes orange as its one a
   idle), labels and system lines 12/400 at 1.45, chat 15/400 at 1.6, quotes 12/400 at 1.5, rank line 15/700 + 13/500. Every number (money, counts, times, ids) is D2Coding: `.num`, `.value`, `.big`,
   `.time`, `.mono`. D2Coding is a 12 KB subset served from `app/` (digits, Latin, punctuation; `font-display:swap`;
   licence `app/D2Coding-OFL.txt`); Hangul in a number cell falls back to Pretendard.
-- **Frame.** A thin `header`: `.avatar` (the shop's initial), `.who` with the name and a `.status` dot, then the screen
-  switch `.seg` (the current screen's link has `aria-current="page"`). No activity sheet since 11/24: 현황
-  carries the moves, the forged tools and the tools this app gives (`app_say`, each `miniapp.offer`), and the kit's credit. The orange 3 px line
-  under the header is the only decoration.
+- **Frame** (11/27, owner). Three screens, 현황 · 채팅 · 보드, in every page's `header.app-head`: `.ident` (avatar, name,
+  `.status` dot), `nav.tabs`, and one `⋯` button (`.morebtn`). On a phone the name row keeps ⋯ at its right and the tabs
+  fill a second row; the current tab's 3 px orange underline is the header's one decoration (it replaced the full-width
+  line). From 900 px it is one row with the tabs in the centre. While the chat's message box has focus on a phone the
+  tabs fold away (`body.typing`) so the talk keeps its room. The 보드 tab carries a `.badge` with what waits for the owner.
+  ⋯ opens `#menu`: a bottom sheet on a phone, a 340 px panel under the button from 900 px, with the rows of
+  `app/menu.json` (model, Claude 조언팀, 감시; written by dashboard_r4.py), 앱 주소 복사 and the kit's credit.
+  `app/shell.js` fills all of it; each page carries the same header markup.
+- **보드** (11/27). Cards from `app/board.json` (board_r4.py) and the agent's MeshKit consents. 내 차례 cards are
+  always open with their actions (`.bcard.mine`, orange edge): a consent has 거절/허용, an order shows its draft in the
+  owner's bubble colour (`.draft`, `--accent-soft`) with 복사/보내기; 보내기 waits 5 s with 되돌리기, then posts the
+  draft as the owner's chat message. Other cards are `details.move` rows. Phone: 내 차례 on top, then one column chosen
+  by chips; 900 px and up: five columns with 내 차례 in the middle. `#12` in a chat bubble links to `/board.html#c12`.
 - **Body.** A screen other than the chat is `body.screen` with `main.page`: panels (`.panel`, `.panel.accent` for the
   one number that matters most), a two-column `.stats` grid that stays two columns on a phone, lists (`.list`), and
   key-value tables (`.kv`). Section titles are `.panel h2`; small labels are `.label` and `.sub`.

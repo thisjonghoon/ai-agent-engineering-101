@@ -7,6 +7,7 @@ Copied from `scripts/round4/` at upstream `df59456` (kit v5.2): agent_kit.py, mi
 market_kit.py, cli_model.py, LICENSE. Only `miniapp.py` differs from upstream (every change is marked `thisjonghoon`):
 - 11/26 the chat is kept in `.kit/chat.jsonl` across kit restarts
 - 11/26 an `app/` with its own icons is served those (the shop's logo), and the icon links carry `?v=2`
+- 11/27 the app's own files are sent with `cache-control: no-cache` (Cloudflare had kept an old ui.css for hours)
 - 11/27 `/api/board` and `miniapp.board(id, approved)`: the 보드 tab's 허용/거절, written by `board_r4.py answer`
 
 When the course updates the kit: diff `scripts/round4/` against the upstream commit above, bring the changes in here,

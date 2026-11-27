@@ -515,7 +515,7 @@ function cans() {{ document.querySelectorAll('main details.move').forEach(d => {
   if (!d.open && p) d.classList.toggle('can', p.scrollHeight > p.clientHeight + 1 || (f && f.textContent.trim().length > p.textContent.trim().length + 2)); }}); }}
 function caps() {{ document.querySelectorAll('.tchips.cap').forEach(c => c.closest('section').classList.toggle('over', c.scrollHeight > c.clientHeight + 2)); }}
 document.documentElement.classList.add('js'); caps(); addEventListener('resize', caps); document.fonts?.ready.then(() => {{ caps(); cans(); }}); cans(); addEventListener('resize', cans);
-</script>{'<script src="/shell.js"></script>' if in_app else ''}</body></html>"""
+</script>{'<script src="/shell.js?v=3"></script>' if in_app else ''}</body></html>"""
 
 
 def numify(text):

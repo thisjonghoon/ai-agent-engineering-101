@@ -293,7 +293,9 @@ def app(root, mind, toolbox, Event, name="agent", key=None):
             if custom.resolve() in f.parents and f.is_file():
                 media = {".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml",
                          ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json"}.get(f.suffix, "application/octet-stream")
-                return Response(f.read_bytes(), media_type=media)
+                # thisjonghoon 11/27: Cloudflare kept serving an old ui.css for hours (it caches .css/.js for 4 h when
+                # the origin says nothing); the app's own files are revalidated on every load instead
+                return Response(f.read_bytes(), media_type=media, headers={"cache-control": "no-cache"})
             return JSONResponse({"error": "not found"}, status_code=404)
         return HTMLResponse(PAGE) if rel == "index.html" else JSONResponse({"error": "not found"}, status_code=404)
 

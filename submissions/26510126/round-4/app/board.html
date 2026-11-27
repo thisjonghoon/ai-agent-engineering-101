@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e0f10" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg?v=2" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=2">
+<title>보드 · 골목 가게</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="/ui.css">
+</head>
+<body class="screen">
+<header class="wide app-head">
+  <div class="ident"><div class="avatar"><img src="/icon.svg?v=2" alt=""></div>
+    <div class="who"><h1 id="nm">골목 가게</h1><div class="status" id="st"><span class="dot"></span><span id="stt">보드를 읽는 중</span></div></div></div>
+  <nav class="tabs" aria-label="화면"><a href="/dashboard.html">현황</a><a href="/">채팅</a><a href="/board.html" aria-current="page">보드<span class="badge" id="boardbadge" hidden></span></a></nav>
+  <button type="button" class="morebtn" id="morebtn" aria-label="더보기" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span class="pip" hidden></span></button>
+</header>
+<div id="pane"><main class="page wide" id="main"><div class="board-empty">보드를 읽는 중입니다.</div></main></div>
+<div class="shade" id="menu" hidden><div class="sheet menu-sheet" role="dialog" aria-modal="true" aria-labelledby="menu-h" tabindex="-1">
+  <div class="grip"></div><h2 id="menu-h">가게 정보</h2><div id="menu-body"></div>
+</div></div>
+<script src="/miniapp.js"></script>
+<script>
+// 보드 (11/27, owner): Hermes's cards from /board.json (board_r4.py) and the agent's MeshKit consents from the kit.
+// The owner acts only on 내 차례: 허용/거절 on a consent, 복사/보내기 on an order. 보내기 waits 5 s (되돌리기) and then
+// posts the draft as the owner's chat message, the same call the chat's own send makes.
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+let me = 'jonghoon';
+try { me = localStorage.getItem('miniapp-user') || me; } catch (e) {}
+const COLS = ['backlog', 'doing', 'owner', 'review', 'done'];
+const NAMES = {backlog: '백로그', doing: '진행', owner: '내 차례', review: '반영·검증', done: '완료'};
+const SRC = {watch: '감시', advice: '조언', hermes: '헤르메스', owner: '주인', market: '마켓'};
+const BY = {hermes: '헤르메스', market: '마켓', owner: '주인', watch: '감시', advice: '조언'};
+let board = null, consents = [], chat = [], loaded = false, seen = 0;
+let col = 'backlog';                                  // the phone's chosen column
+const openCards = new Set(), handled = new Set(), sending = {};
+let sentLocal = {};
+try { sentLocal = JSON.parse(localStorage.getItem('board-sent') || '{}'); } catch (e) {}
+const hm = ts => new Date(ts * 1000).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit', hourCycle: 'h23'});
+const when = ts => { const d = new Date(ts * 1000), t = new Date(); return (d.toDateString() === t.toDateString() ? '' : `${d.getMonth() + 1}/${d.getDate()} `) + hm(ts); };
+
+function sentAt(c) {
+  if (c.kind !== 'order' || !c.draft) return null;
+  const m = chat.find(m => m.who === me && m.ts >= (c.at || 0) - 5 && m.text.trim() === c.draft.trim());
+  return m ? m.ts : (sentLocal[c.id] && sentLocal[c.id] >= (c.at || 0) ? sentLocal[c.id] : null);
+}
+
+function args(a) {
+  const e = Object.entries(a || {});
+  return `<div class="kv">${e.length ? e.map(([k, v]) => `<div><span>${esc(k)}</span><span>${esc(typeof v === 'string' ? v : JSON.stringify(v))}</span></div>`).join('')
+                                   : '<div><span>인자</span><span>없음</span></div>'}</div>`;
+}
+
+// a card in 내 차례: always open, with its actions
+function mine(c) {
+  const head = `<div class="bh"><span class="id">${c.consent ? '마켓 요청' : '#' + c.id}</span><b>${esc(c.title)}</b></div>`;
+  const what = c.body ? `<p class="what">${esc(c.body)}</p>` : '';
+  if (c.consent) {
+    return `<article class="bcard mine" data-consent="${esc(c.consent)}">${head}<p class="what">허용하면 이 내용 그대로 실행합니다.</p>${args(c.args)}
+      <div class="actions"><button type="button" data-act="no">거절</button><button type="button" class="yes" data-act="yes">허용</button></div></article>`;
+  }
+  if (c.kind === 'approve') {
+    return `<article class="bcard mine" data-c="${c.id}">${head}${what}${args(c.args)}
+      <div class="actions"><button type="button" disabled>거절</button><button type="button" class="yes" disabled>허용</button></div>
+      <p class="hold">이 카드의 허용·거절은 아직 앱에 연결되지 않았습니다. 헤르메스에게 직접 알려 주세요.</p></article>`;
+  }
+  if (c.kind === 'order' && c.draft) {
+    const s = sentAt(c), w = sending[c.id];
+    const foot = s ? `<p class="sent">보냄 <span class="num">${hm(s)}</span> · 헤르메스가 반영을 지켜봅니다</p>`
+      : w ? `<div class="actions" style="grid-template-columns:1fr"><button type="button" data-act="undo">되돌리기 · <span class="num">${Math.max(1, Math.ceil((w.until - Date.now()) / 1000))}</span>초 뒤 보냅니다</button></div>`
+      : `<div class="actions"><button type="button" data-act="copy">복사</button><button type="button" class="yes" data-act="send">보내기</button></div>`;
+    return `<article class="bcard mine" data-c="${c.id}">${head}${what}<div class="draft">${esc(c.draft)}</div>${foot}</article>`;
+  }
+  return `<article class="bcard mine" data-c="${c.id}">${head}${what}
+    <p class="hold">${c.bounces ? `${c.bounces}번 반려되어 올라왔습니다. ` : ''}헤르메스가 보낼 말을 준비하고 있습니다.</p></article>`;
+}
+
+// a card elsewhere: a row that unfolds to its story
+function row(c) {
+  const last = c.history.at(-1) || {};
+  const tags = `<span class="tag">${esc(SRC[c.source] || c.source)}</span>` + (c.bounces ? `<span class="tag${c.bounces > 1 ? ' alert' : ''}">반려 ${c.bounces}</span>` : '')
+    + `<span class="time">${when(c.updated)}</span>`;
+  const hist = c.history.slice().reverse().map(h => `<li><span class="num">${when(h.ts)}</span> <b>${esc(BY[h.by] || h.by)}</b>`
+    + (h.to ? ` → ${esc(NAMES[h.to])}` : h.op === 'note' ? ' 메모' : '') + (h.note ? ` · ${esc(h.note)}` : '') + '</li>').join('');
+  return `<details class="move" data-c="${c.id}"${openCards.has(c.id) ? ' open' : ''}><summary><span class="id">#${c.id}</span> <span class="t">${esc(c.title)}</span>
+    <div class="meta">${tags}</div>${last.note && !openCards.has(c.id) ? `<div class="preview">${esc(last.note)}</div>` : ''}</summary>
+    ${c.body ? `<p class="fulltext">${esc(c.body)}</p>` : ''}${c.draft ? `<div class="draft">${esc(c.draft)}</div>` : ''}<ul class="hist">${hist}</ul></details>`;
+}
+
+let drawn = '';
+function draw(force) {
+  const cards = (board && board.cards) || [];
+  const live = consents.filter(c => !handled.has(c.id)).map(c => ({consent: c.id, title: `${c.name} 실행 요청`, args: c.args}));
+  const by = Object.fromEntries(COLS.map(k => [k, cards.filter(c => c.status === k).sort((a, b) => b.updated - a.updated)]));
+  by.done = by.done.slice(0, 12);
+  const turn = live.concat(by.owner);
+  const key = JSON.stringify([cards.map(c => [c.id, c.updated, sentAt(c)]), live.map(c => c.consent), col, Object.entries(sending).map(([k, v]) => [k, Math.ceil((v.until - Date.now()) / 1000)])]);
+  if (key === drawn && !force) return;
+  drawn = key;
+  if (!loaded) return;
+  if (!cards.length && !live.length) {
+    $('main').innerHTML = '<div class="board-empty">아직 카드가 없습니다.<br>헤르메스가 감시와 조언 기록에서 카드를 만들면 여기에 쌓입니다.</div>';
+    return;
+  }
+  const none = '<div class="none">없습니다.</div>';
+  const narrow = `<div class="narrow-only">`
+    + (turn.length ? `<section class="myturn" aria-labelledby="turn-h"><h2 id="turn-h" class="sec" style="margin:4px 0 0">내 차례 <span class="num">${turn.length}</span></h2>${turn.map(mine).join('')}</section>` : '')
+    + `<div class="colchips" role="tablist" aria-label="컬럼" style="margin-top:${turn.length ? 16 : 0}px">${COLS.filter(k => k !== 'owner').map(k =>
+        `<button type="button" role="tab" data-col="${k}" aria-selected="${k === col}">${NAMES[k]} <span class="num">${by[k].length}</span></button>`).join('')}</div>`
+    + `<div class="cards" role="tabpanel" style="margin-top:10px">${by[col].map(row).join('') || none}</div></div>`;
+  const wide = `<div class="wide-only"><div class="cols">${COLS.map(k => {
+      const list = k === 'owner' ? turn.map(mine).join('') : by[k].map(row).join('');
+      const n = k === 'owner' ? turn.length : by[k].length;
+      return `<section class="col${k === 'owner' ? ' mine' : ''}"><h2>${NAMES[k]} <span class="num">${n}</span></h2><div class="cards">${list || none}</div></section>`;
+    }).join('')}</div></div>`;
+  $('main').innerHTML = narrow + wide;
+}
+
+// actions: one listener for both layouts
+$('main').addEventListener('click', async e => {
+  const chip = e.target.closest('[data-col]');
+  if (chip) { col = chip.dataset.col; draw(true); return; }
+  const b = e.target.closest('button[data-act]');
+  if (!b) return;
+  const card = b.closest('[data-c],[data-consent]');
+  if (card.dataset.consent) {
+    const id = card.dataset.consent;
+    handled.add(id); miniapp.consent(id, b.dataset.act === 'yes'); draw(true); return;
+  }
+  const c = board.cards.find(x => x.id === +card.dataset.c);
+  if (!c) return;
+  if (b.dataset.act === 'copy') {
+    try { await navigator.clipboard.writeText(c.draft); b.textContent = '복사했습니다'; } catch (err) { b.textContent = '복사 못 함'; }
+    setTimeout(() => draw(true), 1500);
+  } else if (b.dataset.act === 'send') {
+    const until = Date.now() + 5000;
+    sending[c.id] = {until, timer: setTimeout(() => go(c), 5000)};
+    draw(true);
+  } else if (b.dataset.act === 'undo') {
+    clearTimeout(sending[c.id]?.timer); delete sending[c.id]; draw(true);
+  }
+});
+function go(c) {
+  delete sending[c.id];
+  const ts = Math.floor(Date.now() / 1000);
+  sentLocal[c.id] = ts;
+  try { localStorage.setItem('board-sent', JSON.stringify(sentLocal)); } catch (e) {}
+  miniapp.chat(c.draft, me).catch(() => {});        // the agent's answer arrives in the chat tab
+  draw(true);
+}
+setInterval(() => { if (Object.keys(sending).length) draw(); }, 250);
+$('main').addEventListener('toggle', e => {
+  const d = e.target.closest?.('details.move'); if (!d) return;
+  const id = +d.dataset.c; d.open ? openCards.add(id) : openCards.delete(id);
+}, true);
+
+// #c12 (a card number tapped in the chat) opens that card
+function jump() {
+  const m = /^#c(\d+)$/.exec(location.hash); if (!m || !board) return;
+  const c = board.cards.find(x => x.id === +m[1]); if (!c) return;
+  if (c.status !== 'owner') { col = c.status; openCards.add(c.id); }
+  draw(true);
+  const el = [...document.querySelectorAll(`[data-c="${c.id}"]`)].find(x => x.offsetParent);
+  if (el) { el.scrollIntoView({block: 'center'}); el.classList.add('hit'); setTimeout(() => el.classList.remove('hit'), 1500); }
+  history.replaceState(null, '', location.pathname);
+}
+addEventListener('hashchange', jump);
+
+function status() {
+  const on = Date.now() - seen < 6000;
+  $('st').className = 'status ' + (on ? 'on' : 'off');
+  $('stt').textContent = !on ? '연결 끊김' : board ? `보드 ${when(board.at)} 기준` : '카드 없음';
+}
+setInterval(status, 1000);
+miniapp.onState(s => {
+  seen = Date.now(); consents = s.consents || []; chat = s.chat || [];
+  if (s.agent && $('nm').textContent !== s.agent) $('nm').textContent = s.agent;
+  draw(); status();
+});
+document.addEventListener('board', e => { const first = !loaded; board = e.detail; loaded = true; draw(true); if (first) jump(); status(); });
+</script>
+<script src="/shell.js"></script>
+</body>
+</html>

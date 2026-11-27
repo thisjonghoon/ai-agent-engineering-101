@@ -4,3 +4,8 @@
 meshkit.json
 app/dashboard.html
 app/dashboard.tmp
+app/board.json
+app/board.tmp
+app/menu.json
+app/menu.tmp
+logs/board.lock

@@ -289,12 +289,17 @@ def page(in_app=False):
     left = EARLY_END - now
     alive = watch_age < 180
 
-    seg = ('<nav class="seg" aria-label="화면"><a href="/">채팅</a><a href="/dashboard.html" aria-current="page">현황</a></nav>'
-           if in_app else '')
-    head = (f'<header class="wide"><div class="avatar"><img src="/icon.svg?v=2" alt=""></div><div class="who"><h1>{E(NAME)}</h1>'
-            f'<div class="status {"on" if alive else "off"}"><span class="dot"></span><span>'
-            f'<span class="st-text">{"감시 정상" if alive else "감시 멈춤?"}</span> <span class="num">{E(time.strftime("%H:%M:%S"))}</span></span></div></div>'
-            f'{seg}</header>')
+    who = (f'<div class="avatar"><img src="/icon.svg?v=2" alt=""></div><div class="who"><h1>{E(NAME)}</h1>'
+           f'<div class="status {"on" if alive else "off"}"><span class="dot"></span><span>'
+           f'<span class="st-text">{"감시 정상" if alive else "감시 멈춤?"}</span> <span class="num">{E(time.strftime("%H:%M:%S"))}</span></span></div></div>')
+    # in the mini app (11/27, owner): the shared frame of app/shell.js, tabs 현황 · 채팅 · 보드 and the ⋯ menu
+    head = (f'<header class="wide app-head"><div class="ident">{who}</div>'
+            '<nav class="tabs" aria-label="화면"><a href="/dashboard.html" aria-current="page">현황</a><a href="/">채팅</a>'
+            '<a href="/board.html">보드<span class="badge" id="boardbadge" hidden></span></a></nav>'
+            '<button type="button" class="morebtn" id="morebtn" aria-label="더보기" aria-haspopup="dialog" aria-expanded="false" aria-controls="menu">'
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/>'
+            '<circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg><span class="pip" hidden></span></button></header>'
+            if in_app else f'<header class="wide">{who}</header>')
 
     def item(iid, head, preview, full):
         """A row that unfolds on a tap: two muted lines of preview, then the whole text (the sheet opens them all)."""
@@ -346,6 +351,11 @@ def page(in_app=False):
          desk_sub if desk else f'{len(ok)}/{len(relay)} 응답 · 중앙 {statistics.median([e.get("secs", 0) for e in ok]) if ok else 0:.1f}초'
          + (f' · 거절 {flagged}' if flagged else "")),
     ]
+    MENU.clear()                                         # the ⋯ menu's rows (app/menu.json, written with the page)
+    MENU.update({"at": time.strftime("%H:%M"), "warn": False, "rows": [
+        {"k": "모델", "v": cards[3][1], "sub": numify_plain(cards[3][2])},
+        {"k": "Claude 조언팀", "v": cards[2][1], "sub": cards[2][2]},
+        {"k": "감시", "v": "정상" if alive else "멈춤?", "sub": f"마지막 점검 {int(watch_age)}초 전" if watch_age < 1e8 else "기록 없음"}]})
     stats = '<div class="stats">' + "".join(
         f'<section class="panel"><div class="label">{E(a)}</div><div class="value">{v}</div><div class="sub clip">{numify(E(c))}</div></section>'
         for a, v, c in cards) + "</div>"
@@ -425,7 +435,7 @@ def page(in_app=False):
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <meta name="description" content="thisjonghoon 가게의 지갑, 순위, 감시 경보와 에이전트 활동">
-<style>{ui_css()}</style></head><body class="screen">{head}<div id="pane"><main class="page wide" data-ts="{int(now)}">{body}<p class="note credit">미니앱 키트는 <a href="https://github.com/Q00/meshkit" target="_blank" rel="noopener">MeshKit</a>과 <a href="https://github.com/Q00/ouroboros" target="_blank" rel="noopener">Ouroboros</a>에서 영감을 받았습니다</p></main></div>
+<style>{ui_css()}</style></head><body class="screen">{head}<div id="pane"><main class="page wide" data-ts="{int(now)}">{body}{"" if in_app else CREDIT}</main></div>{MENU_SHEET if in_app else ""}
 <dialog id="full" class="full" aria-labelledby="full-h"><div class="full-head"><h2 id="full-h"></h2>
 <button type="button" class="full-x" aria-label="닫기">✕</button></div><div class="full-body"></div></dialog>
 <script>
@@ -505,7 +515,7 @@ function cans() {{ document.querySelectorAll('main details.move').forEach(d => {
   if (!d.open && p) d.classList.toggle('can', p.scrollHeight > p.clientHeight + 1 || (f && f.textContent.trim().length > p.textContent.trim().length + 2)); }}); }}
 function caps() {{ document.querySelectorAll('.tchips.cap').forEach(c => c.closest('section').classList.toggle('over', c.scrollHeight > c.clientHeight + 2)); }}
 document.documentElement.classList.add('js'); caps(); addEventListener('resize', caps); document.fonts?.ready.then(() => {{ caps(); cans(); }}); cans(); addEventListener('resize', cans);
-</script></body></html>"""
+</script>{'<script src="/shell.js"></script>' if in_app else ''}</body></html>"""
 
 
 def numify(text):
@@ -557,6 +567,26 @@ class Handler(BaseHTTPRequestHandler):
 
 
 APP_COPY = HERE / "app" / "dashboard.html"           # the mini app serves it behind its own access code (11/24)
+MENU_COPY = HERE / "app" / "menu.json"               # the ⋯ menu's rows (11/27)
+MENU = {}
+CREDIT = ('<p class="note credit">미니앱 키트는 <a href="https://github.com/Q00/meshkit" target="_blank" rel="noopener">MeshKit</a>과 '
+          '<a href="https://github.com/Q00/ouroboros" target="_blank" rel="noopener">Ouroboros</a>에서 영감을 받았습니다</p>')
+MENU_SHEET = ('<div class="shade" id="menu" hidden><div class="sheet menu-sheet" role="dialog" aria-modal="true" aria-labelledby="menu-h" tabindex="-1">'
+              '<div class="grip"></div><h2 id="menu-h">가게 정보</h2><div id="menu-body"></div></div></div>')
+
+
+def numify_plain(text):
+    return re.sub(r"<[^>]+>", "", text)
+
+
+def board_sync():
+    """Orders the owner sent from the app move to 반영·검증 (board_r4.py sync), on the page's own 30 s beat."""
+    if not (LOGS / "board.jsonl").exists():
+        return
+    import contextlib, io
+    import board_r4
+    with contextlib.redirect_stdout(io.StringIO()):
+        board_r4.main(["sync"])
 
 
 def write_app_copy():
@@ -566,6 +596,10 @@ def write_app_copy():
             tmp = APP_COPY.with_suffix(".tmp")
             tmp.write_text(page(in_app=True), encoding="utf-8")
             tmp.replace(APP_COPY)                   # whole or nothing: the app never serves half a page
+            tmp = MENU_COPY.with_suffix(".tmp")
+            tmp.write_text(json.dumps(MENU, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(MENU_COPY)
+            board_sync()
         except Exception as e:
             print(f"[dash] app copy not written: {type(e).__name__}: {e}", flush=True)
         time.sleep(30)

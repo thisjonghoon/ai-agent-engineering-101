@@ -21,7 +21,7 @@ def run(args,kit):
  try:
   from importlib.util import spec_from_file_location,module_from_spec
   s=spec_from_file_location('mc','tools/make_checkout/logic.py');mod=module_from_spec(s);s.loader.exec_module(mod)
-  res=mod.run({'sku':u['sku'],'unit':u['unit'],'price':price,'cost':int(u['cost']),'claim':u.get('grade'),'cert':{'grade':u.get('grade')} if u.get('grade') else None,'task':args.get('task_id')},kit)
+  res=mod.run({'sku':u['sku'],'unit':u['unit'],'price':price,'cost':int(u['cost']),'claim':u.get('grade'),'task':args.get('task_id')},kit)
   if res.get('checkout_jwt'):return {'reply':f"{u.get('name')} {u.get('grade','미상')}등급, 소비기한까지 약 {h}시간 {m}분 남았어요. 가격은 {price}크레딧입니다. 서명된 결제서를 보냅니다.",'data':res,'state':'completed'}
   return {'reply':'확인 결과 지금은 결제서를 발급할 수 없어요: '+str(res.get('error','알 수 없는 사유')),'state':'completed'}
  except Exception:return {'reply':'결제서 발급 중 확인이 필요해요.','state':'completed'}

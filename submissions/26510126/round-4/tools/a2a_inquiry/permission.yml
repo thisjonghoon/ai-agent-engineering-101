@@ -1,5 +1,5 @@
 name: a2a_inquiry
-description: 한국어 고객 문의에서 단일 품목의 명확한 요청만 실제 재고와 대조해 안내하고 checkout을 발급합니다. 부정·제외 조건, 수량·포장 조건, 복합·모호한 요청은 직접 응대로 넘깁니다.
+description: 한국어 고객 문의에서 단일 품목의 명확한 요청만 실제 재고와 대조해 안내하고 checkout을 발급합니다. cert는 임의로 구성하지 않고 실제 grade만 claim으로 전달합니다.
 permission:
   network: [market.ourolabs.ai]
   identity: [shop]
@@ -8,5 +8,5 @@ permission:
   handles: [a2a]
 logic: logic.py
 test: test.py
-version: 16
-replaces: a2a_inquiry@15
+version: 17
+replaces: a2a_inquiry@16

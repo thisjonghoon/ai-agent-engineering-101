@@ -30,6 +30,9 @@ HERE = Path(__file__).resolve().parent
 LOG = HERE / "logs" / "nudges.jsonl"
 KST = timezone(timedelta(hours=9))
 EARLY_END = datetime(2026, 12, 31, 23, 59, tzinfo=KST)   # was 11/27 19:00 (72 hours); 11/26 the owner kept the advisory team on until he says otherwise
+# 11/28 control experiment (owner: "둘 다"): no advisory nudges 03:00-09:00 KST, then the new result-based style resumes.
+# Only --why alert (a customer's money, lost notes or stock) still goes out inside the window.
+QUIET = (datetime(2026, 11, 28, 3, 0, tzinfo=KST), datetime(2026, 11, 28, 9, 0, tzinfo=KST))
 
 
 HEAD = {
@@ -106,6 +109,8 @@ def main():
     ap.add_argument("--urgent", action="store_true", help="a customer's money, a long sales stall, lost notes or stock")
     a = ap.parse_args()
     now = datetime.now(KST)
+    if QUIET[0] <= now < QUIET[1] and a.why != "alert":
+        raise SystemExit(f"[nudge] control window {QUIET[0]:%m/%d %H:%M}-{QUIET[1]:%H:%M}: no advisory nudges (experiment); only --why alert for money or lost stock")
     if a.why == "early" and now >= EARLY_END:
         raise SystemExit(f"[nudge] the early phase ended {EARLY_END:%m/%d %H:%M}; use --why alert or offhours")
     message = compose(a.why, a.text, a.fact, now, a.urgent)

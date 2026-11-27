@@ -28,6 +28,6 @@ def run(args,kit):
    a={'sku':u['sku'],'unit':u['unit'],'price':price,'cost':int(u['cost']),'cert':u.get('cert'),'task':args.get('task_id')}
    if cert_grade is not None:a['claim']=grade
    res=mod.run(a,kit)
-  except Exception: res={}
+  except Exception as e: res={'error':str(e)}
   if res.get('checkout_jwt'):return {'reply':base+(' 인증서 grade는 비어 있지만 실측 등급을 안내한 결제서를 보냅니다.' if cert_grade is None else ' 인증된 결제서를 보냅니다.'),'data':res,'state':'completed'}
  return {'reply':'현재 바로 발급할 수 있는 결제서가 없어 다른 재고도 확인했어요. 잠시 뒤 다시 문의해 주세요.','state':'completed'}

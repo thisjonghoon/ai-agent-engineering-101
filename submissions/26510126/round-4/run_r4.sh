@@ -23,7 +23,7 @@ cd "$(dirname "$0")"
 HERE=$(pwd)
 ROOT=$(cd ../../.. && pwd)
 PY="$ROOT/.venv/bin/python"
-KIT="$ROOT/scripts/round4/agent_kit.py"
+KIT="$HERE/kit/agent_kit.py"     # 11/27: our copy of the course kit (scripts/ is read-only); see kit/README.md
 NAME="${AGENT_NAME:-thisjonghoon}"
 MARKET="${MARKET:-https://market.ourolabs.ai}"
 APP_PORT="${APP_PORT:-8800}"

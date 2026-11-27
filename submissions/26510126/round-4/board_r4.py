@@ -30,6 +30,7 @@ Usage (Hermes):
   python board_r4.py reject ID --why "what is still wrong"
   python board_r4.py draft ID "owner's words"        # makes it an order card in 내 차례
   python board_r4.py note ID "text" [--by ...]
+  python board_r4.py answer ID yes|no --by owner      # the app's 허용/거절 (kit/miniapp.py /api/board); 허용 -> 진행, 거절 -> 완료
   python board_r4.py sync                             # orders the owner sent -> review
   python board_r4.py ls [--all]
   python board_r4.py show ID
@@ -82,7 +83,9 @@ def replay(evs):
             continue
         c["updated"] = e["ts"]
         h = {"ts": e["ts"], "by": e.get("by", "hermes"), "op": op}
-        if op in ("move", "reject", "add"):
+        if op == "answer":
+            c["answer"] = e["answer"]
+        if op in ("move", "reject", "add", "answer"):
             new = e.get("to") or e.get("status") or c["status"]
             if new != c["status"] or op == "add":
                 c["at"] = e["ts"]                      # when it came into its column (the app checks sends after this)
@@ -178,6 +181,10 @@ def main(argv=None):
     n.add_argument("id", type=int)
     n.add_argument("text")
     n.add_argument("--by", default="hermes")
+    an = sub.add_parser("answer")
+    an.add_argument("id", type=int)
+    an.add_argument("answer", choices=["yes", "no"])
+    an.add_argument("--by", default="hermes")
     sub.add_parser("sync")
     ls = sub.add_parser("ls")
     ls.add_argument("--all", action="store_true")
@@ -231,6 +238,16 @@ def main(argv=None):
             need(a.id)
             write({"ts": now, "op": "note", "id": a.id, "note": a.text, "by": a.by})
             print(f"#{a.id} noted")
+        elif a.cmd == "answer":
+            c = need(a.id)
+            if a.by != "owner":
+                sys.exit("only the owner answers an approve card (the app's 허용/거절)")
+            if c["status"] != "owner" or c["kind"] != "approve":
+                sys.exit(f"#{a.id} is not an approve card waiting in 내 차례")
+            to = "doing" if a.answer == "yes" else "done"
+            write({"ts": now, "op": "answer", "id": a.id, "answer": a.answer, "to": to,
+                   "note": "주인 허용" if a.answer == "yes" else "주인 거절", "by": "owner"})
+            print(f"#{a.id} {'허용' if a.answer == 'yes' else '거절'} -> {NAMES[to]}")
         elif a.cmd == "sync":
             moved = 0
             for c in cards.values():

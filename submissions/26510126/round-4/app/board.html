@@ -41,7 +41,7 @@ const SRC = {watch: '감시', advice: '조언', hermes: '헤르메스', owner: '
 const BY = {hermes: '헤르메스', market: '마켓', owner: '주인', watch: '감시', advice: '조언'};
 let board = null, consents = [], chat = [], loaded = false, seen = 0;
 let col = 'backlog';                                  // the phone's chosen column
-const openCards = new Set(), handled = new Set(), sending = {};
+const openCards = new Set(), handled = new Set(), sending = {}, answering = new Set(), failed = {};
 let sentLocal = {};
 try { sentLocal = JSON.parse(localStorage.getItem('board-sent') || '{}'); } catch (e) {}
 const hm = ts => new Date(ts * 1000).toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit', hourCycle: 'h23'});
@@ -68,9 +68,10 @@ function mine(c) {
       <div class="actions"><button type="button" data-act="no">거절</button><button type="button" class="yes" data-act="yes">허용</button></div></article>`;
   }
   if (c.kind === 'approve') {
+    const on = !!miniapp.board && !answering.has(c.id);   // an older kit has no /api/board: the buttons stay off
     return `<article class="bcard mine" data-c="${c.id}">${head}${what}${args(c.args)}
-      <div class="actions"><button type="button" disabled>거절</button><button type="button" class="yes" disabled>허용</button></div>
-      <p class="hold">이 카드의 허용·거절은 아직 앱에 연결되지 않았습니다. 헤르메스에게 직접 알려 주세요.</p></article>`;
+      <div class="actions"><button type="button" data-act="ano"${on ? '' : ' disabled'}>거절</button><button type="button" class="yes" data-act="ayes"${on ? '' : ' disabled'}>허용</button></div>
+      ${miniapp.board ? (failed[c.id] ? `<p class="hold">${esc(failed[c.id])}</p>` : '') : '<p class="hold">키트가 다시 켜지면 이 버튼이 동작합니다. 그 전에는 헤르메스에게 직접 알려 주세요.</p>'}</article>`;
   }
   if (c.kind === 'order' && c.draft) {
     const s = sentAt(c), w = sending[c.id];
@@ -137,6 +138,15 @@ $('main').addEventListener('click', async e => {
   }
   const c = board.cards.find(x => x.id === +card.dataset.c);
   if (!c) return;
+  if (b.dataset.act === 'ayes' || b.dataset.act === 'ano') {
+    answering.add(c.id); delete failed[c.id]; draw(true);
+    try {
+      const r = await miniapp.board(c.id, b.dataset.act === 'ayes');
+      if (!r.ok) failed[c.id] = '처리하지 못했습니다: ' + (r.out || r.error || '');
+    } catch (err) { failed[c.id] = '연결이 끊겨 처리하지 못했습니다. 다시 눌러 주세요.'; }
+    answering.delete(c.id);
+    await window.appShell?.refresh(); draw(true); return;
+  }
   if (b.dataset.act === 'copy') {
     try { await navigator.clipboard.writeText(c.draft); b.textContent = '복사했습니다'; } catch (err) { b.textContent = '복사 못 함'; }
     setTimeout(() => draw(true), 1500);

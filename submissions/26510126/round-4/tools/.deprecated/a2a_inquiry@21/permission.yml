@@ -1,0 +1,14 @@
+name: a2a_inquiry
+description: 한국어 단일 품목 문의를 실제 재고와 대조합니다. 인증서 grade가 null이면 인증서가 공란임과 실측 등급을 안내하고 등급 claim 없이 checkout을 발급하며, 인증서에 실제 등급이 있으나 재고 등급과 불일치하면 발급하지 않습니다. args {text, task_id optional}.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, checkout_withdrawals.jsonl]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 180
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 21
+replaces: a2a_inquiry@20

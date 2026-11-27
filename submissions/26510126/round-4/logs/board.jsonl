@@ -1,1 +1,14 @@
 {"ts": 1795748498, "op": "add", "id": 1, "title": "a2a_inquiry가 문의를 전부 넘김(defer)", "body": "오늘 a2a_inquiry 15회 모두 defer. logic.py 6줄 blocked에 '만','팩','개','묶음','없으면' — talk.jsonl 손님 문장 69개 중 44개가 걸림. 11:09 김승-dce2 총각김치는 결제서가 대화 닫힌 뒤 8초 늦음. 11:35 임태훈-89af도 defer('묶음','없으면').", "kind": "task", "source": "advice", "status": "doing", "draft": null, "args": {}, "by": "hermes"}
+{"ts": 1795750285, "op": "move", "id": 1, "to": "review", "note": "12:03 a2a_inquiry v18 forge(blocked 목록 축소)", "by": "market"}
+{"ts": 1795750285, "op": "reject", "id": 1, "to": "doing", "note": "v18 첫 직접 처리(12:19 이영구, talk ts 1795749554)가 27줄 except로 '결제서 발급 중 확인이 필요해요'만 내고 completed — 손님 놓침, mind 모름. 11:44 이성희 건도 같음. 넛지 12:32", "by": "hermes"}
+{"ts": 1795752096, "op": "move", "id": 1, "to": "doing", "note": "넛지 13:03 남정욱 돼지고기 3회 except, permission 비교 힌트", "by": "hermes"}
+{"ts": 1795753871, "op": "move", "id": 1, "to": "review", "note": "13:03 a2a_inquiry v19(sign_jwt·잠금 파일 권한) 통과", "by": "market"}
+{"ts": 1795753871, "op": "move", "id": 1, "to": "done", "note": "13:05:01 최기혜-9eb0 총각김치 B 9,673 by=tool 결제서 → 13:05 정산, 잔액 +9.367(=9673-1%-210)", "by": "hermes"}
+{"ts": 1795755695, "op": "add", "id": 2, "title": "임박 재고를 하한 가격에 걸어 둠(계란 C 11,203, 기한 15:36)", "body": "react 7208 포럼 16998 계란 C 11,203 vs 최근 C 정산 2,461; 7210 김치 C 글 429 뒤 재시도 없음; storage_due 4,211(credits)을 잔액(tOKRW)과 비교해 '거의 전액' 오판", "kind": "task", "source": "advice", "status": "backlog", "draft": null, "args": {}, "by": "hermes"}
+{"ts": 1795755695, "op": "move", "id": 1, "to": "doing", "note": "넛지 14:01 임박 재고 가격·보관료 단위", "by": "hermes"}
+{"ts": 1795755699, "op": "move", "id": 1, "to": "done", "note": "14:01 잘못 옮긴 것 되돌림(헤르메스)", "by": "hermes"}
+{"ts": 1795755699, "op": "move", "id": 2, "to": "doing", "note": "넛지 14:01 임박 재고 가격·보관료 단위", "by": "hermes"}
+{"ts": 1795757494, "op": "add", "id": 3, "title": "자동 응대 결제서의 cert grade null로 손님 거절(총각김치 B)", "body": "14:20:09 윤윤상-2375 총각김치 문의 → a2a_inquiry(by=tool) 'B등급 9,808' 결제서. 14:20:52 손님 '인증서 grade null이라 결제 안 함'. logic.py 24줄 cert=u.get('cert') 그대로, 28줄 답장은 u.get('grade'). 13:05 최기혜 같은 품목 9,673은 팔림.", "kind": "task", "source": "advice", "status": "backlog", "draft": null, "args": {}, "by": "hermes"}
+{"ts": 1795757502, "op": "move", "id": 3, "to": "doing", "note": "넛지 14:31 cert grade null", "by": "hermes"}
+{"ts": 1795759306, "op": "move", "id": 3, "to": "review", "note": "14:34 a2a_inquiry v20: cert grade≠재고 grade면 결제서 미발급", "by": "market"}
+{"ts": 1795759306, "op": "reject", "id": 3, "to": "doing", "note": "v20은 cert grade null이면 결제서를 아예 안 냄 — 재고 cert가 전부 null이라 자동 결제서 0. 14:36 윤윤상 세 번째 문의 결제서 없이 끝남. 15:00 넛지", "by": "hermes"}

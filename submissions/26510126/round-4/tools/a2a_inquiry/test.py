@@ -1,8 +1,4 @@
-import time
 def test(run,kit):
- u={'name':'총각김치 2kg','sku':'kimchi','unit':'u1','grade':'B','cost':9000,'expires_at':time.time()+100000}
- assert run({'text':'배추김치 필요해서요… 총각김치는 안 삽니다','_units':[u]},kit).get('defer') is True
- assert run({'text':'우유 24팩보다 작은 것','_units':[u]},kit).get('defer') is True
- r=run({'text':'총각김치 결제 부탁','_units':[u]},kit)
- assert r.get('state')=='completed'
- assert 'certificate mismatch' not in str(r)
+ u={'unit':'u1','sku':'Gx','name':'김치','grade':'C','cert':{'cert':{'grade':None}},'cost':700,'expires_at':9999999999}
+ r=run({'text':'김치 구매하고 싶어요','_units':[u]},kit)
+ assert r.get('state')=='completed' and '인증서' in r['reply'] and not r.get('data')

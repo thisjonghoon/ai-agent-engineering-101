@@ -64,3 +64,7 @@ shop_health {"asof":1795795495.666552,"windows":{"3h":{"sales_count":0,"sales_am
 shop_health {"asof":1795810293.982017,"windows":{"3h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0},"24h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0}},"ledger_rows":500}
 11/28 실행: 취나물 공급 창구는 opens_at 1795810921, 반복 호출 시 계속 closed(약 480~800초)였으므로 개방 시각 확인 후 1회만 시도할 것. 최근 취나물 C급 정산 1,789~2,126 credits. 재고 93개, live checkout 0, never_issued 59. 총각김치 u-472ee842f2f6는 이미 기한 임박/경과, 고등어 u-e172e7201d3f와 시금치 u-5f7464c5d669도 임박. 고객 대기 없는 광고 상황에서는 checkout 발급 금지; 포럼 임박 할인 공지 post 23709 완료. 잔액 4,147,235 credits.
 11/28 05:22 취나물 G159be1f8 A급 2개 매입 성공: u-b426f35aadb0 원가 2,371, 소비기한 1796324431; u-7b7c28b175f9 원가 2,268, 소비기한 1796308737. 총원가 4,659. 인증서 grade null이므로 판매 시 실측 A급·소비기한만 안내.
+
+shop_health {"asof":1795817021.6927738,"windows":{"3h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0},"24h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0}},"ledger_rows":500}
+11/28 08:42 최근 계란 19건 정산: B급 7,302~8,551, 최근 7,900~7,945; A급 8,733~9,890. 현재 후보 재고 계란 B/A 다수, checkout은 고객 대기 시에만 발급.
+11/28 09:05 취나물 G159be1f8 B급 2개 매입 완료: u-af9357b25495 원가 1,668·소비기한 1796117171, u-1e5edbc13888 원가 2,048·소비기한 1796171266. 총원가 3,743(보관 포함). cert grade null—판매 시 실측 B급·소비기한만 안내.

@@ -60,30 +60,30 @@ reply 대상 이름이나 ID가 현재 대기 이벤트와 맞지 않아 오류�
 
 단위, 등급·인증서, 원장 집계 또는 견적의 의미 혼선. 등급 불일치 보호 동작도 포함한다.
 
-총 40건, 저신뢰 1건. 첫 2026-11-25T18:24:22+09:00, 마지막 2026-11-27T22:42:34+09:00. 원장 폐기 원가 미산출, 확인된 잠금 하한 미산출 unit·시간.
-동일 패턴 반복 간격 최소 12초, 중앙값 1207초, 최대 115712초.
+총 50건, 저신뢰 1건. 첫 2026-11-25T18:24:22+09:00, 마지막 2026-11-28T08:42:13+09:00. 원장 폐기 원가 미산출, 확인된 잠금 하한 미산출 unit·시간.
+동일 패턴 반복 간격 최소 12초, 중앙값 2268초, 최대 115712초.
 
 - `react-7783-false_zero_settlements` 도구가 보고한 24시간 판매 0을 채택했지만 같은 날 정산이 로컬 원장에 있다. [logs/react.jsonl 7783행](../logs/react.jsonl#L7783) · [logs/react.jsonl 7782행](../logs/react.jsonl#L7782) · [logs/ledger.jsonl 156행](../logs/ledger.jsonl#L156) · [tools/shop_health/logic.py 26행](../tools/shop_health/logic.py#L26)
 - `react-7321-currency_confusion` 크레딧 잔액의 천분의 일 표시를 다시 크레딧으로 해석했다. [logs/react.jsonl 7321행](../logs/react.jsonl#L7321) · [tools/chain_balance/logic.py 14행](../tools/chain_balance/logic.py#L14)
-- `react-7761-make_checkout_failed` make_checkout 호출이 실패하거나 보호 조건으로 중단됐다. [logs/react.jsonl 7761행](../logs/react.jsonl#L7761)
+- `react-8281-buy_stock_failed` buy_stock 호출이 실패하거나 보호 조건으로 중단됐다. [logs/react.jsonl 8281행](../logs/react.jsonl#L8281)
 
 ## 시장 시간창과 재고 수명
 
 원장 만료, 매입 HTTP 실패, 열리기 직전 확인했으나 놓친 재입고 창.
 
-총 135건, 저신뢰 1건. 첫 2026-11-24T19:23:47+09:00, 마지막 2026-11-28T00:24:21+09:00. 원장 폐기 원가 275917, 확인된 잠금 하한 미산출 unit·시간.
-동일 패턴 반복 간격 최소 3초, 중앙값 1091초, 최대 77471초.
+총 178건, 저신뢰 1건. 첫 2026-11-24T19:23:47+09:00, 마지막 2026-11-28T08:46:53+09:00. 원장 폐기 원가 336675, 확인된 잠금 하한 미산출 unit·시간.
+동일 패턴 반복 간격 최소 3초, 중앙값 1010초, 최대 77471초.
 
-- `ledger-176-stock_expired` 원장에 재고 1개 만료가 기록됐다. [logs/ledger.jsonl 176행](../logs/ledger.jsonl#L176) · [logs/ledger.jsonl](../logs/ledger.jsonl)
-- `react-7914-buy_stock_failed` buy_stock 호출이 실패하거나 보호 조건으로 중단됐다. [logs/react.jsonl 7914행](../logs/react.jsonl#L7914)
+- `ledger-208-stock_expired` 원장에 재고 1개 만료가 기록됐다. [logs/ledger.jsonl 208행](../logs/ledger.jsonl#L208) · [logs/ledger.jsonl](../logs/ledger.jsonl)
+- `react-8292-buy_stock_failed` buy_stock 호출이 실패하거나 보호 조건으로 중단됐다. [logs/react.jsonl 8292행](../logs/react.jsonl#L8292)
 - `react-7877-restock_window_missed` 90초 안에 열릴 창을 확인했으나 같은 SKU 매입은 창 안에 없고 닫힌 뒤 재시도했다. [logs/react.jsonl 7877행](../logs/react.jsonl#L7877) · [logs/react.jsonl 7887행](../logs/react.jsonl#L7887)
 
 ## 원인 미확인
 
 답변 텍스트는 있으나 실패 또는 원인을 판정하기에 데이터가 부족한 구매 관련 대화.
 
-총 21건, 저신뢰 21건. 첫 2026-11-26T19:42:59+09:00, 마지막 2026-11-27T20:29:41+09:00. 원장 폐기 원가 미산출, 확인된 잠금 하한 미산출 unit·시간.
-동일 패턴 반복 간격 최소 51초, 중앙값 3253초, 최대 15694초.
+총 36건, 저신뢰 36건. 첫 2026-11-26T19:42:59+09:00, 마지막 2026-11-28T07:39:46+09:00. 원장 폐기 원가 미산출, 확인된 잠금 하한 미산출 unit·시간.
+동일 패턴 반복 간격 최소 4초, 중앙값 1820초, 최대 21108초.
 
 - `talk-64-no_checkout_in_text` 구매 관련 답변에서 결제서 전달 문구가 확인되지 않았다. [logs/talk.jsonl 64행](../logs/talk.jsonl#L64) · [logs/react.jsonl 7109행](../logs/react.jsonl#L7109)
 - `talk-46-no_checkout_in_text` 구매 관련 답변에서 결제서 전달 문구가 확인되지 않았다. [logs/talk.jsonl 46행](../logs/talk.jsonl#L46) · [logs/react.jsonl 6929행](../logs/react.jsonl#L6929)

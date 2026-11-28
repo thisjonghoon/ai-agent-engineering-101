@@ -197,8 +197,9 @@ function draw() {
     heard = firsts.length;
   }
   const items = view.chat.concat(cards).sort((a, b) => a.ts - b.ts);
-  const mine = view.chat.filter(m => m.who === me).length;
-  pending = pending.filter(p => mine <= p.base);
+  // a sent line is done once the record holds my line with the same text, no older than my last line when sending (ts is whole seconds; the kit cuts text at 2000).
+  // Not by count: the kit keeps only the last 200 lines, so once full my count stops growing (11/28, doubled bubble)
+  pending = pending.filter(p => !view.chat.some(m => m.who === me && m.text === p.text.slice(0, 2000) && m.ts >= p.after));
   const key = JSON.stringify([items.length, items.at(-1), pending, waiting, view.agent, new Date().toDateString()]);
   if (key === drawn) return;
   drawn = key;
@@ -320,7 +321,7 @@ async function send(text) {
   text = text.trim();
   if (!text) return;
   try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission() } catch (e) {}
-  pending.push({text, base: view.chat.filter(m => m.who === me).length + pending.length});
+  pending.push({text, after: Math.max(0, ...view.chat.filter(m => m.who === me).map(m => m.ts || 0))});
   waiting++; draw(); status();
   try { await miniapp.chat(text, me) } catch (e) {}
   waiting--; draw(); status();

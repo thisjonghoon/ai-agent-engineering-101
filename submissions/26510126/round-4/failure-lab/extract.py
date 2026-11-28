@@ -592,6 +592,13 @@ def add_recent(emit, react, talk, chat, forge, ledger):
         lambda: emit(at(talk, 202), 'unmet_demand_repeat', 'market',
                      '11/28 국수(메밀소바·칼국수) 문의가 두 손님에게서 6회 재고 없음으로 끝났으나 11/26 00:03 뒤로 국수 매입 시도가 없다.',
                      extra=refs(talk, 176, 180, 183) + refs(react, 2661), customer=at(talk, 202)['from'], item='국수'),
+        lambda: emit(next(r for r in forge if r['tool'] == 'a2a_inquiry' and r['version'] == 36 and r['passed']),
+                     'handler_regression', 'tests',
+                     "v36이 결제서 값을 하한 (원가+210)/0.99로 고정해 마진이 0이고(card.json 가자미 7,590과 어긋남), 기한이 가장 이른 unit만 골라 v33에 있던 '기한 넉넉한 것' 처리가 빠졌다. 20:04~21:00 문의 5건은 모두 재고 없음이라 손님 피해는 아직 관측되지 않았다.",
+                     extra=[{'file': 'tools/a2a_inquiry/logic.py', 'line': 22},
+                            {'file': 'tools/.deprecated/a2a_inquiry@33/logic.py', 'line': 25},
+                            {'file': 'card.json'}, *refs(chat, 270)],
+                     tool='a2a_inquiry', repeat_key='handler_regression'),
     ]
     for case in cases:
         try:

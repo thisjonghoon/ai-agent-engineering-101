@@ -216,11 +216,12 @@
 | 11-28T16:01:46 넛지 [logs/nudges.jsonl 117행](../logs/nudges.jsonl#L117) | 판매 규칙과 집행 경로 · 판매 규칙과 집행 경로 | 답변 기록 | 0/0, 4, 0 → 0/0, 3, 0 | 0/0, 11, 1 → 0/0, 7, 0 | 관측 기회 부족 · 관측 없음 |
 | 11-28T16:04:57 주인 직접 지시 [.kit/chat.jsonl 288행](../.kit/chat.jsonl#L288) | 거절 조건 역방향 실행 · 거절 조건 역방향 실행 | 미확인 | 2/0, 6, 0 → 0/0, 1, 0 | 3/0, 13, 1 → 0/0, 5, 0 | 관측 기회 부족 · 관측 없음 |
 | 11-28T17:02:00 넛지 [logs/nudges.jsonl 118행](../logs/nudges.jsonl#L118) | 실행 간 주인 지시 보존 · 실행 간 주인 지시 보존 | 답변 기록 | 0/10, 3, 0 → 0/11, 3, 0 | 0/37, 11, 1 → 0/24, 5, 0 | 빈도 동일 · 관측 없음 |
-| 11-28T17:31:49 주인 직접 지시 [.kit/chat.jsonl 292행](../.kit/chat.jsonl#L292) | 거절 조건 역방향 실행 · 거절 조건 역방향 실행 | 미확인 | 0/0, 2, 0 → 0/0, 2, 0 | 2/0, 10, 1 → 0/0, 4, 0 † | 관측 구간 잘림 · 관측 없음 |
-| 11-28T18:02:07 넛지 [logs/nudges.jsonl 119행](../logs/nudges.jsonl#L119) | 판매 규칙과 집행 경로 · 판매 규칙과 집행 경로 | 답변 기록 | 0/0, 3, 0 → 0/0, 1, 0 | 0/0, 10, 0 → 0/0, 2, 0 † | 관측 구간 잘림 · 관측 없음 |
-| 11-28T18:34:37 주인 직접 지시 [.kit/chat.jsonl 297행](../.kit/chat.jsonl#L297) | 포럼 공지 · 도구 변경과 회귀 검증 | 미확인 | 0/0, 1, 0 → 2/2, 2, 0 | 2/2, 7, 0 → 3/10, 2, 0 † | 관측 구간 잘림 · react-8778-buy_stock_failed |
-| 11-28T19:32:23 주인 직접 지시 [.kit/chat.jsonl 300행](../.kit/chat.jsonl#L300) | 포럼 공지 · 도구 변경과 회귀 검증 | 미확인 | 2/0, 2, 0 → 1/10, 0, 0 † | 2/0, 6, 0 → 1/10, 0, 0 † | 관측 구간 잘림 · forge-119-checkout_path_removed |
-| 11-28T20:02:06 넛지 [logs/nudges.jsonl 120행](../logs/nudges.jsonl#L120) | 판매 규칙과 집행 경로 · 판매 규칙과 집행 경로 | 오류 기록 | 0/0, 1, 0 → 0/0, 0, 0 † | 0/0, 5, 0 → 0/0, 0, 0 † | 관측 구간 잘림 · 관측 없음 |
+| 11-28T17:31:49 주인 직접 지시 [.kit/chat.jsonl 292행](../.kit/chat.jsonl#L292) | 거절 조건 역방향 실행 · 거절 조건 역방향 실행 | 미확인 | 0/0, 2, 0 → 0/0, 2, 0 | 2/0, 10, 1 → 0/0, 5, 0 | 관측 기회 부족 · 관측 없음 |
+| 11-28T18:02:07 넛지 [logs/nudges.jsonl 119행](../logs/nudges.jsonl#L119) | 판매 규칙과 집행 경로 · 판매 규칙과 집행 경로 | 답변 기록 | 0/0, 3, 0 → 0/0, 1, 0 | 0/0, 10, 0 → 0/0, 7, 0 | 관측 기회 부족 · 관측 없음 |
+| 11-28T18:34:37 주인 직접 지시 [.kit/chat.jsonl 297행](../.kit/chat.jsonl#L297) | 포럼 공지 · 도구 변경과 회귀 검증 | 미확인 | 0/0, 1, 0 → 2/2, 2, 0 | 2/2, 7, 0 → 4/10, 8, 0 † | 관측 구간 잘림 · react-8778-buy_stock_failed |
+| 11-28T19:32:23 주인 직접 지시 [.kit/chat.jsonl 300행](../.kit/chat.jsonl#L300) | 포럼 공지 · 도구 변경과 회귀 검증 | 미확인 | 2/0, 2, 0 → 2/10, 1, 0 | 2/0, 6, 0 → 2/10, 6, 0 † | 관측 구간 잘림 · forge-119-checkout_path_removed |
+| 11-28T20:02:06 넛지 [logs/nudges.jsonl 120행](../logs/nudges.jsonl#L120) | 판매 규칙과 집행 경로 · 판매 규칙과 집행 경로 | 오류 기록 | 0/0, 1, 0 → 0/0, 5, 0 | 0/0, 5, 0 → 0/0, 6, 0 † | 관측 구간 잘림 · 관측 없음 |
+| 11-28T21:02:14 넛지 [logs/nudges.jsonl 121행](../logs/nudges.jsonl#L121) | 매입 여부와 도매창 · 시장 시간창과 재고 수명 | 답변 기록 | 5/5, 5, 0 → 0/1, 1, 0 † | 13/18, 7, 0 → 0/1, 1, 0 † | 관측 구간 잘림 · 관측 없음 |
 
 ## 주인 직접 지시와 넛지 (11/28 09:00~16:10, 원본 행 검토)
 
@@ -418,8 +419,9 @@
 | 11-28T17:31 주인 직접 지시 [.kit/chat.jsonl 292행](../.kit/chat.jsonl#L292) | 거절 조건 역방향 실행 | [.kit/chat.jsonl 294행](../.kit/chat.jsonl#L294) | 3 | buy_stock 1, write_card 1 | — |
 | 11-28T18:02 넛지 [logs/nudges.jsonl 119행](../logs/nudges.jsonl#L119) | 판매 규칙과 집행 경로 | [.kit/chat.jsonl 296행](../.kit/chat.jsonl#L296) | 3 | buy_stock 2, write_card 2, market_call 1 | — |
 | 11-28T18:34 주인 직접 지시 [.kit/chat.jsonl 297행](../.kit/chat.jsonl#L297) | 도구 변경과 회귀 검증 | [.kit/chat.jsonl 299행](../.kit/chat.jsonl#L299) | 3 | write_card 2, market_call 1, buy_stock 2 | react-8778-buy_stock_failed |
-| 11-28T19:32 주인 직접 지시 [.kit/chat.jsonl 300행](../.kit/chat.jsonl#L300) | 도구 변경과 회귀 검증 | 없음 | 0 | forge_tool 2, write_card 1 | — |
-| 11-28T20:02 넛지 [logs/nudges.jsonl 120행](../logs/nudges.jsonl#L120) | 판매 규칙과 집행 경로 | 없음 | 0 | forge_tool 1 | — |
+| 11-28T19:32 주인 직접 지시 [.kit/chat.jsonl 300행](../.kit/chat.jsonl#L300) | 도구 변경과 회귀 검증 | 없음 | 0 | forge_tool 2, write_card 2, buy_stock 1 | forge-120-handler_regression |
+| 11-28T20:02 넛지 [logs/nudges.jsonl 120행](../logs/nudges.jsonl#L120) | 판매 규칙과 집행 경로 | 없음 | 3 | forge_tool 1, buy_stock 2, write_card 2 | — |
+| 11-28T21:02 넛지 [logs/nudges.jsonl 121행](../logs/nudges.jsonl#L121) | 시장 시간창과 재고 수명 | [.kit/chat.jsonl 305행](../.kit/chat.jsonl#L305) | 1 | write_card 1 | — |
 
 ## 도구 버전별 구매 문의
 
@@ -451,4 +453,4 @@
 | v33 | 13 | 6 | [logs/forge.jsonl 109행](../logs/forge.jsonl#L109) |
 | v34 | 6 | 2 | [logs/forge.jsonl 111행](../logs/forge.jsonl#L111) |
 | v35 | 0 | 0 | [logs/forge.jsonl 119행](../logs/forge.jsonl#L119) |
-| v36 | 0 | 0 | [logs/forge.jsonl 120행](../logs/forge.jsonl#L120) |
+| v36 | 6 | 0 | [logs/forge.jsonl 120행](../logs/forge.jsonl#L120) |

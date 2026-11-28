@@ -163,3 +163,4 @@
 {"ts": 1795865816, "time": "11/28 20:36:56", "level": "ALERT", "what": "repeat", "text": "forge_tool failed the same way 3 times in the last hour: assertionerror:. Has the agent written a lesson for it?"}
 {"ts": 1795866000, "time": "11/28 20:40:00", "level": "ALERT", "what": "notes", "text": "notes.md is 7,283 characters; the agent's next run sees only the last 3,000. It has not compacted them (compact_notes)."}
 {"ts": 1795866306, "time": "11/28 20:45:06", "level": "ALERT", "what": "repeat", "text": "buy_stock failed the same way 3 times in the last hour: http 429: supply is closed; the next restock window opens in. Has the agent written a lesson for it?"}
+{"ts": 1795867837, "time": "11/28 21:10:37", "level": "ALERT", "what": "notes", "text": "notes.md is 7,992 characters; the agent's next run sees only the last 3,000. It has not compacted them (compact_notes)."}

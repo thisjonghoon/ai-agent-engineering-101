@@ -28,8 +28,8 @@ reply 대상 이름이나 ID가 현재 대기 이벤트와 맞지 않아 오류�
 
 코드 변경으로 기존 경로가 좁아졌거나 체크아웃 호출에서 처리 오류가 난 사례. 매입의 비시간창 오류도 포함한다. 스냅샷 뒤 규칙: 손님 응대 도구를 1시간 안 3판 또는 6시간 안 5판 통과시킨 판 갈아엎기(handler_churn), 구매 문의 8건 이상에 결제서 문구 0건이고 직전 비교 판은 20% 이상인 판(checkout_rate_drop), 그 판 ALIASES의 한 글자 별칭이 다른 낱말 속에서만 걸려 품목을 정한 답(alias_substring_match), 손님이 '한 품목'이라 밝혔는데 여러 품목으로 돌려보낸 답(single_item_rejected), 별칭 사전에 걸리는 품목이 하나도 없는데 '한 가지로'로 돌려보낸 답(no_match_rejected), 'A나 B'처럼 아무것이나 괜찮다는 문의를 여러 품목으로 본 답(alternatives_rejected), 직전 판에 있던 결제서 발급 코드가 새 판에서 사라진 경우(checkout_path_removed).
 
-총 93건, 저신뢰 9건. 첫 2026-11-24T21:24:48+09:00, 마지막 2026-11-28T19:39:42+09:00. 원장 폐기 원가 미산출, 확인된 잠금 하한 미산출 unit·시간.
-동일 패턴 반복 간격 최소 4초, 중앙값 1825초, 최대 132283초.
+총 94건, 저신뢰 9건. 첫 2026-11-24T21:24:48+09:00, 마지막 2026-11-28T20:04:00+09:00. 원장 폐기 원가 미산출, 확인된 잠금 하한 미산출 unit·시간.
+동일 패턴 반복 간격 최소 4초, 중앙값 1591초, 최대 132283초.
 
 - `forge-109-handler_churn` a2a_inquiry 판을 짧은 간격으로 갈아엎었다: v31~v33 22분에 3판 · v29~v33 226분에 5판. 같은 구간 시험 실패 5회. [logs/forge.jsonl 109행](../logs/forge.jsonl#L109) · [logs/forge.jsonl 100행](../logs/forge.jsonl#L100) · [logs/forge.jsonl 101행](../logs/forge.jsonl#L101) · [logs/forge.jsonl 102행](../logs/forge.jsonl#L102) · [logs/forge.jsonl 103행](../logs/forge.jsonl#L103) · [logs/forge.jsonl 104행](../logs/forge.jsonl#L104) · [logs/forge.jsonl 105행](../logs/forge.jsonl#L105) · [logs/forge.jsonl 106행](../logs/forge.jsonl#L106) · [logs/forge.jsonl 107행](../logs/forge.jsonl#L107) · [logs/forge.jsonl 108행](../logs/forge.jsonl#L108) · [logs/forge.jsonl 109행](../logs/forge.jsonl#L109)
 - `react-8342-handler_regression` v30에서 국수 별칭 '면'이 손님 문장의 '있으면·없으면'에 걸려 한 품목 문의를 여러 품목으로 돌려보내고 두부·모니터 문의에 국수 재고 없음을 답했다. 시험은 가짜 재고와 고정 문장 네 개였다. [logs/react.jsonl 8342행](../logs/react.jsonl#L8342) · [logs/forge.jsonl 105행](../logs/forge.jsonl#L105) · [tools/.deprecated/a2a_inquiry@30/logic.py 2행](../tools/.deprecated/a2a_inquiry@30/logic.py#L2) · [tools/.deprecated/a2a_inquiry@30/logic.py 12행](../tools/.deprecated/a2a_inquiry@30/logic.py#L12) · [tools/.deprecated/a2a_inquiry@30/test.py 1행](../tools/.deprecated/a2a_inquiry@30/test.py#L1) · [logs/talk.jsonl 172행](../logs/talk.jsonl#L172) · [logs/talk.jsonl 182행](../logs/talk.jsonl#L182) · [logs/talk.jsonl 184행](../logs/talk.jsonl#L184) · [logs/talk.jsonl 185행](../logs/talk.jsonl#L185) · [logs/nudges.jsonl 114행](../logs/nudges.jsonl#L114)
@@ -61,23 +61,23 @@ reply 대상 이름이나 ID가 현재 대기 이벤트와 맞지 않아 오류�
 
 단위, 등급·인증서, 원장 집계 또는 견적의 의미 혼선. 등급 불일치 보호 동작도 포함한다. 건강 요약이 원장 500행만 읽고 24시간 판매 0을 냈는데 같은 24시간 로컬 원장에 정산이 있는 호출마다 한 건(false_zero_settlements).
 
-총 86건, 저신뢰 1건. 첫 2026-11-25T18:24:22+09:00, 마지막 2026-11-28T19:23:42+09:00. 원장 폐기 원가 미산출, 확인된 잠금 하한 미산출 unit·시간.
-동일 패턴 반복 간격 최소 12초, 중앙값 3049초, 최대 115712초.
+총 87건, 저신뢰 1건. 첫 2026-11-25T18:24:22+09:00, 마지막 2026-11-28T21:02:31+09:00. 원장 폐기 원가 미산출, 확인된 잠금 하한 미산출 unit·시간.
+동일 패턴 반복 간격 최소 12초, 중앙값 3186초, 최대 115712초.
 
 - `react-8710-false_zero_settlements` 건강 요약이 원장 500행만 읽고 24시간 판매 0건을 냈으나 같은 24시간 로컬 원장에 정산 3건이 있다. [logs/react.jsonl 8710행](../logs/react.jsonl#L8710) · [logs/ledger.jsonl 188행](../logs/ledger.jsonl#L188) · [logs/ledger.jsonl 223행](../logs/ledger.jsonl#L223) · [tools/shop_health/logic.py](../tools/shop_health/logic.py)
 - `react-7321-currency_confusion` 크레딧 잔액의 천분의 일 표시를 다시 크레딧으로 해석했다. [logs/react.jsonl 7321행](../logs/react.jsonl#L7321) · [tools/chain_balance/logic.py 14행](../tools/chain_balance/logic.py#L14)
-- `react-8797-buy_stock_failed` buy_stock 호출이 실패하거나 보호 조건으로 중단됐다. [logs/react.jsonl 8797행](../logs/react.jsonl#L8797)
+- `react-8855-buy_stock_failed` buy_stock 호출이 실패하거나 보호 조건으로 중단됐다. [logs/react.jsonl 8855행](../logs/react.jsonl#L8855)
 
 ## 시장 시간창과 재고 수명
 
 원장 만료, 매입 HTTP 실패, 열리기 직전 확인했으나 놓친 재입고 창. 스냅샷 뒤 규칙: 실제 매입 시도가 있었거나 닫힘 응답을 두 번 이상 받은 창에서 창 안 매입이 없으면 창 하나를 한 건으로 센다(restock_window_ignored). 견적만 본 창은 뺀다.
 
-총 242건, 저신뢰 17건. 첫 2026-11-24T19:23:47+09:00, 마지막 2026-11-28T20:06:50+09:00. 원장 폐기 원가 372010, 확인된 잠금 하한 미산출 unit·시간.
-동일 패턴 반복 간격 최소 3초, 중앙값 1170초, 최대 110088초.
+총 246건, 저신뢰 17건. 첫 2026-11-24T19:23:47+09:00, 마지막 2026-11-28T20:55:17+09:00. 원장 폐기 원가 378447, 확인된 잠금 하한 미산출 unit·시간.
+동일 패턴 반복 간격 최소 3초, 중앙값 1180초, 최대 110088초.
 
 - `talk-202-unmet_demand_repeat` 11/28 국수(메밀소바·칼국수) 문의가 두 손님에게서 6회 재고 없음으로 끝났으나 11/26 00:03 뒤로 국수 매입 시도가 없다. [logs/talk.jsonl 202행](../logs/talk.jsonl#L202) · [logs/talk.jsonl 176행](../logs/talk.jsonl#L176) · [logs/talk.jsonl 180행](../logs/talk.jsonl#L180) · [logs/talk.jsonl 183행](../logs/talk.jsonl#L183) · [logs/react.jsonl 2661행](../logs/react.jsonl#L2661)
 - `react-8199-restock_window_ignored` 닫힘 응답이 05:43:11~05:46:11 창을 알려 줬으나 창 안 매입이 없었다. 같은 창에 닫힘 응답 2회, 창 안 호출 7회(buy_stock 2, available_count 1, inventory_audit 1, checkout_payments 1). [logs/react.jsonl 8199행](../logs/react.jsonl#L8199) · [logs/react.jsonl 8195행](../logs/react.jsonl#L8195) · [logs/react.jsonl 8205행](../logs/react.jsonl#L8205) · [logs/react.jsonl 8206행](../logs/react.jsonl#L8206)
-- `ledger-229-stock_expired` 원장에 재고 1개 만료가 기록됐다. [logs/ledger.jsonl 229행](../logs/ledger.jsonl#L229) · [logs/ledger.jsonl](../logs/ledger.jsonl)
+- `ledger-233-stock_expired` 원장에 재고 1개 만료가 기록됐다. [logs/ledger.jsonl 233행](../logs/ledger.jsonl#L233) · [logs/ledger.jsonl](../logs/ledger.jsonl)
 
 ## 지시 기록과 실행의 분리
 
@@ -99,7 +99,7 @@ reply 대상 이름이나 ID가 현재 대기 이벤트와 맞지 않아 오류�
 
 - `react-8489-read_scope_misread` 60줄·36,325바이트 파일을 '전체가 3,000자 이내'라 끝까지 읽었다고 답했다. start·end는 줄 번호였고 결과는 6,000자에서 잘렸다. [logs/react.jsonl 8489행](../logs/react.jsonl#L8489) · [logs/react.jsonl 8484행](../logs/react.jsonl#L8484) · [logs/react.jsonl 8485행](../logs/react.jsonl#L8485) · [.kit/chat.jsonl 271행](../.kit/chat.jsonl#L271) · [proposals/a2a_v28_20261128/cases_from_talk.jsonl](../proposals/a2a_v28_20261128/cases_from_talk.jsonl) · [tools/inspect_local/logic.py 6행](../tools/inspect_local/logic.py#L6) · [kit/agent_kit.py 68행](../kit/agent_kit.py#L68)
 - `react-8453-false_absence_claim` 루트의 talk.jsonl을 열어 보고 손님 대화 파일이 없다고 답했고, tools/.deprecated/a2a_inquiry@28에 있던 v28 원문도 남아 있지 않다고 답했다. [logs/react.jsonl 8453행](../logs/react.jsonl#L8453) · [logs/react.jsonl 8448행](../logs/react.jsonl#L8448) · [.kit/chat.jsonl 263행](../.kit/chat.jsonl#L263) · [logs/talk.jsonl](../logs/talk.jsonl) · [tools/.deprecated/a2a_inquiry@28/logic.py 1행](../tools/.deprecated/a2a_inquiry@28/logic.py#L1)
-- `react-8726-truncated_read` start·end를 글자 위치로 보고 다음 구간을 읽었으나 파일은 204줄이라 비어 있었다. 앞 호출은 203줄·약 62,217자를 돌려줬고 모델은 앞 6,000자만 봤다. [logs/react.jsonl 8726행](../logs/react.jsonl#L8726) · [logs/react.jsonl 8725행](../logs/react.jsonl#L8725) · [logs/talk.jsonl](../logs/talk.jsonl) · [tools/inspect_local/logic.py 6행](../tools/inspect_local/logic.py#L6)
+- `react-8726-truncated_read` start·end를 글자 위치로 보고 다음 구간을 읽었으나 파일은 210줄이라 비어 있었다. 앞 호출은 209줄·약 63,668자를 돌려줬고 모델은 앞 6,000자만 봤다. [logs/react.jsonl 8726행](../logs/react.jsonl#L8726) · [logs/react.jsonl 8725행](../logs/react.jsonl#L8725) · [logs/talk.jsonl](../logs/talk.jsonl) · [tools/inspect_local/logic.py 6행](../tools/inspect_local/logic.py#L6)
 
 ## 거절 조건 역방향 실행
 

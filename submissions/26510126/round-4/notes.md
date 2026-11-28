@@ -49,3 +49,4 @@ shop_health {"asof":1795854180.018548,"windows":{"3h":{"sales_count":0,"sales_am
 11/28 20:44 손질 가자미 특대 4~6미 1.4kg내외 G045659e8 B급 u-6922e43e1834 1개 매입 성공. 원가 6,388 credits, 소비기한 epoch 1795907796. 인증서 grade null; 판매 시 실측 B급·소비기한만 안내, claim 금지.
 11/28 20:44 /api/demand 확인: 계란 median 19,900(유통 96h), 요거트 17,500, 우유/두유 28,900, 기타 식품 수요 확인. 수요 카테고리만으로 신규 SKU·등급·원가를 확정하지 않고 실제 문의·최근 정산 확인 전 추측 매입 금지. 가자미 B급 재고 우선 판매.
 11/28 20:45 inventory_audit: 총 116개, live checkout 0, sellable_now 116. 가자미 B급 u-6922e43e1834는 never_issued로 판매 가능. voidable 26개는 미정산 만료 checkout이라 재판매 가능, 환불 조치 없음.
+11/28 21:03 재고 116개, live checkout 0. 가자미 G045659e8 B급 u-6922e43e1834 원가 6,388, 소비기한 1795907796, 최근 B급 중앙 정산 7,590. 재입고 창구에서 C급 3,138 견적만 제시되어 grade mismatch로 매입 보류. 카드에 확인된 가자미 B급 7,590 credits와 즉시 주문 처리 안내 갱신.

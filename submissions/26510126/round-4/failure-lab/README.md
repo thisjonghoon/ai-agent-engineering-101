@@ -19,6 +19,9 @@ Python 3.10 이상과 로컬 Git 이력이 필요하다. 파이썬 표준 라이
 | remedies.md | 유형별 개입 층과 구현 가능성 |
 | experiments.md | 넛지 끔(B)·새 넛지(C) 대조 |
 | demo-verification.md | 데모 근거 세 가지의 원문 대조(TK-34) |
+| inbox.md | 점검이 적는 새 실패 받은편지함. 반영한 줄은 `[반영 날짜]` |
+| gen1-summary.md | 1세대 결산(11/24 19:06~11/28 20:15) |
+| gen2-design.md | 2세대 환경 사실·원칙·goal 초안·첫 지시·초기화 체크리스트·지표 |
 | snapshot_check.py | 474건 재현: 00:31:45 스냅샷 + 46c691e 판 추출기로 실행해 커밋 산출물과 비교 |
 
 ## 두 가지 기준
@@ -31,6 +34,8 @@ Python 3.10 이상과 로컬 Git 이력이 필요하다. 파이썬 표준 라이
 - 유형 셋을 더했다: 지시 기록과 실행의 분리(execution), 데이터 위치·형식 착각(data), 거절 조건 역방향 실행(inverse). 판정 규칙은 taxonomy.md에 있다. 손님 조건 배제 누락(buyer_condition_ignored)은 policy에서 inverse로 옮겼다.
 - 판 갈아엎기, 결제서 급감, 한 글자 별칭 오인, 한 품목 거절, 매입 창 미사용, 역방향 매입, 경로·epoch·잘림 착각, 지시 미실행을 일반 규칙으로 잡는다. v16·v30 회귀, 가짜 복원, 현재 판 오인, 없다는 단정, "끝까지 읽음", 메모 초과는 원본 행을 검토한 지정 사례다.
 - 개입에 **주인 직접 지시**를 나눴다. who=jonghoon 가운데 명령형 문장('…게', '하지 말')이 해당하고 나머지는 주인 채팅이다. 넛지와 주인 직접 지시에는 `response`(말·기록·변경·변경 뒤 같은 유형) 항목이 붙는다. summary.json의 다른 키는 스키마 1 그대로다.
+- 11/28 20시 inbox 반영: 별칭 0건인데 '한 가지로'(no_match_rejected), 'A나 B' 거절(alternatives_rejected), 새 판의 결제서 코드 삭제(checkout_path_removed), 원장 500행 판매 0(false_zero_settlements 일반 규칙), 열렸다고 믿은 창구 429(window_open_misread), 지정 사례로 기한 칸 없는 재고 점검·talk 수요 무시·국수 반복 미충족. 20:07:01 기준 733건(00:31:45 이전 522, 이후 211)이다.
+- 474건 재현은 `/opt/homebrew/bin/python3.15 failure-lab/snapshot_check.py <임시 폴더>`로 한다.
 - 넛지 전송 시각: 46c691e 판은 Python 3.15에서 연도 없는 `strptime`이 실패해 로그 기록 시각을 썼다. 지금 판은 연도를 붙여 전송 표기 시각을 쓴다. 474건에서 넛지 시각은 답을 기다린 만큼 늦다.
 - 일부 규칙은 지금 파일을 다시 읽는다. 한 글자 별칭은 tools/.deprecated/a2a_inquiry@N/logic.py(Git 미추적), 경로 착각과 잘림은 현재 파일 크기를 쓴다. 이 파일들이 지워지거나 바뀌면 해당 사건이 빠질 수 있다.
 

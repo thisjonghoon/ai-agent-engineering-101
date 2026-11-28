@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "timezone": "Asia/Seoul",
-  "through": "2026-11-28T16:24:58+09:00",
+  "through": "2026-11-28T20:07:01+09:00",
   "coverage": {
     "react_from": "2026-11-24T19:06:50+09:00",
-    "react_through": "2026-11-28T16:24:58+09:00",
+    "react_through": "2026-11-28T20:07:01+09:00",
     "talk_from": "2026-11-26T19:42:59+09:00",
-    "talk_through": "2026-11-28T16:02:54+09:00",
+    "talk_through": "2026-11-28T19:14:19+09:00",
     "settlements": 32,
     "auto_checkout_without_receipt": 8,
     "missing_or_malformed": {}
@@ -14,11 +14,11 @@
   "types": {
     "time": {
       "label": "시간 예산과 응답 경로",
-      "count": 89,
+      "count": 90,
       "low_confidence": 0,
       "cost": {},
       "first": "2026-11-24T20:38:45+09:00",
-      "last": "2026-11-28T09:24:59+09:00",
+      "last": "2026-11-28T19:40:03+09:00",
       "repeat_gap_seconds": {
         "min": 9.200000047683716,
         "median": 1397,
@@ -27,27 +27,27 @@
     },
     "interface": {
       "label": "메시지 식별자와 호출 계약",
-      "count": 111,
+      "count": 114,
       "low_confidence": 0,
       "cost": {},
       "first": "2026-11-24T19:07:15+09:00",
-      "last": "2026-11-28T16:08:59+09:00",
+      "last": "2026-11-28T20:04:13+09:00",
       "repeat_gap_seconds": {
         "min": 21,
-        "median": 1910.0,
+        "median": 1983.0,
         "max": 131791
       }
     },
     "tests": {
       "label": "도구 변경과 회귀 검증",
-      "count": 78,
+      "count": 93,
       "low_confidence": 9,
       "cost": {},
       "first": "2026-11-24T21:24:48+09:00",
-      "last": "2026-11-28T16:01:08+09:00",
+      "last": "2026-11-28T19:39:42+09:00",
       "repeat_gap_seconds": {
         "min": 3.5,
-        "median": 2059.9000000953674,
+        "median": 1825.4500000476837,
         "max": 132283
       }
     },
@@ -81,55 +81,55 @@
     },
     "meaning": {
       "label": "단위와 데이터 의미",
-      "count": 56,
+      "count": 86,
       "low_confidence": 1,
       "cost": {},
       "first": "2026-11-25T18:24:22+09:00",
-      "last": "2026-11-28T15:45:05+09:00",
+      "last": "2026-11-28T19:23:42+09:00",
       "repeat_gap_seconds": {
         "min": 12,
-        "median": 2269,
+        "median": 3049,
         "max": 115712
       }
     },
     "market": {
       "label": "시장 시간창과 재고 수명",
-      "count": 220,
-      "low_confidence": 12,
+      "count": 242,
+      "low_confidence": 17,
       "cost": {
-        "spoiled_cost_credits": 351683
+        "spoiled_cost_credits": 372010
       },
       "first": "2026-11-24T19:23:47+09:00",
-      "last": "2026-11-28T15:50:08+09:00",
+      "last": "2026-11-28T20:06:50+09:00",
       "repeat_gap_seconds": {
         "min": 3,
-        "median": 1144.5,
+        "median": 1170.231999874115,
         "max": 110088
       }
     },
     "execution": {
       "label": "지시 기록과 실행의 분리",
-      "count": 3,
+      "count": 5,
       "low_confidence": 0,
       "cost": {},
       "first": "2026-11-28T12:49:28+09:00",
-      "last": "2026-11-28T15:04:52+09:00",
+      "last": "2026-11-28T18:34:37+09:00",
       "repeat_gap_seconds": {
         "min": 1448,
-        "median": 1448,
-        "max": 1448
+        "median": 7016.5,
+        "max": 12585
       }
     },
     "data": {
       "label": "데이터 위치·형식 착각",
-      "count": 18,
+      "count": 27,
       "low_confidence": 6,
       "cost": {},
-      "first": "2026-11-26T17:08:45+09:00",
-      "last": "2026-11-28T16:08:17+09:00",
+      "first": "2026-11-26T11:47:19+09:00",
+      "last": "2026-11-28T19:26:29+09:00",
       "repeat_gap_seconds": {
         "min": 113,
-        "median": 8193,
+        "median": 12177.0,
         "max": 128702
       }
     },
@@ -150,15 +150,15 @@
     },
     "unknown": {
       "label": "원인 미확인",
-      "count": 37,
-      "low_confidence": 37,
+      "count": 26,
+      "low_confidence": 26,
       "cost": {},
       "first": "2026-11-26T19:42:59+09:00",
-      "last": "2026-11-28T16:02:49+09:00",
+      "last": "2026-11-28T15:31:26+09:00",
       "repeat_gap_seconds": {
-        "min": 4.6000001430511475,
-        "median": 2325.5500000715256,
-        "max": 23519.700000047684
+        "min": 13.599999904632568,
+        "median": 4435.700000047684,
+        "max": 29824.700000047684
       }
     }
   },
@@ -529,12 +529,34 @@
     {
       "version": 34,
       "start": "2026-11-28T16:07:41+09:00",
-      "end": "2026-11-28T16:24:59+09:00",
+      "end": "2026-11-28T19:39:42+09:00",
+      "inquiries": 6,
+      "checkout_wording": 2,
+      "evidence": {
+        "file": "logs/forge.jsonl",
+        "line": 111
+      }
+    },
+    {
+      "version": 35,
+      "start": "2026-11-28T19:39:42+09:00",
+      "end": "2026-11-28T20:04:00+09:00",
       "inquiries": 0,
       "checkout_wording": 0,
       "evidence": {
         "file": "logs/forge.jsonl",
-        "line": 111
+        "line": 119
+      }
+    },
+    {
+      "version": 36,
+      "start": "2026-11-28T20:04:00+09:00",
+      "end": "2026-11-28T20:07:02+09:00",
+      "inquiries": 0,
+      "checkout_wording": 0,
+      "evidence": {
+        "file": "logs/forge.jsonl",
+        "line": 120
       }
     }
   ],
@@ -1389,7 +1411,8 @@
     },
     "2026-11-26T11": {
       "incidents": {
-        "market": 7
+        "market": 7,
+        "data": 1
       },
       "activity_steps": {
         "조사": 104,
@@ -1501,7 +1524,8 @@
     "2026-11-26T16": {
       "incidents": {
         "market": 2,
-        "interface": 1
+        "interface": 1,
+        "tests": 1
       },
       "activity_steps": {
         "조사": 159,
@@ -1699,7 +1723,7 @@
     "2026-11-27T01": {
       "incidents": {
         "time": 7,
-        "meaning": 5,
+        "meaning": 6,
         "interface": 3,
         "market": 2,
         "data": 1,
@@ -1726,9 +1750,9 @@
     "2026-11-27T02": {
       "incidents": {
         "policy": 1,
+        "meaning": 2,
         "market": 2,
         "interface": 5,
-        "meaning": 1,
         "inverse": 1
       },
       "activity_steps": {
@@ -1751,7 +1775,7 @@
       "incidents": {
         "time": 2,
         "market": 2,
-        "meaning": 3,
+        "meaning": 4,
         "interface": 1
       },
       "activity_steps": {
@@ -1774,7 +1798,7 @@
       "incidents": {
         "unknown": 2,
         "interface": 3,
-        "meaning": 2,
+        "meaning": 4,
         "time": 1
       },
       "activity_steps": {
@@ -1822,7 +1846,7 @@
         "interface": 3,
         "unknown": 1,
         "tests": 1,
-        "meaning": 2
+        "meaning": 3
       },
       "activity_steps": {
         "판매": 9,
@@ -1866,6 +1890,7 @@
       "incidents": {
         "interface": 2,
         "unknown": 1,
+        "meaning": 1,
         "time": 1,
         "market": 1,
         "tests": 1
@@ -1913,9 +1938,9 @@
       "incidents": {
         "interface": 2,
         "time": 9,
+        "meaning": 3,
         "market": 1,
-        "tests": 1,
-        "meaning": 1
+        "tests": 1
       },
       "activity_steps": {
         "조사": 23,
@@ -1940,6 +1965,7 @@
         "unknown": 1,
         "data": 1,
         "market": 2,
+        "meaning": 2,
         "tests": 1
       },
       "activity_steps": {
@@ -1983,6 +2009,7 @@
       "incidents": {
         "interface": 1,
         "unknown": 3,
+        "meaning": 3,
         "market": 1
       },
       "activity_steps": {
@@ -2026,7 +2053,7 @@
     "2026-11-27T15": {
       "incidents": {
         "time": 5,
-        "meaning": 2,
+        "meaning": 4,
         "policy": 1,
         "market": 3
       },
@@ -2097,6 +2124,7 @@
       "incidents": {
         "tests": 1,
         "market": 2,
+        "data": 1,
         "interface": 1,
         "time": 1,
         "unknown": 1
@@ -2147,10 +2175,12 @@
     "2026-11-27T20": {
       "incidents": {
         "market": 5,
+        "meaning": 1,
         "tests": 2,
         "time": 2,
         "interface": 2,
-        "unknown": 1
+        "unknown": 1,
+        "data": 1
       },
       "activity_steps": {
         "조사": 41,
@@ -2194,7 +2224,7 @@
     },
     "2026-11-27T22": {
       "incidents": {
-        "meaning": 4,
+        "meaning": 5,
         "time": 1,
         "tests": 4,
         "market": 4,
@@ -2266,8 +2296,8 @@
     },
     "2026-11-28T01": {
       "incidents": {
-        "market": 4,
-        "meaning": 1
+        "meaning": 2,
+        "market": 4
       },
       "activity_steps": {
         "조사": 42,
@@ -2287,7 +2317,8 @@
     "2026-11-28T02": {
       "incidents": {
         "market": 7,
-        "tests": 1
+        "tests": 1,
+        "data": 1
       },
       "activity_steps": {
         "조사": 28,
@@ -2306,9 +2337,8 @@
     },
     "2026-11-28T03": {
       "incidents": {
-        "unknown": 4,
+        "tests": 5,
         "market": 5,
-        "tests": 1,
         "meaning": 1
       },
       "activity_steps": {
@@ -2329,10 +2359,10 @@
     "2026-11-28T04": {
       "incidents": {
         "inverse": 2,
-        "unknown": 5,
+        "tests": 4,
         "market": 5,
         "meaning": 1,
-        "tests": 1
+        "unknown": 2
       },
       "activity_steps": {
         "조사": 24,
@@ -2353,8 +2383,8 @@
     "2026-11-28T05": {
       "incidents": {
         "market": 14,
-        "unknown": 2,
-        "meaning": 2
+        "meaning": 3,
+        "tests": 2
       },
       "activity_steps": {
         "휴식 전환": 9,
@@ -2393,7 +2423,7 @@
     },
     "2026-11-28T07": {
       "incidents": {
-        "meaning": 1,
+        "meaning": 2,
         "market": 3,
         "tests": 1
       },
@@ -2437,10 +2467,9 @@
       "incidents": {
         "meaning": 3,
         "data": 1,
-        "unknown": 1,
+        "tests": 3,
         "time": 1,
-        "market": 5,
-        "tests": 2
+        "market": 5
       },
       "activity_steps": {
         "조사": 22,
@@ -2462,7 +2491,7 @@
       "incidents": {
         "tests": 7,
         "market": 5,
-        "meaning": 1
+        "meaning": 2
       },
       "activity_steps": {
         "수선": 3,
@@ -2486,6 +2515,7 @@
         "data": 1,
         "tests": 9,
         "interface": 1,
+        "meaning": 1,
         "unknown": 1,
         "market": 3
       },
@@ -2581,10 +2611,10 @@
       "incidents": {
         "execution": 1,
         "market": 5,
+        "meaning": 2,
         "unknown": 1,
         "interface": 1,
-        "inverse": 1,
-        "meaning": 1
+        "inverse": 1
       },
       "activity_steps": {
         "조사": 42,
@@ -2604,27 +2634,120 @@
     },
     "2026-11-28T16": {
       "incidents": {
-        "tests": 1,
-        "unknown": 1,
+        "tests": 2,
         "inverse": 1,
         "interface": 2,
-        "data": 1
+        "data": 3,
+        "meaning": 1,
+        "market": 3
       },
       "activity_steps": {
-        "조사": 27,
-        "매입": 3,
-        "휴식 전환": 6,
+        "조사": 41,
+        "매입": 5,
+        "휴식 전환": 9,
         "판매": 1,
         "수선": 4,
         "운영": 4
       },
-      "buyer_opportunities": 2,
+      "buyer_opportunities": 3,
       "checkout_wording": 1,
       "settlements": 0,
       "activity_step_share": {
-        "조사": 0.6923,
-        "판매": 0.0256,
-        "수선": 0.1026
+        "조사": 0.7455,
+        "판매": 0.0182,
+        "수선": 0.0727
+      }
+    },
+    "2026-11-28T17": {
+      "incidents": {
+        "meaning": 3,
+        "market": 8,
+        "execution": 1,
+        "data": 2
+      },
+      "activity_steps": {
+        "조사": 40,
+        "판매": 1,
+        "운영": 4,
+        "휴식 전환": 8,
+        "매입": 4
+      },
+      "buyer_opportunities": 3,
+      "checkout_wording": 1,
+      "settlements": 0,
+      "activity_step_share": {
+        "조사": 0.8163,
+        "판매": 0.0204,
+        "수선": 0.0
+      }
+    },
+    "2026-11-28T18": {
+      "incidents": {
+        "interface": 2,
+        "market": 4,
+        "execution": 1,
+        "meaning": 1,
+        "tests": 1
+      },
+      "activity_steps": {
+        "조사": 22,
+        "운영": 9,
+        "판매": 1,
+        "휴식 전환": 7,
+        "매입": 8
+      },
+      "buyer_opportunities": 1,
+      "checkout_wording": 1,
+      "settlements": 0,
+      "activity_step_share": {
+        "조사": 0.55,
+        "판매": 0.025,
+        "수선": 0.0
+      }
+    },
+    "2026-11-28T19": {
+      "incidents": {
+        "market": 6,
+        "tests": 2,
+        "meaning": 1,
+        "data": 1,
+        "time": 1
+      },
+      "activity_steps": {
+        "조사": 11,
+        "매입": 5,
+        "운영": 3,
+        "휴식 전환": 8,
+        "수선": 10
+      },
+      "buyer_opportunities": 1,
+      "checkout_wording": 0,
+      "settlements": 0,
+      "activity_step_share": {
+        "조사": 0.3793,
+        "판매": 0.0,
+        "수선": 0.3448
+      }
+    },
+    "2026-11-28T20": {
+      "incidents": {
+        "interface": 1,
+        "market": 1
+      },
+      "activity_steps": {
+        "수선": 3,
+        "조사": 1,
+        "판매": 1,
+        "휴식 전환": 2,
+        "매입": 1
+      },
+      "buyer_opportunities": 0,
+      "checkout_wording": 0,
+      "settlements": 0,
+      "activity_step_share": {
+        "조사": 0.1667,
+        "판매": 0.1667,
+        "수선": 0.5
       }
     }
   },
@@ -2704,10 +2827,10 @@
   ],
   "intervention_counts": {
     "대상 미특정": 36,
-    "관측 구간 잘림": 16,
-    "빈도 동일": 58,
-    "관측 기회 부족": 25,
-    "빈도 증가": 39,
+    "관측 구간 잘림": 13,
+    "빈도 동일": 59,
+    "관측 기회 부족": 29,
+    "빈도 증가": 43,
     "빈도 감소": 26
   },
   "interventions": [
@@ -11544,7 +11667,7 @@
             "line": 5624
           }
         ],
-        "same_type_after_change": "forge-65-handler_churn"
+        "same_type_after_change": "forge-60-checkout_path_removed"
       },
       "receipt": "답변 기록",
       "focus": "포럼 공지",
@@ -11569,7 +11692,7 @@
           {
             "inquiries": 0,
             "checkout_wording": 0,
-            "same_type": 0,
+            "same_type": 1,
             "exposure_proxy": 4,
             "settlements": 0,
             "activity_steps": {
@@ -11602,7 +11725,7 @@
           {
             "inquiries": 0,
             "checkout_wording": 0,
-            "same_type": 2,
+            "same_type": 3,
             "exposure_proxy": 9,
             "settlements": 0,
             "activity_steps": {
@@ -11618,7 +11741,7 @@
         ]
       },
       "verdict": "빈도 증가",
-      "next_incident": "forge-65-handler_churn",
+      "next_incident": "forge-60-checkout_path_removed",
       "forge_within_1h": [
         {
           "tool": "a2a_inquiry",
@@ -13021,7 +13144,7 @@
           {
             "inquiries": 0,
             "checkout_wording": 0,
-            "same_type": 1,
+            "same_type": 2,
             "exposure_proxy": 10,
             "settlements": 0,
             "activity_steps": {
@@ -14857,7 +14980,7 @@
           {
             "inquiries": 5,
             "checkout_wording": 0,
-            "same_type": 3,
+            "same_type": 4,
             "exposure_proxy": 14,
             "settlements": 0,
             "activity_steps": {
@@ -14889,7 +15012,7 @@
           {
             "inquiries": 9,
             "checkout_wording": 1,
-            "same_type": 8,
+            "same_type": 10,
             "exposure_proxy": 33,
             "settlements": 0,
             "activity_steps": {
@@ -15542,7 +15665,7 @@
             "line": 6497
           }
         ],
-        "same_type_after_change": "react-6494-make_checkout_failed"
+        "same_type_after_change": "react-6486-false_zero_settlements"
       },
       "receipt": "답변 기록",
       "focus": "잔액과 크레딧 단위",
@@ -15566,7 +15689,7 @@
           {
             "inquiries": 7,
             "checkout_wording": 0,
-            "same_type": 4,
+            "same_type": 5,
             "exposure_proxy": 19,
             "settlements": 0,
             "activity_steps": {
@@ -15598,7 +15721,7 @@
           {
             "inquiries": 10,
             "checkout_wording": 1,
-            "same_type": 6,
+            "same_type": 9,
             "exposure_proxy": 27,
             "settlements": 0,
             "activity_steps": {
@@ -15613,7 +15736,7 @@
         ]
       },
       "verdict": "빈도 증가",
-      "next_incident": "react-6494-make_checkout_failed",
+      "next_incident": "react-6486-false_zero_settlements",
       "forge_within_1h": [
         {
           "tool": "shop_health",
@@ -19226,7 +19349,7 @@
             "line": 6841
           }
         ],
-        "same_type_after_change": "react-6875-make_checkout_failed"
+        "same_type_after_change": "react-6869-false_zero_settlements"
       },
       "receipt": "답변 기록",
       "focus": "가격의 근거",
@@ -19250,7 +19373,7 @@
           {
             "inquiries": 3,
             "checkout_wording": 0,
-            "same_type": 2,
+            "same_type": 3,
             "exposure_proxy": 5,
             "settlements": 0,
             "activity_steps": {
@@ -19267,7 +19390,7 @@
           {
             "inquiries": 10,
             "checkout_wording": 1,
-            "same_type": 6,
+            "same_type": 9,
             "exposure_proxy": 15,
             "settlements": 0,
             "activity_steps": {
@@ -19282,7 +19405,7 @@
           {
             "inquiries": 12,
             "checkout_wording": 0,
-            "same_type": 2,
+            "same_type": 4,
             "exposure_proxy": 14,
             "settlements": 0,
             "activity_steps": {
@@ -19297,7 +19420,7 @@
         ]
       },
       "verdict": "빈도 감소",
-      "next_incident": "react-6875-make_checkout_failed",
+      "next_incident": "react-6869-false_zero_settlements",
       "forge_within_1h": []
     },
     {
@@ -19461,7 +19584,7 @@
             "line": 6902
           }
         ],
-        "same_type_after_change": "react-7008-make_checkout_failed"
+        "same_type_after_change": "react-6960-false_zero_settlements"
       },
       "receipt": "답변 기록",
       "focus": "대기 시한 내 답장과 결제서",
@@ -19470,7 +19593,7 @@
           {
             "inquiries": 4,
             "checkout_wording": 0,
-            "same_type": 2,
+            "same_type": 3,
             "exposure_proxy": 4,
             "settlements": 0,
             "activity_steps": {
@@ -19502,7 +19625,7 @@
           {
             "inquiries": 9,
             "checkout_wording": 1,
-            "same_type": 5,
+            "same_type": 8,
             "exposure_proxy": 14,
             "settlements": 0,
             "activity_steps": {
@@ -19517,7 +19640,7 @@
           {
             "inquiries": 12,
             "checkout_wording": 0,
-            "same_type": 3,
+            "same_type": 4,
             "exposure_proxy": 18,
             "settlements": 0,
             "activity_steps": {
@@ -19532,7 +19655,7 @@
         ]
       },
       "verdict": "빈도 감소",
-      "next_incident": "react-7008-make_checkout_failed",
+      "next_incident": "react-6960-false_zero_settlements",
       "forge_within_1h": [
         {
           "tool": "a2a_inquiry",
@@ -20071,7 +20194,7 @@
             "line": 7084
           }
         ],
-        "same_type_after_change": null
+        "same_type_after_change": "react-7135-false_zero_settlements"
       },
       "receipt": "답변 기록",
       "focus": "가격의 근거",
@@ -20095,7 +20218,7 @@
           {
             "inquiries": 8,
             "checkout_wording": 0,
-            "same_type": 1,
+            "same_type": 3,
             "exposure_proxy": 11,
             "settlements": 0,
             "activity_steps": {
@@ -20112,7 +20235,7 @@
           {
             "inquiries": 12,
             "checkout_wording": 0,
-            "same_type": 3,
+            "same_type": 4,
             "exposure_proxy": 18,
             "settlements": 0,
             "activity_steps": {
@@ -20127,7 +20250,7 @@
           {
             "inquiries": 21,
             "checkout_wording": 0,
-            "same_type": 1,
+            "same_type": 5,
             "exposure_proxy": 16,
             "settlements": 0,
             "activity_steps": {
@@ -20141,8 +20264,8 @@
           }
         ]
       },
-      "verdict": "빈도 감소",
-      "next_incident": "react-7067-make_checkout_failed",
+      "verdict": "빈도 증가",
+      "next_incident": "react-7054-false_zero_settlements",
       "forge_within_1h": []
     },
     {
@@ -21946,7 +22069,7 @@
           {
             "inquiries": 4,
             "checkout_wording": 0,
-            "same_type": 0,
+            "same_type": 1,
             "exposure_proxy": 4,
             "settlements": 0,
             "activity_steps": {
@@ -21979,7 +22102,7 @@
           {
             "inquiries": 13,
             "checkout_wording": 1,
-            "same_type": 2,
+            "same_type": 6,
             "exposure_proxy": 27,
             "settlements": 0,
             "activity_steps": {
@@ -22009,7 +22132,7 @@
           }
         ]
       },
-      "verdict": "빈도 증가",
+      "verdict": "빈도 감소",
       "next_incident": "react-7410-make_checkout_failed",
       "forge_within_1h": [
         {
@@ -22930,7 +23053,7 @@
           {
             "inquiries": 16,
             "checkout_wording": 6,
-            "same_type": 6,
+            "same_type": 7,
             "exposure_proxy": 67,
             "settlements": 0,
             "activity_steps": {
@@ -23688,7 +23811,7 @@
           {
             "inquiries": 3,
             "checkout_wording": 0,
-            "same_type": 4,
+            "same_type": 5,
             "exposure_proxy": 26,
             "settlements": 0,
             "activity_steps": {
@@ -23706,7 +23829,7 @@
           {
             "inquiries": 19,
             "checkout_wording": 6,
-            "same_type": 5,
+            "same_type": 6,
             "exposure_proxy": 61,
             "settlements": 0,
             "activity_steps": {
@@ -23722,7 +23845,7 @@
           {
             "inquiries": 10,
             "checkout_wording": 1,
-            "same_type": 4,
+            "same_type": 5,
             "exposure_proxy": 59,
             "settlements": 0,
             "activity_steps": {
@@ -24535,7 +24658,7 @@
             "line": 7973
           }
         ],
-        "same_type_after_change": "talk-125-single_item_rejected"
+        "same_type_after_change": "talk-125-no_match_rejected"
       },
       "receipt": "오류 기록",
       "focus": "도구 변경과 회귀 검증",
@@ -24594,7 +24717,7 @@
           {
             "inquiries": 12,
             "checkout_wording": 6,
-            "same_type": 2,
+            "same_type": 6,
             "exposure_proxy": 2,
             "settlements": 2,
             "activity_steps": {
@@ -24610,7 +24733,7 @@
         ]
       },
       "verdict": "빈도 증가",
-      "next_incident": "talk-125-single_item_rejected",
+      "next_incident": "talk-125-no_match_rejected",
       "forge_within_1h": [
         {
           "tool": "a2a_inquiry",
@@ -26243,21 +26366,21 @@
             "inquiries": 11,
             "checkout_wording": 6,
             "same_type": 1,
-            "exposure_proxy": 34,
+            "exposure_proxy": 35,
             "settlements": 1,
             "activity_steps": {
-              "조사": 90,
+              "조사": 95,
               "수선": 8,
-              "휴식 전환": 21,
-              "매입": 15,
+              "휴식 전환": 22,
+              "매입": 16,
               "운영": 11,
               "판매": 1
             },
-            "complete": false
+            "complete": true
           }
         ]
       },
-      "verdict": "관측 구간 잘림",
+      "verdict": "빈도 증가",
       "next_incident": "react-8521-notes_over_tail",
       "forge_within_1h": []
     },
@@ -26358,24 +26481,24 @@
             "complete": true
           },
           {
-            "inquiries": 8,
-            "checkout_wording": 3,
+            "inquiries": 11,
+            "checkout_wording": 4,
             "same_type": 2,
             "exposure_proxy": 0,
             "settlements": 1,
             "activity_steps": {
-              "조사": 84,
-              "매입": 15,
-              "휴식 전환": 20,
-              "운영": 11,
+              "조사": 137,
+              "매입": 19,
+              "휴식 전환": 30,
+              "운영": 15,
               "수선": 6,
-              "판매": 1
+              "판매": 2
             },
-            "complete": false
+            "complete": true
           }
         ]
       },
-      "verdict": "관측 구간 잘림",
+      "verdict": "관측 기회 부족",
       "next_incident": "react-8604-inverse_purchase",
       "forge_within_1h": []
     },
@@ -26478,24 +26601,24 @@
             "complete": true
           },
           {
-            "inquiries": 6,
-            "checkout_wording": 1,
-            "same_type": 1,
+            "inquiries": 10,
+            "checkout_wording": 2,
+            "same_type": 2,
             "exposure_proxy": 2,
             "settlements": 0,
             "activity_steps": {
-              "매입": 12,
-              "운영": 11,
-              "휴식 전환": 17,
-              "조사": 66,
+              "매입": 18,
+              "운영": 15,
+              "휴식 전환": 28,
+              "조사": 120,
               "수선": 6,
-              "판매": 1
+              "판매": 2
             },
-            "complete": false
+            "complete": true
           }
         ]
       },
-      "verdict": "관측 구간 잘림",
+      "verdict": "빈도 증가",
       "next_incident": "react-8622-buy_stock_failed",
       "forge_within_1h": []
     },
@@ -26595,24 +26718,24 @@
             "complete": true
           },
           {
-            "inquiries": 6,
-            "checkout_wording": 1,
+            "inquiries": 10,
+            "checkout_wording": 2,
             "same_type": 2,
             "exposure_proxy": 0,
             "settlements": 0,
             "activity_steps": {
-              "휴식 전환": 16,
+              "휴식 전환": 28,
               "수선": 6,
-              "조사": 63,
-              "매입": 10,
-              "운영": 9,
-              "판매": 1
+              "조사": 119,
+              "매입": 16,
+              "운영": 14,
+              "판매": 3
             },
-            "complete": false
+            "complete": true
           }
         ]
       },
-      "verdict": "관측 구간 잘림",
+      "verdict": "관측 기회 부족",
       "next_incident": "react-8604-inverse_purchase",
       "forge_within_1h": []
     },
@@ -26694,18 +26817,18 @@
           {
             "inquiries": 3,
             "checkout_wording": 1,
-            "same_type": 2,
-            "exposure_proxy": 6,
+            "same_type": 3,
+            "exposure_proxy": 7,
             "settlements": 0,
             "activity_steps": {
-              "조사": 44,
+              "조사": 49,
               "수선": 5,
               "운영": 7,
-              "휴식 전환": 9,
-              "매입": 6,
+              "휴식 전환": 10,
+              "매입": 7,
               "판매": 1
             },
-            "complete": false
+            "complete": true
           }
         ],
         "3": [
@@ -26726,24 +26849,24 @@
             "complete": true
           },
           {
-            "inquiries": 3,
-            "checkout_wording": 1,
-            "same_type": 2,
-            "exposure_proxy": 6,
+            "inquiries": 7,
+            "checkout_wording": 2,
+            "same_type": 13,
+            "exposure_proxy": 16,
             "settlements": 0,
             "activity_steps": {
-              "조사": 44,
+              "조사": 111,
               "수선": 5,
-              "운영": 7,
-              "휴식 전환": 9,
-              "매입": 6,
-              "판매": 1
+              "운영": 14,
+              "휴식 전환": 24,
+              "매입": 16,
+              "판매": 3
             },
-            "complete": false
+            "complete": true
           }
         ]
       },
-      "verdict": "관측 구간 잘림",
+      "verdict": "빈도 증가",
       "next_incident": "react-8618-buy_stock_failed",
       "forge_within_1h": [
         {
@@ -26805,7 +26928,7 @@
             "line": 8663
           }
         ],
-        "same_type_after_change": null
+        "same_type_after_change": "react-8670-buy_stock_failed"
       },
       "receipt": "미확인",
       "focus": "시장 시간창과 재고 수명",
@@ -26827,20 +26950,20 @@
             "complete": true
           },
           {
-            "inquiries": 3,
+            "inquiries": 4,
             "checkout_wording": 1,
-            "same_type": 2,
-            "exposure_proxy": 5,
+            "same_type": 3,
+            "exposure_proxy": 6,
             "settlements": 0,
             "activity_steps": {
-              "매입": 5,
+              "매입": 6,
               "운영": 5,
-              "휴식 전환": 8,
-              "조사": 32,
+              "휴식 전환": 10,
+              "조사": 42,
               "판매": 1,
               "수선": 4
             },
-            "complete": false
+            "complete": true
           }
         ],
         "3": [
@@ -26861,24 +26984,24 @@
             "complete": true
           },
           {
-            "inquiries": 3,
-            "checkout_wording": 1,
-            "same_type": 2,
-            "exposure_proxy": 5,
+            "inquiries": 8,
+            "checkout_wording": 3,
+            "same_type": 13,
+            "exposure_proxy": 18,
             "settlements": 0,
             "activity_steps": {
-              "매입": 5,
-              "운영": 5,
-              "휴식 전환": 8,
-              "조사": 32,
-              "판매": 1,
+              "매입": 18,
+              "운영": 16,
+              "휴식 전환": 24,
+              "조사": 107,
+              "판매": 3,
               "수선": 4
             },
-            "complete": false
+            "complete": true
           }
         ]
       },
-      "verdict": "관측 구간 잘림",
+      "verdict": "빈도 증가",
       "next_incident": "react-8618-buy_stock_failed",
       "forge_within_1h": [
         {
@@ -26962,20 +27085,20 @@
             "complete": true
           },
           {
-            "inquiries": 2,
+            "inquiries": 3,
             "checkout_wording": 1,
             "same_type": 0,
             "exposure_proxy": 0,
             "settlements": 0,
             "activity_steps": {
-              "조사": 24,
-              "휴식 전환": 6,
+              "조사": 38,
+              "휴식 전환": 9,
               "판매": 1,
               "수선": 4,
               "운영": 4,
-              "매입": 2
+              "매입": 4
             },
-            "complete": false
+            "complete": true
           }
         ],
         "3": [
@@ -26996,24 +27119,24 @@
             "complete": true
           },
           {
-            "inquiries": 2,
-            "checkout_wording": 1,
+            "inquiries": 7,
+            "checkout_wording": 3,
             "same_type": 0,
             "exposure_proxy": 0,
             "settlements": 0,
             "activity_steps": {
-              "조사": 24,
-              "휴식 전환": 6,
-              "판매": 1,
+              "조사": 100,
+              "휴식 전환": 24,
+              "판매": 3,
               "수선": 4,
-              "운영": 4,
-              "매입": 2
+              "운영": 17,
+              "매입": 16
             },
-            "complete": false
+            "complete": true
           }
         ]
       },
-      "verdict": "관측 구간 잘림",
+      "verdict": "관측 기회 부족",
       "next_incident": null,
       "forge_within_1h": [
         {
@@ -27098,19 +27221,20 @@
             "complete": true
           },
           {
-            "inquiries": 0,
+            "inquiries": 1,
             "checkout_wording": 0,
             "same_type": 0,
             "exposure_proxy": 0,
             "settlements": 0,
             "activity_steps": {
-              "조사": 20,
+              "조사": 38,
               "수선": 4,
-              "운영": 4,
-              "휴식 전환": 4,
-              "매입": 2
+              "운영": 5,
+              "휴식 전환": 8,
+              "매입": 4,
+              "판매": 1
             },
-            "complete": false
+            "complete": true
           }
         ],
         "3": [
@@ -27131,17 +27255,722 @@
             "complete": true
           },
           {
+            "inquiries": 5,
+            "checkout_wording": 2,
+            "same_type": 0,
+            "exposure_proxy": 0,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 96,
+              "수선": 4,
+              "운영": 17,
+              "휴식 전환": 22,
+              "매입": 16,
+              "판매": 2
+            },
+            "complete": true
+          }
+        ]
+      },
+      "verdict": "관측 기회 부족",
+      "next_incident": null,
+      "forge_within_1h": [
+        {
+          "tool": "a2a_inquiry",
+          "version": 34,
+          "ref": {
+            "file": "logs/forge.jsonl",
+            "line": 111
+          }
+        }
+      ]
+    },
+    {
+      "kind": "넛지",
+      "ts": "2026-11-28T17:02:00+09:00",
+      "evidence": {
+        "file": "logs/nudges.jsonl",
+        "line": 118
+      },
+      "target": "memory",
+      "response": {
+        "words": {
+          "file": ".kit/chat.jsonl",
+          "line": 291
+        },
+        "recorded": [
+          {
+            "file": "logs/react.jsonl",
+            "line": 8689
+          },
+          {
+            "file": "logs/react.jsonl",
+            "line": 8735
+          }
+        ],
+        "changes": [
+          {
+            "action": "write_card",
+            "file": "logs/react.jsonl",
+            "line": 8711
+          }
+        ],
+        "same_type_after_change": null
+      },
+      "receipt": "답변 기록",
+      "focus": "실행 간 주인 지시 보존",
+      "windows": {
+        "1": [
+          {
+            "inquiries": 3,
+            "checkout_wording": 1,
+            "same_type": 0,
+            "exposure_proxy": 10,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 37,
+              "휴식 전환": 9,
+              "판매": 1,
+              "수선": 4,
+              "운영": 4,
+              "매입": 4
+            },
+            "complete": true
+          },
+          {
+            "inquiries": 3,
+            "checkout_wording": 1,
+            "same_type": 0,
+            "exposure_proxy": 11,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 40,
+              "판매": 1,
+              "운영": 4,
+              "휴식 전환": 8,
+              "매입": 4
+            },
+            "complete": true
+          }
+        ],
+        "3": [
+          {
+            "inquiries": 11,
+            "checkout_wording": 5,
+            "same_type": 0,
+            "exposure_proxy": 37,
+            "settlements": 1,
+            "activity_steps": {
+              "조사": 100,
+              "매입": 17,
+              "휴식 전환": 23,
+              "운영": 11,
+              "수선": 6,
+              "판매": 1
+            },
+            "complete": true
+          },
+          {
+            "inquiries": 5,
+            "checkout_wording": 2,
+            "same_type": 0,
+            "exposure_proxy": 24,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 73,
+              "판매": 2,
+              "운영": 16,
+              "휴식 전환": 23,
+              "매입": 17,
+              "수선": 10
+            },
+            "complete": true
+          }
+        ]
+      },
+      "verdict": "빈도 동일",
+      "next_incident": null,
+      "forge_within_1h": []
+    },
+    {
+      "kind": "주인 직접 지시",
+      "ts": "2026-11-28T17:31:49+09:00",
+      "evidence": {
+        "file": ".kit/chat.jsonl",
+        "line": 292
+      },
+      "target": "inverse",
+      "response": {
+        "words": {
+          "file": ".kit/chat.jsonl",
+          "line": 294
+        },
+        "recorded": [
+          {
+            "file": "logs/react.jsonl",
+            "line": 8735
+          },
+          {
+            "file": "logs/react.jsonl",
+            "line": 8742
+          },
+          {
+            "file": "logs/react.jsonl",
+            "line": 8762
+          }
+        ],
+        "changes": [
+          {
+            "action": "buy_stock",
+            "file": "logs/react.jsonl",
+            "line": 8755
+          },
+          {
+            "action": "write_card",
+            "file": "logs/react.jsonl",
+            "line": 8756
+          }
+        ],
+        "same_type_after_change": null
+      },
+      "receipt": "미확인",
+      "focus": "거절 조건 역방향 실행",
+      "windows": {
+        "1": [
+          {
+            "inquiries": 2,
+            "checkout_wording": 0,
+            "same_type": 0,
+            "exposure_proxy": 0,
+            "settlements": 0,
+            "activity_steps": {
+              "휴식 전환": 9,
+              "조사": 38,
+              "매입": 3,
+              "판매": 1,
+              "운영": 2
+            },
+            "complete": true
+          },
+          {
+            "inquiries": 2,
+            "checkout_wording": 1,
+            "same_type": 0,
+            "exposure_proxy": 0,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 22,
+              "운영": 5,
+              "휴식 전환": 6,
+              "매입": 6,
+              "판매": 1
+            },
+            "complete": true
+          }
+        ],
+        "3": [
+          {
+            "inquiries": 10,
+            "checkout_wording": 3,
+            "same_type": 2,
+            "exposure_proxy": 0,
+            "settlements": 1,
+            "activity_steps": {
+              "조사": 129,
+              "매입": 19,
+              "휴식 전환": 29,
+              "운영": 13,
+              "수선": 6,
+              "판매": 2
+            },
+            "complete": true
+          },
+          {
+            "inquiries": 4,
+            "checkout_wording": 2,
+            "same_type": 0,
+            "exposure_proxy": 0,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 45,
+              "운영": 14,
+              "휴식 전환": 19,
+              "매입": 16,
+              "판매": 2,
+              "수선": 13
+            },
+            "complete": false
+          }
+        ]
+      },
+      "verdict": "관측 구간 잘림",
+      "next_incident": null,
+      "forge_within_1h": []
+    },
+    {
+      "kind": "넛지",
+      "ts": "2026-11-28T18:02:07+09:00",
+      "evidence": {
+        "file": "logs/nudges.jsonl",
+        "line": 119
+      },
+      "target": "policy",
+      "response": {
+        "words": {
+          "file": ".kit/chat.jsonl",
+          "line": 296
+        },
+        "recorded": [
+          {
+            "file": "logs/react.jsonl",
+            "line": 8742
+          },
+          {
+            "file": "logs/react.jsonl",
+            "line": 8762
+          },
+          {
+            "file": "logs/react.jsonl",
+            "line": 8776
+          }
+        ],
+        "changes": [
+          {
+            "action": "buy_stock",
+            "file": "logs/react.jsonl",
+            "line": 8755
+          },
+          {
+            "action": "write_card",
+            "file": "logs/react.jsonl",
+            "line": 8756
+          },
+          {
+            "action": "write_card",
+            "file": "logs/react.jsonl",
+            "line": 8770
+          },
+          {
+            "action": "market_call",
+            "file": "logs/react.jsonl",
+            "line": 8771
+          },
+          {
+            "action": "buy_stock",
+            "file": "logs/react.jsonl",
+            "line": 8779
+          }
+        ],
+        "same_type_after_change": null
+      },
+      "receipt": "답변 기록",
+      "focus": "판매 규칙과 집행 경로",
+      "windows": {
+        "1": [
+          {
+            "inquiries": 3,
+            "checkout_wording": 1,
+            "same_type": 0,
+            "exposure_proxy": 0,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 40,
+              "판매": 1,
+              "운영": 4,
+              "휴식 전환": 8,
+              "매입": 4
+            },
+            "complete": true
+          },
+          {
+            "inquiries": 1,
+            "checkout_wording": 1,
+            "same_type": 0,
+            "exposure_proxy": 0,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 22,
+              "운영": 9,
+              "판매": 1,
+              "휴식 전환": 7,
+              "매입": 8
+            },
+            "complete": true
+          }
+        ],
+        "3": [
+          {
+            "inquiries": 10,
+            "checkout_wording": 2,
+            "same_type": 0,
+            "exposure_proxy": 0,
+            "settlements": 0,
+            "activity_steps": {
+              "매입": 18,
+              "운영": 15,
+              "휴식 전환": 28,
+              "조사": 120,
+              "수선": 6,
+              "판매": 2
+            },
+            "complete": true
+          },
+          {
+            "inquiries": 2,
+            "checkout_wording": 1,
+            "same_type": 0,
+            "exposure_proxy": 0,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 34,
+              "운영": 12,
+              "판매": 2,
+              "휴식 전환": 17,
+              "매입": 14,
+              "수선": 13
+            },
+            "complete": false
+          }
+        ]
+      },
+      "verdict": "관측 구간 잘림",
+      "next_incident": null,
+      "forge_within_1h": []
+    },
+    {
+      "kind": "주인 직접 지시",
+      "ts": "2026-11-28T18:34:37+09:00",
+      "evidence": {
+        "file": ".kit/chat.jsonl",
+        "line": 297
+      },
+      "target": "tests",
+      "response": {
+        "words": {
+          "file": ".kit/chat.jsonl",
+          "line": 299
+        },
+        "recorded": [
+          {
+            "file": "logs/react.jsonl",
+            "line": 8776
+          },
+          {
+            "file": "logs/react.jsonl",
+            "line": 8780
+          },
+          {
+            "file": "logs/react.jsonl",
+            "line": 8782
+          }
+        ],
+        "changes": [
+          {
+            "action": "write_card",
+            "file": "logs/react.jsonl",
+            "line": 8770
+          },
+          {
+            "action": "market_call",
+            "file": "logs/react.jsonl",
+            "line": 8771
+          },
+          {
+            "action": "buy_stock",
+            "file": "logs/react.jsonl",
+            "line": 8779
+          },
+          {
+            "action": "buy_stock",
+            "file": "logs/react.jsonl",
+            "line": 8790
+          },
+          {
+            "action": "write_card",
+            "file": "logs/react.jsonl",
+            "line": 8791
+          }
+        ],
+        "same_type_after_change": "react-8778-buy_stock_failed"
+      },
+      "receipt": "미확인",
+      "focus": "포럼 공지",
+      "windows": {
+        "1": [
+          {
+            "inquiries": 1,
+            "checkout_wording": 0,
+            "same_type": 0,
+            "exposure_proxy": 0,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 14,
+              "운영": 4,
+              "휴식 전환": 6,
+              "매입": 6,
+              "판매": 1
+            },
+            "complete": true
+          },
+          {
+            "inquiries": 2,
+            "checkout_wording": 1,
+            "same_type": 2,
+            "exposure_proxy": 2,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 16,
+              "운영": 8,
+              "휴식 전환": 7,
+              "매입": 8,
+              "수선": 3
+            },
+            "complete": true
+          }
+        ],
+        "3": [
+          {
+            "inquiries": 7,
+            "checkout_wording": 2,
+            "same_type": 2,
+            "exposure_proxy": 2,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 109,
+              "수선": 5,
+              "운영": 14,
+              "휴식 전환": 24,
+              "매입": 16,
+              "판매": 3
+            },
+            "complete": true
+          },
+          {
+            "inquiries": 2,
+            "checkout_wording": 1,
+            "same_type": 3,
+            "exposure_proxy": 10,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 23,
+              "운영": 9,
+              "휴식 전환": 13,
+              "매입": 10,
+              "수선": 13,
+              "판매": 1
+            },
+            "complete": false
+          }
+        ]
+      },
+      "verdict": "관측 구간 잘림",
+      "next_incident": "react-8778-buy_stock_failed",
+      "forge_within_1h": []
+    },
+    {
+      "kind": "주인 직접 지시",
+      "ts": "2026-11-28T19:32:23+09:00",
+      "evidence": {
+        "file": ".kit/chat.jsonl",
+        "line": 300
+      },
+      "target": "tests",
+      "response": {
+        "words": null,
+        "recorded": [],
+        "changes": [
+          {
+            "action": "forge_tool",
+            "file": "logs/react.jsonl",
+            "line": 8812
+          },
+          {
+            "action": "write_card",
+            "file": "logs/react.jsonl",
+            "line": 8818
+          },
+          {
+            "action": "forge_tool",
+            "file": "logs/react.jsonl",
+            "line": 8828
+          }
+        ],
+        "same_type_after_change": null
+      },
+      "receipt": "미확인",
+      "focus": "포럼 공지",
+      "windows": {
+        "1": [
+          {
+            "inquiries": 2,
+            "checkout_wording": 1,
+            "same_type": 2,
+            "exposure_proxy": 0,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 16,
+              "운영": 8,
+              "휴식 전환": 7,
+              "매입": 8
+            },
+            "complete": true
+          },
+          {
+            "inquiries": 0,
+            "checkout_wording": 0,
+            "same_type": 1,
+            "exposure_proxy": 10,
+            "settlements": 0,
+            "activity_steps": {
+              "수선": 13,
+              "조사": 7,
+              "휴식 전환": 6,
+              "운영": 1,
+              "매입": 2,
+              "판매": 1
+            },
+            "complete": false
+          }
+        ],
+        "3": [
+          {
+            "inquiries": 6,
+            "checkout_wording": 2,
+            "same_type": 2,
+            "exposure_proxy": 0,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 76,
+              "휴식 전환": 21,
+              "매입": 17,
+              "판매": 2,
+              "운영": 15
+            },
+            "complete": true
+          },
+          {
+            "inquiries": 0,
+            "checkout_wording": 0,
+            "same_type": 1,
+            "exposure_proxy": 10,
+            "settlements": 0,
+            "activity_steps": {
+              "수선": 13,
+              "조사": 7,
+              "휴식 전환": 6,
+              "운영": 1,
+              "매입": 2,
+              "판매": 1
+            },
+            "complete": false
+          }
+        ]
+      },
+      "verdict": "관측 구간 잘림",
+      "next_incident": "forge-119-checkout_path_removed",
+      "forge_within_1h": [
+        {
+          "tool": "a2a_inquiry",
+          "version": 35,
+          "ref": {
+            "file": "logs/forge.jsonl",
+            "line": 119
+          }
+        },
+        {
+          "tool": "a2a_inquiry",
+          "version": 36,
+          "ref": {
+            "file": "logs/forge.jsonl",
+            "line": 120
+          }
+        }
+      ]
+    },
+    {
+      "kind": "넛지",
+      "ts": "2026-11-28T20:02:06+09:00",
+      "evidence": {
+        "file": "logs/nudges.jsonl",
+        "line": 120
+      },
+      "target": "policy",
+      "response": {
+        "words": null,
+        "recorded": [],
+        "changes": [
+          {
+            "action": "forge_tool",
+            "file": "logs/react.jsonl",
+            "line": 8828
+          }
+        ],
+        "same_type_after_change": null
+      },
+      "receipt": "오류 기록",
+      "focus": "판매 규칙과 집행 경로",
+      "windows": {
+        "1": [
+          {
+            "inquiries": 1,
+            "checkout_wording": 0,
+            "same_type": 0,
+            "exposure_proxy": 0,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 11,
+              "매입": 5,
+              "운영": 3,
+              "휴식 전환": 8,
+              "수선": 10
+            },
+            "complete": true
+          },
+          {
             "inquiries": 0,
             "checkout_wording": 0,
             "same_type": 0,
             "exposure_proxy": 0,
             "settlements": 0,
             "activity_steps": {
-              "조사": 20,
-              "수선": 4,
-              "운영": 4,
-              "휴식 전환": 4,
-              "매입": 2
+              "수선": 3,
+              "조사": 1,
+              "판매": 1,
+              "휴식 전환": 2,
+              "매입": 1
+            },
+            "complete": false
+          }
+        ],
+        "3": [
+          {
+            "inquiries": 5,
+            "checkout_wording": 2,
+            "same_type": 0,
+            "exposure_proxy": 0,
+            "settlements": 0,
+            "activity_steps": {
+              "조사": 73,
+              "판매": 2,
+              "운영": 16,
+              "휴식 전환": 23,
+              "매입": 17,
+              "수선": 10
+            },
+            "complete": true
+          },
+          {
+            "inquiries": 0,
+            "checkout_wording": 0,
+            "same_type": 0,
+            "exposure_proxy": 0,
+            "settlements": 0,
+            "activity_steps": {
+              "수선": 3,
+              "조사": 1,
+              "판매": 1,
+              "휴식 전환": 2,
+              "매입": 1
             },
             "complete": false
           }
@@ -27152,10 +27981,10 @@
       "forge_within_1h": [
         {
           "tool": "a2a_inquiry",
-          "version": 34,
+          "version": 36,
           "ref": {
             "file": "logs/forge.jsonl",
-            "line": 111
+            "line": 120
           }
         }
       ]

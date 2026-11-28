@@ -89,7 +89,7 @@
 | 11-26T15:32:00 넛지 [logs/nudges.jsonl 47행](../logs/nudges.jsonl#L47) | 대기 시한 내 답장과 결제서 · 실행 간 주인 지시 보존 | 답변 기록 | 0/43, 0, 0 → 0/40, 0, 0 | 0/95, 0, 0 → 0/146, 0, 0 | 빈도 동일 · 관측 없음 |
 | 11-26T15:57:49 주인 직접 지시 [.kit/chat.jsonl 50행](../.kit/chat.jsonl#L50) | 대기 시한 내 답장과 결제서 · 거절 조건 역방향 실행 | 미확인 | 0/0, 0, 0 → 0/0, 0, 0 | 0/0, 0, 0 → 0/0, 0, 0 | 관측 기회 부족 · 관측 없음 |
 | 11-26T16:01:37 넛지 [logs/nudges.jsonl 48행](../logs/nudges.jsonl#L48) | 포럼 공지 · 판매 규칙과 집행 경로 | 답변 기록 | 0/2, 0, 0 → 0/2, 0, 0 | 0/3, 0, 0 → 0/2, 0, 0 | 빈도 동일 · 관측 없음 |
-| 11-26T16:32:11 넛지 [logs/nudges.jsonl 49행](../logs/nudges.jsonl#L49) | 포럼 공지 · 도구 변경과 회귀 검증 | 답변 기록 | 0/5, 0, 0 → 0/4, 0, 0 | 1/7, 0, 0 → 2/9, 0, 0 | 빈도 증가 · forge-65-handler_churn |
+| 11-26T16:32:11 넛지 [logs/nudges.jsonl 49행](../logs/nudges.jsonl#L49) | 포럼 공지 · 도구 변경과 회귀 검증 | 답변 기록 | 0/5, 0, 0 → 1/4, 0, 0 | 1/7, 0, 0 → 3/9, 0, 0 | 빈도 증가 · forge-60-checkout_path_removed |
 | 11-26T16:34:04 주인 채팅 [.kit/chat.jsonl 56행](../.kit/chat.jsonl#L56) | 포럼 공지 · 시간 예산과 응답 경로 | 미확인 | 0/0, 0, 0 † → 0/0, 0, 0 | 1/0, 0, 0 † → 3/0, 0, 0 | 관측 구간 잘림 · react-5952-reply_failed |
 | 11-26T16:38:08 키트 시작 시도 [logs/agent-kit.log 5747행](../logs/agent-kit.log#L5747) | 키트 시작 및 실행 문맥 초기화 · 미특정 | 미확인 | 0/0, 0, 0 → 0/0, 0, 0 | 0/0, 0, 0 → 0/0, 0, 0 | 대상 미특정 · 관측 없음 |
 | 11-26T17:01:35 넛지 [logs/nudges.jsonl 50행](../logs/nudges.jsonl#L50) | 판매 규칙과 집행 경로 · 판매 규칙과 집행 경로 | 답변 기록 | 0/2, 0, 0 → 0/0, 0, 0 | 0/4, 0, 0 → 0/0, 2, 0 | 관측 기회 부족 · 관측 없음 |
@@ -100,7 +100,7 @@
 | 11-26T17:27:52 키트 시작 시도 [logs/agent-kit.log 6013행](../logs/agent-kit.log#L6013) | 키트 재기동과 가까운 goal 변경 · 실행 간 주인 지시 보존 | 미확인 | 0/65, 0, 0 → 0/43, 0, 0 | 0/151, 0, 0 → 0/70, 2, 0 | 빈도 동일 · 관측 없음 |
 | 11-26T18:02:17 넛지 [logs/nudges.jsonl 51행](../logs/nudges.jsonl#L51) | 판매 규칙과 집행 경로 · 판매 규칙과 집행 경로 | 오류 기록 | 0/0, 0, 0 → 0/0, 0, 0 | 0/4, 0, 0 → 0/0, 12, 2 | 관측 기회 부족 · 관측 없음 |
 | 11-26T18:32:12 넛지 [logs/nudges.jsonl 52행](../logs/nudges.jsonl#L52) | 가격의 근거 · 단위와 데이터 의미 | 오류 기록 | 0/13, 0, 0 → 0/16, 0, 0 | 2/69, 0, 0 → 0/23, 13, 2 | 빈도 감소 · 관측 없음 |
-| 11-26T19:01:57 넛지 [logs/nudges.jsonl 53행](../logs/nudges.jsonl#L53) | 도구 변경과 회귀 검증 · 도구 변경과 회귀 검증 | 오류 기록 | 1/3, 0, 0 → 1/3, 2, 0 | 1/10, 0, 0 → 1/4, 15, 3 | 빈도 증가 · forge-67-handler_churn |
+| 11-26T19:01:57 넛지 [logs/nudges.jsonl 53행](../logs/nudges.jsonl#L53) | 도구 변경과 회귀 검증 · 도구 변경과 회귀 검증 | 오류 기록 | 1/3, 0, 0 → 1/3, 2, 0 | 2/10, 0, 0 → 1/4, 15, 3 | 빈도 증가 · forge-67-handler_churn |
 | 11-26T19:23:56 주인 직접 지시 [.kit/chat.jsonl 74행](../.kit/chat.jsonl#L74) | 가격의 근거 · 거절 조건 역방향 실행 | 미확인 | 0/0, 0, 0 → 0/0, 2, 0 | 0/0, 0, 0 → 0/0, 15, 3 | 관측 기회 부족 · 관측 없음 |
 | 11-26T19:39:53 키트 시작 시도 [logs/agent-kit.log 6361행](../logs/agent-kit.log#L6361) | 키트 시작 및 실행 문맥 초기화 · 미특정 | 미확인 | 0/0, 0, 0 → 0/0, 3, 1 | 0/0, 0, 0 → 0/0, 15, 3 | 대상 미특정 · 관측 없음 |
 | 11-26T19:42:35 주인 직접 지시 [.kit/chat.jsonl 76행](../.kit/chat.jsonl#L76) | 목표 행동 미특정 · 미특정 | 미확인 | 0/0, 0, 0 → 0/0, 5, 1 | 0/0, 0, 0 → 0/0, 15, 3 | 대상 미특정 · 관측 없음 |
@@ -115,11 +115,11 @@
 | 11-26T23:32:50 넛지 [logs/nudges.jsonl 58행](../logs/nudges.jsonl#L58) | 대기 시한 내 답장과 결제서 · 판매 규칙과 집행 경로 | 답변 기록 | 1/1, 1, 0 → 0/0, 5, 0 | 1/1, 13, 2 → 2/15, 12, 0 | 빈도 감소 · react-6588-checkout_without_customer |
 | 11-27T00:01:12 넛지 [logs/nudges.jsonl 59행](../logs/nudges.jsonl#L59) | 기존 결제서와 재발급 · 실행 간 주인 지시 보존 | 답변 기록 | 0/12, 2, 0 → 0/20, 6, 0 | 0/31, 6, 1 → 0/48, 12, 0 | 빈도 동일 · 관측 없음 |
 | 11-27T00:25:34 goal 변경 [agent.json](../agent.json) `b57412a` | 원장 정산과 3시간 이후 철회 · 판매 규칙과 집행 경로 | 미확인 | 1/1, 6, 0 → 0/4, 4, 0 | 1/1, 8, 1 → 2/15, 9, 0 | 빈도 감소 · react-6588-checkout_without_customer |
-| 11-27T00:31:10 넛지 [logs/nudges.jsonl 60행](../logs/nudges.jsonl#L60) | 잔액과 크레딧 단위 · 단위와 데이터 의미 | 오류 기록 | 0/8, 6, 0 → 3/14, 5, 0 | 0/19, 8, 1 → 8/33, 9, 0 | 빈도 증가 · react-6465-make_checkout_failed |
+| 11-27T00:31:10 넛지 [logs/nudges.jsonl 60행](../logs/nudges.jsonl#L60) | 잔액과 크레딧 단위 · 단위와 데이터 의미 | 오류 기록 | 0/8, 6, 0 → 4/14, 5, 0 | 0/19, 8, 1 → 10/33, 9, 0 | 빈도 증가 · react-6465-make_checkout_failed |
 | 11-27T00:43:31 키트 시작 시도 [logs/agent-kit.log 6724행](../logs/agent-kit.log#L6724) | 키트 시작 및 실행 문맥 초기화 · 미특정 | 미확인 | 0/0, 5, 0 → 0/0, 5, 0 | 0/0, 7, 0 → 0/0, 10, 0 | 대상 미특정 · 관측 없음 |
 | 11-27T00:47:57 주인 직접 지시 [.kit/chat.jsonl 104행](../.kit/chat.jsonl#L104) | 주인 규칙과 메모 꼬리 · 거절 조건 역방향 실행 | 미확인 | 0/0, 5, 0 → 0/0, 5, 0 | 0/0, 7, 0 → 1/0, 10, 0 | 관측 기회 부족 · talk-29-buyer_condition_ignored |
 | 11-27T00:50:20 주인 직접 지시 [.kit/chat.jsonl 106행](../.kit/chat.jsonl#L106) | 주인 규칙과 메모 꼬리 · 시장 시간창과 재고 수명 | 미확인 | 3/0, 4, 0 → 2/0, 5, 0 | 6/0, 7, 0 → 6/0, 10, 0 | 관측 기회 부족 · ledger-138-stock_expired |
-| 11-27T00:54:20 넛지 [logs/nudges.jsonl 61행](../logs/nudges.jsonl#L61) | 잔액과 크레딧 단위 · 단위와 데이터 의미 | 답변 기록 | 2/13, 4, 0 → 4/19, 7, 0 | 2/24, 7, 0 → 6/27, 10, 0 | 빈도 증가 · react-6494-make_checkout_failed |
+| 11-27T00:54:20 넛지 [logs/nudges.jsonl 61행](../logs/nudges.jsonl#L61) | 잔액과 크레딧 단위 · 단위와 데이터 의미 | 답변 기록 | 2/13, 4, 0 → 5/19, 7, 0 | 2/24, 7, 0 → 9/27, 10, 0 | 빈도 증가 · react-6486-false_zero_settlements |
 | 11-27T00:54:45 goal 변경 [agent.json](../agent.json) `6d26ca7` | 같은 오류 3회 뒤 교훈 보존 · 실행 간 주인 지시 보존 | 미확인 | 0/20, 4, 0 → 0/17, 7, 0 | 0/39, 7, 0 → 0/34, 10, 0 | 빈도 동일 · 관측 없음 |
 | 11-27T00:55:38 주인 채팅 [.kit/chat.jsonl 109행](../.kit/chat.jsonl#L109) | 시장 시간창과 재고 수명 · 시장 시간창과 재고 수명 | 미확인 | 3/0, 4, 0 → 2/0, 7, 0 | 6/0, 7, 0 → 6/0, 10, 0 | 관측 기회 부족 · ledger-138-stock_expired |
 | 11-27T00:56:13 주인 직접 지시 [.kit/chat.jsonl 111행](../.kit/chat.jsonl#L111) | 기존 결제서와 재발급 · 실행 간 주인 지시 보존 | 미확인 | 0/20, 4, 0 → 0/18, 7, 0 | 0/39, 7, 0 → 0/34, 10, 0 | 빈도 동일 · 관측 없음 |
@@ -148,15 +148,15 @@
 | 11-27T04:31:12 넛지 [logs/nudges.jsonl 70행](../logs/nudges.jsonl#L70) | 대기 시한 내 답장과 결제서 · 도구 변경과 회귀 검증 | 답변 기록 | 0/5, 5, 0 → 0/0, 1, 0 | 2/20, 9, 0 → 1/6, 8, 0 | 빈도 증가 · react-6802-handler_regression |
 | 11-27T05:01:20 넛지 [logs/nudges.jsonl 71행](../logs/nudges.jsonl#L71) | 실측 등급과 인증서 · 실행 간 주인 지시 보존 | 오류 기록 | 0/6, 2, 0 → 0/9, 3, 0 | 0/18, 7, 0 → 0/26, 11, 0 | 빈도 동일 · 관측 없음 |
 | 11-27T05:31:16 넛지 [logs/nudges.jsonl 72행](../logs/nudges.jsonl#L72) | 도구 변경과 회귀 검증 · 도구 변경과 회귀 검증 | 답변 기록 | 0/0, 1, 0 → 1/3, 3, 0 | 0/5, 8, 0 → 1/6, 14, 0 | 빈도 증가 · react-6802-handler_regression |
-| 11-27T06:02:35 넛지 [logs/nudges.jsonl 73행](../logs/nudges.jsonl#L73) | 가격의 근거 · 단위와 데이터 의미 | 답변 기록 | 1/4, 4, 0 → 2/5, 3, 0 | 6/15, 10, 0 → 2/14, 12, 0 | 빈도 감소 · react-6875-make_checkout_failed |
+| 11-27T06:02:35 넛지 [logs/nudges.jsonl 73행](../logs/nudges.jsonl#L73) | 가격의 근거 · 단위와 데이터 의미 | 답변 기록 | 1/4, 4, 0 → 3/5, 3, 0 | 9/15, 10, 0 → 4/14, 12, 0 | 빈도 감소 · react-6869-false_zero_settlements |
 | 11-27T06:31:19 넛지 [logs/nudges.jsonl 74행](../logs/nudges.jsonl#L74) | 실행 간 주인 지시 보존 · 실행 간 주인 지시 보존 | 답변 기록 | 0/8, 3, 0 → 0/11, 4, 0 | 0/20, 9, 0 → 0/30, 13, 0 | 빈도 동일 · 관측 없음 |
-| 11-27T07:01:33 넛지 [logs/nudges.jsonl 75행](../logs/nudges.jsonl#L75) | 대기 시한 내 답장과 결제서 · 단위와 데이터 의미 | 답변 기록 | 2/4, 4, 0 → 0/4, 4, 0 | 5/14, 9, 0 → 3/18, 12, 0 | 빈도 감소 · react-7008-make_checkout_failed |
+| 11-27T07:01:33 넛지 [logs/nudges.jsonl 75행](../logs/nudges.jsonl#L75) | 대기 시한 내 답장과 결제서 · 단위와 데이터 의미 | 답변 기록 | 3/4, 4, 0 → 0/4, 4, 0 | 8/14, 9, 0 → 4/18, 12, 0 | 빈도 감소 · react-6960-false_zero_settlements |
 | 11-27T07:31:34 넛지 [logs/nudges.jsonl 76행](../logs/nudges.jsonl#L76) | 잔액과 크레딧 단위 · 실행 간 주인 지시 보존 | 답변 기록 | 0/11, 4, 0 → 0/10, 7, 0 | 0/23, 8, 0 → 0/26, 15, 0 | 빈도 동일 · 관측 없음 |
 | 11-27T08:01:17 넛지 [logs/nudges.jsonl 77행](../logs/nudges.jsonl#L77) | 목표 행동 미특정 · 미특정 | 오류 기록 | 0/0, 4, 0 → 0/0, 5, 0 | 0/0, 11, 0 → 0/0, 16, 0 | 대상 미특정 · 관측 없음 |
 | 11-27T08:31:48 넛지 [logs/nudges.jsonl 78행](../logs/nudges.jsonl#L78) | 목표 행동 미특정 · 미특정 | 오류 기록 | 0/0, 7, 0 → 0/0, 2, 0 | 0/0, 14, 0 → 0/0, 16, 0 | 대상 미특정 · 관측 없음 |
 | 11-27T09:01:51 넛지 [logs/nudges.jsonl 79행](../logs/nudges.jsonl#L79) | 실행 간 주인 지시 보존 · 실행 간 주인 지시 보존 | 오류 기록 | 0/10, 5, 0 → 0/7, 3, 0 | 0/28, 12, 0 → 0/25, 18, 0 | 빈도 동일 · 관측 없음 |
 | 11-27T09:31:33 넛지 [logs/nudges.jsonl 80행](../logs/nudges.jsonl#L80) | 대기 시한 내 답장과 결제서 · 실행 간 주인 지시 보존 | 답변 기록 | 0/9, 2, 0 → 0/7, 6, 0 | 0/30, 13, 0 → 0/23, 18, 0 | 빈도 동일 · 관측 없음 |
-| 11-27T10:01:53 넛지 [logs/nudges.jsonl 81행](../logs/nudges.jsonl#L81) | 가격의 근거 · 단위와 데이터 의미 | 답변 기록 | 3/8, 3, 0 → 1/11, 8, 0 | 3/18, 12, 0 → 1/16, 21, 0 | 빈도 감소 · react-7067-make_checkout_failed |
+| 11-27T10:01:53 넛지 [logs/nudges.jsonl 81행](../logs/nudges.jsonl#L81) | 가격의 근거 · 단위와 데이터 의미 | 답변 기록 | 3/8, 3, 0 → 3/11, 8, 0 | 4/18, 12, 0 → 5/16, 21, 0 | 빈도 증가 · react-7054-false_zero_settlements |
 | 11-27T10:31:23 넛지 [logs/nudges.jsonl 82행](../logs/nudges.jsonl#L82) | 대기 시한 내 답장과 결제서 · 판매 규칙과 집행 경로 | 오류 기록 | 0/4, 6, 0 → 0/4, 8, 0 | 0/7, 15, 0 → 0/4, 19, 1 | 빈도 동일 · 관측 없음 |
 | 11-27T10:42:35 주인 직접 지시 [.kit/chat.jsonl 182행](../.kit/chat.jsonl#L182) | 가격의 근거 · 거절 조건 역방향 실행 | 미확인 | 0/0, 7, 0 → 0/0, 7, 0 | 0/0, 17, 0 → 0/0, 18, 1 | 관측 기회 부족 · 관측 없음 |
 | 11-27T10:49:26 주인 채팅 [.kit/chat.jsonl 184행](../.kit/chat.jsonl#L184) | 목표 행동 미특정 · 미특정 | 미확인 | 0/0, 8, 0 → 0/0, 7, 0 | 0/0, 18, 0 → 0/0, 17, 1 | 대상 미특정 · 관측 없음 |
@@ -173,7 +173,7 @@
 | 11-27T15:01:46 넛지 [logs/nudges.jsonl 90행](../logs/nudges.jsonl#L90) | 실측 등급과 인증서 · 도구 변경과 회귀 검증 | 답변 기록 | 1/1, 3, 0 → 0/2, 6, 0 | 1/3, 13, 1 → 2/8, 13, 0 | 빈도 감소 · forge-89-handler_churn |
 | 11-27T15:31:38 넛지 [logs/nudges.jsonl 91행](../logs/nudges.jsonl#L91) | 실측 등급과 인증서 · 도구 변경과 회귀 검증 | 오류 기록 | 1/3, 5, 0 → 0/2, 4, 0 | 1/4, 16, 1 → 3/6, 9, 0 | 빈도 증가 · forge-89-handler_churn |
 | 11-27T16:13:10 주인 직접 지시 [.kit/chat.jsonl 206행](../.kit/chat.jsonl#L206) | 실측 등급과 인증서 · 실행 간 주인 지시 보존 | 미확인 | 0/11, 2, 0 → 0/17, 5, 0 | 0/40, 11, 0 → 0/43, 13, 0 | 빈도 동일 · 관측 없음 |
-| 11-27T16:28:07 넛지 [logs/nudges.jsonl 92행](../logs/nudges.jsonl#L92) | 잔액과 크레딧 단위 · 단위와 데이터 의미 | 오류 기록 | 0/4, 4, 0 → 1/18, 4, 0 | 2/27, 13, 0 → 5/49, 12, 0 | 빈도 증가 · react-7410-make_checkout_failed |
+| 11-27T16:28:07 넛지 [logs/nudges.jsonl 92행](../logs/nudges.jsonl#L92) | 잔액과 크레딧 단위 · 단위와 데이터 의미 | 오류 기록 | 1/4, 4, 0 → 1/18, 4, 0 | 6/27, 13, 0 → 5/49, 12, 0 | 빈도 감소 · react-7410-make_checkout_failed |
 | 11-27T16:47:05 주인 직접 지시 [.kit/chat.jsonl 210행](../.kit/chat.jsonl#L210) | 잔액과 크레딧 단위 · 시장 시간창과 재고 수명 | 미확인 | 1/0, 6, 0 → 8/6, 3, 0 | 3/0, 13, 0 → 12/12, 15, 0 | 관측 기회 부족 · react-7429-buy_stock_failed |
 | 11-27T16:51:16 주인 채팅 [.kit/chat.jsonl 212행](../.kit/chat.jsonl#L212) | 실행 간 주인 지시 보존 · 실행 간 주인 지시 보존 | 미확인 | 0/16, 7, 0 → 0/12, 2, 0 | 0/47, 14, 0 → 0/40, 14, 0 | 빈도 동일 · 관측 없음 |
 | 11-27T17:02:23 넛지 [logs/nudges.jsonl 93행](../logs/nudges.jsonl#L93) | 대기 시한 내 답장과 결제서 · 도구 변경과 회귀 검증 | 오류 기록 | 0/4, 5, 0 → 2/2, 2, 0 | 1/7, 14, 0 → 4/11, 14, 0 | 빈도 증가 · forge-89-handler_churn |
@@ -181,20 +181,20 @@
 | 11-27T17:32:17 넛지 [logs/nudges.jsonl 94행](../logs/nudges.jsonl#L94) | 기존 결제서와 재발급 · 도구 변경과 회귀 검증 | 답변 기록 | 2/4, 4, 0 → 1/0, 1, 0 | 3/9, 13, 0 → 4/10, 15, 0 | 빈도 증가 · react-7518-buy_stock_failed |
 | 11-27T18:01:38 넛지 [logs/nudges.jsonl 95행](../logs/nudges.jsonl#L95) | 매입 여부와 도매창 · 시장 시간창과 재고 수명 | 오류 기록 | 3/2, 2, 0 → 1/3, 3, 0 | 13/7, 13, 0 → 6/15, 16, 0 | 빈도 감소 · react-7520-buy_stock_failed |
 | 11-27T18:31:22 넛지 [logs/nudges.jsonl 96행](../logs/nudges.jsonl#L96) | 기존 결제서와 재발급 · 도구 변경과 회귀 검증 | 답변 기록 | 1/0, 1, 0 → 1/7, 7, 0 | 3/6, 9, 0 → 3/10, 19, 0 | 빈도 감소 · react-7549-buy_stock_failed |
-| 11-27T19:02:34 넛지 [logs/nudges.jsonl 97행](../logs/nudges.jsonl#L97) | 가격의 근거 · 단위와 데이터 의미 | 오류 기록 | 0/14, 3, 0 → 4/24, 9, 0 | 1/39, 10, 0 → 6/67, 16, 0 | 빈도 증가 · react-7557-make_checkout_failed |
+| 11-27T19:02:34 넛지 [logs/nudges.jsonl 97행](../logs/nudges.jsonl#L97) | 가격의 근거 · 단위와 데이터 의미 | 오류 기록 | 0/14, 3, 0 → 4/24, 9, 0 | 1/39, 10, 0 → 7/67, 16, 0 | 빈도 증가 · react-7557-make_checkout_failed |
 | 11-27T19:28:57 goal 변경 [agent.json](../agent.json) `2a882d4` | 목적·우선순위·판매 시한 전면 재정의 · 시간 예산과 응답 경로 | 미확인 | 4/7, 7, 0 → 3/5, 5, 0 | 10/12, 12, 0 → 6/15, 15, 0 | 빈도 감소 · talk-104-busy_reply |
 | 11-27T19:31:35 넛지 [logs/nudges.jsonl 98행](../logs/nudges.jsonl#L98) | 실측 등급과 인증서 · 실행 간 주인 지시 보존 | 답변 기록 | 0/16, 7, 0 → 0/17, 7, 0 | 0/43, 12, 0 → 2/50, 15, 0 | 빈도 증가 · react-7730-owner_rule_reversal |
 | 11-27T19:33:38 키트 시작 시도 [logs/agent-kit.log 7944행](../logs/agent-kit.log#L7944) | 키트 재기동과 가까운 goal 변경 · 시간 예산과 응답 경로 | 미확인 | 4/7, 7, 0 → 4/8, 8, 0 | 10/12, 12, 0 → 6/15, 15, 0 | 빈도 감소 · talk-104-busy_reply |
 | 11-27T20:01:42 넛지 [logs/nudges.jsonl 99행](../logs/nudges.jsonl#L99) | 대기 시한 내 답장과 결제서 · 시간 예산과 응답 경로 | 답변 기록 | 6/9, 9, 0 → 2/4, 4, 0 | 11/14, 14, 0 → 3/11, 11, 0 | 빈도 감소 · talk-108-defer_timeout |
 | 11-27T20:31:31 넛지 [logs/nudges.jsonl 100행](../logs/nudges.jsonl#L100) | 기존 결제서와 재발급 · 판매 규칙과 집행 경로 | 답변 기록 | 0/3, 7, 0 → 0/0, 5, 0 | 1/8, 15, 0 → 1/5, 12, 0 | 빈도 증가 · react-7857-checkout_lost_to_timeout |
 | 11-27T21:02:39 넛지 [logs/nudges.jsonl 101행](../logs/nudges.jsonl#L101) | 도구 변경과 회귀 검증 · 도구 변경과 회귀 검증 | 답변 기록 | 2/1, 4, 0 → 1/1, 3, 0 | 4/10, 16, 0 → 5/12, 13, 0 | 빈도 증가 · react-7730-handler_regression |
-| 11-27T21:31:30 넛지 [logs/nudges.jsonl 102행](../logs/nudges.jsonl#L102) | 실측 등급과 인증서 · 단위와 데이터 의미 | 답변 기록 | 1/20, 5, 0 → 4/26, 3, 0 | 5/61, 19, 0 → 4/59, 10, 0 | 빈도 감소 · react-7743-buy_stock_failed |
+| 11-27T21:31:30 넛지 [logs/nudges.jsonl 102행](../logs/nudges.jsonl#L102) | 실측 등급과 인증서 · 단위와 데이터 의미 | 답변 기록 | 1/20, 5, 0 → 5/26, 3, 0 | 6/61, 19, 0 → 5/59, 10, 0 | 빈도 감소 · react-7743-buy_stock_failed |
 | 11-27T22:01:41 넛지 [logs/nudges.jsonl 103행](../logs/nudges.jsonl#L103) | 실측 등급과 인증서 · 도구 변경과 회귀 검증 | 답변 기록 | 1/1, 3, 0 → 3/7, 4, 0 | 4/10, 16, 0 → 4/13, 10, 0 | 빈도 감소 · react-7760-make_checkout_failed |
 | 11-27T22:10:09 주인 직접 지시 [.kit/chat.jsonl 239행](../.kit/chat.jsonl#L239) | 실측 등급과 인증서 · 거절 조건 역방향 실행 | 미확인 | 0/0, 2, 0 → 0/0, 2, 0 | 0/0, 16, 0 → 1/0, 8, 0 | 관측 기회 부족 · talk-119-buyer_condition_ignored |
 | 11-27T22:31:55 넛지 [logs/nudges.jsonl 104행](../logs/nudges.jsonl#L104) | 실측 등급과 인증서 · 실행 간 주인 지시 보존 | 답변 기록 | 2/21, 3, 0 → 0/17, 4, 0 | 2/50, 15, 0 → 0/54, 7, 0 | 빈도 감소 · 관측 없음 |
 | 11-27T23:01:30 넛지 [logs/nudges.jsonl 105행](../logs/nudges.jsonl#L105) | 포럼 공지 · 실행 간 주인 지시 보존 | 답변 기록 | 1/16, 4, 0 → 0/21, 5, 0 | 2/48, 11, 0 → 0/50, 6, 0 | 빈도 감소 · 관측 없음 |
 | 11-27T23:31:32 넛지 [logs/nudges.jsonl 106행](../logs/nudges.jsonl#L106) | 대기 시한 내 답장과 결제서 · 시간 예산과 응답 경로 | 오류 기록 | 1/4, 4, 0 → 3/3, 3, 0 | 3/12, 12, 0 → 3/4, 4, 0 | 빈도 증가 · react-7858-reply_failed |
-| 11-28T00:31:34 넛지 [logs/nudges.jsonl 107행](../logs/nudges.jsonl#L107) | 도구 변경과 회귀 검증 · 도구 변경과 회귀 검증 | 오류 기록 | 1/3, 3, 0 → 0/2, 0, 0 | 5/12, 10, 0 → 2/2, 12, 2 | 빈도 증가 · talk-125-single_item_rejected |
+| 11-28T00:31:34 넛지 [logs/nudges.jsonl 107행](../logs/nudges.jsonl#L107) | 도구 변경과 회귀 검증 · 도구 변경과 회귀 검증 | 오류 기록 | 1/3, 3, 0 → 0/2, 0, 0 | 5/12, 10, 0 → 6/2, 12, 2 | 빈도 증가 · talk-125-no_match_rejected |
 | 11-28T01:01:32 넛지 [logs/nudges.jsonl 108행](../logs/nudges.jsonl#L108) | 시장 시간창과 재고 수명 · 시장 시간창과 재고 수명 | 오류 기록 | 3/5, 1, 0 → 5/8, 0, 0 | 12/14, 10, 0 → 15/21, 12, 2 | 빈도 감소 · react-7965-buy_stock_failed |
 | 11-28T02:02:00 넛지 [logs/nudges.jsonl 109행](../logs/nudges.jsonl#L109) | 시장 시간창과 재고 수명 · 시장 시간창과 재고 수명 | 답변 기록 | 5/8, 0, 0 → 5/6, 3, 0 | 13/17, 6, 0 → 15/22, 27, 2 | 빈도 감소 · react-8020-buy_stock_failed |
 | 11-28T09:04:25 넛지 [logs/nudges.jsonl 110행](../logs/nudges.jsonl#L110) | 판매 규칙과 집행 경로 · 판매 규칙과 집행 경로 | 답변 기록 | 0/0, 3, 0 → 0/0, 7, 0 | 0/0, 5, 0 → 0/0, 21, 0 | 관측 기회 부족 · 관측 없음 |
@@ -207,14 +207,20 @@
 | 11-28T13:02:16 넛지 [logs/nudges.jsonl 114행](../logs/nudges.jsonl#L114) | 판매 규칙과 집행 경로 · 판매 규칙과 집행 경로 | 답변 기록 | 0/0, 1, 0 → 0/0, 3, 0 | 0/0, 17, 0 → 0/0, 11, 1 | 관측 기회 부족 · 관측 없음 |
 | 11-28T13:09:45 주인 직접 지시 [.kit/chat.jsonl 270행](../.kit/chat.jsonl#L270) | 포럼 공지 · 거절 조건 역방향 실행 | 미확인 | 0/0, 0, 0 → 1/0, 4, 0 | 0/0, 15, 0 → 3/0, 13, 1 | 관측 기회 부족 · talk-189-buyer_condition_ignored |
 | 11-28T13:12:05 넛지 [logs/nudges.jsonl 115행](../logs/nudges.jsonl#L115) | 주인 규칙과 메모 꼬리 · 판매 규칙과 집행 경로 | 답변 기록 | 0/0, 0, 0 → 0/0, 4, 0 | 0/0, 15, 0 → 0/0, 13, 1 | 관측 기회 부족 · 관측 없음 |
-| 11-28T13:38:20 주인 직접 지시 [.kit/chat.jsonl 274행](../.kit/chat.jsonl#L274) | 주인 규칙과 메모 꼬리 · 실행 간 주인 지시 보존 | 미확인 | 0/8, 2, 0 → 1/1, 3, 0 | 0/21, 13, 0 → 1/34, 11, 1 † | 관측 구간 잘림 · react-8521-notes_over_tail |
-| 11-28T14:40:44 주인 직접 지시 [.kit/chat.jsonl 276행](../.kit/chat.jsonl#L276) | 거절 조건 역방향 실행 · 거절 조건 역방향 실행 | 미확인 | 1/0, 3, 0 → 0/0, 5, 1 | 1/0, 8, 0 → 2/0, 8, 1 † | 관측 구간 잘림 · react-8604-inverse_purchase |
-| 11-28T15:01:48 넛지 [logs/nudges.jsonl 116행](../logs/nudges.jsonl#L116) | 도구 변경과 회귀 검증 · 도구 변경과 회귀 검증 | 오류 기록 | 0/0, 4, 1 → 1/0, 4, 0 | 2/4, 8, 1 → 1/2, 6, 0 † | 관측 구간 잘림 · react-8622-buy_stock_failed |
-| 11-28T15:04:52 주인 직접 지시 [.kit/chat.jsonl 279행](../.kit/chat.jsonl#L279) | 거절 조건 역방향 실행 · 거절 조건 역방향 실행 | 미확인 | 0/0, 3, 1 → 2/0, 6, 0 | 1/0, 8, 1 → 2/0, 6, 0 † | 관측 구간 잘림 · react-8604-inverse_purchase |
-| 11-28T15:35:02 주인 직접 지시 [.kit/chat.jsonl 282행](../.kit/chat.jsonl#L282) | 시장 시간창과 재고 수명 · 시장 시간창과 재고 수명 | 미확인 | 5/9, 5, 1 → 2/6, 3, 0 † | 11/15, 10, 1 → 2/6, 3, 0 † | 관측 구간 잘림 · react-8618-buy_stock_failed |
-| 11-28T15:44:59 주인 직접 지시 [.kit/chat.jsonl 284행](../.kit/chat.jsonl#L284) | 시장 시간창과 재고 수명 · 시장 시간창과 재고 수명 | 미확인 | 4/8, 5, 1 → 2/5, 3, 0 † | 10/14, 10, 1 → 2/5, 3, 0 † | 관측 구간 잘림 · react-8618-buy_stock_failed |
-| 11-28T16:01:46 넛지 [logs/nudges.jsonl 117행](../logs/nudges.jsonl#L117) | 판매 규칙과 집행 경로 · 판매 규칙과 집행 경로 | 답변 기록 | 0/0, 4, 0 → 0/0, 2, 0 † | 0/0, 11, 1 → 0/0, 2, 0 † | 관측 구간 잘림 · 관측 없음 |
-| 11-28T16:04:57 주인 직접 지시 [.kit/chat.jsonl 288행](../.kit/chat.jsonl#L288) | 거절 조건 역방향 실행 · 거절 조건 역방향 실행 | 미확인 | 2/0, 6, 0 → 0/0, 0, 0 † | 3/0, 13, 1 → 0/0, 0, 0 † | 관측 구간 잘림 · 관측 없음 |
+| 11-28T13:38:20 주인 직접 지시 [.kit/chat.jsonl 274행](../.kit/chat.jsonl#L274) | 주인 규칙과 메모 꼬리 · 실행 간 주인 지시 보존 | 미확인 | 0/8, 2, 0 → 1/1, 3, 0 | 0/21, 13, 0 → 1/35, 11, 1 | 빈도 증가 · react-8521-notes_over_tail |
+| 11-28T14:40:44 주인 직접 지시 [.kit/chat.jsonl 276행](../.kit/chat.jsonl#L276) | 거절 조건 역방향 실행 · 거절 조건 역방향 실행 | 미확인 | 1/0, 3, 0 → 0/0, 5, 1 | 1/0, 8, 0 → 2/0, 11, 1 | 관측 기회 부족 · react-8604-inverse_purchase |
+| 11-28T15:01:48 넛지 [logs/nudges.jsonl 116행](../logs/nudges.jsonl#L116) | 도구 변경과 회귀 검증 · 도구 변경과 회귀 검증 | 오류 기록 | 0/0, 4, 1 → 1/0, 4, 0 | 2/4, 8, 1 → 2/2, 10, 0 | 빈도 증가 · react-8622-buy_stock_failed |
+| 11-28T15:04:52 주인 직접 지시 [.kit/chat.jsonl 279행](../.kit/chat.jsonl#L279) | 거절 조건 역방향 실행 · 거절 조건 역방향 실행 | 미확인 | 0/0, 3, 1 → 2/0, 6, 0 | 1/0, 8, 1 → 2/0, 10, 0 | 관측 기회 부족 · react-8604-inverse_purchase |
+| 11-28T15:35:02 주인 직접 지시 [.kit/chat.jsonl 282행](../.kit/chat.jsonl#L282) | 시장 시간창과 재고 수명 · 시장 시간창과 재고 수명 | 미확인 | 5/9, 5, 1 → 3/7, 3, 0 | 11/15, 10, 1 → 13/16, 7, 0 | 빈도 증가 · react-8618-buy_stock_failed |
+| 11-28T15:44:59 주인 직접 지시 [.kit/chat.jsonl 284행](../.kit/chat.jsonl#L284) | 시장 시간창과 재고 수명 · 시장 시간창과 재고 수명 | 미확인 | 4/8, 5, 1 → 3/6, 4, 0 | 10/14, 10, 1 → 13/18, 8, 0 | 빈도 증가 · react-8618-buy_stock_failed |
+| 11-28T16:01:46 넛지 [logs/nudges.jsonl 117행](../logs/nudges.jsonl#L117) | 판매 규칙과 집행 경로 · 판매 규칙과 집행 경로 | 답변 기록 | 0/0, 4, 0 → 0/0, 3, 0 | 0/0, 11, 1 → 0/0, 7, 0 | 관측 기회 부족 · 관측 없음 |
+| 11-28T16:04:57 주인 직접 지시 [.kit/chat.jsonl 288행](../.kit/chat.jsonl#L288) | 거절 조건 역방향 실행 · 거절 조건 역방향 실행 | 미확인 | 2/0, 6, 0 → 0/0, 1, 0 | 3/0, 13, 1 → 0/0, 5, 0 | 관측 기회 부족 · 관측 없음 |
+| 11-28T17:02:00 넛지 [logs/nudges.jsonl 118행](../logs/nudges.jsonl#L118) | 실행 간 주인 지시 보존 · 실행 간 주인 지시 보존 | 답변 기록 | 0/10, 3, 0 → 0/11, 3, 0 | 0/37, 11, 1 → 0/24, 5, 0 | 빈도 동일 · 관측 없음 |
+| 11-28T17:31:49 주인 직접 지시 [.kit/chat.jsonl 292행](../.kit/chat.jsonl#L292) | 거절 조건 역방향 실행 · 거절 조건 역방향 실행 | 미확인 | 0/0, 2, 0 → 0/0, 2, 0 | 2/0, 10, 1 → 0/0, 4, 0 † | 관측 구간 잘림 · 관측 없음 |
+| 11-28T18:02:07 넛지 [logs/nudges.jsonl 119행](../logs/nudges.jsonl#L119) | 판매 규칙과 집행 경로 · 판매 규칙과 집행 경로 | 답변 기록 | 0/0, 3, 0 → 0/0, 1, 0 | 0/0, 10, 0 → 0/0, 2, 0 † | 관측 구간 잘림 · 관측 없음 |
+| 11-28T18:34:37 주인 직접 지시 [.kit/chat.jsonl 297행](../.kit/chat.jsonl#L297) | 포럼 공지 · 도구 변경과 회귀 검증 | 미확인 | 0/0, 1, 0 → 2/2, 2, 0 | 2/2, 7, 0 → 3/10, 2, 0 † | 관측 구간 잘림 · react-8778-buy_stock_failed |
+| 11-28T19:32:23 주인 직접 지시 [.kit/chat.jsonl 300행](../.kit/chat.jsonl#L300) | 포럼 공지 · 도구 변경과 회귀 검증 | 미확인 | 2/0, 2, 0 → 1/10, 0, 0 † | 2/0, 6, 0 → 1/10, 0, 0 † | 관측 구간 잘림 · forge-119-checkout_path_removed |
+| 11-28T20:02:06 넛지 [logs/nudges.jsonl 120행](../logs/nudges.jsonl#L120) | 판매 규칙과 집행 경로 · 판매 규칙과 집행 경로 | 오류 기록 | 0/0, 1, 0 → 0/0, 0, 0 † | 0/0, 5, 0 → 0/0, 0, 0 † | 관측 구간 잘림 · 관측 없음 |
 
 ## 주인 직접 지시와 넛지 (11/28 09:00~16:10, 원본 행 검토)
 
@@ -311,7 +317,7 @@
 | 11-26T15:32 넛지 [logs/nudges.jsonl 47행](../logs/nudges.jsonl#L47) | 실행 간 주인 지시 보존 | [.kit/chat.jsonl 49행](../.kit/chat.jsonl#L49) | 3 | market_call 2, forge_tool 2, write_card 1 | — |
 | 11-26T15:57 주인 직접 지시 [.kit/chat.jsonl 50행](../.kit/chat.jsonl#L50) | 거절 조건 역방향 실행 | [.kit/chat.jsonl 51행](../.kit/chat.jsonl#L51) | 3 | market_call 2, forge_tool 1, write_card 1, buy_stock 1 | — |
 | 11-26T16:01 넛지 [logs/nudges.jsonl 48행](../logs/nudges.jsonl#L48) | 판매 규칙과 집행 경로 | [.kit/chat.jsonl 53행](../.kit/chat.jsonl#L53) | 3 | forge_tool 1, write_card 1, market_call 1, buy_stock 2 | — |
-| 11-26T16:32 넛지 [logs/nudges.jsonl 49행](../logs/nudges.jsonl#L49) | 도구 변경과 회귀 검증 | [.kit/chat.jsonl 55행](../.kit/chat.jsonl#L55) | 3 | write_card 3, forge_tool 1, market_call 1 | forge-65-handler_churn |
+| 11-26T16:32 넛지 [logs/nudges.jsonl 49행](../logs/nudges.jsonl#L49) | 도구 변경과 회귀 검증 | [.kit/chat.jsonl 55행](../.kit/chat.jsonl#L55) | 3 | write_card 3, forge_tool 1, market_call 1 | forge-60-checkout_path_removed |
 | 11-26T17:01 넛지 [logs/nudges.jsonl 50행](../logs/nudges.jsonl#L50) | 판매 규칙과 집행 경로 | [.kit/chat.jsonl 60행](../.kit/chat.jsonl#L60) | 3 | forge_tool 3, write_card 2 | — |
 | 11-26T17:19 주인 직접 지시 [.kit/chat.jsonl 62행](../.kit/chat.jsonl#L62) | 실행 간 주인 지시 보존 | [.kit/chat.jsonl 63행](../.kit/chat.jsonl#L63) | 3 | forge_tool 3, write_card 2 | — |
 | 11-26T18:02 넛지 [logs/nudges.jsonl 51행](../logs/nudges.jsonl#L51) | 판매 규칙과 집행 경로 | [.kit/chat.jsonl 67행](../.kit/chat.jsonl#L67) | 3 | write_card 1, forge_tool 3 | — |
@@ -329,7 +335,7 @@
 | 11-27T00:31 넛지 [logs/nudges.jsonl 60행](../logs/nudges.jsonl#L60) | 단위와 데이터 의미 | [.kit/chat.jsonl 105행](../.kit/chat.jsonl#L105) | 3 | market_call 2, compact_notes 1, forge_tool 2 | react-6465-make_checkout_failed |
 | 11-27T00:47 주인 직접 지시 [.kit/chat.jsonl 104행](../.kit/chat.jsonl#L104) | 거절 조건 역방향 실행 | [.kit/chat.jsonl 105행](../.kit/chat.jsonl#L105) | 3 | compact_notes 1, forge_tool 3, market_call 1 | talk-29-buyer_condition_ignored |
 | 11-27T00:50 주인 직접 지시 [.kit/chat.jsonl 106행](../.kit/chat.jsonl#L106) | 시장 시간창과 재고 수명 | [.kit/chat.jsonl 110행](../.kit/chat.jsonl#L110) | 3 | forge_tool 4, market_call 1 | ledger-138-stock_expired |
-| 11-27T00:54 넛지 [logs/nudges.jsonl 61행](../logs/nudges.jsonl#L61) | 단위와 데이터 의미 | [.kit/chat.jsonl 110행](../.kit/chat.jsonl#L110) | 3 | forge_tool 5 | react-6494-make_checkout_failed |
+| 11-27T00:54 넛지 [logs/nudges.jsonl 61행](../logs/nudges.jsonl#L61) | 단위와 데이터 의미 | [.kit/chat.jsonl 110행](../.kit/chat.jsonl#L110) | 3 | forge_tool 5 | react-6486-false_zero_settlements |
 | 11-27T00:56 주인 직접 지시 [.kit/chat.jsonl 111행](../.kit/chat.jsonl#L111) | 실행 간 주인 지시 보존 | [.kit/chat.jsonl 116행](../.kit/chat.jsonl#L116) | 3 | forge_tool 5 | — |
 | 11-27T01:07 주인 직접 지시 [.kit/chat.jsonl 114행](../.kit/chat.jsonl#L114) | 실행 간 주인 지시 보존 | [.kit/chat.jsonl 116행](../.kit/chat.jsonl#L116) | 3 | forge_tool 4, compact_notes 1 | — |
 | 11-27T01:07 주인 직접 지시 [.kit/chat.jsonl 115행](../.kit/chat.jsonl#L115) | 실행 간 주인 지시 보존 | [.kit/chat.jsonl 116행](../.kit/chat.jsonl#L116) | 3 | forge_tool 4, compact_notes 1 | — |
@@ -348,15 +354,15 @@
 | 11-27T04:31 넛지 [logs/nudges.jsonl 70행](../logs/nudges.jsonl#L70) | 도구 변경과 회귀 검증 | [.kit/chat.jsonl 157행](../.kit/chat.jsonl#L157) | 3 | compact_notes 1 | react-6802-handler_regression |
 | 11-27T05:01 넛지 [logs/nudges.jsonl 71행](../logs/nudges.jsonl#L71) | 실행 간 주인 지시 보존 | 없음 | 3 | compact_notes 1, forge_tool 1 | — |
 | 11-27T05:31 넛지 [logs/nudges.jsonl 72행](../logs/nudges.jsonl#L72) | 도구 변경과 회귀 검증 | [.kit/chat.jsonl 161행](../.kit/chat.jsonl#L161) | 3 | forge_tool 1, compact_notes 1 | — |
-| 11-27T06:02 넛지 [logs/nudges.jsonl 73행](../logs/nudges.jsonl#L73) | 단위와 데이터 의미 | 없음 | 3 | compact_notes 1 | react-6875-make_checkout_failed |
+| 11-27T06:02 넛지 [logs/nudges.jsonl 73행](../logs/nudges.jsonl#L73) | 단위와 데이터 의미 | 없음 | 3 | compact_notes 1 | react-6869-false_zero_settlements |
 | 11-27T06:31 넛지 [logs/nudges.jsonl 74행](../logs/nudges.jsonl#L74) | 실행 간 주인 지시 보존 | [.kit/chat.jsonl 165행](../.kit/chat.jsonl#L165) | 3 | forge_tool 1, compact_notes 1 | — |
-| 11-27T07:01 넛지 [logs/nudges.jsonl 75행](../logs/nudges.jsonl#L75) | 단위와 데이터 의미 | [.kit/chat.jsonl 167행](../.kit/chat.jsonl#L167) | 3 | forge_tool 1, compact_notes 1 | react-7008-make_checkout_failed |
+| 11-27T07:01 넛지 [logs/nudges.jsonl 75행](../logs/nudges.jsonl#L75) | 단위와 데이터 의미 | [.kit/chat.jsonl 167행](../.kit/chat.jsonl#L167) | 3 | forge_tool 1, compact_notes 1 | react-6960-false_zero_settlements |
 | 11-27T07:31 넛지 [logs/nudges.jsonl 76행](../logs/nudges.jsonl#L76) | 실행 간 주인 지시 보존 | [.kit/chat.jsonl 169행](../.kit/chat.jsonl#L169) | 3 | 없음 | — |
 | 11-27T08:01 넛지 [logs/nudges.jsonl 77행](../logs/nudges.jsonl#L77) | 미특정 | 없음 | 3 | 없음 | — |
 | 11-27T08:31 넛지 [logs/nudges.jsonl 78행](../logs/nudges.jsonl#L78) | 미특정 | 없음 | 3 | 없음 | — |
 | 11-27T09:01 넛지 [logs/nudges.jsonl 79행](../logs/nudges.jsonl#L79) | 실행 간 주인 지시 보존 | 없음 | 3 | 없음 | — |
 | 11-27T09:31 넛지 [logs/nudges.jsonl 80행](../logs/nudges.jsonl#L80) | 실행 간 주인 지시 보존 | [.kit/chat.jsonl 177행](../.kit/chat.jsonl#L177) | 3 | 없음 | — |
-| 11-27T10:01 넛지 [logs/nudges.jsonl 81행](../logs/nudges.jsonl#L81) | 단위와 데이터 의미 | 없음 | 3 | compact_notes 1 | — |
+| 11-27T10:01 넛지 [logs/nudges.jsonl 81행](../logs/nudges.jsonl#L81) | 단위와 데이터 의미 | 없음 | 3 | compact_notes 1 | react-7135-false_zero_settlements |
 | 11-27T10:31 넛지 [logs/nudges.jsonl 82행](../logs/nudges.jsonl#L82) | 판매 규칙과 집행 경로 | [.kit/chat.jsonl 185행](../.kit/chat.jsonl#L185) | 3 | compact_notes 1 | — |
 | 11-27T10:42 주인 직접 지시 [.kit/chat.jsonl 182행](../.kit/chat.jsonl#L182) | 거절 조건 역방향 실행 | [.kit/chat.jsonl 185행](../.kit/chat.jsonl#L185) | 3 | compact_notes 1 | — |
 | 11-27T11:01 넛지 [logs/nudges.jsonl 83행](../logs/nudges.jsonl#L83) | 실행 간 주인 지시 보존 | 없음 | 3 | 없음 | — |
@@ -387,7 +393,7 @@
 | 11-27T22:31 넛지 [logs/nudges.jsonl 104행](../logs/nudges.jsonl#L104) | 실행 간 주인 지시 보존 | [.kit/chat.jsonl 242행](../.kit/chat.jsonl#L242) | 3 | buy_stock 1, write_card 3, market_call 1 | — |
 | 11-27T23:01 넛지 [logs/nudges.jsonl 105행](../logs/nudges.jsonl#L105) | 실행 간 주인 지시 보존 | [.kit/chat.jsonl 244행](../.kit/chat.jsonl#L244) | 3 | market_call 2, write_card 2, forge_tool 1 | — |
 | 11-27T23:31 넛지 [logs/nudges.jsonl 106행](../logs/nudges.jsonl#L106) | 시간 예산과 응답 경로 | 없음 | 3 | forge_tool 2, market_call 1, buy_stock 1 | — |
-| 11-28T00:31 넛지 [logs/nudges.jsonl 107행](../logs/nudges.jsonl#L107) | 도구 변경과 회귀 검증 | 없음 | 3 | forge_tool 1, market_call 1, buy_stock 2, write_card 1 | talk-125-single_item_rejected |
+| 11-28T00:31 넛지 [logs/nudges.jsonl 107행](../logs/nudges.jsonl#L107) | 도구 변경과 회귀 검증 | 없음 | 3 | forge_tool 1, market_call 1, buy_stock 2, write_card 1 | talk-125-no_match_rejected |
 | 11-28T01:01 넛지 [logs/nudges.jsonl 108행](../logs/nudges.jsonl#L108) | 시장 시간창과 재고 수명 | 없음 | 2 | buy_stock 2, write_card 3 | react-7965-buy_stock_failed |
 | 11-28T02:02 넛지 [logs/nudges.jsonl 109행](../logs/nudges.jsonl#L109) | 시장 시간창과 재고 수명 | [.kit/chat.jsonl 252행](../.kit/chat.jsonl#L252) | 2 | buy_stock 2, write_card 2 | react-8033-buy_stock_failed |
 | 11-28T09:04 넛지 [logs/nudges.jsonl 110행](../logs/nudges.jsonl#L110) | 판매 규칙과 집행 경로 | [.kit/chat.jsonl 254행](../.kit/chat.jsonl#L254) | 2 | forge_tool 2 | — |
@@ -405,9 +411,15 @@
 | 11-28T15:01 넛지 [logs/nudges.jsonl 116행](../logs/nudges.jsonl#L116) | 도구 변경과 회귀 검증 | 없음 | 3 | buy_stock 3, write_card 1 | react-8622-buy_stock_failed |
 | 11-28T15:04 주인 직접 지시 [.kit/chat.jsonl 279행](../.kit/chat.jsonl#L279) | 거절 조건 역방향 실행 | 없음 | 3 | write_card 1, buy_stock 2 | react-8604-inverse_purchase |
 | 11-28T15:35 주인 직접 지시 [.kit/chat.jsonl 282행](../.kit/chat.jsonl#L282) | 시장 시간창과 재고 수명 | [.kit/chat.jsonl 283행](../.kit/chat.jsonl#L283) | 3 | buy_stock 2, forge_tool 1, write_card 2 | react-8618-buy_stock_failed |
-| 11-28T15:44 주인 직접 지시 [.kit/chat.jsonl 284행](../.kit/chat.jsonl#L284) | 시장 시간창과 재고 수명 | [.kit/chat.jsonl 287행](../.kit/chat.jsonl#L287) | 3 | forge_tool 1, write_card 2, buy_stock 1 | — |
+| 11-28T15:44 주인 직접 지시 [.kit/chat.jsonl 284행](../.kit/chat.jsonl#L284) | 시장 시간창과 재고 수명 | [.kit/chat.jsonl 287행](../.kit/chat.jsonl#L287) | 3 | forge_tool 1, write_card 2, buy_stock 1 | react-8670-buy_stock_failed |
 | 11-28T16:01 넛지 [logs/nudges.jsonl 117행](../logs/nudges.jsonl#L117) | 판매 규칙과 집행 경로 | [.kit/chat.jsonl 287행](../.kit/chat.jsonl#L287) | 3 | forge_tool 1, write_card 2, buy_stock 1 | — |
 | 11-28T16:04 주인 직접 지시 [.kit/chat.jsonl 288행](../.kit/chat.jsonl#L288) | 거절 조건 역방향 실행 | [.kit/chat.jsonl 289행](../.kit/chat.jsonl#L289) | 3 | forge_tool 1, write_card 2, buy_stock 1 | — |
+| 11-28T17:02 넛지 [logs/nudges.jsonl 118행](../logs/nudges.jsonl#L118) | 실행 간 주인 지시 보존 | [.kit/chat.jsonl 291행](../.kit/chat.jsonl#L291) | 2 | write_card 1 | — |
+| 11-28T17:31 주인 직접 지시 [.kit/chat.jsonl 292행](../.kit/chat.jsonl#L292) | 거절 조건 역방향 실행 | [.kit/chat.jsonl 294행](../.kit/chat.jsonl#L294) | 3 | buy_stock 1, write_card 1 | — |
+| 11-28T18:02 넛지 [logs/nudges.jsonl 119행](../logs/nudges.jsonl#L119) | 판매 규칙과 집행 경로 | [.kit/chat.jsonl 296행](../.kit/chat.jsonl#L296) | 3 | buy_stock 2, write_card 2, market_call 1 | — |
+| 11-28T18:34 주인 직접 지시 [.kit/chat.jsonl 297행](../.kit/chat.jsonl#L297) | 도구 변경과 회귀 검증 | [.kit/chat.jsonl 299행](../.kit/chat.jsonl#L299) | 3 | write_card 2, market_call 1, buy_stock 2 | react-8778-buy_stock_failed |
+| 11-28T19:32 주인 직접 지시 [.kit/chat.jsonl 300행](../.kit/chat.jsonl#L300) | 도구 변경과 회귀 검증 | 없음 | 0 | forge_tool 2, write_card 1 | — |
+| 11-28T20:02 넛지 [logs/nudges.jsonl 120행](../logs/nudges.jsonl#L120) | 판매 규칙과 집행 경로 | 없음 | 0 | forge_tool 1 | — |
 
 ## 도구 버전별 구매 문의
 
@@ -437,4 +449,6 @@
 | v31 | 0 | 0 | [logs/forge.jsonl 107행](../logs/forge.jsonl#L107) |
 | v32 | 0 | 0 | [logs/forge.jsonl 108행](../logs/forge.jsonl#L108) |
 | v33 | 13 | 6 | [logs/forge.jsonl 109행](../logs/forge.jsonl#L109) |
-| v34 | 0 | 0 | [logs/forge.jsonl 111행](../logs/forge.jsonl#L111) |
+| v34 | 6 | 2 | [logs/forge.jsonl 111행](../logs/forge.jsonl#L111) |
+| v35 | 0 | 0 | [logs/forge.jsonl 119행](../logs/forge.jsonl#L119) |
+| v36 | 0 | 0 | [logs/forge.jsonl 120행](../logs/forge.jsonl#L120) |

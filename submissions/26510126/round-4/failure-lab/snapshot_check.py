@@ -1,6 +1,10 @@
+#!/opt/homebrew/bin/python3.15
 """11/28 00:31:45 KST 스냅샷으로 extract.py를 다시 돌려 원래 커밋(46c691e) 산출물과 비교한다.
 
-    python3 failure-lab/snapshot_check.py <작업 디렉터리>
+    /opt/homebrew/bin/python3.15 failure-lab/snapshot_check.py <작업 디렉터리>
+
+46c691e 산출물은 Python 3.15에서 만들어졌다. 3.15는 연도 없는 '%m/%d' 파싱을 거부하므로 넛지 시각이
+로그 기록 시각으로 남는다. 다른 판 파이썬에서는 넛지 시각이 달라져 바이트 비교가 어긋날 수 있다.
 
 살아 있는 로그는 읽기만 한다. 각 로그를 ts가 기준 시각 이하인 마지막 행까지 잘라(행 번호 보존)
 작업 디렉터리에 복사하고, 46c691e 판 extract.py를 ROOT·OUT만 바꿔 실행한다. Git은 원래 저장소에서 읽는다.
@@ -16,6 +20,8 @@ import subprocess
 import sys
 
 sys.dont_write_bytecode = True
+if sys.version_info[:2] != (3, 15):
+    print(f'주의: Python {sys.version_info.major}.{sys.version_info.minor}. 474건 재현 기준은 /opt/homebrew/bin/python3.15다.')
 KST = timezone(timedelta(hours=9))
 CUT = datetime(2026, 11, 28, 0, 31, 45, tzinfo=KST).timestamp()
 BASE = '46c691e'

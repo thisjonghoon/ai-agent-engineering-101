@@ -295,6 +295,24 @@ def main():
 
     alias_cache = {}
 
+    def alias_table(row):
+        version = latest(versions['a2a_inquiry'], row['ts'])
+        if not version:
+            return None, None
+        if version['version'] not in alias_cache:
+            alias_cache[version['version']] = aliases(version['version'])
+        found = alias_cache[version['version']]
+        return (found[0] if found else None), version['version']
+
+    def alternatives(row):
+        """'우유나 요거트'처럼 사전에 걸린 품목이 모두 'A나 B' 한 구절 안에 있는 문의."""
+        table = alias_table(row)[0]
+        phrase = re.search(r'[가-힣]{2,}(?:이나|나) [가-힣]{2,}', row['text'])
+        if not table or not phrase:
+            return False
+        hit = [k for k, words in table.items() if any(len(w) >= 2 and w in row['text'] for w in words)]
+        return len(hit) >= 2 and all(any(len(w) >= 2 and w in phrase.group(0) for w in table[k]) for k in hit)
+
     def alias_collision(row):
         """자동 응대가 고른 품목이 한 글자 별칭의 부분 문자열 일치에서만 나왔는지 본다."""
         version = latest(versions['a2a_inquiry'], row['ts'])
@@ -334,6 +352,15 @@ def main():
             emit(row, 'alias_substring_match', 'tests',
                  f"한 글자 별칭 {collision['hits']}이 다른 낱말 속에서 걸려 '{collision['category']}' 품목으로 읽었다"
                  f"(v{collision['version']}).", **dict(kw, extra=kw['extra'] + [collision['ref']]))
+        elif row['by'] == 'tool' and re.search(r'여러 품목을 함께|한 가지로 말씀', reply) and (
+            (table := alias_table(row))[0] is not None and not any(
+                w in row['text'] for words in table[0].values() for w in words)
+        ):
+            emit(row, 'no_match_rejected', 'tests',
+                 f"v{table[1]} 별칭 사전에 걸리는 품목이 하나도 없는 문의를 여러 품목과 같이 '한 가지로'로 돌려보냈다.", **kw)
+        elif row['by'] == 'tool' and re.search(r'여러 품목을 함께|한 가지로 말씀', reply) and alternatives(row):
+            emit(row, 'alternatives_rejected', 'tests',
+                 "손님이 'A나 B' 가운데 아무것이나 괜찮다고 물었는데 여러 품목으로 보고 돌려보냈다.", **kw)
         elif re.search(r'여러 품목을 함께|한 가지로 말씀', reply) and re.search(
             r'한 품목|하나만|만 (?:여쭙|문의|확인|묻)|만 따로|만 구매', row['text']
         ):
@@ -555,6 +582,16 @@ def add_recent(emit, react, talk, chat, forge, ledger):
         lambda: emit(at(react, 8521), 'notes_over_tail', 'memory',
                      '메모가 압축 없이 약 15,674자(12:01 커밋 15,004자에 뒤이은 메모 다섯 건, 로그 인자 절단으로 하한)까지 자라 다음 실행은 끝 3,000자만 봤다. 주인 지시 뒤 2,826자로 압축했다.',
                      extra=refs(chat, 274) + refs(react, 8519, 8520) + [{'file': 'notes.md'}], tool='compact_notes'),
+        lambda: emit(at(react, 8653), 'expiry_blind_check', 'data',
+                     "소비기한 칸이 없는 inventory_audit 결과로 '임박 재고는 현재 확인되지 않았다'고 판단했다. 같은 시각 우유 C급은 남은 기한 2시간 미만이었고 17:42 원가 12,995로 만료됐다.",
+                     extra=refs(react, 8652) + refs(talk, 198) + [next(r for r in ledger if r['seq'] == 27699)['ref']],
+                     item='G0011e806', tool='inventory_audit'),
+        lambda: emit(at(react, 8703), 'talk_demand_ignored', 'execution',
+                     "17:08 장정학 사과 문의에 재고 없음이라 답한 뒤, '매입은 talk의 손님 품목으로' 규칙과 달리 시장 판매량을 근거로 시금치·계란 매입만 시도했다. 사과 매입은 18:03 넛지 뒤 18:25에 이뤄졌다.",
+                     extra=refs(talk, 200) + refs(react, 8722, 8755) + [{'file': 'owner_rules.md'}], tool='buy_stock'),
+        lambda: emit(at(talk, 202), 'unmet_demand_repeat', 'market',
+                     '11/28 국수(메밀소바·칼국수) 문의가 두 손님에게서 6회 재고 없음으로 끝났으나 11/26 00:03 뒤로 국수 매입 시도가 없다.',
+                     extra=refs(talk, 176, 180, 183) + refs(react, 2661), customer=at(talk, 202)['from'], item='국수'),
     ]
     for case in cases:
         try:
@@ -713,6 +750,41 @@ def add_generic(emit, incidents, react, talk, forge, ledger, owner, calls, suppl
                  f"epoch 숫자로 기록된 로그에서 시각 문자열 '{query}'를 찾고 기록이 없다고 판단했다.",
                  extra=[{'file': 'logs/talk.jsonl'}], tool='search_logs')
 
+    # 새 판에서 결제서 발급 코드가 사라졌다. tools/.deprecated/<도구>@<판>/logic.py와 현재 판을 비교한다.
+    def source(version):
+        for path in (ROOT / f'tools/.deprecated/a2a_inquiry@{version}/logic.py', ROOT / 'tools/a2a_inquiry/logic.py'):
+            if path.exists() and (path.parent.name != 'a2a_inquiry' or
+                                  json.loads((path.parent / 'forge.json').read_text()).get('version') == version):
+                return path
+        return None
+    passed = versions['a2a_inquiry']
+    for prev, row in zip(passed, passed[1:]):
+        old, new = source(prev['version']), source(row['version'])
+        if old and new and 'checkout' in old.read_text() and 'checkout' not in new.read_text():
+            emit(row, 'checkout_path_removed', 'tests',
+                 f"v{row['version']}에서 결제서 발급 코드가 사라졌다(v{prev['version']} {len(old.read_text().splitlines())}줄 → "
+                 f"{len(new.read_text().splitlines())}줄). 시험은 통과했다.",
+                 extra=[prev['ref'], {'file': new.relative_to(ROOT).as_posix()}, {'file': old.relative_to(ROOT).as_posix()}],
+                 tool='a2a_inquiry', repeat_key='handler_regression')
+
+    # 원장 첫 500행만 읽은 건강 요약이 같은 24시간의 실제 정산을 0건으로 보고했다.
+    settles = [r for r in ledger if r['kind'] == 'settle']
+    for row in calls['shop_health']:
+        out = observation(row)
+        day = (out.get('windows') or {}).get('24h') or {}
+        if out.get('ledger_rows') == 500 and day.get('sales_count') == 0:
+            real = list(between(settles, row['ts'] - 86400, row['ts']))
+            if real:
+                emit(row, 'false_zero_settlements', 'meaning',
+                     f"건강 요약이 원장 500행만 읽고 24시간 판매 0건을 냈으나 같은 24시간 로컬 원장에 정산 {len(real)}건이 있다.",
+                     extra=[r['ref'] for r in real[-2:]] + [{'file': 'tools/shop_health/logic.py'}], tool='shop_health')
+
+    # 창구가 열렸다고 믿고 매입했으나 닫힘 응답을 받았다.
+    for row in calls['buy_stock']:
+        if observation(row).get('status') == 429 and re.search(r'열린 상태|열려 있|이미 열린', row.get('thought') or ''):
+            emit(row, 'window_open_misread', 'data', '창구가 열려 있다고 판단하고 매입했으나 닫힘(429) 응답을 받았다. 직전 opens_at을 확인하지 않았다.',
+                 item=row['args'].get('sku'), tool='buy_stock')
+
     # 주인 지시를 적기만 하고 실행을 바꾸지 않았다.
     for row in owner:
         if not directive(row):
@@ -868,11 +940,13 @@ RULES = {
              '스냅샷 뒤 규칙: 손님 응대 도구를 1시간 안 3판 또는 6시간 안 5판 통과시킨 판 갈아엎기(handler_churn), '
              '구매 문의 8건 이상에 결제서 문구 0건이고 직전 비교 판은 20% 이상인 판(checkout_rate_drop), '
              '그 판 ALIASES의 한 글자 별칭이 다른 낱말 속에서만 걸려 품목을 정한 답(alias_substring_match), '
-             "손님이 '한 품목'이라 밝혔는데 여러 품목으로 돌려보낸 답(single_item_rejected).",
+             "손님이 '한 품목'이라 밝혔는데 여러 품목으로 돌려보낸 답(single_item_rejected), 별칭 사전에 걸리는 품목이 하나도 없는데 '한 가지로'로 돌려보낸 답(no_match_rejected), "
+             "'A나 B'처럼 아무것이나 괜찮다는 문의를 여러 품목으로 본 답(alternatives_rejected), 직전 판에 있던 결제서 발급 코드가 새 판에서 사라진 경우(checkout_path_removed).",
     'memory': '주인 지시 뒤 같은 규칙과 어긋나는 코드 변경 또는 외부 행동을 확인한 사례.',
     'policy': '대기 손님 없는 발급, 기존 결제서 관련 잠금·중복 방어가 관찰된 사례. 남은 기한 1시간 미만 상품의 결제서는 저신뢰로 둔다. '
               '손님 조건 배제 누락은 스냅샷 뒤 집계부터 거절 조건 역방향 실행으로 옮겼다(474건 기준에서는 이 유형).',
-    'meaning': '단위, 등급·인증서, 원장 집계 또는 견적의 의미 혼선. 등급 불일치 보호 동작도 포함한다.',
+    'meaning': '단위, 등급·인증서, 원장 집계 또는 견적의 의미 혼선. 등급 불일치 보호 동작도 포함한다. '
+               '건강 요약이 원장 500행만 읽고 24시간 판매 0을 냈는데 같은 24시간 로컬 원장에 정산이 있는 호출마다 한 건(false_zero_settlements).',
     'market': '원장 만료, 매입 HTTP 실패, 열리기 직전 확인했으나 놓친 재입고 창. 스냅샷 뒤 규칙: 실제 매입 시도가 있었거나 닫힘 응답을 두 번 이상 받은 창에서 '
               '창 안 매입이 없으면 창 하나를 한 건으로 센다(restock_window_ignored). 견적만 본 창은 뺀다.',
     'execution': '주인 지시를 말이나 owner_rules·메모로 받아 적었지만 1시간 안에 도구 통과·압축·매입·게시 같은 실행 변경이 없고, '
@@ -881,6 +955,7 @@ RULES = {
     'data': '파일 경로, 시각 형식, 줄 번호와 글자 수, 관찰 6,000자 절단을 잘못 읽은 사례. 열지 못한 경로와 같은 이름 계열 파일이 지금 저장소에 있는 경우(path_miss), '
             "epoch 로그에서 '10:04' 같은 시각 문자열을 검색해 0건을 얻은 경우(clock_string_search), "
             'inspect_local 결과가 6,000자를 넘었는데 다음 구간을 글자 위치로 읽어 비었다고 본 경우(truncated_read, 다음 호출이 없으면 저신뢰 observation_truncated). '
+            "429를 받은 매입의 생각 기록이 '창구가 열린 상태'라고 판단한 경우(window_open_misread). "
             '파일 크기는 지금 파일로 다시 계산하므로 logs/ 밖에서 그 뒤 바뀐 파일은 세지 않는다. 지금 돌던 판·있던 파일을 없다고 단정한 답은 지정 사례로 둔다.',
     'inverse': "손님이 명시적으로 뺀 조건을 정반대로 실행한 사례. 결제서 답이 손님 문의의 'A등급만', 'C등급 제외', '소량', '기한 넉넉', 용량(g)과 어긋난 경우(buyer_condition_ignored), "
                "48시간 안 손님이 '말고·빼고'로 뺀 상품명이나 SKU를 매입한 경우(inverse_purchase).",

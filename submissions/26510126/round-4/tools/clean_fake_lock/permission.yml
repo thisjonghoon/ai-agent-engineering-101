@@ -1,0 +1,9 @@
+name: clean_fake_lock
+description: checkout_locks.json에서 테스트용 s1 예약만 제거하고 나머지 예약은 보존한다.
+permission:
+  write: [checkout_locks.json, test_checkout_locks.json]
+  pay_limit: 0
+  timeout: 10
+logic: logic.py
+test: test.py
+version: 1

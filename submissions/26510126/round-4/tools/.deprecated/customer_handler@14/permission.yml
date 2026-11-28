@@ -1,0 +1,14 @@
+name: customer_handler
+description: 실제 카드의 SKU-수량 재고와 상점 정보를 고객 문장에 매칭하고, 재고가 있으면 등급·인증서 등급·잔여시간과 가격을 안내하며 단위 예약 및 shop 서명 checkout_jwt를 생성한다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json, test_card.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 14
+replaces: customer_handler@13

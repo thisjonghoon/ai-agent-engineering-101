@@ -1,0 +1,14 @@
+name: customer_handler
+description: 고객 요청에 응답하고 키트 서명으로 공식 checkout_sessions를 호출해 checkout_jwt를 반환하는 고객 핸들러
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 9
+replaces: customer_handler@8

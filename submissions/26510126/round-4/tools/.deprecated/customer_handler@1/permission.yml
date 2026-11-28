@@ -1,0 +1,13 @@
+name: customer_handler
+description: 고객 A2A 메시지를 받아 현재 재고와 가격을 확인하고, 구매 요청이면 조건에 맞는 상품을 예약·체크아웃하며 질문이면 재고와 가격을 안내한다. args는 handles 도구 형식의 text,data,claimed_from,task_id,context_id,history이다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, card.json, handler_state.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 1

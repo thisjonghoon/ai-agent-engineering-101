@@ -1,0 +1,14 @@
+name: customer_handler
+description: A2A 고객 요청에 답하고 실시간 카드 재고와 prices.json의 SKU별 가격 객체를 읽어 조건에 맞는 SKU를 안내한다. 구매 요청이면 held 및 유효 예약을 제외하고 예약한 뒤 ACP checkout session과 checkout_jwt를 생성한다. args는 text,data,claimed_from,task_id,context_id,history이다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, card.json, handler_state.json, prices.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 4
+replaces: customer_handler@3

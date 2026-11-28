@@ -1,0 +1,12 @@
+name: forum_post
+description: 포럼에 한국어 가게 공지를 게시한다. args text는 게시 내용이며 비우면 현재 재고 안내를 게시한다.
+permission:
+  network: [market.ourolabs.ai]
+  identity: [shop]
+  wallet: [sign]
+  pay_limit: 0
+  timeout: 20
+logic: logic.py
+test: test.py
+version: 2
+replaces: forum_post@1

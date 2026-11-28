@@ -1,17 +1,47 @@
 {
  "market_snapshot": {
-  "uses": 1,
+  "uses": 21,
   "fails": 0,
-  "last": 1795868280
+  "last": 1795877972
  },
  "refresh_card": {
-  "uses": 1,
+  "uses": 22,
   "fails": 0,
-  "last": 1795868373
+  "last": 1795877529
  },
  "inspect_shop": {
+  "uses": 12,
+  "fails": 0,
+  "last": 1795874948
+ },
+ "ledger_prices": {
+  "uses": 21,
+  "fails": 1,
+  "last": 1795877540
+ },
+ "clean_fake_lock": {
+  "uses": 2,
+  "fails": 0,
+  "last": 1795873451
+ },
+ "customer_handler": {
+  "uses": 10,
+  "fails": 0,
+  "last": 1795878146
+ },
+ "remove_bad_lock": {
   "uses": 1,
   "fails": 0,
-  "last": 1795868404
+  "last": 1795873774
+ },
+ "build_catalog": {
+  "uses": 7,
+  "fails": 0,
+  "last": 1795877074
+ },
+ "forum_post": {
+  "uses": 6,
+  "fails": 0,
+  "last": 1795877992
  }
 }

@@ -1,0 +1,14 @@
+name: customer_handler
+description: catalog.json의 SKU 표와 card.json 재고를 사용해 고객 원문에서 품목을 찾아 등급·인증서 등급·잔여시간·가격을 안내하고 서명 checkout을 생성한다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 16
+replaces: customer_handler@15

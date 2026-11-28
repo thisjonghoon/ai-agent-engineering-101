@@ -1,0 +1,10 @@
+name: inspect_shop
+description: 내 상점의 ACP 카드와 공개 엔드포인트를 조회해 판매 SKU·가격·체크아웃 형식을 확인하고 shop_inspect.json에 저장한다.
+permission:
+  network: [occurring-ice-cosmetic-adopt.trycloudflare.com]
+  write: [shop_inspect.json]
+  pay_limit: 0
+  timeout: 20
+logic: logic.py
+test: test.py
+version: 1

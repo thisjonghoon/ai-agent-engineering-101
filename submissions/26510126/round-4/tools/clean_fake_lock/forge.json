@@ -1,0 +1,11 @@
+{
+ "tool": "clean_fake_lock",
+ "version": 1,
+ "forged_at": 1795869689,
+ "kit": "v5.2",
+ "sha256": {
+  "permission.yml": "39d112bc668fd0de10155a613d7a86721077e552082e913242950d91e3b35461",
+  "logic.py": "0485e574a2b9e4707f2e782de891311438246dfa136c73608b8cee7bb4c966a3",
+  "test.py": "e76806940ba25728b6fe300d976d265587a5dda3ffbaa978eefb7d41af2de9cc"
+ }
+}

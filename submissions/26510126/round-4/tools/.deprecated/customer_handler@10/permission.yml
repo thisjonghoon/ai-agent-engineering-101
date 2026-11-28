@@ -1,0 +1,14 @@
+name: customer_handler
+description: 고객 품목 요청을 판별하고 가격표 기반 shop 서명 checkout_jwt를 발급하는 한국어 고객 핸들러
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 10
+replaces: customer_handler@9

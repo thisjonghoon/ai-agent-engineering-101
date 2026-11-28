@@ -1,0 +1,10 @@
+name: market_snapshot
+description: 시장 엔터티 카드와 상점의 현재 공개 재고·최근 거래 정보를 조회한다. args에는 선택적으로 path가 들어간다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [market_snapshot.json]
+  pay_limit: 0
+  timeout: 20
+logic: logic.py
+test: test.py
+version: 1

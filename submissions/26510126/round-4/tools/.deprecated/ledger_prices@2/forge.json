@@ -1,0 +1,11 @@
+{
+ "tool": "ledger_prices",
+ "version": 2,
+ "forged_at": 1795868652,
+ "kit": "v5.2",
+ "sha256": {
+  "permission.yml": "6036aa795179b36500155f0f634e93e6ecad341a4f13971a5407192decbefbf7",
+  "logic.py": "17ba188d75145b9c7e65dc22e051077d35278f14538f6b48090b6c61dbb2d0f8",
+  "test.py": "d24b42ce7af14a62f69e91a906dfdd48346f12c533d1a202d0802af0a9e04645"
+ }
+}

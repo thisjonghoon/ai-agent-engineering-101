@@ -1,0 +1,10 @@
+name: ledger_prices
+description: 최근 정산 원장을 조회해 SKU·등급별 최근 판매가 중앙값을 계산하고 prices.json에 저장한다. args에는 선택적 after와 limit이 있다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [prices.json]
+  pay_limit: 0
+  timeout: 20
+logic: logic.py
+test: test.py
+version: 1

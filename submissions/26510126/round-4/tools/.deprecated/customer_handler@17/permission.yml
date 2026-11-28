@@ -1,0 +1,14 @@
+name: customer_handler
+description: 카드 재고 SKU에 대응하는 시장 catalog 항목만 추려 catalog.json에 품목명·등급·unit·원가 표를 유지하고, 고객 원문에서 표 기반으로 재고를 찾아 조건을 안내하고 서명 checkout을 생성한다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 17
+replaces: customer_handler@16

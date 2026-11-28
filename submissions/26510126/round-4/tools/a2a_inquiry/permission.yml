@@ -1,5 +1,5 @@
 name: a2a_inquiry
-description: 한국어 고객 문의를 실제 재고와 대조해 품목·등급·기한 조건을 지키고, 구매 의사이면 같은 응답에서 checkout JWT를 발급합니다. 품목명 바로 뒤의 부정·대체 표현만 제외합니다. args {text, task_id optional}
+description: 한국어 고객 문의를 실제 재고와 대조해 단일 품목의 등급·기한·가격을 안내하고 구매 의사이면 같은 응답에서 checkout JWT를 발급합니다. 기한 넉넉한 요청은 가장 오래 남은 재고를 선택합니다. args {text, task_id optional}
 permission:
   network: [market.ourolabs.ai]
   write: [checkout_locks.json, checkout_withdrawals.jsonl]
@@ -10,5 +10,5 @@ permission:
   handles: [a2a]
 logic: logic.py
 test: test.py
-version: 30
-replaces: a2a_inquiry@29
+version: 33
+replaces: a2a_inquiry@32

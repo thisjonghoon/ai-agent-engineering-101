@@ -21,3 +21,21 @@ shop_health {"asof":1795832560.785772,"windows":{"3h":{"sales_count":0,"sales_am
 오늘 교훈: talk.jsonl은 logs/에 있고 시각은 epoch이다.
 오늘 교훈: inspect_local의 start·end는 줄 번호이다.
 오늘 교훈: 도구 결과는 6,000자에서 잘린다.
+11/28 15:02 둥굴레차 G0746760c B급 u-8f21ea3d7339 1개 매입 성공. 원가 2,130 credits, 소비기한 1797395372, 인증서 grade null. 최근 B급 정산 약 2,754~2,940이므로 판매 시 원가+수수료 하한 이상·중앙값 근처 가격 적용.
+11/28 15:03 조언팀 문의 확인: channel_audit와 로그 검색으로 v33 이후 7건 중 조건 불일치 결제서의 정확한 건수는 원문 1:1 대조 없이는 확정하지 못함. 다만 과거 품목·등급·용량·기한 불일치 발급 사례는 확인. v33은 조건 일치 재고만 선택하고, 조건 없는 문의는 실제 재고 대조 후 checkout 발급하는 흐름을 유지하며 인증서 grade null은 실측 등급만 안내하고 claim 없이 발급.
+11/28 15:26 둥굴레차 G0746760c B급 u-c3e6aeb5a14b 1개 매입 성공. 원가 2,351 credits, 소비기한 1797302837. 인증서 grade null—판매 시 실측 B급·소비기한만 안내하고 claim 금지. 최근 B급 정산은 대략 2,754~2,940 credits.
+
+shop_health {"asof":1795847400.995143,"windows":{"3h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0},"24h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0}},"ledger_rows":500}
+11/28 15:37 주인 최신 지시 실행: 마을 반복 수요 두부 우선. 카탈로그에서 상온 멸균두부 SKU G013cad55(24시간 식품, list 37,000) 확인. restock 창구 닫힘, opens_at 1795848170(약 343초 후). 개방 직후 1개 B/A급 견적 확인 후 매입 시도. 생선·치킨·세제·빵·반찬 등 미보유 수요도 순차 확보.
+11/28 15:43 두부 G013cad55 B급 u-fcebdad17e80 1개 매입 성공. 원가 19,029 credits, 소비기한 1795915152, 인증서 grade null. 판매 시 실측 B급·소비기한만 안내하고 claim 금지.
+11/28 15:45 주인 지시: buy_stock 429 발생 시 opens_at·closes_at을 메모하고 opens_at 직전에 sleep으로 대기. 창구 전 품목·수량·등급·한도를 미리 정하고 개방 즉시 추가 조회 없이 매입하며, 창구 밖 buy_stock 금지. 손님이 찾다 못 산 품목 우선. 방금 계란 B급 요청은 C급 제시로 grade mismatch 중단, 결제하지 않음.
+다음 창구 사전 매입 후보(3개, 원장 최근 정산 확인 전 매입 금지): 1) 계란—실제 문의 반복(20구/B·A, 40구는 조건 불일치 사례 있으므로 손님 표현과 상품명 일치 시만), 2) 취나물 SKU G159be1f8—실제 문의·판매 응답 확인, 3) 우유 또는 요거트—실제 대화 수요 확인(정확한 포장·중량 일치 시만). 창구 개방 시 추가 카탈로그 조회 없이 원장 정산과 사전 후보 조건을 충족한 목록만 즉시 소량 매입. 손님 표현의 ‘말고’ 제외 조건과 등급·용량을 반드시 대조.
+
+shop_health {"asof":1795850159.453544,"windows":{"3h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0},"24h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0}},"ledger_rows":500}
+11/28 16:15 카드 갱신: 실제 보유 둥굴레차·두부·취나물 등과 실측 등급/기한 확인 후 즉시 판매 안내. 취나물 G159be1f8 최근 B급 정산 약 2,200~2,800, A급 약 3,000 전후. 현재 취나물 B/A 재고 충분하여 추가 매입 보류.
+11/28 17:02 원장 재확인: 최근 24시간 ledger_sales는 1,799건(봉인 524건), 크리넥스 Ge7c7a1f6 판매 45개. 기존 shop_health의 판매 0건은 원장과 불일치하는 집계 오류. 확인된 부재 문의는 손질 가자미 G045659e8 1종. 매입 품목과 문의 품목의 전체 교집합·부재 차집합은 로그 원문과 성공 매입 SKU를 동일 24시간으로 1:1 대조해야 확정 가능. 계란 B 1개 매입 후 문의 증가량은 예측하지 않고 실제 문의로 평가.
+
+shop_health {"asof":1795853209.1261911,"windows":{"3h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0},"24h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0}},"ledger_rows":500}
+
+shop_health {"asof":1795854180.018548,"windows":{"3h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0},"24h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0}},"ledger_rows":500}
+[주인 지시·17:43 창구 사전 목록] 최근 문의 중 재고 없음으로 놓친 품목과 최근 정산이 모두 확인된 3개: 1) 사과 G36ca7485(제철과일 사과 가정용 2kg 14~16과) — 장정학 손님이 다른 과일로 바꾸지 않겠다고 문의, 최근 정산 2건 이상. 2) 손질 가자미 특대 4~6미 1.4kg내외 G045659e8 — 김수은 손님 문의, 최근 24시간 29건 정산, B 약 7,590·A 약 8,740 credits. 3) Fresh 노르웨이산 자반고등어 1손(2미) 800g내외 G82c2dc86 — 장정학 손님 문의, 최근 정산 다수. 다음 restock 창구가 열리면 추가 카탈로그 조회 없이 이 순서·목록대로 소량 매입 시도. 우유 G0011e806 C u-4df1fa0e6ce8는 17:40 전후 만료 임박 처분 대상이며 매입 후보 아님.

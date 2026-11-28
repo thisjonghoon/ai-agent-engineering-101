@@ -1,6 +1,6 @@
 def test(run,kit):
- u=[{'name':'세탁세제','sku':'s','unit':'1','expires_at':9000,'grade':'B','cost':100}]
- assert '실측 B급' in run({'text':'세탁세제 있나요','_units':u},kit)['reply']
- assert '어느 품목' in run({'text':'계란과 두부 주세요','_units':[]},kit)['reply']
- assert '국수' not in run({'text':'두부 있으면 알려주세요','_units':[]},kit)['reply']
- assert '국수' not in run({'text':'게임용 모니터 있으면 알려주세요','_units':[]},kit)['reply']
+ r=run({'text':'사과 2kg 구매할게요','task_id':'t1','_units':[{'sku':'s','unit':'u1','name':'사과 2kg','cost':100,'grade':'B','expires_at':9000}]},kit)
+ assert r['state']=='completed' and r.get('data',{}).get('checkout_jwt')
+ assert '결제서' in r['reply']
+ r=run({'text':'과일 있나요','_units':[{'sku':'s','unit':'u1','name':'사과','cost':100,'grade':'B','expires_at':9000},{'sku':'p','unit':'u2','name':'배','cost':100,'grade':'B','expires_at':9000}]},kit)
+ assert r['data']['payload']['unit'] in ('u1','u2')

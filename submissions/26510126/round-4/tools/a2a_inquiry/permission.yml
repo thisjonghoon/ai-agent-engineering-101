@@ -1,5 +1,5 @@
 name: a2a_inquiry
-description: 한국어 고객 문의를 실제 재고와 대조해 단일 품목의 등급·기한·가격을 안내하고 구매 의사이면 같은 응답에서 checkout JWT를 발급합니다.
+description: 한국어 고객 문의에 실제 재고 한 단위를 매칭하고, 원가·등급·기한을 확인해 즉시 결제서(checkout JWT)를 발급해 답장합니다.
 permission:
   network: [market.ourolabs.ai]
   write: [checkout_locks.json, checkout_withdrawals.jsonl]
@@ -10,5 +10,5 @@ permission:
   handles: [a2a]
 logic: logic.py
 test: test.py
-version: 34
-replaces: a2a_inquiry@33
+version: 36
+replaces: a2a_inquiry@35

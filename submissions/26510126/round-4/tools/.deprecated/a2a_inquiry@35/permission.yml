@@ -1,0 +1,14 @@
+name: a2a_inquiry
+description: 한국어 문의를 실제 재고의 상품명과 catalog 분류로 찾아 등급·기한·가격을 안내합니다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, checkout_withdrawals.jsonl]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 180
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 35
+replaces: a2a_inquiry@34

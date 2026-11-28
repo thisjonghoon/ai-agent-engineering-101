@@ -1,0 +1,14 @@
+name: customer_handler
+description: 품목 토큰과 상품명 내부 substring을 엄격히 매칭하고 용량만 겹친 상품은 선택하지 않으며 checkout과 예약을 생성한다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 46
+replaces: customer_handler@45

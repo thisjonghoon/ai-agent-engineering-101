@@ -1,0 +1,14 @@
+name: customer_handler
+description: 실제 shop inventory와 카드/catalog에서 고객 요청 품목을 찾아 정산소 SKU 대조 가능한 checkout JWT와 예약을 발행한다. item은 반드시 SKU이며 test 사본으로 검증한다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 53
+replaces: customer_handler@52

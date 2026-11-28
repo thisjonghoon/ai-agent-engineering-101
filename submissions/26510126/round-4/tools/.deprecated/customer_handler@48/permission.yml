@@ -1,0 +1,14 @@
+name: customer_handler
+description: 카드의 SKU 재고와 catalog 메타데이터를 결합해 손님 품목을 엄격히 매칭하고 잠금·하한 이상 checkout JWT를 발행한다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 48
+replaces: customer_handler@47

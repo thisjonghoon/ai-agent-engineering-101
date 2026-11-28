@@ -1,0 +1,14 @@
+name: customer_handler
+description: 카탈로그 전체 텍스트와 카드 SKU를 결합해 고객 품목을 찾아 정산소용 checkout JWT를 만들고, 실제 고객일 때만 예약을 기록한다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 39
+replaces: customer_handler@38

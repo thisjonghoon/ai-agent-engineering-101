@@ -17,3 +17,14 @@ S-10 결과: refresh_card에서 김치 G02f9f99 재고 8개 확인했으나 GET 
 S-10 실제 재현: refresh_card는 김치 G02f9f99c 8개를 보였지만 customer_handler v30의 실제 '김치 구매'는 재고 없음, checkout·예약 없음. forge test는 SKU-key 객체 구조로 통과했으나 실제 shop inventory 엔드포인트 메타데이터 접근 실패. inspect_shop도 shop URL이 permission.network에 없어 오류. 성공 주장 금지; 공개 inventory 권한/URL 확인 필요.
 S-11 not done: customer_handler v33 forge/test 통과했으나 실제 market /api/inventory 기반 '김치 구매' 실행은 재고 없음으로 반환되어 checkout JWT·예약·item/unit/price가 생성되지 않음. 감독관 m66c006 reply는 대기 만료로 전송 불가.
 O-05 not done: 실제 customer_handler 실행에서 사과·가자미·혼합22곡 세 요청 모두 ‘재고 없음’으로 반환되어 checkout/잠금과 item·unit·price·하한이 생성되지 않았다. 소유자 reply는 메시지 만료 오류로 전송 불가.
+O-06 진행: forum_post 중지. 03:30까지 customer_handler를 재forge하여 손님 원문 '김치' 세 줄을 G02f9f99c 재고 unit으로 처리하고, 정산소 필드·하한 이상 가격의 checkout 및 예약을 검증한다. 테스트 후 빈 고객 잠금은 남기지 않는다. 완료 시 세 줄 item/unit/price/하한을 앱에 보고.
+O-06 완료: customer_handler v42 실제 김치 3회 시험. 1회 checkout/예약 성공 — SKU G02f9f99c, item 한상궁김치 총각김치 2kg/단단한 알타리 무김치, unit u-5f1bf275bf28, price=9808, floor=9808, grade C, 인증서 미확인, expiry 1796160588.0. 2·3회는 유효 예약 보호로 차단. 앱 보고 완료.
+S-14 미완료: refresh_card에서 김치 SKU G02f9f99c 8개 확인. 실제 customer_handler의 ‘김치’ 실행은 재고 없음 반환으로 checkout·예약·unit·가격 미생성. 시금치 오잠금 u-2316eddc904d는 현재 checkout_locks.json에 없음. 감독관 reply는 만료 오류.
+S-14 재확인: refresh_card는 G02f9f99c 김치 8개를 공개하지만 customer_handler v47 실제 '김치 구매'는 재고 없음. 구조 보강 forge는 테스트 실패/적용되지 않음. 성공 주장 금지.
+O-08 진행: 11/29 05:30 KST까지 forum_post 중지. customer_handler를 같은 이름으로 재forge해 card.json의 20종 재고에서 잠기지 않은 unit을 찾아 하한 이상 checkout·예약을 만들고, 없는 품목은 결제서·잠금 없이 응답한다. test_ 사본에서 사과(박수진)·가자미(이난임) 기존 원문과 김수은 가자미·달걀, 빵·돼지고기 문의를 시험한다. 결과를 O-08 done/not done으로 owner에게 보고.
+O-08 not done: customer_handler 재forge 요청이 두 차례 no move found로 적용되지 않아 v47 유지. card.json SKU:정수 재고 회귀 미해결, 사과·가자미 checkout/unit/price/하한 실제 검증 불가. owner 메시지는 만료되어 reply 불가.
+현재 재고 카드 20 SKU 수량은 확인되나 customer_handler v47 실제 김치명·SKU 요청 모두 재고 없음. catalog/o03_report에서 20개 모두 unit·원가·등급·expiry 미확인. ledger_prices 500건 중 내 재고 가격 기준: 우유 G0011e806 17710 A, 생수 G00b8acf0 3102 B, 계란 G02595b69 10500 B, 쌀 G0467ce40 13942 B, 사과 G36ca7485 5644 B, 김치 G02f9f99c 14500 A. 핸들러 forge는 no move found로 미적용.
+O-09 진행: 05:55까지 customer_handler를 같은 이름으로 재forge한다. shop 토큰으로 실제 inventory에서 원가·unit·등급·기한을 읽어 박수진 사과와 이난임 가자미 원문에 잠기지 않은 unit의 하한 이상 checkout을 test_ 사본에서만 검증한다. 유태희 세탁세제는 결제서 없이 처리한다. 완료/반대 근거를 owner ID mfa6762에 보고.
+S-15 완료: customer_handler v51 forge/test 통과. test_ 사본에서 박수진 사과·이난임 가자미는 해당 unit checkout, 유태희 세탁세제와 ‘이난임 신선한 생선’은 결제서·잠금 없이 재고 없음 처리. 정확한 품목 토큰 매칭으로 고객명만 겹치는 오판매 차단. 감독관 reply는 waiting 만료로 전달 불가.
+S-16 not done: customer_handler v52 실제 ‘박수진 사과 구매’와 ‘이난임 22:51 가자미’ 모두 재고 없음 반환. checkout·item·unit·price 생성되지 않음. 감독관 reply는 waiting 만료 오류.
+11/29 05:58 실제 검증: customer_handler v54가 사과 요청을 SKU G36ca7485, unit u-7a2a32105cae, 5311 credits, grade C, expiry 1795957006.0으로 checkout 발행 성공. 가자미 요청도 SKU G045659e8, unit u-6922e43e1834, 6665 credits, grade C, expiry 1795907796.0으로 성공. 두 내부 점검 잠금은 remove_bad_lock으로 제거함. 인증서 등급은 미확인.

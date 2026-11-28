@@ -1,0 +1,14 @@
+name: customer_handler
+description: 실제 shop inventory와 카드/catalog에서 고객 요청의 품목 토큰이 정확히 일치하는 재고만 찾아 정산소 SKU 대조가 가능한 checkout JWT와 예약을 발행한다. 고객명만 겹치거나 품목이 없으면 결제서·잠금 없이 없음으로 답한다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 52
+replaces: customer_handler@51

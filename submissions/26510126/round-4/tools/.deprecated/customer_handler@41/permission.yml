@@ -1,0 +1,14 @@
+name: customer_handler
+description: 고객 요청을 재고와 카탈로그에 매칭하고 원가 하한 이상의 checkout JWT와 예약을 생성한다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 41
+replaces: customer_handler@40

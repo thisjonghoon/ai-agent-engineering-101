@@ -1,0 +1,14 @@
+name: customer_handler
+description: 손님 요청의 실제 품목명 토큰 또는 SKU 토큰만 엄격히 매칭해 해당 unit만 checkout하고 예약한다. kg 등 용량 단위만 겹치는 상품은 선택하지 않으며 상품명 내부 substring을 허용한다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 47
+replaces: customer_handler@46

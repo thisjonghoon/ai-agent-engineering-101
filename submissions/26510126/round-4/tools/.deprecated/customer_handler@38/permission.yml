@@ -1,0 +1,14 @@
+name: customer_handler
+description: 카탈로그와 실제 재고를 SKU 키·중첩 필드까지 인식해 고객 요청에 맞는 상품을 선택하고 checkout JWT와 예약을 생성한다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 38
+replaces: customer_handler@37

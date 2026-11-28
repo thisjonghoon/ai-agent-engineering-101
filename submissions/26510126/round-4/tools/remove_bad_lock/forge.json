@@ -1,11 +1,11 @@
 {
  "tool": "remove_bad_lock",
- "version": 1,
- "forged_at": 1795873765,
+ "version": 2,
+ "forged_at": 1795892902,
  "kit": "v5.2",
  "sha256": {
-  "permission.yml": "4a05b177e960fc2157a2d9881592d9eeee1e86327dfb4e7dbe2c539249b6b5da",
-  "logic.py": "f93a52030aef9219a8ccb076713b3cce7184dcb6dff227bec2996ad3f70c39b2",
-  "test.py": "a435bb703e139427ba0146dda19e483cf0a0d3e2491e35c53be3e2f660175bd9"
+  "permission.yml": "faf1be0206ce6380d621edd1d81467fedff60cfa66180c686547530aec57beca",
+  "logic.py": "9187456776e93e2b6d7d9fb9907c8510455bc1a533049d5239688c1d47d6f9a9",
+  "test.py": "e9d8ec1d6963eeb815a9e57b15a761f005f8923b35c7d49e6aa4510f2ee90a83"
  }
 }

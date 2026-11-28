@@ -1,5 +1,5 @@
 name: customer_handler
-description: 실제 shop inventory와 카드/catalog를 병합해 고객 요청 품목의 SKU·unit을 찾고 하한 이상 checkout JWT와 예약을 발행한다.
+description: 정확한 품목 토큰이 상품명과 일치할 때만 재고 unit을 찾아 하한 이상 checkout JWT와 예약을 발행하고 오매칭은 재고 없음으로 응답한다.
 permission:
   network: [market.ourolabs.ai]
   write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json]
@@ -10,5 +10,5 @@ permission:
   handles: [a2a]
 logic: logic.py
 test: test.py
-version: 54
-replaces: customer_handler@53
+version: 55
+replaces: customer_handler@54

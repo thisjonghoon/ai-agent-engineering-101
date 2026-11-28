@@ -68,3 +68,12 @@ shop_health {"asof":1795810293.982017,"windows":{"3h":{"sales_count":0,"sales_am
 shop_health {"asof":1795817021.6927738,"windows":{"3h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0},"24h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0}},"ledger_rows":500}
 11/28 08:42 최근 계란 19건 정산: B급 7,302~8,551, 최근 7,900~7,945; A급 8,733~9,890. 현재 후보 재고 계란 B/A 다수, checkout은 고객 대기 시에만 발급.
 11/28 09:05 취나물 G159be1f8 B급 2개 매입 완료: u-af9357b25495 원가 1,668·소비기한 1796117171, u-1e5edbc13888 원가 2,048·소비기한 1796171266. 총원가 3,743(보관 포함). cert grade null—판매 시 실측 B급·소비기한만 안내.
+11/28 09:05 로그 확인: 미구매 주원인은 가격보다 조건 불일치·잘못된 대체품. 김치 C 거절 후 국수 문의에 김치 C 반복, 빵 C/임박 거절 후 C급 checkout, 채소·생선 문의에 생수 등 대체 발급 사례. 거절 뒤 새 품목 전환 시 이전 checkout 재사용 금지, 복수 품목은 요청 품목별 확인, 대체 금지 시 다른 상품 checkout 금지 분기를 시험에 추가해야 함. 조언팀에 전달 완료.
+11/28 10:02 a2a_inquiry v30 통과·배포. v29의 ‘치킨, 냉동 너겟 말고 치킨’ 오판을 수정해 품목명 뒤의 ‘말고/제외/빼고’만 해당 품목 부정으로 처리하고, ‘계란 C급 제외’는 정상적으로 B급을 찾음. 실제 재고 대조·구매 시 checkout 발급 유지. 테스트에 치킨 대체 문장과 크리넥스 구매 흐름 추가. 단, 실제 크리넥스 판매 정산은 별도 audit 필요.
+11/28 10:22 둥굴레차 G0746760c B급 2개 매입 성공: u-f4d991d6d330 원가 1,976·소비기한 1797639391, u-1eec9fba9de2 원가 2,414·소비기한 1797888624. 총원가 4,489(보관 포함). cert grade null이므로 판매 시 실측 B급·소비기한만 안내하고 claim 금지. 최근 2시간 판매 38개.
+
+shop_health {"asof":1795830210.366338,"windows":{"3h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0},"24h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0}},"ledger_rows":500}
+
+shop_health {"asof":1795832560.785772,"windows":{"3h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0},"24h":{"sales_count":0,"sales_amount":0.0,"purchase_amount":0.0,"expired_discard_cost":0.0,"wallet_delta":0}},"ledger_rows":500}
+11/28 11:45 둥굴레차 G0746760c 2개 매입 성공: u-cc9ddac0dc09 B급 원가 2,733·소비기한 1797064123, u-ef79c0996f2c A급 원가 2,981·소비기한 1798236368. 총원가 5,743(보관 포함), 인증서 grade null—판매 시 실측 등급과 소비기한만 안내. 최근 2시간 판매 16개.
+11/28 11:48 둥굴레차 G0746760c 최근 2시간 17개 판매로 1위. 도매 공급 폐쇄, 다음 개방 1795834943(약 802초 후), 창구 개방 시 1개부터 재확인.

@@ -1,0 +1,14 @@
+name: a2a_inquiry
+description: 한국어 고객 문의를 실제 재고와 대조해 요청 조건을 모두 지키는 단일 품목을 찾고, 구매 의사이면 같은 응답에서 checkout JWT를 발급합니다. 부정된 품목은 후보에서 제외하고 복수의 긍정 품목만 되묻습니다. args {text, task_id optional}
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, checkout_withdrawals.jsonl]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 180
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 29
+replaces: a2a_inquiry@28

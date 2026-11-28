@@ -1,0 +1,14 @@
+name: customer_handler
+description: 품목명과 명시적 별칭만 매칭하고 확인된 원가 하한 이상일 때만 서명 checkout과 예약을 생성하는 고객 핸들러
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json, prices.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 24
+replaces: customer_handler@23

@@ -146,3 +146,32 @@
 {"ts": 1795874674, "op": "note", "id": 35, "note": "23:03 S-07(urgent): v13은 실제 card {SKU:개수}에서 이름 매칭 0건 → 22:51 이난임 가자미(G045659e8 3개 보유)에 '재고 없음'. O-01·S-06 'done'은 원문 문장·실제 모양 미이행. 핸들러 지시 7번째 — 구조 감사·주인 지시 검토 필요", "by": "hermes"}
 {"ts": 1795874768, "op": "note", "id": 35, "note": "23:05 S-07 'done' v14 = 가자미 하드코딩 시험 맞춤판. 핸들러 지시 7번째 → 넛지 멈춤, 주인 지시 초안·구조 감사 제안", "by": "hermes"}
 {"ts": 1795876349, "op": "note", "id": 35, "note": "23:30 점검: v18(23:28)도 실제 21시 이후 문장 5/5 '재고 없음'(Hermes 모의 실행, 사과·가자미 보유). 표에 등급·unit·원가 없음, 시험은 가짜 SKU S00='사과'. O-02 기한 23:59 — 에이전트가 원문 전체 시험 진행 중이라 지시 보류, 00:00에 판정.", "by": "hermes"}
+{"ts": 1795885371, "op": "add", "id": 36, "title": "G2 결제서 규격 누락+다른 품목 서명(v35 현미)", "body": "01:54 김의현 혼합22곡(재고 없음)→현미 5552 결제서+잠금. sign_jwt {sku,quantity,price,shop:URL,ts}뿐, clearing house 칸 없음 → 21시 뒤 결제서 6장 정산 불가. 02:03 S-13 urgent", "kind": "task", "source": "hermes", "status": "doing", "draft": null, "args": {}, "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 2, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 4, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 5, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 9, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 11, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 12, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 17, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 19, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 20, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 22, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 23, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 24, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 25, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 27, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 28, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 29, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 31, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 33, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 3, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 8, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 30, "to": "done", "note": "1세대 도구·메모 대상 — 11/28 21:14 2세대 전환으로 도구 초기화, 기록은 failure-lab/gen1-final. 정리(부재 위임, Hermes)", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 14, "to": "done", "note": "goal v4(21:14)·v5(00:45, 49ecc16)에서 우선순위·결과 기준·절대어 하한 한 곳으로 반영", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 34, "to": "done", "note": "전환 완료 21:14(bb057f0), G2-01 수신 확인", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 35, "to": "done", "note": "#36으로 이어짐(v4→v37, 같은 결제서 결함 계열). TK-44 감사로 원인 확정", "by": "hermes"}
+{"ts": 1795886569, "op": "move", "id": 32, "to": "done", "note": "#26과 중복", "by": "hermes"}
+{"ts": 1795886570, "op": "move", "id": 13, "to": "backlog", "note": "2세대에도 유효한 구조 문제(손님→mind 80초). 핸들러가 팔기 시작한 뒤 재평가", "by": "hermes"}
+{"ts": 1795886570, "op": "move", "id": 15, "to": "done", "note": "감독 지시 형식 개편(S-xx 결과 기준)·sentinel 재실행 판정(00:4x)으로 대응", "by": "hermes"}
+{"ts": 1795886570, "op": "note", "id": 36, "note": "02:2x O-05(주인 이름, 부재 위임) 발송: 정산 규격 8칸·하한·품목 낱말 매칭, 세 줄 재실행 보고. O-04·S-10~13은 O-05로 대체(장부 cancelled).", "by": "hermes"}

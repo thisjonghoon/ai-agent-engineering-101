@@ -1,11 +1,11 @@
 {
  "tool": "customer_handler",
- "version": 23,
- "forged_at": 1795877934,
+ "version": 38,
+ "forged_at": 1795887134,
  "kit": "v5.2",
  "sha256": {
-  "permission.yml": "e92c288ab62320d50a24129b91d82d67af0793330c4edf02083b056009b83ac2",
-  "logic.py": "7398342cdd5a81877fb498c14a4d31353fd7101a4350bc57bc93bdced7e0e73a",
-  "test.py": "b9e392f1a2d3f53dd435bb0be69754cae5b111f8a5cd574d8d1432d1eaf65594"
+  "permission.yml": "5d37171db83fc2476afd62f5326feb2f0bd80b86a91491df718a281145cd3d91",
+  "logic.py": "8d28f5469370459d8df7297d1d464e98e63d94d6692d27113c0db4532198d419",
+  "test.py": "1e4099d0b39b0804e3dcb63639c85ba807a77e564a1be0ed29492473b2e5a042"
  }
 }

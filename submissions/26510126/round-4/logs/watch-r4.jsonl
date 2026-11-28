@@ -171,3 +171,12 @@
 {"ts": 1795874753, "time": "11/28 23:05:53", "level": "ALERT", "what": "repeat", "text": "forge_tool failed the same way 3 times in the last hour: assertionerror:. Has the agent written a lesson for it?"}
 {"ts": 1795875182, "time": "11/28 23:13:02", "level": "ALERT", "what": "repeat", "text": "reply failed the same way 5 times in the last hour: error: that message is no longer waiting (it was answered, o. Has the agent written a lesson for it?"}
 {"ts": 1795877018, "time": "11/28 23:43:38", "level": "ALERT", "what": "repeat", "text": "reply failed the same way 4 times in the last hour: error: that message is no longer waiting (it was answered, o. Has the agent written a lesson for it?"}
+{"ts": 1795880753, "time": "11/29 00:45:53", "level": "ALERT", "what": "process", "text": "the agent (agent_kit.py run) is not running"}
+{"ts": 1795881304, "time": "11/29 00:55:04", "level": "ALERT", "what": "repeat", "text": "forum_post failed the same way 3 times in the last hour: http 429. Has the agent written a lesson for it?"}
+{"ts": 1795883140, "time": "11/29 01:25:40", "level": "ALERT", "what": "repeat", "text": "forum_post failed the same way 5 times in the last hour: http 429. Has the agent written a lesson for it?"}
+{"ts": 1795883813, "time": "11/29 01:36:53", "level": "ALERT", "what": "repeat", "text": "reply failed the same way 3 times in the last hour: error: that message is no longer waiting (it was answered, o. Has the agent written a lesson for it?"}
+{"ts": 1795884976, "time": "11/29 01:56:16", "level": "ALERT", "what": "repeat", "text": "forum_post failed the same way 3 times in the last hour: http 429. Has the agent written a lesson for it?"}
+{"ts": 1795885649, "time": "11/29 02:07:29", "level": "ALERT", "what": "repeat", "text": "reply failed the same way 5 times in the last hour: error: that message is no longer waiting (it was answered, o. Has the agent written a lesson for it?"}
+{"ts": 1795886812, "time": "11/29 02:26:52", "level": "ALERT", "what": "repeat", "text": "forum_post failed the same way 5 times in the last hour: http 429. Has the agent written a lesson for it?"}
+{"ts": 1795887485, "time": "11/29 02:38:05", "level": "ALERT", "what": "repeat", "text": "reply failed the same way 4 times in the last hour: error: that message is no longer waiting (it was answered, o. Has the agent written a lesson for it?"}
+{"ts": 1795888648, "time": "11/29 02:57:28", "level": "ALERT", "what": "repeat", "text": "forum_post failed the same way 6 times in the last hour: http 429. Has the agent written a lesson for it?"}

@@ -1,0 +1,14 @@
+name: customer_handler
+description: 카드의 모든 재고 SKU를 catalog 메타데이터 표(name, grade, unit, cost)로 정규화해 저장하고, 표 기반으로 고객 구매 요청을 매칭하여 원가 하한 이상일 때만 서명 checkout과 예약을 생성하는 한국어 고객 핸들러
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json, prices.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 25
+replaces: customer_handler@24

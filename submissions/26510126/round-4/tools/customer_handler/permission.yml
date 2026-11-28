@@ -1,5 +1,5 @@
 name: customer_handler
-description: 카드의 모든 재고 SKU를 시장 catalog.json의 품목명·등급·unit·원가 메타데이터 표로 매칭하고, 21시 이후 고객 원문을 처리해 조건에 맞는 서명 checkout과 예약을 제공한다.
+description: 카탈로그와 실제 재고를 SKU 키·중첩 필드까지 인식해 고객 요청에 맞는 상품을 선택하고 checkout JWT와 예약을 생성한다.
 permission:
   network: [market.ourolabs.ai]
   write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json]
@@ -10,5 +10,5 @@ permission:
   handles: [a2a]
 logic: logic.py
 test: test.py
-version: 23
-replaces: customer_handler@22
+version: 38
+replaces: customer_handler@37

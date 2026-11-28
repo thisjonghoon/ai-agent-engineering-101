@@ -1,0 +1,14 @@
+name: customer_handler
+description: catalog 표의 이름·별칭·단위 토큰으로 한국어 고객 요청을 매칭해 하한 이상 checkout JWT와 예약을 생성한다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 35
+replaces: customer_handler@34

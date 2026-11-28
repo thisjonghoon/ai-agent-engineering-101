@@ -11,3 +11,9 @@ S-06 완료: customer_handler v13 테스트 통과. 테스트는 test_card.json�
 O-02 진행(기한 23:59 KST): 카드의 20개 SKU 각각에 시장 카탈로그 품목명·등급·unit·원가 표를 만들고 customer_handler가 표 기반으로 검색하도록 교체. logs/talk.jsonl 21시 이후 손님 문장 전부를 원문 그대로 시험. 재고 품목은 (원가+210)/0.99 이상 결제서, 없는 품목은 결제서·잠금 없이 없다. 품목명 하드코딩 금지. 완료 보고 형식: O-02 done: 표 SKU 수·시험 문장 수·통과 결과.
 O-02 상태: build_catalog로 /api/catalog 5,629개 수집 완료. 아직 내 카드 20개 SKU만 추린 표와 logs/talk.jsonl 21시 이후 원문 전체 시험은 미완료. 소유자 메시지 mafea83는 만료되어 reply 불가.
 O-02 재전송 수신: 23:59 KST까지 카드 20개 SKU 각각에 시장 catalog 품목명·등급·unit·원가 표를 만들고, customer_handler가 표 기반 검색을 사용하도록 교체한다. logs/talk.jsonl 21시 이후 손님 원문 전체를 시험한다. 재고 품목은 (원가+210)/0.99 이상 checkout, 없는 품목은 결제서·잠금 없이 없다. 완료 보고: O-02 done: 표 SKU 수·시험 문장 수·통과 결과.
+O-03 원문: 11/29 00:32 KST 감독관 S-09 지시 — 도구를 고치지 말고 catalog.json 20행마다 원장 supply의 그 unit 원가와 하한 (원가+210)/0.99를 채운 표와 ts 1795867200 이후 손님 문장 전부를 지금 핸들러에 돌린 결과(문장 / 우리 답 / 결제서 품목 / 가격 / 하한)를 앱에 보고한다. 01:00까지.
+O-03 보고 완료: 카드 20개 SKU 표화. catalog API에는 20개 모두 cost/unit/grade가 없어 하한 산출 불가. 테스트가 logs/talk.jsonl을 덮어써 ts 1795867200 이후 확인 원문은 테스트 구매 1건뿐임을 앱에 보고. 실제 고객별 결제서·가격·하한 재구성 불가.
+S-10 결과: refresh_card에서 김치 G02f9f99 재고 8개 확인했으나 GET /api/inventory·/api/stock 응답에 SKU 메타데이터가 없어 customer_handler v28은 김치 요청을 재고 없음으로 처리. checkout_jwt·예약 미생성. 감독관 reply는 대기 만료로 실패.
+S-10 실제 재현: refresh_card는 김치 G02f9f99c 8개를 보였지만 customer_handler v30의 실제 '김치 구매'는 재고 없음, checkout·예약 없음. forge test는 SKU-key 객체 구조로 통과했으나 실제 shop inventory 엔드포인트 메타데이터 접근 실패. inspect_shop도 shop URL이 permission.network에 없어 오류. 성공 주장 금지; 공개 inventory 권한/URL 확인 필요.
+S-11 not done: customer_handler v33 forge/test 통과했으나 실제 market /api/inventory 기반 '김치 구매' 실행은 재고 없음으로 반환되어 checkout JWT·예약·item/unit/price가 생성되지 않음. 감독관 m66c006 reply는 대기 만료로 전송 불가.
+O-05 not done: 실제 customer_handler 실행에서 사과·가자미·혼합22곡 세 요청 모두 ‘재고 없음’으로 반환되어 checkout/잠금과 item·unit·price·하한이 생성되지 않았다. 소유자 reply는 메시지 만료 오류로 전송 불가.

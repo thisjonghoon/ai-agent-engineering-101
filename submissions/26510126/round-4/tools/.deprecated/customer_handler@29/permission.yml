@@ -1,0 +1,14 @@
+name: customer_handler
+description: shop inventory의 실제 unit 메타데이터로 고객 요청을 매칭하고 하한 이상 checkout JWT와 예약을 생성하는 한국어 핸들러
+permission:
+  network: [market.ourolabs.ai, acre-returning-textbook-journals.trycloudflare.com, occurring-ice-cosmetic-adopt.trycloudflare.com]
+  write: [checkout_locks.json, test_checkout_locks.json, catalog.json, test_catalog.json, test_card.json]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+  handles: [a2a]
+logic: logic.py
+test: test.py
+version: 29
+replaces: customer_handler@28

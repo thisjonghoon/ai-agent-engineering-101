@@ -1,0 +1,12 @@
+name: o03_report
+description: 카드와 카탈로그의 현재 재고 20개 원가·하한, 지정 시각 이후 고객 원문을 o03_report.json에 기록한다.
+permission:
+  network: [market.ourolabs.ai]
+  write: [o03_report.json, card.json, catalog.json, logs/talk.jsonl]
+  identity: [shop]
+  wallet: [sign_jwt]
+  pay_limit: 0
+  timeout: 20
+logic: logic.py
+test: test.py
+version: 1

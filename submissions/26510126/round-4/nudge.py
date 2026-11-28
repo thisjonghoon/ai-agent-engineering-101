@@ -36,7 +36,7 @@ QUIET = (datetime(2026, 11, 28, 3, 0, tzinfo=KST), datetime(2026, 11, 28, 9, 0, 
 
 
 HEAD = {
-    "early": "[조언팀 모니터링 · 지금 {now} KST]\n주인 jonghoon이 claude 조언팀에게 30분마다 "
+    "early": "[조언팀 모니터링 · 지금 {now} KST]\n주인 jonghoon이 claude 조언팀에게 매시간 "
              "가게 기록을 읽고 관찰을 전하도록 맡겼어요. 아래는 기록에서 확인한 사실과 질문입니다.",
     "alert": "[감시 경보 · 지금 {now} KST]\n주인 jonghoon이 맡긴 감시에서 경보가 났어요. 아래는 기록에서 확인한 사실과 질문입니다.",
     "offhours": "[주인 부재 중 · 지금 {now} KST]\n주인 jonghoon이 자리를 비운 동안 claude가 기록을 보고 있어요. 아래는 기록에서 "

@@ -1,0 +1,25 @@
+{
+ "time": "2026-11-28 21:14:18",
+ "ts": 1795868058,
+ "last_ledger_seq": 28641,
+ "checkout_locks": {
+  "u-7d105d475b23": [
+   "co-1413f04cf90b",
+   1795858843
+  ]
+ },
+ "issued_records_3h": [
+  {
+   "unit": "u-7d105d475b23",
+   "checkout": "co-1413f04cf90b",
+   "ts": 1795858843,
+   "src": "checkout_locks.json"
+  }
+ ],
+ "checkout_replies_3h": [],
+ "held": [
+  "u-7d105d475b23"
+ ],
+ "unaccounted_checkouts": 0,
+ "note": "held = issued in the last 3 h with no settle on the ledger. unaccounted = checkout replies in talk.jsonl without a unit record (the gen1 handler overwrote checkout_locks.json); their units are unknown — watch the wallet for a payment without a settle."
+}

@@ -1,152 +1,17 @@
 {
- "fetch_url": {
-  "uses": 574,
-  "fails": 21,
-  "last": 1795858580
- },
- "market_call": {
-  "uses": 1420,
+ "market_snapshot": {
+  "uses": 1,
   "fails": 0,
-  "last": 1795867330
+  "last": 1795868280
  },
- "chain_balance": {
-  "uses": 23,
+ "refresh_card": {
+  "uses": 1,
   "fails": 0,
-  "last": 1795853160
+  "last": 1795868373
  },
- "buy_stock": {
-  "uses": 409,
+ "inspect_shop": {
+  "uses": 1,
   "fails": 0,
-  "last": 1795867351
- },
- "make_checkout": {
-  "uses": 222,
-  "fails": 1,
-  "last": 1795789795
- },
- "write_card": {
-  "uses": 83,
-  "fails": 0,
-  "last": 1795867408
- },
- "a2a_inquiry": {
-  "uses": 866,
-  "fails": 0,
-  "last": 1795867572
- },
- "compact_notes": {
-  "uses": 34,
-  "fails": 0,
-  "last": 1795840740
- },
- "restore_notes": {
-  "uses": 2,
-  "fails": 0,
-  "last": 1795594243
- },
- "find_ledger": {
-  "uses": 233,
-  "fails": 0,
-  "last": 1795810508
- },
- "chain_tx": {
-  "uses": 5,
-  "fails": 0,
-  "last": 1795693381
- },
- "refund_verified": {
-  "uses": 4,
-  "fails": 1,
-  "last": 1795573725
- },
- "read_market_text": {
-  "uses": 42,
-  "fails": 0,
-  "last": 1795764276
- },
- "ledger_sales": {
-  "uses": 497,
-  "fails": 0,
-  "last": 1795867378
- },
- "ledger_tail": {
-  "uses": 36,
-  "fails": 0,
-  "last": 1795810364
- },
- "search_logs": {
-  "uses": 548,
-  "fails": 0,
-  "last": 1795863777
- },
- "board_analysis": {
-  "uses": 7,
-  "fails": 1,
-  "last": 1795709338
- },
- "compare_shop": {
-  "uses": 3,
-  "fails": 2,
-  "last": 1795714290
- },
- "time_convert": {
-  "uses": 123,
-  "fails": 0,
-  "last": 1795729432
- },
- "audit_checkout_logs": {
-  "uses": 195,
-  "fails": 0,
-  "last": 1795851023
- },
- "inventory_audit": {
-  "uses": 490,
-  "fails": 0,
-  "last": 1795867318
- },
- "checkout_payments": {
-  "uses": 235,
-  "fails": 0,
-  "last": 1795844864
- },
- "forum_thread": {
-  "uses": 101,
-  "fails": 0,
-  "last": 1795788123
- },
- "inspect_local": {
-  "uses": 81,
-  "fails": 0,
-  "last": 1795856538
- },
- "channel_audit": {
-  "uses": 3,
-  "fails": 0,
-  "last": 1795845823
- },
- "test_sales_worker": {
-  "uses": 7,
-  "fails": 0,
-  "last": 1795807598
- },
- "available_count": {
-  "uses": 121,
-  "fails": 0,
-  "last": 1795863470
- },
- "preview_pdf": {
-  "uses": 2,
-  "fails": 0,
-  "last": 1795690555
- },
- "shop_health": {
-  "uses": 27,
-  "fails": 0,
-  "last": 1795854180
- },
- "edit_owner_rules": {
-  "uses": 9,
-  "fails": 0,
-  "last": 1795849534
+  "last": 1795868404
  }
 }
